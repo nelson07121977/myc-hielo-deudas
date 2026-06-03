@@ -1,0 +1,618 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MYC Hielo">
+<meta name="theme-color" content="#0f2a6e">
+<title>MYC HIELO · Control de Deudas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--azul:#0f2a6e;--azul-med:#1a3d9e;--azul-light:#e8eeff;--verde:#0a7c4a;--verde-light:#d1fae5;--rojo:#b91c1c;--rojo-light:#fee2e2;--amarillo:#d97706;--amarillo-light:#fef3c7;--gris:#94a3b8;--borde:#cbd5e1;--texto:#0f172a;--texto2:#475569;--bg:#f1f5fb;--white:#fff;--shadow:0 4px 24px rgba(15,42,110,.10);--radius:18px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);font-family:system-ui,-apple-system,sans-serif;color:var(--texto);min-height:100vh;}
+.header{background:var(--azul);color:white;padding:18px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(0,0,0,.2);}
+.header-title{font-weight:800;font-size:1.2rem;letter-spacing:-.5px;}
+.header-sub{font-size:.7rem;color:#93c5fd;margin-top:2px;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;}
+.sync-dot.off{background:#ef4444;}
+.tabs{display:flex;background:white;border-bottom:2px solid var(--borde);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;padding:13px 8px 11px;font-size:.78rem;font-weight:600;color:var(--texto2);border:none;background:none;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;min-width:75px;}
+.tab.active{color:var(--azul-med);border-bottom-color:var(--azul-med);background:var(--azul-light);}
+.content{display:none;padding:16px 14px 80px;max-width:700px;margin:0 auto;}
+.content.active{display:block;}
+.card{background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px;border:1px solid rgba(203,213,225,.5);}
+.card-title{font-weight:800;font-size:1rem;color:var(--azul);margin-bottom:14px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-full{grid-column:1/-1;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+label{font-size:.78rem;font-weight:600;color:var(--texto2);}
+input,select{padding:11px 14px;border-radius:12px;border:1.5px solid var(--borde);font-size:.9rem;font-family:inherit;color:var(--texto);background:white;width:100%;transition:border .2s;}
+input:focus,select:focus{outline:none;border-color:var(--azul-med);}
+input[type=number]{-moz-appearance:textfield;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+.btn{padding:11px 20px;border-radius:12px;border:none;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;}
+.btn-primary{background:var(--azul);color:white;}
+.btn-green{background:var(--verde);color:white;}
+.btn-red{background:var(--rojo);color:white;}
+.btn-outline{background:white;color:var(--azul);border:1.5px solid var(--azul);}
+.btn-sm{padding:7px 12px;font-size:.76rem;border-radius:10px;}
+.btn-block{width:100%;}
+.resumen-item{background:white;border:1.5px solid var(--borde);border-radius:14px;padding:11px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.resumen-nombre{font-weight:600;font-size:.88rem;}
+.saldo-pos{color:var(--rojo);font-weight:800;font-size:1rem;}
+.saldo-neg{color:var(--amarillo);font-weight:800;font-size:1rem;}
+.saldo-cero{color:var(--verde);font-weight:800;font-size:1rem;}
+.total-box{background:linear-gradient(135deg,#0f2a6e,#1a3d9e);color:white;border-radius:16px;padding:18px;margin-top:12px;text-align:center;}
+.total-label{font-size:.8rem;opacity:.8;margin-bottom:4px;}
+.total-valor{font-weight:800;font-size:2rem;}
+.scroll-table{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:420px;}
+th{background:var(--azul-light);color:var(--azul);font-weight:700;padding:10px;text-align:left;border-bottom:2px solid var(--borde);white-space:nowrap;}
+td{padding:10px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;}
+.badge-deuda{background:var(--rojo-light);color:var(--rojo);}
+.badge-pago{background:var(--verde-light);color:var(--verde);}
+.badge-efectivo{background:#fef9c3;color:#92400e;}
+.badge-transfer{background:#e0f2fe;color:#0369a1;}
+.tags-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag{background:var(--azul-light);color:var(--azul);border:1px solid #c7d8ff;padding:5px 10px;border-radius:40px;font-size:.76rem;font-weight:600;display:flex;align-items:center;gap:6px;}
+.tag-del{background:none;border:none;color:var(--rojo);cursor:pointer;font-size:.9rem;padding:0;}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.filtros input,.filtros select{flex:1;min-width:110px;}
+.nota{background:var(--amarillo-light);border:1px solid #fbbf24;border-radius:12px;padding:10px 14px;font-size:.78rem;color:#92400e;margin-top:12px;}
+.install-box{background:#f0fdf4;border:1px solid #86efac;border-radius:14px;padding:14px;margin-bottom:12px;}
+.install-box h4{font-size:.82rem;font-weight:700;color:var(--verde);margin-bottom:8px;}
+.install-box ol{padding-left:18px;font-size:.82rem;color:var(--texto2);line-height:1.9;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:100;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:20px;padding:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;}
+.modal-title{font-weight:800;font-size:1.1rem;margin-bottom:8px;}
+.modal-msg{color:var(--texto2);font-size:.88rem;margin-bottom:20px;line-height:1.5;}
+.modal-btns{display:flex;gap:10px;margin-top:12px;}
+.modal-btns .btn{flex:1;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--azul);color:white;padding:11px 22px;border-radius:40px;font-size:.85rem;font-weight:600;z-index:200;transition:transform .3s;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.verde{background:var(--verde);}
+.toast.rojo{background:var(--rojo);}
+.empty{text-align:center;padding:40px 20px;color:var(--gris);}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{position:fixed;inset:0;background:rgba(15,42,110,.7);z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:white;font-weight:600;}
+.loading-overlay .big-spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.2);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;}
+.print-hide{display:none;}
+@media print{
+  body{background:white;margin:0;padding:0;}
+  .header,.tabs,.btn,.filtros,.modal-overlay,.toast,.no-print,.install-box,.tab,.print-hide{display:none !important;}
+  .content{display:block !important;padding:0;max-width:100%;}
+  .card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}
+  .total-box{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .resumen-item{border:1px solid #aaa;}
+  table{font-size:10pt;}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="big-spinner"></div>
+  <span>Conectando con Supabase…</span>
+</div>
+
+<div class="header">
+  <span style="font-size:1.8rem">🧊</span>
+  <div>
+    <div class="header-title">MYC HIELO</div>
+    <div class="header-sub">Control de Deudas · En línea</div>
+  </div>
+  <div class="header-right">
+    <span class="sync-dot" id="syncDot"></span>
+    <span style="font-size:.72rem;color:#93c5fd" id="syncLabel">conectando…</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="cambiarTab('resumen',this)">📊 Resumen</button>
+  <button class="tab" onclick="cambiarTab('movimientos',this)">📜 Movimientos</button>
+  <button class="tab" onclick="cambiarTab('evolucion',this)">📈 Evolución</button>
+  <button class="tab" onclick="cambiarTab('registro',this)">➕ Registrar</button>
+  <button class="tab" onclick="cambiarTab('clientes',this)">👥 Clientes</button>
+  <button class="tab" onclick="cambiarTab('instalar',this)">📱 Instalar</button>
+</div>
+
+<!-- Resumen -->
+<div id="tab-resumen" class="content active">
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      📊 Saldo por Cliente
+      <button class="btn btn-outline btn-sm" onclick="imprimirVistaActual()">🖨️ Imprimir</button>
+    </div>
+    <div id="resumenLista"></div>
+    <div class="total-box">
+      <div class="total-label">TOTAL DEUDAS ACTIVAS</div>
+      <div class="total-valor" id="totalGeneral">$0</div>
+    </div>
+    <div class="nota">🔴 Debe dinero · 🟡 MYC tiene crédito · 🟢 Sin deuda</div>
+  </div>
+</div>
+
+<!-- Movimientos -->
+<div id="tab-movimientos" class="content">
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      📜 Historial
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="exportarCSV()">📎 Exportar CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="imprimirVistaActual()">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="filtros">
+      <input type="text" id="filtroCliente" placeholder="🔍 Buscar cliente…" oninput="renderMovimientos()">
+      <select id="filtroTipo" onchange="renderMovimientos()">
+        <option value="">Todos</option><option value="deuda">Deudas</option><option value="pago">Pagos</option>
+      </select>
+      <select id="filtroForma" onchange="renderMovimientos()">
+        <option value="">Todas formas</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="limpiarFiltros()">✖</button>
+    </div>
+    <div class="scroll-table">
+      <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th></th></tr></thead><tbody id="tablaMovimientos"></tbody></table>
+    </div>
+    <div id="movEmpty" class="empty" style="display:none">📭 Sin movimientos</div>
+  </div>
+</div>
+
+<!-- Evolución (gráfico) -->
+<div id="tab-evolucion" class="content">
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      📈 Evolución de deuda total (últimos 30 días)
+      <button class="btn btn-outline btn-sm" onclick="imprimirVistaActual()">🖨️ Imprimir</button>
+    </div>
+    <canvas id="deudaChart" style="width:100%;max-height:300px;"></canvas>
+    <div class="nota">Muestra la suma de todas las deudas pendientes día a día.</div>
+  </div>
+</div>
+
+<!-- Registro -->
+<div id="tab-registro" class="content">
+  <div class="card">
+    <div class="card-title">💰 Nueva Deuda</div>
+    <div class="form-grid">
+      <div class="form-group"><label>📅 Fecha</label><input type="date" id="dFecha"></div>
+      <div class="form-group"><label>🧑 Cliente</label><select id="dCliente"></select></div>
+      <div class="form-group form-full"><label>💵 Monto ($)</label><input type="number" id="dMonto" placeholder="0" min="0" step="0.01"></div>
+      <div class="form-group form-full"><label>📝 Detalle</label><input type="text" id="dDetalle" placeholder="Ej: 50 bolsas…"></div>
+      <div class="form-full"><button class="btn btn-red btn-block" onclick="registrarDeuda()">➕ Registrar Deuda</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">💸 Registrar Pago</div>
+    <div class="form-grid">
+      <div class="form-group"><label>📅 Fecha</label><input type="date" id="pFecha"></div>
+      <div class="form-group"><label>🧑 Cliente</label><select id="pCliente"></select></div>
+      <div class="form-group"><label>💵 Monto ($)</label><input type="number" id="pMonto" placeholder="0" min="0" step="0.01"></div>
+      <div class="form-group"><label>💳 Forma</label><select id="pForma"><option>Efectivo</option><option>Transferencia</option></select></div>
+      <div class="form-group form-full"><label>📝 Detalle</label><input type="text" id="pDetalle" placeholder="Ej: abono parcial…"></div>
+      <div class="form-full"><button class="btn btn-green btn-block" onclick="registrarPago()">💸 Registrar Pago</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Clientes -->
+<div id="tab-clientes" class="content">
+  <div class="card">
+    <div class="card-title">➕ Agregar Cliente</div>
+    <div style="display:flex;gap:10px"><input type="text" id="nuevoCliente" placeholder="Nombre del cliente" style="flex:1" onkeydown="if(event.key==='Enter')agregarCliente()"><button class="btn btn-primary" onclick="agregarCliente()">Agregar</button></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;">
+      👥 Clientes (<span id="countClientes">0</span>)
+      <button class="btn btn-outline btn-sm" onclick="imprimirVistaActual()">🖨️ Imprimir</button>
+    </div>
+    <div id="listaClientes" class="tags-wrap"></div>
+  </div>
+</div>
+
+<!-- Instalar / Backup -->
+<div id="tab-instalar" class="content">
+  <div class="card">
+    <div class="card-title">📱 Instalar en pantalla de inicio</div>
+    <div class="install-box"><h4>📱 Android (Chrome)</h4><ol><li>Abrí esta web en Chrome</li><li>Tocá los 3 puntitos arriba</li><li>Tocá "Agregar a pantalla de inicio"</li><li>Confirmá → ícono 🧊</li></ol></div>
+    <div class="install-box"><h4>🍎 iPhone (Safari)</h4><ol><li>Abrí en Safari</li><li>Tocá compartir ↑</li><li>"Añadir a pantalla de inicio"</li><li>Confirmá</li></ol></div>
+  </div>
+  <div class="card">
+    <div class="card-title">💾 Backup / Restore</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="btn btn-outline" onclick="exportarBackup()">📤 Respaldar datos (JSON)</button>
+      <label class="btn btn-outline" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">📥 Restaurar backup<input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restaurarBackup(this)"></label>
+    </div>
+    <div class="nota">⚠️ El backup guarda todos los clientes y movimientos. Restaurar reemplazará los datos actuales en la nube.</div>
+  </div>
+</div>
+
+<!-- Modales -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-msg" id="modalMsg"></div>
+    <div id="modalCampos" style="margin-bottom:16px;"></div>
+    <div class="modal-btns"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-red" id="modalBtn">Confirmar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Configuración Supabase (misma que original)
+const SB_URL  = 'https://wgbjihhrkrlcrwl1jniv.supabase.co'
+const SB_KEY  = 'sb_publishable_McZAr5DgpeqDnDDK5boWFw_Loclzq-q'
+const HEADERS = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' }
+
+async function sbGet(table, params='') {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: HEADERS })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+async function sbPost(table, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, { method:'POST', headers: HEADERS, body: JSON.stringify(body) })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+async function sbPut(table, filter, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, { method:'PATCH', headers: HEADERS, body: JSON.stringify(body) })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+async function sbDelete(table, filter) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, { method:'DELETE', headers: HEADERS })
+  if (!r.ok) throw new Error(await r.text())
+}
+
+let clientes = [], movimientos = [], chart = null, modalCb = null, modalEditor = null;
+
+async function init() {
+  const hoy = new Date().toISOString().slice(0,10)
+  document.getElementById('dFecha').value = hoy
+  document.getElementById('pFecha').value = hoy
+  await cargarDatos()
+  document.getElementById('loadingOverlay').style.display = 'none'
+}
+
+async function cargarDatos() {
+  try {
+    const [cli, mov] = await Promise.all([
+      sbGet('myc_clientes', 'select=nombre&order=nombre.asc'),
+      sbGet('myc_movimientos', 'select=*&order=fecha.desc,created_at.desc')
+    ])
+    clientes = cli.map(c => c.nombre)
+    movimientos = mov
+    setSyncOk(true)
+    actualizarUI()
+    renderizarGrafico()
+  } catch(e) { setSyncOk(false); toast('Error de conexión', 'rojo') }
+}
+
+function setSyncOk(ok) {
+  const dot = document.getElementById('syncDot')
+  dot.className = 'sync-dot' + (ok ? '' : ' off')
+  document.getElementById('syncLabel').textContent = ok ? 'en línea' : 'sin conexión'
+}
+
+function actualizarUI() {
+  llenarSelects()
+  renderResumen()
+  renderMovimientos()
+  renderClientes()
+  renderizarGrafico()
+}
+
+function llenarSelects() {
+  ['dCliente','pCliente'].forEach(id => {
+    const s = document.getElementById(id); if (!s) return
+    const prev = s.value
+    s.innerHTML = clientes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+    if (clientes.includes(prev)) s.value = prev
+  })
+}
+
+function calcularSaldos() {
+  const map = {}
+  clientes.forEach(c => map[c] = 0)
+  movimientos.forEach(m => {
+    if (!(m.cliente_nombre in map)) map[m.cliente_nombre] = 0
+    map[m.cliente_nombre] += m.tipo === 'deuda' ? +m.monto : -m.monto
+  })
+  return Object.entries(map).sort((a,b) => b[1]-a[1])
+}
+
+function renderResumen() {
+  const saldos = calcularSaldos()
+  const lista = document.getElementById('resumenLista')
+  if (!saldos.length) { lista.innerHTML = `<div class="empty">📭 Sin datos</div>`; return }
+  lista.innerHTML = saldos.map(([cli, saldo]) => {
+    const cls = saldo > 0 ? 'saldo-pos' : saldo < 0 ? 'saldo-neg' : 'saldo-cero'
+    const ico = saldo > 0 ? '🔴' : saldo < 0 ? '🟡' : '🟢'
+    const extra = saldo < 0 ? `<span style="font-size:.6rem;color:var(--amarillo);margin-left:4px">crédito</span>` : ''
+    return `<div class="resumen-item"><span class="resumen-nombre">${ico} ${esc(cli)}</span><span class="${cls}">$${Math.abs(saldo).toLocaleString('es-AR')}${extra}</span></div>`
+  }).join('')
+  const total = saldos.reduce((a,[,s]) => a + (s > 0 ? s : 0), 0)
+  document.getElementById('totalGeneral').textContent = '$' + total.toLocaleString('es-AR')
+}
+
+function renderMovimientos() {
+  const fCli = document.getElementById('filtroCliente').value.toLowerCase()
+  const fTipo = document.getElementById('filtroTipo').value
+  const fForma = document.getElementById('filtroForma').value
+  let lista = movimientos.filter(m => {
+    if (fCli && !m.cliente_nombre.toLowerCase().includes(fCli)) return false
+    if (fTipo && m.tipo !== fTipo) return false
+    if (fForma && m.forma_pago !== fForma) return false
+    return true
+  })
+  const tbody = document.getElementById('tablaMovimientos')
+  const empty = document.getElementById('movEmpty')
+  if (!lista.length) { tbody.innerHTML = ''; empty.style.display = ''; return }
+  empty.style.display = 'none'
+  tbody.innerHTML = lista.map(m => {
+    const tB = m.tipo==='deuda' ? `<span class="badge badge-deuda">➕ Deuda</span>` : `<span class="badge badge-pago">💸 Pago</span>`
+    const fB = m.forma_pago ? (m.forma_pago==='Efectivo' ? `<span class="badge badge-efectivo">💵 Efectivo</span>` : `<span class="badge badge-transfer">🏦 Transfer.</span>`) : `<span style="color:var(--gris)">—</span>`
+    const det = m.detalle ? `<br><span style="font-size:.7rem;color:#64748b">${esc(m.detalle)}</span>` : ''
+    return `<tr>
+      <td style="white-space:nowrap">${m.fecha}</td>
+      <td><strong>${esc(m.cliente_nombre)}</strong>${det}</td>
+      <td>${tB}</td>
+      <td><strong>$${(+m.monto).toLocaleString('es-AR')}</strong></td>
+      <td>${fB}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="editarMovimiento('${m.id}','${m.cliente_nombre}','${m.fecha}',${m.monto},'${m.tipo}','${m.forma_pago || ''}','${escAttr(m.detalle || '')}')">✏️</button>
+          <button class="btn btn-red btn-sm" onclick="confirmarEliminarMov('${m.id}','${esc(m.cliente_nombre)}',${m.monto},'${m.fecha}','${m.tipo}')">🗑️</button></td>
+    </tr>`
+  }).join('')
+}
+
+function limpiarFiltros() {
+  document.getElementById('filtroCliente').value = ''
+  document.getElementById('filtroTipo').value = ''
+  document.getElementById('filtroForma').value = ''
+  renderMovimientos()
+}
+
+function renderClientes() {
+  const wrap = document.getElementById('listaClientes')
+  document.getElementById('countClientes').textContent = clientes.length
+  wrap.innerHTML = clientes.map(c => `<span class="tag">${esc(c)}<button class="tag-del" onclick="confirmarEliminarCliente('${escAttr(c)}')">✖</button></span>`).join('')
+}
+
+async function agregarCliente() {
+  const v = document.getElementById('nuevoCliente').value.trim().toUpperCase()
+  if (!v) return toast('Escribí un nombre','rojo')
+  if (clientes.includes(v)) return toast('Ya existe','rojo')
+  try {
+    await sbPost('myc_clientes', { nombre: v })
+    document.getElementById('nuevoCliente').value = ''
+    toast('✅ Cliente agregado')
+    await cargarDatos()
+  } catch { toast('Error al guardar','rojo') }
+}
+
+async function registrarDeuda() {
+  const fecha = document.getElementById('dFecha').value
+  const cliente = document.getElementById('dCliente').value
+  const monto = parseFloat(document.getElementById('dMonto').value)
+  const detalle = document.getElementById('dDetalle').value.trim()
+  if (!fecha || !cliente || !monto || monto<=0) return toast('Complete campos válidos','rojo')
+  try {
+    await sbPost('myc_movimientos', { fecha, cliente_nombre: cliente, tipo:'deuda', monto, detalle: detalle||null, forma_pago: null })
+    document.getElementById('dMonto').value = ''; document.getElementById('dDetalle').value = ''
+    toast('✅ Deuda registrada')
+    await cargarDatos()
+  } catch { toast('Error','rojo') }
+}
+
+async function registrarPago() {
+  const fecha = document.getElementById('pFecha').value
+  const cliente = document.getElementById('pCliente').value
+  const monto = parseFloat(document.getElementById('pMonto').value)
+  const forma = document.getElementById('pForma').value
+  const detalle = document.getElementById('pDetalle').value.trim()
+  if (!fecha || !cliente || !monto || monto<=0) return toast('Complete campos','rojo')
+  try {
+    await sbPost('myc_movimientos', { fecha, cliente_nombre: cliente, tipo:'pago', monto, forma_pago: forma, detalle: detalle||null })
+    document.getElementById('pMonto').value = ''; document.getElementById('pDetalle').value = ''
+    toast('✅ Pago registrado','verde')
+    await cargarDatos()
+  } catch { toast('Error','rojo') }
+}
+
+// Editar movimiento
+function editarMovimiento(id, cliente, fecha, monto, tipo, formaPago, detalle) {
+  const camposDiv = document.getElementById('modalCampos')
+  camposDiv.innerHTML = `
+    <div class="form-group"><label>Fecha</label><input type="date" id="editFecha" value="${fecha}"></div>
+    <div class="form-group"><label>Cliente</label><select id="editCliente">${clientes.map(c => `<option value="${esc(c)}" ${c===cliente?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Monto ($)</label><input type="number" id="editMonto" step="0.01" value="${monto}"></div>
+    ${tipo === 'pago' ? `<div class="form-group"><label>Forma de pago</label><select id="editForma"><option ${formaPago==='Efectivo'?'selected':''}>Efectivo</option><option ${formaPago==='Transferencia'?'selected':''}>Transferencia</option></select></div>` : ''}
+    <div class="form-group"><label>Detalle</label><input type="text" id="editDetalle" value="${esc(detalle)}"></div>
+  `
+  abrirModal(
+    `✏️ Editar ${tipo==='deuda'?'Deuda':'Pago'}`,
+    '',
+    async () => {
+      const newFecha = document.getElementById('editFecha').value
+      const newCliente = document.getElementById('editCliente').value
+      const newMonto = parseFloat(document.getElementById('editMonto').value)
+      const newDetalle = document.getElementById('editDetalle').value.trim()
+      const body = { fecha: newFecha, cliente_nombre: newCliente, monto: newMonto, detalle: newDetalle || null }
+      if (tipo === 'pago') body.forma_pago = document.getElementById('editForma').value
+      try {
+        await sbPut('myc_movimientos', `id=eq.${id}`, body)
+        toast('✅ Movimiento actualizado')
+        await cargarDatos()
+      } catch(e) { toast('Error al actualizar','rojo') }
+      cerrarModal()
+    }
+  )
+}
+
+function confirmarEliminarMov(id, cliente, monto, fecha, tipo) {
+  abrirModal('¿Eliminar movimiento?', `${tipo==='deuda'?'Deuda':'Pago'} de $${monto.toLocaleString('es-AR')} · ${cliente} · ${fecha}`, async () => {
+    await sbDelete('myc_movimientos', `id=eq.${id}`)
+    toast('🗑️ Eliminado')
+    await cargarDatos()
+  })
+}
+
+function confirmarEliminarCliente(nombre) {
+  const cant = movimientos.filter(m => m.cliente_nombre === nombre).length
+  abrirModal('¿Eliminar cliente?', `"${nombre}" tiene ${cant} movimiento(s). Se eliminarán también.`, async () => {
+    await sbDelete('myc_movimientos', `cliente_nombre=eq.${encodeURIComponent(nombre)}`)
+    await sbDelete('myc_clientes', `nombre=eq.${encodeURIComponent(nombre)}`)
+    toast('🗑️ Cliente eliminado')
+    await cargarDatos()
+  })
+}
+
+// Backup / Restore
+async function exportarBackup() {
+  const data = { clientes, movimientos }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'})
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `myc_backup_${new Date().toISOString().slice(0,10)}.json`
+  link.click()
+  URL.revokeObjectURL(link.href)
+  toast('Backup generado')
+}
+
+async function restaurarBackup(input) {
+  const file = input.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result)
+      if (!data.clientes || !data.movimientos) throw new Error('Formato inválido')
+      // Sobrescribir en Supabase: primero limpiar todo
+      await sbDelete('myc_movimientos', `id=not.is.null`)
+      await sbDelete('myc_clientes', `nombre=not.is.null`)
+      // Insertar clientes
+      for (let c of data.clientes) await sbPost('myc_clientes', { nombre: c })
+      // Insertar movimientos (sin id, que lo genere la DB)
+      for (let m of data.movimientos) {
+        await sbPost('myc_movimientos', {
+          fecha: m.fecha, cliente_nombre: m.cliente_nombre, tipo: m.tipo,
+          monto: m.monto, forma_pago: m.forma_pago || null, detalle: m.detalle || null
+        })
+      }
+      toast('✅ Restauración completa', 'verde')
+      await cargarDatos()
+    } catch(err) { toast('Error en backup: '+err.message, 'rojo') }
+  }
+  reader.readAsText(file)
+  input.value = ''
+}
+
+// Gráfico evolución (últimos 30 días)
+async function renderizarGrafico() {
+  const ctx = document.getElementById('deudaChart').getContext('2d')
+  // calcular deuda acumulada por día
+  const fechas = []
+  const deudaDiaria = []
+  const hoy = new Date()
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(hoy.getDate() - i)
+    const fechaStr = d.toISOString().slice(0,10)
+    fechas.push(fechaStr)
+    // sumar deudas hasta ese día
+    let deuda = 0
+    movimientos.forEach(m => {
+      if (m.fecha <= fechaStr) {
+        if (m.tipo === 'deuda') deuda += +m.monto
+        else deuda -= +m.monto
+      }
+    })
+    deudaDiaria.push(deuda > 0 ? deuda : 0)
+  }
+  if (chart) chart.destroy()
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: fechas, datasets: [{ label: 'Deuda total ($)', data: deudaDiaria, borderColor: '#0f2a6e', backgroundColor: 'rgba(15,42,110,0.1)', tension: 0.2, fill: true }] },
+    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } }
+  })
+}
+
+// Impresión de la vista actual
+function imprimirVistaActual() {
+  const activeId = document.querySelector('.content.active')?.id
+  if (!activeId) return
+  const contenido = document.getElementById(activeId).cloneNode(true)
+  // eliminar botones no deseados
+  contenido.querySelectorAll('.btn, .filtros, .modal-overlay, .toast, .print-hide, .tab, .header, .tabs').forEach(el => el.remove())
+  const ventana = window.open('', '_blank')
+  ventana.document.write(`
+    <html><head><title>MYC HIELO - ${activeId}</title>
+    <style>${Array.from(document.styleSheets).reduce((acc, sheet) => { try { return acc + Array.from(sheet.cssRules || []).map(r=>r.cssText).join('') } catch(e){return acc} }, '')}
+    body{background:white;margin:20px;font-family:system-ui;}.no-print{display:none;} .card{box-shadow:none;border:1px solid #ccc;} .total-box{-webkit-print-color-adjust:exact;}</style>
+    </head><body>${contenido.outerHTML}</body></html>
+  `)
+  ventana.document.close()
+  ventana.print()
+  ventana.close()
+}
+
+// Exportar CSV
+function exportarCSV() {
+  if (!movimientos.length) return toast('No hay movimientos','rojo')
+  let csv = "Fecha,Cliente,Tipo,Monto,FormaPago,Detalle\n"
+  movimientos.forEach(m => {
+    csv += `"${m.fecha}","${m.cliente_nombre}","${m.tipo==='deuda'?'Deuda':'Pago'}",${m.monto},"${m.forma_pago||''}","${m.detalle||''}"\n`
+  })
+  const blob = new Blob([csv], {type: 'text/csv'})
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `myc_movimientos_${new Date().toISOString().slice(0,10)}.csv`
+  link.click()
+  URL.revokeObjectURL(link.href)
+  toast('CSV exportado')
+}
+
+// Modal y utilidades
+function abrirModal(titulo, msg, cb) {
+  document.getElementById('modalTitle').textContent = titulo
+  document.getElementById('modalMsg').textContent = msg
+  modalCb = cb
+  document.getElementById('modalOverlay').classList.add('open')
+}
+function cerrarModal() { document.getElementById('modalOverlay').classList.remove('open'); modalCb = null; document.getElementById('modalCampos').innerHTML = '' }
+document.getElementById('modalBtn').addEventListener('click', () => { if (modalCb) modalCb(); cerrarModal() })
+document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) cerrarModal() })
+
+function cambiarTab(id, el) {
+  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'))
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  document.getElementById('tab-'+id).classList.add('active')
+  el.classList.add('active')
+  if (id === 'evolucion') renderizarGrafico()
+}
+
+function toast(msg, tipo='') {
+  const el = document.getElementById('toast')
+  el.textContent = msg; el.className = 'toast show ' + tipo
+  clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => el.classList.remove('show'), 2800)
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function escAttr(s) { return String(s).replace(/'/g,"\\'") }
+
+init()
+</script>
+</body>
+</html>
