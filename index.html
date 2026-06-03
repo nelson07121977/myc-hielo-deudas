@@ -23,6 +23,8 @@ input,select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--b
 .btn-sm{padding:6px 12px;width:auto;font-size:.8rem;}
 .resumen-item{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #eee;}
 .saldo-pos{color:var(--rojo);font-weight:800;}
+.saldo-neg{color:var(--amarillo);font-weight:800;color:#d97706;}
+.saldo-cero{color:var(--verde);font-weight:800;}
 .total-box{background:var(--azul);color:white;padding:16px;border-radius:16px;text-align:center;margin-top:12px;}
 table{width:100%;border-collapse:collapse;font-size:.8rem;}
 th,td{padding:8px;text-align:left;border-bottom:1px solid #eee;}
@@ -194,12 +196,19 @@ function renderResumen() {
   });
   const lista = document.getElementById('resumenLista');
   if (clientes.length === 0) { lista.innerHTML = '<div>Sin clientes</div>'; return; }
-  lista.innerHTML = Object.entries(saldos).map(([cliente, saldo]) => `
-    <div class="resumen-item">
-      <span>${cliente}</span>
-      <span class="${saldo > 0 ? 'saldo-pos' : ''}">$${Math.abs(saldo).toLocaleString('es-AR')} ${saldo > 0 ? '🔴 debe' : saldo < 0 ? '🟡 crédito' : '🟢'}</span>
-    </div>
-  `).join('');
+  lista.innerHTML = Object.entries(saldos).map(([cliente, saldo]) => {
+    let clase = '';
+    let icono = '';
+    if (saldo > 0) { clase = 'saldo-pos'; icono = '🔴 debe'; }
+    else if (saldo < 0) { clase = 'saldo-neg'; icono = '🟡 crédito'; }
+    else { clase = 'saldo-cero'; icono = '🟢'; }
+    return `
+      <div class="resumen-item">
+        <span>${cliente}</span>
+        <span class="${clase}">$${Math.abs(saldo).toLocaleString('es-AR')} ${icono}</span>
+      </div>
+    `;
+  }).join('');
   const total = Object.values(saldos).reduce((a,b) => a + (b > 0 ? b : 0), 0);
   document.getElementById('totalGeneral').textContent = '$' + total.toLocaleString('es-AR');
 }
@@ -210,7 +219,7 @@ function renderMovimientos() {
   filtrados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
   const container = document.getElementById('tablaMovimientos');
   if (filtrados.length === 0) { container.innerHTML = '<div class="empty">Sin movimientos</div>'; return; }
-  container.innerHTML = `<table><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th></tr></thead><tbody>
+  container.innerHTML = `<td><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th></tr></thead><tbody>
     ${filtrados.map(m => `
       <tr>
         <td>${m.fecha}</td>
@@ -283,14 +292,39 @@ function mostrarTab(tab) {
   if (tab === 'resumen') renderResumen();
 }
 
-// ================= IMPRESIÓN CORREGIDA =================
+// ================= IMPRESIÓN CORREGIDA CON FILTRADO DE CERO =================
 function imprimirSeccion(sector) {
   let contenido = '';
   let titulo = '';
   if (sector === 'resumen') {
     const resumenCard = document.querySelector('#tab-resumen .card');
     contenido = resumenCard.cloneNode(true);
-    titulo = 'Resumen de Deudas';
+    // Filtrar clientes con saldo cero o crédito (saldo <= 0)
+    const items = contenido.querySelectorAll('.resumen-item');
+    let totalDeuda = 0;
+    items.forEach(item => {
+      const spanSaldo = item.querySelector('.saldo-pos, .saldo-neg, .saldo-cero');
+      // Si no tiene clase saldo-pos (deuda positiva), lo eliminamos
+      if (!spanSaldo || !spanSaldo.classList.contains('saldo-pos')) {
+        item.remove();
+      } else {
+        // Extraer monto de la deuda (está en el span)
+        const montoTexto = spanSaldo.innerText.match(/\$([\d.,]+)/);
+        if (montoTexto) {
+          totalDeuda += parseFloat(montoTexto[1].replace(/\./g,'').replace(',','.'));
+        }
+      }
+    });
+    // Actualizar el total general en la copia
+    const totalBox = contenido.querySelector('.total-box');
+    if (totalBox) {
+      totalBox.innerHTML = `💰 Total deudas: $${totalDeuda.toLocaleString('es-AR')}`;
+    }
+    // Si no quedan clientes, mostrar mensaje
+    if (items.length > 0 && contenido.querySelectorAll('.resumen-item').length === 0) {
+      contenido.querySelector('#resumenLista').innerHTML = '<div>No hay clientes con deuda activa</div>';
+    }
+    titulo = 'Resumen de Deudas (solo clientes con saldo positivo)';
   } else if (sector === 'movimientos') {
     const movCard = document.querySelector('#tab-movimientos .card');
     contenido = movCard.cloneNode(true);
@@ -303,12 +337,10 @@ function imprimirSeccion(sector) {
   } else if (sector === 'clientes') {
     const clientesCard = document.querySelector('#tab-clientes .card:last-child');
     contenido = clientesCard.cloneNode(true);
-    // Eliminar botón de impresión de la copia
     const btns = contenido.querySelectorAll('.btn-sm');
     btns.forEach(btn => btn.remove());
     titulo = 'Lista de Clientes';
   }
-  // Crear una nueva ventana para imprimir
   const ventana = window.open('', '_blank');
   ventana.document.write(`
     <html><head><title>${titulo} - MYC HIELO</title>
@@ -319,7 +351,7 @@ function imprimirSeccion(sector) {
       th{background:#eef2ff;}
       .total-box{background:#0f2a6e;color:white;padding:10px;margin-top:20px;}
       .resumen-item{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee;}
-      .saldo-pos{color:#b91c1c;}
+      .saldo-pos{color:#b91c1c;font-weight:bold;}
       .badge{display:inline-block;padding:2px 6px;border-radius:20px;font-size:.7rem;}
       .badge-deuda{background:#fee2e2;color:#b91c1c;}
       .badge-pago{background:#d1fae5;color:#0a7c4a;}
