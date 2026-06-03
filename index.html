@@ -1,390 +1,98 @@
-﻿<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>MYC HIELO · Control de Deudas</title>
-<style>
-:root{--azul:#0f2a6e;--azul-med:#1a3d9e;--azul-light:#e8eeff;--verde:#0a7c4a;--rojo:#b91c1c;--bg:#f1f5fb;--white:#fff;--borde:#cbd5e1;}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);font-family:system-ui;padding:20px;max-width:700px;margin:0 auto;}
-.header{background:var(--azul);color:white;padding:18px;border-radius:20px;margin-bottom:16px;text-align:center;}
-.card{background:white;border-radius:20px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
-.card-title{font-weight:800;color:var(--azul);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;}
-.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-.tab{flex:1;padding:10px;background:white;border:1px solid var(--borde);border-radius:40px;cursor:pointer;text-align:center;font-weight:600;}
-.tab.active{background:var(--azul);color:white;border-color:var(--azul);}
-.content{display:none;}
-.content.active{display:block;}
-input,select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--borde);margin-bottom:8px;}
-.btn{background:var(--azul);color:white;border:none;padding:10px;border-radius:40px;font-weight:700;width:100%;cursor:pointer;}
-.btn-red{background:var(--rojo);}
-.btn-green{background:var(--verde);}
-.btn-sm{padding:6px 12px;width:auto;font-size:.8rem;}
-.resumen-item{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #eee;}
-.saldo-pos{color:var(--rojo);font-weight:800;}
-.saldo-neg{color:var(--amarillo);font-weight:800;color:#d97706;}
-.saldo-cero{color:var(--verde);font-weight:800;}
-.total-box{background:var(--azul);color:white;padding:16px;border-radius:16px;text-align:center;margin-top:12px;}
-table{width:100%;border-collapse:collapse;font-size:.8rem;}
-th,td{padding:8px;text-align:left;border-bottom:1px solid #eee;}
-.badge{padding:2px 8px;border-radius:20px;font-size:.7rem;}
-.badge-deuda{background:#fee2e2;color:#b91c1c;}
-.badge-pago{background:#d1fae5;color:#0a7c4a;}
-.tag{background:var(--azul-light);display:inline-block;padding:5px 10px;border-radius:40px;margin:4px;font-size:.8rem;}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--azul);color:white;padding:8px 16px;border-radius:40px;font-size:.8rem;z-index:100;display:none;}
-.toast.show{display:block;}
-/* Estilos para impresión */
-@media print{
-  body{background:white;margin:0;padding:0;}
-  .tabs,.btn,.toast,.header,.no-print{display:none !important;}
-  .content{display:block !important;padding:0;max-width:100%;}
-  .card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}
-  .total-box{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  .resumen-item{border:1px solid #aaa;}
-  table{font-size:10pt;}
-}
-</style>
-</head>
-<body>
-
-<div class="header">
-  <span style="font-size:2rem">🧊</span>
-  <h1>MYC HIELO</h1>
-  <div>Control de Deudas · Google Sheets</div>
-</div>
-
-<div class="tabs">
-  <div class="tab active" data-tab="resumen">📊 Resumen</div>
-  <div class="tab" data-tab="movimientos">📜 Movimientos</div>
-  <div class="tab" data-tab="registro">➕ Registrar</div>
-  <div class="tab" data-tab="clientes">👥 Clientes</div>
-</div>
-
-<!-- Resumen -->
-<div id="tab-resumen" class="content active">
-  <div class="card">
-    <div class="card-title">📊 Saldo por Cliente
-      <button class="btn btn-sm no-print" onclick="imprimirSeccion('resumen')">🖨️ Imprimir</button>
-    </div>
-    <div id="resumenLista"></div>
-    <div class="total-box">💰 Total deudas: <span id="totalGeneral">$0</span></div>
-  </div>
-</div>
-
-<!-- Movimientos -->
-<div id="tab-movimientos" class="content">
-  <div class="card">
-    <div class="card-title">📜 Historial
-      <button class="btn btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
-    </div>
-    <div class="filtros no-print" style="display:flex;gap:8px;margin-bottom:12px;">
-      <input type="text" id="filtroCliente" placeholder="Filtrar cliente" style="margin:0">
-      <button class="btn" style="width:auto;padding:10px;" onclick="limpiarFiltros()">✖</button>
-    </div>
-    <div id="tablaMovimientos"></div>
-  </div>
-</div>
-
-<!-- Registro -->
-<div id="tab-registro" class="content">
-  <div class="card">
-    <div class="card-title">💰 Nueva Deuda</div>
-    <input type="date" id="dFecha">
-    <select id="dCliente"></select>
-    <input type="number" id="dMonto" placeholder="Monto $">
-    <input type="text" id="dDetalle" placeholder="Detalle">
-    <button class="btn btn-red" onclick="registrarDeuda()">➕ Registrar Deuda</button>
-  </div>
-  <div class="card">
-    <div class="card-title">💸 Registrar Pago</div>
-    <input type="date" id="pFecha">
-    <select id="pCliente"></select>
-    <input type="number" id="pMonto" placeholder="Monto $">
-    <select id="pForma"><option>Efectivo</option><option>Transferencia</option></select>
-    <input type="text" id="pDetalle" placeholder="Detalle">
-    <button class="btn btn-green" onclick="registrarPago()">💸 Registrar Pago</button>
-  </div>
-</div>
-
-<!-- Clientes -->
-<div id="tab-clientes" class="content">
-  <div class="card">
-    <div class="card-title">➕ Agregar Cliente</div>
-    <div style="display:flex;gap:8px;"><input type="text" id="nuevoCliente" placeholder="Nombre" style="margin:0"><button class="btn" onclick="agregarCliente()">Agregar</button></div>
-  </div>
-  <div class="card">
-    <div class="card-title">👥 Clientes
-      <button class="btn btn-sm no-print" onclick="imprimirSeccion('clientes')">🖨️ Imprimir</button>
-    </div>
-    <div id="listaClientes"></div>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script>
-// ================= CONFIGURACIÓN =================
-const API_URL = "https://script.google.com/macros/s/AKfycbxEfbTlTOIfcjWeWCJgX6ibAHrOKaCqv4eRVjp9De40Y-rUEFkDMAeRPxri4Sq4aONV/exec"; // ← Tu URL de Apps Script
-
-// Funciones API
-async function obtenerClientes() {
-  const res = await fetch(`${API_URL}?ruta=clientes`);
-  return await res.json();
-}
-async function obtenerMovimientos() {
-  const res = await fetch(`${API_URL}?ruta=movimientos`);
-  return await res.json();
-}
-async function agregarClienteApi(nombre) {
-  const form = new URLSearchParams();
-  form.append('ruta', 'agregarCliente');
-  form.append('nombre', nombre);
-  const res = await fetch(API_URL, { method: 'POST', body: form });
-  return await res.json();
-}
-async function agregarMovimientoApi(fecha, cliente, tipo, monto, formaPago, detalle) {
-  const form = new URLSearchParams();
-  form.append('ruta', 'agregarMovimiento');
-  form.append('fecha', fecha);
-  form.append('cliente', cliente);
-  form.append('tipo', tipo);
-  form.append('monto', monto);
-  if (formaPago) form.append('formaPago', formaPago);
-  if (detalle) form.append('detalle', detalle);
-  const res = await fetch(API_URL, { method: 'POST', body: form });
-  return await res.json();
-}
-
-let clientes = [];
-let movimientos = [];
-
-async function cargarDatos() {
-  try {
-    const [cli, mov] = await Promise.all([obtenerClientes(), obtenerMovimientos()]);
-    clientes = cli;
-    movimientos = mov;
-    actualizarUI();
-    toast('Datos sincronizados');
-  } catch(e) {
-    console.error(e);
-    toast('Error de conexión');
-  }
-}
-
-function actualizarUI() {
-  actualizarSelects();
-  renderResumen();
-  renderMovimientos();
-  renderClientes();
-}
-
-function actualizarSelects() {
-  const select1 = document.getElementById('dCliente');
-  const select2 = document.getElementById('pCliente');
-  const opciones = clientes.map(c => `<option value="${c}">${c}</option>`).join('');
-  if (select1) select1.innerHTML = opciones;
-  if (select2) select2.innerHTML = opciones;
-}
-
-function renderResumen() {
-  let saldos = {};
-  clientes.forEach(c => saldos[c] = 0);
-  movimientos.forEach(m => {
-    if (m.tipo === 'deuda') saldos[m.cliente_nombre] += m.monto;
-    else saldos[m.cliente_nombre] -= m.monto;
-  });
-  const lista = document.getElementById('resumenLista');
-  if (clientes.length === 0) { lista.innerHTML = '<div>Sin clientes</div>'; return; }
-  lista.innerHTML = Object.entries(saldos).map(([cliente, saldo]) => {
-    let clase = '';
-    let icono = '';
-    if (saldo > 0) { clase = 'saldo-pos'; icono = '🔴 debe'; }
-    else if (saldo < 0) { clase = 'saldo-neg'; icono = '🟡 crédito'; }
-    else { clase = 'saldo-cero'; icono = '🟢'; }
-    return `
-      <div class="resumen-item">
-        <span>${cliente}</span>
-        <span class="${clase}">$${Math.abs(saldo).toLocaleString('es-AR')} ${icono}</span>
-      </div>
-    `;
-  }).join('');
-  const total = Object.values(saldos).reduce((a,b) => a + (b > 0 ? b : 0), 0);
-  document.getElementById('totalGeneral').textContent = '$' + total.toLocaleString('es-AR');
-}
-
-function renderMovimientos() {
-  const filtro = document.getElementById('filtroCliente').value.toLowerCase();
-  let filtrados = movimientos.filter(m => !filtro || m.cliente_nombre.toLowerCase().includes(filtro));
-  filtrados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-  const container = document.getElementById('tablaMovimientos');
-  if (filtrados.length === 0) { container.innerHTML = '<div class="empty">Sin movimientos</div>'; return; }
-  container.innerHTML = `<td><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th></tr></thead><tbody>
-    ${filtrados.map(m => `
-      <tr>
-        <td>${m.fecha}</td>
-        <td>${m.cliente_nombre}</td>
-        <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></td>
-        <td>$${m.monto.toLocaleString('es-AR')}</td>
-        <td>${m.forma_pago || '—'}</td>
-        <td>${m.detalle || ''}</td>
-      </tr>
-    `).join('')}
-  </tbody></table>`;
-}
-
-function renderClientes() {
-  const container = document.getElementById('listaClientes');
-  if (clientes.length === 0) { container.innerHTML = '<div>Sin clientes</div>'; return; }
-  container.innerHTML = clientes.map(c => `<span class="tag">${c}</span>`).join('');
-}
-
-async function agregarCliente() {
-  const nombre = document.getElementById('nuevoCliente').value.trim().toUpperCase();
-  if (!nombre) return toast('Escribí un nombre');
-  const res = await agregarClienteApi(nombre);
-  if (res.error) return toast(res.error);
-  toast('Cliente agregado');
-  await cargarDatos();
-  document.getElementById('nuevoCliente').value = '';
-}
-
-async function registrarDeuda() {
-  const fecha = document.getElementById('dFecha').value;
-  const cliente = document.getElementById('dCliente').value;
-  const monto = parseFloat(document.getElementById('dMonto').value);
-  const detalle = document.getElementById('dDetalle').value;
-  if (!fecha || !cliente || !monto || monto<=0) return toast('Complete campos');
-  const res = await agregarMovimientoApi(fecha, cliente, 'deuda', monto, null, detalle);
-  if (res.error) return toast(res.error);
-  toast('Deuda registrada');
-  document.getElementById('dMonto').value = '';
-  document.getElementById('dDetalle').value = '';
-  await cargarDatos();
-}
-
-async function registrarPago() {
-  const fecha = document.getElementById('pFecha').value;
-  const cliente = document.getElementById('pCliente').value;
-  const monto = parseFloat(document.getElementById('pMonto').value);
-  const forma = document.getElementById('pForma').value;
-  const detalle = document.getElementById('pDetalle').value;
-  if (!fecha || !cliente || !monto || monto<=0) return toast('Complete campos');
-  const res = await agregarMovimientoApi(fecha, cliente, 'pago', monto, forma, detalle);
-  if (res.error) return toast(res.error);
-  toast('Pago registrado');
-  document.getElementById('pMonto').value = '';
-  document.getElementById('pDetalle').value = '';
-  await cargarDatos();
-}
-
-function limpiarFiltros() {
-  document.getElementById('filtroCliente').value = '';
-  renderMovimientos();
-}
-
-function mostrarTab(tab) {
-  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(`tab-${tab}`).classList.add('active');
-  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
-  if (tab === 'movimientos') renderMovimientos();
-  if (tab === 'resumen') renderResumen();
-}
-
-// ================= IMPRESIÓN CORREGIDA CON FILTRADO DE CERO =================
-function imprimirSeccion(sector) {
-  let contenido = '';
+﻿function imprimirSeccion(sector) {
+  // Crear un contenedor temporal para la sección a imprimir
+  let contenedor = document.createElement('div');
+  contenedor.id = 'seccion-imprimir';
   let titulo = '';
+
   if (sector === 'resumen') {
-    const resumenCard = document.querySelector('#tab-resumen .card');
-    contenido = resumenCard.cloneNode(true);
-    // Filtrar clientes con saldo cero o crédito (saldo <= 0)
-    const items = contenido.querySelectorAll('.resumen-item');
+    const card = document.querySelector('#tab-resumen .card').cloneNode(true);
+    // Filtrar clientes con saldo positivo
+    const items = card.querySelectorAll('.resumen-item');
     let totalDeuda = 0;
     items.forEach(item => {
       const spanSaldo = item.querySelector('.saldo-pos, .saldo-neg, .saldo-cero');
-      // Si no tiene clase saldo-pos (deuda positiva), lo eliminamos
       if (!spanSaldo || !spanSaldo.classList.contains('saldo-pos')) {
         item.remove();
       } else {
-        // Extraer monto de la deuda (está en el span)
         const montoTexto = spanSaldo.innerText.match(/\$([\d.,]+)/);
         if (montoTexto) {
           totalDeuda += parseFloat(montoTexto[1].replace(/\./g,'').replace(',','.'));
         }
       }
     });
-    // Actualizar el total general en la copia
-    const totalBox = contenido.querySelector('.total-box');
+    const totalBox = card.querySelector('.total-box');
     if (totalBox) {
       totalBox.innerHTML = `💰 Total deudas: $${totalDeuda.toLocaleString('es-AR')}`;
     }
-    // Si no quedan clientes, mostrar mensaje
-    if (items.length > 0 && contenido.querySelectorAll('.resumen-item').length === 0) {
-      contenido.querySelector('#resumenLista').innerHTML = '<div>No hay clientes con deuda activa</div>';
+    if (card.querySelectorAll('.resumen-item').length === 0) {
+      const lista = card.querySelector('#resumenLista');
+      if (lista) lista.innerHTML = '<div>No hay clientes con deuda activa</div>';
     }
-    titulo = 'Resumen de Deudas (solo clientes con saldo positivo)';
-  } else if (sector === 'movimientos') {
-    const movCard = document.querySelector('#tab-movimientos .card');
-    contenido = movCard.cloneNode(true);
-    // Eliminar filtros y botones de impresión
-    const filtros = contenido.querySelector('.filtros');
+    // Quitar botones de impresión
+    const btns = card.querySelectorAll('.btn-sm');
+    btns.forEach(btn => btn.remove());
+    contenedor.appendChild(card);
+    titulo = 'Resumen de Deudas';
+  } 
+  else if (sector === 'movimientos') {
+    const card = document.querySelector('#tab-movimientos .card').cloneNode(true);
+    const filtros = card.querySelector('.filtros');
     if (filtros) filtros.remove();
-    const btns = contenido.querySelectorAll('.btn-sm');
+    const btns = card.querySelectorAll('.btn-sm');
     btns.forEach(btn => btn.remove());
+    contenedor.appendChild(card);
     titulo = 'Historial de Movimientos';
-  } else if (sector === 'clientes') {
-    const clientesCard = document.querySelector('#tab-clientes .card:last-child');
-    contenido = clientesCard.cloneNode(true);
-    const btns = contenido.querySelectorAll('.btn-sm');
+  } 
+  else if (sector === 'clientes') {
+    const card = document.querySelector('#tab-clientes .card:last-child').cloneNode(true);
+    const btns = card.querySelectorAll('.btn-sm');
     btns.forEach(btn => btn.remove());
+    contenedor.appendChild(card);
     titulo = 'Lista de Clientes';
   }
-  const ventana = window.open('', '_blank');
-  ventana.document.write(`
-    <html><head><title>${titulo} - MYC HIELO</title>
-    <style>
-      body{font-family:system-ui;margin:20px;padding:0;}
-      table{border-collapse:collapse;width:100%;}
-      th,td{border:1px solid #ccc;padding:8px;text-align:left;}
-      th{background:#eef2ff;}
-      .total-box{background:#0f2a6e;color:white;padding:10px;margin-top:20px;}
-      .resumen-item{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #eee;}
-      .saldo-pos{color:#b91c1c;font-weight:bold;}
-      .badge{display:inline-block;padding:2px 6px;border-radius:20px;font-size:.7rem;}
-      .badge-deuda{background:#fee2e2;color:#b91c1c;}
-      .badge-pago{background:#d1fae5;color:#0a7c4a;}
-      .tag{background:#e8eeff;display:inline-block;padding:5px 10px;border-radius:40px;margin:4px;}
-    </style>
-    </head><body>${contenido.outerHTML}</body></html>
-  `);
-  ventana.document.close();
-  ventana.print();
-  ventana.close();
+
+  // Limpiar cualquier sección anterior y agregar la nueva
+  const existing = document.getElementById('seccion-imprimir');
+  if (existing) existing.remove();
+  document.body.appendChild(contenedor);
+
+  // Aplicar modo impresión
+  document.body.classList.add('printing');
+  // Ajustar estilos para que se vea bien en impresión
+  const style = document.createElement('style');
+  style.textContent = `
+    body.printing #seccion-imprimir {
+      display: block;
+      margin: 20px;
+      background: white;
+    }
+    body.printing #seccion-imprimir .card {
+      box-shadow: none;
+      border: 1px solid #ccc;
+      page-break-inside: avoid;
+    }
+    body.printing .total-box {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body.printing table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    body.printing th, body.printing td {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Llamar a imprimir
+  window.print();
+
+  // Restaurar
+  setTimeout(() => {
+    document.body.classList.remove('printing');
+    style.remove();
+    contenedor.remove();
+  }, 100);
 }
-
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
-}
-
-// Inicializar
-const hoy = new Date().toISOString().slice(0,10);
-document.getElementById('dFecha').value = hoy;
-document.getElementById('pFecha').value = hoy;
-
-// Event listeners para pestañas
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => mostrarTab(tab.dataset.tab));
-});
-
-// Event listener para el filtro de clientes
-document.getElementById('filtroCliente').addEventListener('input', () => renderMovimientos());
-
-cargarDatos();
-</script>
-</body>
-</html>
