@@ -301,13 +301,12 @@ function mostrarTab(tab) {
   if (tab === 'resumen') renderResumen();
 }
 
-// ========== IMPRESIÓN MEJORADA (VENTANA NUEVA, FUNCIONA EN MÓVILES) ==========
+// ========== IMPRESIÓN MEDIANTE IFRAME OCULTO (ESTABLE EN MÓVILES) ==========
 function imprimirSeccion(sector) {
   let contenidoHTML = '';
   let titulo = '';
 
   if (sector === 'resumen') {
-    // Recalcular saldos y filtrar solo deudores
     let saldos = {};
     clientes.forEach(c => saldos[c] = 0);
     movimientos.forEach(m => {
@@ -349,12 +348,17 @@ function imprimirSeccion(sector) {
     titulo = 'Lista de Clientes';
   }
 
-  const ventana = window.open('', '_blank');
-  if (!ventana) {
-    toast('Permite ventanas emergentes para imprimir');
-    return;
-  }
-  ventana.document.write(`
+  // Crear un iframe invisible
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'absolute';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentWindow.document;
+  iframeDoc.open();
+  iframeDoc.write(`
     <!DOCTYPE html>
     <html>
     <head>
@@ -381,9 +385,16 @@ function imprimirSeccion(sector) {
     </body>
     </html>
   `);
-  ventana.document.close();
-  ventana.print();
-  ventana.close();
+  iframeDoc.close();
+
+  // Esperar a que cargue el contenido y luego imprimir
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  // Eliminar el iframe después de imprimir (con un pequeño retraso para que la impresión se complete)
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
 }
 
 function toast(msg) {
