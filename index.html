@@ -101,7 +101,9 @@ body.printing th, body.printing td {
     </div>
     <div class="scroll-table" style="overflow-x:auto;">
       <table id="tablaMovimientos" style="min-width:500px;">
-        <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th></tr></thead>
+        <thead>
+          <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th></tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
@@ -333,28 +335,40 @@ function imprimirSeccion(sector) {
   contenedor.id = 'seccion-imprimir';
 
   if (sector === 'resumen') {
-    const card = document.querySelector('#tab-resumen .card').cloneNode(true);
-    const items = card.querySelectorAll('.resumen-item');
-    let totalDeuda = 0;
-    items.forEach(item => {
-      const spanSaldo = item.querySelector('.saldo-pos, .saldo-neg, .saldo-cero');
-      if (!spanSaldo || !spanSaldo.classList.contains('saldo-pos')) {
-        item.remove();
-      } else {
-        const montoTexto = spanSaldo.innerText.match(/\$([\d.,]+)/);
-        if (montoTexto) totalDeuda += parseFloat(montoTexto[1].replace(/\./g,'').replace(',','.'));
-      }
+    // Calcular saldos desde cero
+    let saldos = {};
+    clientes.forEach(c => saldos[c] = 0);
+    movimientos.forEach(m => {
+      if (m.tipo === 'deuda') saldos[m.cliente_nombre] += m.monto;
+      else saldos[m.cliente_nombre] -= m.monto;
     });
-    const totalBox = card.querySelector('.total-box');
-    if (totalBox) totalBox.innerHTML = `💰 Total deudas: $${totalDeuda.toLocaleString('es-AR')}`;
-    if (card.querySelectorAll('.resumen-item').length === 0) {
-      const lista = card.querySelector('#resumenLista');
-      if (lista) lista.innerHTML = '<div>No hay clientes con deuda activa</div>';
+    // Filtrar solo clientes con saldo positivo
+    const clientesConDeuda = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
+    // Construir HTML del resumen
+    let itemsHTML = '';
+    let totalDeuda = 0;
+    clientesConDeuda.forEach(([cliente, saldo]) => {
+      totalDeuda += saldo;
+      itemsHTML += `
+        <div class="resumen-item">
+          <span>${cliente}</span>
+          <span class="saldo-pos">$${Math.abs(saldo).toLocaleString('es-AR')} 🔴 debe</span>
+        </div>
+      `;
+    });
+    if (clientesConDeuda.length === 0) {
+      itemsHTML = '<div>No hay clientes con deuda activa</div>';
     }
-    const btns = card.querySelectorAll('.btn-sm');
-    btns.forEach(btn => btn.remove());
+    const totalHTML = `<div class="total-box">💰 Total deudas: $${totalDeuda.toLocaleString('es-AR')}</div>`;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-title">📊 Saldo por Cliente</div>
+      <div id="resumenLista">${itemsHTML}</div>
+      ${totalHTML}
+    `;
     contenedor.appendChild(card);
-  }
+  } 
   else if (sector === 'movimientos') {
     const card = document.querySelector('#tab-movimientos .card').cloneNode(true);
     const filtros = card.querySelector('.filtros');
@@ -362,7 +376,7 @@ function imprimirSeccion(sector) {
     const btns = card.querySelectorAll('.btn-sm');
     btns.forEach(btn => btn.remove());
     contenedor.appendChild(card);
-  }
+  } 
   else if (sector === 'clientes') {
     const card = document.querySelector('#tab-clientes .card:last-child').cloneNode(true);
     const btns = card.querySelectorAll('.btn-sm');
@@ -370,6 +384,7 @@ function imprimirSeccion(sector) {
     contenedor.appendChild(card);
   }
 
+  // Limpiar anterior y agregar
   const existing = document.getElementById('seccion-imprimir');
   if (existing) existing.remove();
   document.body.appendChild(contenedor);
@@ -385,6 +400,7 @@ function imprimirSeccion(sector) {
   `;
   document.head.appendChild(style);
   window.print();
+
   setTimeout(() => {
     document.body.classList.remove('printing');
     style.remove();
