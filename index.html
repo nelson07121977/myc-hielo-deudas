@@ -3,8 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <title>MYC HIELO · Control de Deudas</title>
 <style>
 :root{--azul:#0f2a6e;--azul-med:#1a3d9e;--azul-light:#e8eeff;--verde:#0a7c4a;--rojo:#b91c1c;--bg:#f1f5fb;--white:#fff;--borde:#cbd5e1;}
@@ -34,7 +32,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid #eee;}
 .tag{background:var(--azul-light);display:inline-block;padding:5px 10px;border-radius:40px;margin:4px;font-size:.8rem;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--azul);color:white;padding:8px 16px;border-radius:40px;font-size:.8rem;z-index:100;display:none;}
 .toast.show{display:block;}
-.print-hide{display:block;}
+/* Estilos para impresión */
 @media print{
   body{background:white;margin:0;padding:0;}
   .tabs,.btn,.toast,.header,.no-print{display:none !important;}
@@ -43,7 +41,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid #eee;}
   .total-box{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .resumen-item{border:1px solid #aaa;}
   table{font-size:10pt;}
-  .print-hide{display:none;}
 }
 </style>
 </head>
@@ -56,10 +53,10 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid #eee;}
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="mostrarTab('resumen')">📊 Resumen</div>
-  <div class="tab" onclick="mostrarTab('movimientos')">📜 Movimientos</div>
-  <div class="tab" onclick="mostrarTab('registro')">➕ Registrar</div>
-  <div class="tab" onclick="mostrarTab('clientes')">👥 Clientes</div>
+  <div class="tab active" data-tab="resumen">📊 Resumen</div>
+  <div class="tab" data-tab="movimientos">📜 Movimientos</div>
+  <div class="tab" data-tab="registro">➕ Registrar</div>
+  <div class="tab" data-tab="clientes">👥 Clientes</div>
 </div>
 
 <!-- Resumen -->
@@ -126,7 +123,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid #eee;}
 
 <script>
 // ================= CONFIGURACIÓN =================
-const API_URL = "https://script.google.com/macros/s/AKfycbxEfbTlTOIfcjWeWCJgX6ibAHrOKaCqv4eRVjp9De40Y-rUEFkDMAeRPxri4Sq4aONV/exec"; // ← tu URL
+const API_URL = "https://script.google.com/macros/s/AKfycbxEfbTlTOIfcjWeWCJgX6ibAHrOKaCqv4eRVjp9De40Y-rUEFkDMAeRPxri4Sq4aONV/exec"; // ← Tu URL de Apps Script
 
 // Funciones API
 async function obtenerClientes() {
@@ -279,35 +276,42 @@ function limpiarFiltros() {
 
 function mostrarTab(tab) {
   document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-  document.getElementById(`tab-${tab}`).classList.add('active');
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
   if (tab === 'movimientos') renderMovimientos();
   if (tab === 'resumen') renderResumen();
 }
 
-// ================= IMPRESIÓN POR SECTORES =================
+// ================= IMPRESIÓN CORREGIDA =================
 function imprimirSeccion(sector) {
   let contenido = '';
   let titulo = '';
   if (sector === 'resumen') {
-    contenido = document.querySelector('#tab-resumen .card').cloneNode(true);
-    titulo = 'Resumen de Deudas - MYC HIELO';
+    const resumenCard = document.querySelector('#tab-resumen .card');
+    contenido = resumenCard.cloneNode(true);
+    titulo = 'Resumen de Deudas';
   } else if (sector === 'movimientos') {
-    contenido = document.querySelector('#tab-movimientos .card').cloneNode(true);
-    // eliminar filtros y botones de impresión de la copia
+    const movCard = document.querySelector('#tab-movimientos .card');
+    contenido = movCard.cloneNode(true);
+    // Eliminar filtros y botones de impresión
     const filtros = contenido.querySelector('.filtros');
     if (filtros) filtros.remove();
     const btns = contenido.querySelectorAll('.btn-sm');
     btns.forEach(btn => btn.remove());
-    titulo = 'Historial de Movimientos - MYC HIELO';
+    titulo = 'Historial de Movimientos';
   } else if (sector === 'clientes') {
-    contenido = document.querySelector('#tab-clientes .card:last-child').cloneNode(true);
-    titulo = 'Lista de Clientes - MYC HIELO';
+    const clientesCard = document.querySelector('#tab-clientes .card:last-child');
+    contenido = clientesCard.cloneNode(true);
+    // Eliminar botón de impresión de la copia
+    const btns = contenido.querySelectorAll('.btn-sm');
+    btns.forEach(btn => btn.remove());
+    titulo = 'Lista de Clientes';
   }
+  // Crear una nueva ventana para imprimir
   const ventana = window.open('', '_blank');
   ventana.document.write(`
-    <html><head><title>${titulo}</title>
+    <html><head><title>${titulo} - MYC HIELO</title>
     <style>
       body{font-family:system-ui;margin:20px;padding:0;}
       table{border-collapse:collapse;width:100%;}
@@ -319,6 +323,7 @@ function imprimirSeccion(sector) {
       .badge{display:inline-block;padding:2px 6px;border-radius:20px;font-size:.7rem;}
       .badge-deuda{background:#fee2e2;color:#b91c1c;}
       .badge-pago{background:#d1fae5;color:#0a7c4a;}
+      .tag{background:#e8eeff;display:inline-block;padding:5px 10px;border-radius:40px;margin:4px;}
     </style>
     </head><body>${contenido.outerHTML}</body></html>
   `);
@@ -338,6 +343,15 @@ function toast(msg) {
 const hoy = new Date().toISOString().slice(0,10);
 document.getElementById('dFecha').value = hoy;
 document.getElementById('pFecha').value = hoy;
+
+// Event listeners para pestañas
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => mostrarTab(tab.dataset.tab));
+});
+
+// Event listener para el filtro de clientes
+document.getElementById('filtroCliente').addEventListener('input', () => renderMovimientos());
+
 cargarDatos();
 </script>
 </body>
