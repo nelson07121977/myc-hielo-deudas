@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>MYC HIELO · Control de Deudas</title>
 <style>
 :root{--azul:#0f2a6e;--azul-med:#1a3d9e;--azul-light:#e8eeff;--verde:#0a7c4a;--rojo:#b91c1c;--bg:#f1f5fb;--white:#fff;--borde:#cbd5e1;}
@@ -35,35 +37,12 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 .tag{background:var(--azul-light);display:inline-block;padding:5px 10px;border-radius:40px;margin:4px;font-size:.8rem;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--azul);color:white;padding:8px 16px;border-radius:40px;font-size:.8rem;z-index:100;display:none;}
 .toast.show{display:block;}
-/* ========== ESTILOS PARA IMPRIMIR SOLO LA PESTAÑA ACTIVA ========== */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .content.active, .content.active * {
-    visibility: visible;
-  }
-  .content.active {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
-    background: white;
-  }
-  .tabs, .header, .toast, .btn, .no-print, .filtros, .btn-sm {
-    display: none !important;
-  }
-  .card {
-    box-shadow: none;
-    border: 1px solid #ccc;
-    page-break-inside: avoid;
-  }
-  .total-box {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+@media print{
+  body{background:white;margin:0;padding:0;}
+  .tabs,.btn,.toast,.header,.no-print{display:none !important;}
+  .content{display:block !important;padding:0;max-width:100%;}
+  .card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}
+  .total-box{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 }
 </style>
 </head>
@@ -83,7 +62,6 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   <div class="tab" data-tab="clientes">👥 Clientes</div>
 </div>
 
-<!-- Resumen completo (todos los clientes) -->
 <div id="tab-resumen" class="content active">
   <div class="card">
     <div class="card-title">📊 Saldo por Cliente
@@ -94,7 +72,6 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   </div>
 </div>
 
-<!-- Deudores (solo saldo positivo) -->
 <div id="tab-deudores" class="content">
   <div class="card">
     <div class="card-title">📋 Clientes con Deuda (solo positivos)
@@ -105,7 +82,6 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   </div>
 </div>
 
-<!-- Movimientos -->
 <div id="tab-movimientos" class="content">
   <div class="card">
     <div class="card-title">📜 Historial
@@ -116,15 +92,16 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
       <button class="btn" style="width:auto;padding:10px;" onclick="limpiarFiltros()">✖</button>
     </div>
     <div class="scroll-table" style="overflow-x:auto;">
-      <table id="tablaMovimientos" style="min-width:500px;">
-        <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th></tr></thead>
+      <table id="tablaMovimientos" style="min-width:600px;">
+        <thead>
+          <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th><th class="no-print">Acción</th></tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- Registrar -->
 <div id="tab-registro" class="content">
   <div class="card">
     <div class="card-title">💰 Nueva Deuda</div>
@@ -145,7 +122,6 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   </div>
 </div>
 
-<!-- Clientes -->
 <div id="tab-clientes" class="content">
   <div class="card">
     <div class="card-title">➕ Agregar Cliente</div>
@@ -162,8 +138,11 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 <div id="toast" class="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxEfbTlTOIfcjWeWCJgX6ibAHrOKaCqv4eRVjp9De40Y-rUEFkDMAeRPxri4Sq4aONV/exec";
+// ================= CONFIGURACIÓN =================
+// URL actualizada de Apps Script (versión con eliminación)
+const API_URL = "https://script.google.com/macros/s/AKfycbw_n8fnn3HzvtYKEflK2Jlg-_csKZoJw1hnWxuzoE2GasLgD54jgwEMiJuCJ6lu9iIm/exec";
 
+// Funciones API
 async function obtenerClientes() {
   const res = await fetch(`${API_URL}?ruta=clientes`);
   return await res.json();
@@ -188,6 +167,13 @@ async function agregarMovimientoApi(fecha, cliente, tipo, monto, formaPago, deta
   form.append('monto', monto);
   if (formaPago) form.append('formaPago', formaPago);
   if (detalle) form.append('detalle', detalle);
+  const res = await fetch(API_URL, { method: 'POST', body: form });
+  return await res.json();
+}
+async function eliminarMovimientoApi(id) {
+  const form = new URLSearchParams();
+  form.append('ruta', 'eliminarMovimiento');
+  form.append('id', id);
   const res = await fetch(API_URL, { method: 'POST', body: form });
   return await res.json();
 }
@@ -289,7 +275,7 @@ function renderMovimientos() {
   const tbody = document.querySelector('#tablaMovimientos tbody');
   if (!tbody) return;
   if (filtrados.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Sin movimientos</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</td></tr>';
     return;
   }
   tbody.innerHTML = filtrados.map(m => `
@@ -300,6 +286,7 @@ function renderMovimientos() {
       <td>$${m.monto.toLocaleString('es-AR')}</td>
       <td>${m.forma_pago || '—'}</td>
       <td>${m.detalle || ''}</td>
+      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></td>
     </tr>
   `).join('');
 }
@@ -354,6 +341,18 @@ async function registrarPago() {
     document.getElementById('pDetalle').value = '';
     await cargarDatos();
   } catch(e) { toast('Error'); } finally { btn.disabled = false; btn.innerHTML = '💸 Registrar Pago'; }
+}
+
+async function eliminarMovimiento(id) {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  try {
+    const res = await eliminarMovimientoApi(id);
+    if (res.error) throw new Error(res.error);
+    toast('Movimiento eliminado');
+    await cargarDatos();
+  } catch(e) {
+    toast('Error al eliminar');
+  }
 }
 
 function limpiarFiltros() {
