@@ -301,18 +301,20 @@ function mostrarTab(tab) {
   if (tab === 'resumen') renderResumen();
 }
 
-// ========== IMPRESIÓN MEDIANTE IFRAME OCULTO (ESTABLE EN MÓVILES) ==========
+// ========== IMPRESIÓN CON VENTANA EMERGENTE (FILTRA SÓLO DEUDORES) ==========
 function imprimirSeccion(sector) {
   let contenidoHTML = '';
   let titulo = '';
 
   if (sector === 'resumen') {
+    // Recalcular saldos desde los datos actuales
     let saldos = {};
     clientes.forEach(c => saldos[c] = 0);
     movimientos.forEach(m => {
       if (m.tipo === 'deuda') saldos[m.cliente_nombre] += m.monto;
       else saldos[m.cliente_nombre] -= m.monto;
     });
+    // Filtrar solo clientes con saldo positivo
     const deudores = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
     let itemsHTML = '';
     let total = 0;
@@ -348,53 +350,36 @@ function imprimirSeccion(sector) {
     titulo = 'Lista de Clientes';
   }
 
-  // Crear un iframe invisible
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = 'none';
-  document.body.appendChild(iframe);
-
-  const iframeDoc = iframe.contentWindow.document;
-  iframeDoc.open();
-  iframeDoc.write(`
+  // Abrir ventana emergente
+  const ventana = window.open('', '_blank');
+  if (!ventana) {
+    toast('Permite ventanas emergentes para imprimir (desbloquéalas en tu navegador)');
+    return;
+  }
+  ventana.document.write(`
     <!DOCTYPE html>
     <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>${titulo} - MYC HIELO</title>
-      <style>
-        body { font-family: system-ui; margin: 20px; background: white; }
-        .card { border: 1px solid #ccc; padding: 16px; border-radius: 12px; }
-        .card-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 12px; }
-        .resumen-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-        .saldo-pos { color: #b91c1c; font-weight: bold; }
-        .total-box { background: #0f2a6e; color: white; padding: 12px; border-radius: 12px; text-align: center; margin-top: 16px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background: #e8eeff; }
-        .badge { display: inline-block; padding: 2px 6px; border-radius: 20px; font-size: 0.7rem; }
-        .badge-deuda { background: #fee2e2; color: #b91c1c; }
-        .badge-pago { background: #d1fae5; color: #0a7c4a; }
-        .tag { background: #e8eeff; display: inline-block; padding: 5px 10px; border-radius: 40px; margin: 4px; }
-      </style>
-    </head>
-    <body>
-      ${contenidoHTML}
-    </body>
-    </html>
+    <head><meta charset="UTF-8"><title>${titulo}</title>
+    <style>
+      body { font-family: system-ui; margin: 20px; background: white; }
+      .card { border: 1px solid #ccc; padding: 16px; border-radius: 12px; }
+      .card-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 12px; }
+      .resumen-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+      .saldo-pos { color: #b91c1c; font-weight: bold; }
+      .total-box { background: #0f2a6e; color: white; padding: 12px; border-radius: 12px; text-align: center; margin-top: 16px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+      th { background: #e8eeff; }
+      .badge { display: inline-block; padding: 2px 6px; border-radius: 20px; font-size: 0.7rem; }
+      .badge-deuda { background: #fee2e2; color: #b91c1c; }
+      .badge-pago { background: #d1fae5; color: #0a7c4a; }
+      .tag { background: #e8eeff; display: inline-block; padding: 5px 10px; border-radius: 40px; margin: 4px; }
+    </style>
+    </head><body>${contenidoHTML}</body></html>
   `);
-  iframeDoc.close();
-
-  // Esperar a que cargue el contenido y luego imprimir
-  iframe.contentWindow.focus();
-  iframe.contentWindow.print();
-
-  // Eliminar el iframe después de imprimir (con un pequeño retraso para que la impresión se complete)
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
+  ventana.document.close();
+  ventana.print();
+  ventana.close();
 }
 
 function toast(msg) {
