@@ -35,34 +35,6 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 .tag{background:var(--azul-light);display:inline-block;padding:5px 10px;border-radius:40px;margin:4px;font-size:.8rem;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--azul);color:white;padding:8px 16px;border-radius:40px;font-size:.8rem;z-index:100;display:none;}
 .toast.show{display:block;}
-/* Estilos para impresión dinámica */
-body.printing * {
-  display: none !important;
-}
-body.printing #seccion-imprimir,
-body.printing #seccion-imprimir * {
-  display: block !important;
-}
-#seccion-imprimir {
-  display: none;
-}
-body.printing #seccion-imprimir .card {
-  box-shadow: none;
-  border: 1px solid #ccc;
-  page-break-inside: avoid;
-}
-body.printing .total-box {
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-body.printing table {
-  width: 100%;
-  border-collapse: collapse;
-}
-body.printing th, body.printing td {
-  border: 1px solid #ccc;
-  padding: 8px;
-}
 </style>
 </head>
 <body>
@@ -329,45 +301,36 @@ function mostrarTab(tab) {
   if (tab === 'resumen') renderResumen();
 }
 
-// ========== IMPRESIÓN CORREGIDA (MÓVIL) ==========
+// ========== IMPRESIÓN MEJORADA (VENTANA NUEVA, FUNCIONA EN MÓVILES) ==========
 function imprimirSeccion(sector) {
-  let contenedor = document.createElement('div');
-  contenedor.id = 'seccion-imprimir';
+  let contenidoHTML = '';
+  let titulo = '';
 
   if (sector === 'resumen') {
-    // Calcular saldos desde cero
+    // Recalcular saldos y filtrar solo deudores
     let saldos = {};
     clientes.forEach(c => saldos[c] = 0);
     movimientos.forEach(m => {
       if (m.tipo === 'deuda') saldos[m.cliente_nombre] += m.monto;
       else saldos[m.cliente_nombre] -= m.monto;
     });
-    // Filtrar solo clientes con saldo positivo
-    const clientesConDeuda = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
-    // Construir HTML del resumen
+    const deudores = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
     let itemsHTML = '';
-    let totalDeuda = 0;
-    clientesConDeuda.forEach(([cliente, saldo]) => {
-      totalDeuda += saldo;
-      itemsHTML += `
-        <div class="resumen-item">
-          <span>${cliente}</span>
-          <span class="saldo-pos">$${Math.abs(saldo).toLocaleString('es-AR')} 🔴 debe</span>
-        </div>
-      `;
+    let total = 0;
+    deudores.forEach(([cliente, saldo]) => {
+      total += saldo;
+      itemsHTML += `<div class="resumen-item"><span>${cliente}</span><span class="saldo-pos">$${Math.abs(saldo).toLocaleString('es-AR')} 🔴 debe</span></div>`;
     });
-    if (clientesConDeuda.length === 0) {
-      itemsHTML = '<div>No hay clientes con deuda activa</div>';
-    }
-    const totalHTML = `<div class="total-box">💰 Total deudas: $${totalDeuda.toLocaleString('es-AR')}</div>`;
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="card-title">📊 Saldo por Cliente</div>
-      <div id="resumenLista">${itemsHTML}</div>
-      ${totalHTML}
+    if (deudores.length === 0) itemsHTML = '<div>No hay clientes con deuda activa</div>';
+    const totalHTML = `<div class="total-box">💰 Total deudas: $${total.toLocaleString('es-AR')}</div>`;
+    contenidoHTML = `
+      <div class="card">
+        <div class="card-title">📊 Saldo por Cliente</div>
+        <div>${itemsHTML}</div>
+        ${totalHTML}
+      </div>
     `;
-    contenedor.appendChild(card);
+    titulo = 'Resumen de Deudas (solo deudores)';
   } 
   else if (sector === 'movimientos') {
     const card = document.querySelector('#tab-movimientos .card').cloneNode(true);
@@ -375,37 +338,52 @@ function imprimirSeccion(sector) {
     if (filtros) filtros.remove();
     const btns = card.querySelectorAll('.btn-sm');
     btns.forEach(btn => btn.remove());
-    contenedor.appendChild(card);
+    contenidoHTML = card.outerHTML;
+    titulo = 'Historial de Movimientos';
   } 
   else if (sector === 'clientes') {
     const card = document.querySelector('#tab-clientes .card:last-child').cloneNode(true);
     const btns = card.querySelectorAll('.btn-sm');
     btns.forEach(btn => btn.remove());
-    contenedor.appendChild(card);
+    contenidoHTML = card.outerHTML;
+    titulo = 'Lista de Clientes';
   }
 
-  // Limpiar anterior y agregar
-  const existing = document.getElementById('seccion-imprimir');
-  if (existing) existing.remove();
-  document.body.appendChild(contenedor);
-  document.body.classList.add('printing');
-
-  const style = document.createElement('style');
-  style.textContent = `
-    body.printing #seccion-imprimir { display: block; margin: 20px; background: white; }
-    body.printing #seccion-imprimir .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
-    body.printing .total-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    body.printing table { width: 100%; border-collapse: collapse; }
-    body.printing th, body.printing td { border: 1px solid #ccc; padding: 8px; }
-  `;
-  document.head.appendChild(style);
-  window.print();
-
-  setTimeout(() => {
-    document.body.classList.remove('printing');
-    style.remove();
-    contenedor.remove();
-  }, 100);
+  const ventana = window.open('', '_blank');
+  if (!ventana) {
+    toast('Permite ventanas emergentes para imprimir');
+    return;
+  }
+  ventana.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>${titulo} - MYC HIELO</title>
+      <style>
+        body { font-family: system-ui; margin: 20px; background: white; }
+        .card { border: 1px solid #ccc; padding: 16px; border-radius: 12px; }
+        .card-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 12px; }
+        .resumen-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+        .saldo-pos { color: #b91c1c; font-weight: bold; }
+        .total-box { background: #0f2a6e; color: white; padding: 12px; border-radius: 12px; text-align: center; margin-top: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #e8eeff; }
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 20px; font-size: 0.7rem; }
+        .badge-deuda { background: #fee2e2; color: #b91c1c; }
+        .badge-pago { background: #d1fae5; color: #0a7c4a; }
+        .tag { background: #e8eeff; display: inline-block; padding: 5px 10px; border-radius: 40px; margin: 4px; }
+      </style>
+    </head>
+    <body>
+      ${contenidoHTML}
+    </body>
+    </html>
+  `);
+  ventana.document.close();
+  ventana.print();
+  ventana.close();
 }
 
 function toast(msg) {
