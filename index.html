@@ -35,6 +35,13 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 .tag{background:var(--azul-light);display:inline-block;padding:5px 10px;border-radius:40px;margin:4px;font-size:.8rem;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--azul);color:white;padding:8px 16px;border-radius:40px;font-size:.8rem;z-index:100;display:none;}
 .toast.show{display:block;}
+@media print{
+  body{background:white;margin:0;padding:0;}
+  .tabs,.btn,.header,.toast,.no-print{display:none !important;}
+  .content{display:block !important;}
+  .card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}
+  .total-box{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
 </style>
 </head>
 <body>
@@ -47,25 +54,38 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 
 <div class="tabs">
   <div class="tab active" data-tab="resumen">📊 Resumen</div>
+  <div class="tab" data-tab="deudores">📋 Deudores</div>
   <div class="tab" data-tab="movimientos">📜 Movimientos</div>
   <div class="tab" data-tab="registro">➕ Registrar</div>
   <div class="tab" data-tab="clientes">👥 Clientes</div>
 </div>
 
+<!-- Resumen completo (todos los clientes) -->
 <div id="tab-resumen" class="content active">
   <div class="card">
     <div class="card-title">📊 Saldo por Cliente
-      <button class="btn btn-sm no-print" onclick="imprimirSeccion('resumen')">🖨️ Imprimir</button>
+      <button class="btn btn-sm no-print" onclick="window.print()">🖨️ Imprimir</button>
     </div>
     <div id="resumenLista"></div>
     <div class="total-box">💰 Total deudas: <span id="totalGeneral">$0</span></div>
   </div>
 </div>
 
+<!-- NUEVA PESTAÑA: Deudores (solo saldo positivo) -->
+<div id="tab-deudores" class="content">
+  <div class="card">
+    <div class="card-title">📋 Clientes con Deuda (solo positivos)
+      <button class="btn btn-sm no-print" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+    <div id="deudoresLista"></div>
+    <div class="total-box">💰 Total adeudado: <span id="totalDeudores">$0</span></div>
+  </div>
+</div>
+
 <div id="tab-movimientos" class="content">
   <div class="card">
     <div class="card-title">📜 Historial
-      <button class="btn btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
+      <button class="btn btn-sm no-print" onclick="window.print()">🖨️ Imprimir</button>
     </div>
     <div class="filtros no-print" style="display:flex;gap:8px;margin-bottom:12px;">
       <input type="text" id="filtroCliente" placeholder="Filtrar cliente" style="margin:0">
@@ -73,9 +93,7 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
     </div>
     <div class="scroll-table" style="overflow-x:auto;">
       <table id="tablaMovimientos" style="min-width:500px;">
-        <thead>
-          <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th></tr>
-        </thead>
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -109,7 +127,7 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   </div>
   <div class="card">
     <div class="card-title">👥 Clientes
-      <button class="btn btn-sm no-print" onclick="imprimirSeccion('clientes')">🖨️ Imprimir</button>
+      <button class="btn btn-sm no-print" onclick="window.print()">🖨️ Imprimir</button>
     </div>
     <div id="listaClientes"></div>
   </div>
@@ -180,6 +198,7 @@ function formatearFechaLocal(fechaIso) {
 function actualizarUI() {
   actualizarSelects();
   renderResumen();
+  renderDeudores();
   renderMovimientos();
   renderClientes();
 }
@@ -211,6 +230,31 @@ function renderResumen() {
   }).join('');
   const total = Object.values(saldos).reduce((a,b) => a + (b > 0 ? b : 0), 0);
   document.getElementById('totalGeneral').textContent = '$' + total.toLocaleString('es-AR');
+}
+
+// NUEVA FUNCIÓN: renderiza solo los deudores (saldo > 0)
+function renderDeudores() {
+  let saldos = {};
+  clientes.forEach(c => saldos[c] = 0);
+  movimientos.forEach(m => {
+    if (m.tipo === 'deuda') saldos[m.cliente_nombre] += m.monto;
+    else saldos[m.cliente_nombre] -= m.monto;
+  });
+  const deudores = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
+  const lista = document.getElementById('deudoresLista');
+  if (deudores.length === 0) {
+    lista.innerHTML = '<div>No hay clientes con deuda activa</div>';
+    document.getElementById('totalDeudores').textContent = '$0';
+    return;
+  }
+  lista.innerHTML = deudores.map(([cliente, saldo]) => `
+    <div class="resumen-item">
+      <span>${cliente}</span>
+      <span class="saldo-pos">$${Math.abs(saldo).toLocaleString('es-AR')} 🔴 debe</span>
+    </div>
+  `).join('');
+  const total = deudores.reduce((acc, [, saldo]) => acc + saldo, 0);
+  document.getElementById('totalDeudores').textContent = '$' + total.toLocaleString('es-AR');
 }
 
 function renderMovimientos() {
@@ -299,87 +343,7 @@ function mostrarTab(tab) {
   document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
   if (tab === 'movimientos') renderMovimientos();
   if (tab === 'resumen') renderResumen();
-}
-
-// ========== IMPRESIÓN CON VENTANA EMERGENTE (FILTRA SÓLO DEUDORES) ==========
-function imprimirSeccion(sector) {
-  let contenidoHTML = '';
-  let titulo = '';
-
-  if (sector === 'resumen') {
-    // Recalcular saldos desde los datos actuales
-    let saldos = {};
-    clientes.forEach(c => saldos[c] = 0);
-    movimientos.forEach(m => {
-      if (m.tipo === 'deuda') saldos[m.cliente_nombre] += m.monto;
-      else saldos[m.cliente_nombre] -= m.monto;
-    });
-    // Filtrar solo clientes con saldo positivo
-    const deudores = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
-    let itemsHTML = '';
-    let total = 0;
-    deudores.forEach(([cliente, saldo]) => {
-      total += saldo;
-      itemsHTML += `<div class="resumen-item"><span>${cliente}</span><span class="saldo-pos">$${Math.abs(saldo).toLocaleString('es-AR')} 🔴 debe</span></div>`;
-    });
-    if (deudores.length === 0) itemsHTML = '<div>No hay clientes con deuda activa</div>';
-    const totalHTML = `<div class="total-box">💰 Total deudas: $${total.toLocaleString('es-AR')}</div>`;
-    contenidoHTML = `
-      <div class="card">
-        <div class="card-title">📊 Saldo por Cliente</div>
-        <div>${itemsHTML}</div>
-        ${totalHTML}
-      </div>
-    `;
-    titulo = 'Resumen de Deudas (solo deudores)';
-  } 
-  else if (sector === 'movimientos') {
-    const card = document.querySelector('#tab-movimientos .card').cloneNode(true);
-    const filtros = card.querySelector('.filtros');
-    if (filtros) filtros.remove();
-    const btns = card.querySelectorAll('.btn-sm');
-    btns.forEach(btn => btn.remove());
-    contenidoHTML = card.outerHTML;
-    titulo = 'Historial de Movimientos';
-  } 
-  else if (sector === 'clientes') {
-    const card = document.querySelector('#tab-clientes .card:last-child').cloneNode(true);
-    const btns = card.querySelectorAll('.btn-sm');
-    btns.forEach(btn => btn.remove());
-    contenidoHTML = card.outerHTML;
-    titulo = 'Lista de Clientes';
-  }
-
-  // Abrir ventana emergente
-  const ventana = window.open('', '_blank');
-  if (!ventana) {
-    toast('Permite ventanas emergentes para imprimir (desbloquéalas en tu navegador)');
-    return;
-  }
-  ventana.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head><meta charset="UTF-8"><title>${titulo}</title>
-    <style>
-      body { font-family: system-ui; margin: 20px; background: white; }
-      .card { border: 1px solid #ccc; padding: 16px; border-radius: 12px; }
-      .card-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 12px; }
-      .resumen-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-      .saldo-pos { color: #b91c1c; font-weight: bold; }
-      .total-box { background: #0f2a6e; color: white; padding: 12px; border-radius: 12px; text-align: center; margin-top: 16px; }
-      table { width: 100%; border-collapse: collapse; }
-      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-      th { background: #e8eeff; }
-      .badge { display: inline-block; padding: 2px 6px; border-radius: 20px; font-size: 0.7rem; }
-      .badge-deuda { background: #fee2e2; color: #b91c1c; }
-      .badge-pago { background: #d1fae5; color: #0a7c4a; }
-      .tag { background: #e8eeff; display: inline-block; padding: 5px 10px; border-radius: 40px; margin: 4px; }
-    </style>
-    </head><body>${contenidoHTML}</body></html>
-  `);
-  ventana.document.close();
-  ventana.print();
-  ventana.close();
+  if (tab === 'deudores') renderDeudores();
 }
 
 function toast(msg) {
