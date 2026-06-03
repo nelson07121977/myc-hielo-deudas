@@ -35,12 +35,35 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 .tag{background:var(--azul-light);display:inline-block;padding:5px 10px;border-radius:40px;margin:4px;font-size:.8rem;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--azul);color:white;padding:8px 16px;border-radius:40px;font-size:.8rem;z-index:100;display:none;}
 .toast.show{display:block;}
-@media print{
-  body{background:white;margin:0;padding:0;}
-  .tabs,.btn,.header,.toast,.no-print{display:none !important;}
-  .content{display:block !important;}
-  .card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}
-  .total-box{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+/* ========== ESTILOS PARA IMPRIMIR SOLO LA PESTAÑA ACTIVA ========== */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .content.active, .content.active * {
+    visibility: visible;
+  }
+  .content.active {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white;
+  }
+  .tabs, .header, .toast, .btn, .no-print, .filtros, .btn-sm {
+    display: none !important;
+  }
+  .card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+  .total-box {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 </style>
 </head>
@@ -71,7 +94,7 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   </div>
 </div>
 
-<!-- NUEVA PESTAÑA: Deudores (solo saldo positivo) -->
+<!-- Deudores (solo saldo positivo) -->
 <div id="tab-deudores" class="content">
   <div class="card">
     <div class="card-title">📋 Clientes con Deuda (solo positivos)
@@ -82,6 +105,7 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   </div>
 </div>
 
+<!-- Movimientos -->
 <div id="tab-movimientos" class="content">
   <div class="card">
     <div class="card-title">📜 Historial
@@ -100,6 +124,7 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   </div>
 </div>
 
+<!-- Registrar -->
 <div id="tab-registro" class="content">
   <div class="card">
     <div class="card-title">💰 Nueva Deuda</div>
@@ -120,6 +145,7 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
   </div>
 </div>
 
+<!-- Clientes -->
 <div id="tab-clientes" class="content">
   <div class="card">
     <div class="card-title">➕ Agregar Cliente</div>
@@ -232,7 +258,6 @@ function renderResumen() {
   document.getElementById('totalGeneral').textContent = '$' + total.toLocaleString('es-AR');
 }
 
-// NUEVA FUNCIÓN: renderiza solo los deudores (saldo > 0)
 function renderDeudores() {
   let saldos = {};
   clientes.forEach(c => saldos[c] = 0);
