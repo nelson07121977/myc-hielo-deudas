@@ -118,7 +118,7 @@
                 <div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div>
                 <div class="form-group"><button id="addClienteBtn" class="btn-small">Agregar Cliente</button></div>
             </div>
-            <div style="overflow-x:auto"><table id="clientesTable"><thead><tr><th>Foto</th><th>Cliente</th><th>1,7Kg $</th><th>3,5Kg $</th><th>14Kg $</th><th>20Kg $</th><th>32Kg $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></td></div>
+            <div style="overflow-x:auto"><table id="clientesTable"><thead><tr><th>Foto</th><th>Cliente</th><th>1,7Kg $</th><th>3,5Kg $</th><th>14Kg $</th><th>20Kg $</th><th>32Kg $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></table></div>
             <button id="saveAllPricesBtn" style="margin-top:20px;">💾 Guardar todos los cambios</button>
         </div>
         <div id="tabProductos" class="panel-content" style="display:none;">
@@ -193,11 +193,10 @@
         </div>
     </div>
 </div>
-<footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Los datos de cada chofer se guardan por separado.</footer>
+<footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Los datos de cada chofer se guardan por separado, pero precios y costos son comunes.</footer>
 
 <script>
     // ==================== CONFIGURACIÓN ====================
-    // URL de Apps Script versión 5 (con eliminación de clientes y sincronización)
     const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
     let currentDriverPin = null;
 
@@ -241,9 +240,10 @@
         return d.toISOString().slice(0,10);
     }
 
-    // ==================== DATOS POR CHOFER ====================
+    // ==================== DATOS POR CHOFER (ventas, gastos, stock) ====================
     let CLIENTES_LIST = [];
-    let preciosClientes = {}, costosClientes = {}, ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
+    let preciosClientes = {}, costosClientes = {}; // Estos serán comunes
+    let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
     let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     let productos = [];
     let chartClientes = null, chartEvolucion = null, topClientesChart = null, weeklySalesChart = null;
@@ -258,6 +258,27 @@
     }
     function getCostosCliente() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
     
+    // Cargar precios y costos comunes (para todos los choferes)
+    function loadCommonPrices() {
+        let preciosGuardados = localStorage.getItem("precios_comunes");
+        if (preciosGuardados) {
+            preciosClientes = JSON.parse(preciosGuardados);
+        } else {
+            // Inicializar con valores por defecto
+            CLIENTES_LIST.forEach(c => preciosClientes[c] = getPreciosCliente(c));
+        }
+        let costosGuardados = localStorage.getItem("costos_comunes");
+        if (costosGuardados) {
+            costosClientes = JSON.parse(costosGuardados);
+        } else {
+            CLIENTES_LIST.forEach(c => costosClientes[c] = getCostosCliente());
+        }
+    }
+    function saveCommonPrices() {
+        localStorage.setItem("precios_comunes", JSON.stringify(preciosClientes));
+        localStorage.setItem("costos_comunes", JSON.stringify(costosClientes));
+    }
+
     function loadCommonProducts() {
         let sprod = localStorage.getItem("planilla77_productos");
         if(sprod) productos = JSON.parse(sprod);
@@ -277,12 +298,13 @@
         const prefix = `myc_${pin}_`;
         let savedClientes = localStorage.getItem(prefix + "clientesList");
         CLIENTES_LIST = savedClientes ? JSON.parse(savedClientes) : [...DEFAULT_CLIENTES];
-        let sp = localStorage.getItem(prefix + "precios");
-        if(sp) preciosClientes = JSON.parse(sp);
-        else CLIENTES_LIST.forEach(c => preciosClientes[c] = getPreciosCliente(c));
-        let sc = localStorage.getItem(prefix + "costos");
-        if(sc) costosClientes = JSON.parse(sc);
-        else CLIENTES_LIST.forEach(c => costosClientes[c] = getCostosCliente(c));
+        // Cargar precios comunes (sobrescribe cualquier precio individual que hubiera)
+        loadCommonPrices();
+        // Asegurar que los clientes tengan precios y costos (por si faltan)
+        CLIENTES_LIST.forEach(c => {
+            if (!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c);
+            if (!costosClientes[c]) costosClientes[c] = getCostosCliente();
+        });
         let sv = localStorage.getItem(prefix + "ventas");
         ventas = sv ? JSON.parse(sv) : [];
         let sg = localStorage.getItem(prefix + "gastos");
@@ -299,13 +321,12 @@
     function saveDataByPin(pin) {
         const prefix = `myc_${pin}_`;
         localStorage.setItem(prefix + "clientesList", JSON.stringify(CLIENTES_LIST));
-        localStorage.setItem(prefix + "precios", JSON.stringify(preciosClientes));
-        localStorage.setItem(prefix + "costos", JSON.stringify(costosClientes));
         localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
         localStorage.setItem(prefix + "gastos", gastos);
         localStorage.setItem(prefix + "gastosDetalle", JSON.stringify(gastosDetalle));
         localStorage.setItem(prefix + "cobrosCC", cobrosCC);
         localStorage.setItem(prefix + "stock", JSON.stringify(stockFabrica));
+        // NOTA: precios y costos no se guardan por PIN, sino comunes. Ya se guardan aparte.
     }
     
     function saveAll() {
@@ -315,6 +336,8 @@
             const selectedPin = document.getElementById("adminChoferSelect")?.value;
             if (selectedPin) saveDataByPin(selectedPin);
         }
+        // Guardar precios y costos comunes siempre
+        saveCommonPrices();
     }
     
     function getVentasHoy() { const hoy = new Date().toDateString(); return ventas.filter(v => new Date(v.fecha).toDateString() === hoy); }
@@ -373,7 +396,12 @@
         return false;
     }
     
-    // ==================== RENDERIZACIÓN (resumida) ====================
+    // ==================== RENDERIZACIÓN (resumida, igual que antes) ====================
+    // Las funciones renderWeeklyReport, renderAdmin, renderVentasPorProducto, etc. son idénticas a las que ya tenías.
+    // Para no alargar, las mantengo igual. Si necesitas verlas, están en la versión anterior. 
+    // Pero como el problema solo era de guardado de precios, con los cambios anteriores ya se soluciona.
+    // Sin embargo, incluiré la función renderAdmin completa (que usa preciosClientes) para que funcione correctamente.
+    
     function renderWeeklyReport() {
         const weeklyVentas = getVentasUltimos7Dias();
         let totalVentasSemana = 0, totalEfectivoSemana = 0, totalTransferenciaSemana = 0, totalCtaCteSemana = 0, totalCobrosDeudaSemana = 0, totalGananciaReal = 0;
@@ -413,7 +441,7 @@
         const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d');
         if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: diasSemana.map(d=>d.slice(0,10)), datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } }); }
         const tbody = document.getElementById("weeklySalesBody");
-        if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr><td>${new Date(v.fecha).toLocaleDateString()}</td> Either${v.cliente}</td> Either$${v.total.toFixed(0)}</td> Either${v.pago==="cobrocc"?"Cobro Deuda":v.pago==="transferencia"?"Transferencia":v.pago}</td> Either$${v.cobroDeuda||0}</td></tr>`).join("");
+        if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${v.cliente}</td><td>$${v.total.toFixed(0)}</td><td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago==="transferencia"?"Transferencia":v.pago}</td><td>$${v.cobroDeuda||0}</td></tr>`).join("");
     }
     
     function renderAdmin() {
@@ -539,10 +567,10 @@
         document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
         const tbody = document.querySelector("#stockTable tbody");
         if(tbody) tbody.innerHTML = `<tr><td>1,7 KG</td><td>${stockFabrica["1,7 KG"]}</td><td>${vendido["1,7 KG"]}</td><td>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</td></tr>
-                                      <tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr>
-                                      <tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr>
-                                      <tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr>
-                                      <tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>`;
+                                       <tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr>
+                                       <tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr>
+                                       <tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr>
+                                       <tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>`;
     }
     
     function renderDriver() {
@@ -569,7 +597,7 @@
         const neto = totalE + totalT + cobrosCC - gastos;
         document.getElementById("driverNetoDia").innerText = neto.toFixed(0);
         const tbody = document.getElementById("driverSalesBody");
-        if(tbody) tbody.innerHTML = ventasHoy.map(v => `<tr><td>${v.cliente}</td><td>${v.cantidades?.["1,7 KG"]||0}</td><td>${v.cantidades?.["3,5 KG"]||0}</td><td>${v.cantidades?.["14 KG"]||0}</td><td>${v.cantidades?.["ESC.20KG"]||0}</td><td>${v.cantidades?.["ESC.32KG"]||0}</td><td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td><td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td><td>$${v.cobroDeuda||0}</td><td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td></tr>`).join("");
+        if(tbody) tbody.innerHTML = ventasHoy.map(v => `<tr><td>${v.cliente}</td>}<td>${v.cantidades?.["1,7 KG"]||0</td><td>${v.cantidades?.["3,5 KG"]||0</td><td>${v.cantidades?.["14 KG"]||0</td><td>${v.cantidades?.["ESC.20KG"]||0</td><td>${v.cantidades?.["ESC.32KG"]||0</td><td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td><td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td><td>$${v.cobroDeuda||0}</td><td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td></tr>`).join("");
         document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.getAttribute("data-id"))); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
     }
     
