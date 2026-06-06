@@ -142,7 +142,7 @@
                 <div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div>
             </div>
             <h3>📊 Resumen vendido / restante</h3>
-            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table>
+            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></td></thead><tbody></tbody></table>
         </div>
     </div>
 
@@ -200,6 +200,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 let currentDriverPin = null;
 
+// ========== SINCRONIZACIÓN ==========
 async function enviarMovimientoADeudas(fecha, cliente, tipo, monto, formaPago = null, detalle = "") {
     try {
         const form = new URLSearchParams();
@@ -216,7 +217,6 @@ async function enviarMovimientoADeudas(fecha, cliente, tipo, monto, formaPago = 
         else console.log(`Movimiento ${tipo} de $${monto} para ${cliente} enviado a Deudas`);
     } catch (err) { console.error("Error de red:", err); }
 }
-
 async function enviarClienteADeudas(nombre) {
     try {
         const form = new URLSearchParams();
@@ -228,7 +228,6 @@ async function enviarClienteADeudas(nombre) {
         else console.log(`Cliente ${nombre} enviado a Deudas`);
     } catch (err) { console.error("Error de red:", err); }
 }
-
 function formatearFechaParaAPI(fechaIso) {
     if (!fechaIso) return new Date().toISOString().slice(0,10);
     const d = new Date(fechaIso);
@@ -360,7 +359,7 @@ function agregarClienteGlobal(nombre) {
     return false;
 }
 
-// ========== RENDERIZADO (funciones completas) ==========
+// ========== RENDERIZADO ==========
 function renderWeeklyReport() {
     const weeklyVentas = getVentasUltimos7Dias();
     let totalVentasSemana = 0, totalEfectivoSemana = 0, totalTransferenciaSemana = 0, totalCtaCteSemana = 0, totalCobrosDeudaSemana = 0, totalGananciaReal = 0;
@@ -404,12 +403,14 @@ function renderWeeklyReport() {
         weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: diasSemana.map(d=>d.slice(0,10)), datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } });
     }
     const tbody = document.getElementById("weeklySalesBody");
-    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
-        <td>${new Date(v.fecha).toLocaleDateString()}</td>
-        <td>${v.cliente}</td>
-        <td>$${v.total.toFixed(0)}</td>
-        <td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago==="transferencia"?"Transferencia":v.pago}</td>
-        <td>$${v.cobroDeuda||0}</td>
+    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `
+        <tr>
+            <td>${new Date(v.fecha).toLocaleDateString()}</td>
+            <td>${v.cliente}</td>
+            <td>$${v.total.toFixed(0)}</td>
+            <td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago==="transferencia"?"Transferencia":v.pago}</td>
+            <td>$${v.cobroDeuda||0}</td>
+        </tr>
     `).join('');
 }
 
@@ -438,16 +439,18 @@ function renderAdmin() {
         <div class="card"><h4>Ganancia Neta</h4><div class="value">$${gananciaNeta.toFixed(0)}</div></div>
     `;
     const salesBody = document.getElementById("salesDetailBody");
-    if(salesBody) salesBody.innerHTML = ventasHoy.map(v => `<tr>
-        <td>${v.cliente}</td>
-        <td>${v.cantidades?.["1,7 KG"]||0}</td>
-        <td>${v.cantidades?.["3,5 KG"]||0}</td>
-        <td>${v.cantidades?.["14 KG"]||0}</td>
-        <td>${v.cantidades?.["ESC.20KG"]||0}</td>
-        <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-        <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td>
-        <td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td>
-        <td>$${v.cobroDeuda||0}</td>
+    if(salesBody) salesBody.innerHTML = ventasHoy.map(v => `
+        <tr>
+            <td>${v.cliente}</td>
+            <td>${v.cantidades?.["1,7 KG"]||0}</td>
+            <td>${v.cantidades?.["3,5 KG"]||0}</td>
+            <td>${v.cantidades?.["14 KG"]||0}</td>
+            <td>${v.cantidades?.["ESC.20KG"]||0}</td>
+            <td>${v.cantidades?.["ESC.32KG"]||0}</td>
+            <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td>
+            <td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td>
+            <td>$${v.cobroDeuda||0}</td>
+        </tr>
     `).join("");
     actualizarGraficoClientes();
     renderVentasPorProducto();
@@ -517,21 +520,23 @@ function renderClientesTab() {
     for(let cli of CLIENTES_LIST) {
         const pre = preciosClientes[cli] || getPreciosCliente(cli);
         const cost = costosClientes[cli] || getCostosCliente();
-        tbody.innerHTML += `<tr>
-            <td><div style="width:50px;height:50px;background:#ccc;border-radius:12px;display:flex;align-items:center;justify-content:center;">${cli.charAt(0)}</div></td>
-            <td>${cli}</td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" size="6"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" size="6"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" size="6"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" size="6"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" size="6"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" size="6"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" size="6"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" size="6"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="6"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="6"></td>
-            <td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c;">🗑️</button></td>
-        `);
+        tbody.innerHTML += `
+            <tr>
+                <td><div style="width:50px;height:50px;background:#ccc;border-radius:12px;display:flex;align-items:center;justify-content:center;">${cli.charAt(0)}</div></td>
+                <td>${cli}</td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" size="6"></td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" size="6"></td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" size="6"></td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" size="6"></td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" size="6"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" size="6"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" size="6"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" size="6"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="6"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="6"></td>
+                <td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c;">🗑️</button></td>
+            </tr>
+        `;
     }
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", (e) => { const cli = btn.getAttribute("data-cli"); if(confirm(`Eliminar ${cli}?`)) { ventas = ventas.filter(v => v.cliente !== cli); delete preciosClientes[cli]; delete costosClientes[cli]; const idx = CLIENTES_LIST.indexOf(cli); if(idx!==-1) CLIENTES_LIST.splice(idx,1); saveAll(); renderAdmin(); if(document.getElementById("driverPanel").style.display==="block") renderDriver(); } }));
 }
@@ -541,12 +546,14 @@ function renderProductosTab() {
     if(!tbody) return;
     tbody.innerHTML = "";
     for(let p of productos) {
-        tbody.innerHTML += `<tr>
-            <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></td>
-            <td>${p.clave}</td>
-            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="8"></td>
-            <td><button class="delProdBtn" data-clave="${p.clave}" style="background:#b91c1c;">Eliminar</button></td>
-        `);
+        tbody.innerHTML += `
+            <tr>
+                <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></td>
+                <td>${p.clave}</td>
+                <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="8"></td>
+                <td><button class="delProdBtn" data-clave="${p.clave}" style="background:#b91c1c;">Eliminar</button></td>
+            </tr>
+        `;
     }
     document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", (e) => { const clave = btn.getAttribute("data-clave"); if(confirm(`Eliminar producto ${clave}?`)) { productos = productos.filter(p => p.clave !== clave); saveCommonProducts(); renderProductosTab(); } }));
 }
@@ -600,17 +607,19 @@ function renderDriver() {
     const neto = totalE + totalT + cobrosCC - gastos;
     document.getElementById("driverNetoDia").innerText = neto.toFixed(0);
     const tbody = document.getElementById("driverSalesBody");
-    if(tbody) tbody.innerHTML = ventasHoy.map(v => `<tr>
-        <td>${v.cliente}</td>
-        <td>${v.cantidades?.["1,7 KG"]||0}</td>
-        <td>${v.cantidades?.["3,5 KG"]||0}</td>
-        <td>${v.cantidades?.["14 KG"]||0}</td>
-        <td>${v.cantidades?.["ESC.20KG"]||0}</td>
-        <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-        <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td>
-        <td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td>
-        <td>$${v.cobroDeuda||0}</td>
-        <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td>
+    if(tbody) tbody.innerHTML = ventasHoy.map(v => `
+        <tr>
+            <td>${v.cliente}</td>
+            <td>${v.cantidades?.["1,7 KG"]||0}</td>
+            <td>${v.cantidades?.["3,5 KG"]||0}</td>
+            <td>${v.cantidades?.["14 KG"]||0}</td>
+            <td>${v.cantidades?.["ESC.20KG"]||0}</td>
+            <td>${v.cantidades?.["ESC.32KG"]||0}</td>
+            <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td>
+            <td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td>
+            <td>$${v.cobroDeuda||0}</td>
+            <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td>
+        </tr>
     `).join("");
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.getAttribute("data-id"))); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
 }
