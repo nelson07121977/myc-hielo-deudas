@@ -104,7 +104,7 @@
             <div class="summary-cards" id="weeklyStats"></div>
             <div class="chart-container"><h3>🏆 Top 10 clientes por volumen de compra (semana)</h3><canvas id="topClientesChart" width="400" height="200"></canvas></div>
             <div class="chart-container"><h3>📈 Evolución de ventas diarias (semana)</h3><canvas id="weeklySalesChart" width="400" height="200"></canvas></div>
-            <div class="report-container"><h3>💸 Detalle de ventas de la semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable" class="rank-table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
+            <div class="report-container"><h3>💸 Detalle de ventas de la semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable" class="rank-table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></td></div></div>
         </div>
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3>Gestión de clientes (precios de venta y costos de fábrica)</h3>
@@ -118,7 +118,7 @@
                 <div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div>
                 <div class="form-group"><button id="addClienteBtn" class="btn-small">Agregar Cliente</button></div>
             </div>
-            <div style="overflow-x:auto"><table id="clientesTable"><thead><tr><th>Foto</th><th>Cliente</th><th>1,7Kg $</th><th>3,5Kg $</th><th>14Kg $</th><th>20Kg $</th><th>32Kg $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></table></div>
+            <div style="overflow-x:auto"><table id="clientesTable"><thead><tr><th>Foto</th><th>Cliente</th><th>1,7Kg $</th><th>3,5Kg $</th><th>14Kg $</th><th>20Kg $</th><th>32Kg $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></td></div>
             <button id="saveAllPricesBtn" style="margin-top:20px;">💾 Guardar todos los cambios</button>
         </div>
         <div id="tabProductos" class="panel-content" style="display:none;">
@@ -129,7 +129,7 @@
                 <div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div>
                 <div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div>
             </div>
-            <div style="overflow-x:auto"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div>
+            <div style="overflow-x:auto"><table id="productsTable"><thead><td><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div>
             <button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         <div id="tabStock" class="panel-content" style="display:none;">
@@ -219,6 +219,7 @@ async function enviarMovimientoADeudas(fecha, cliente, tipo, monto, formaPago = 
         else console.log(`Movimiento ${tipo} de $${monto} para ${cliente} enviado a Deudas`);
     } catch (err) { console.error("Error de red:", err); }
 }
+
 async function enviarClienteADeudas(nombre) {
     try {
         const form = new URLSearchParams();
@@ -226,10 +227,11 @@ async function enviarClienteADeudas(nombre) {
         form.append('nombre', nombre);
         const res = await fetch(API_URL, { method: 'POST', body: form });
         const data = await res.json();
-        if (data.error) console.error("Error al enviar cliente:", data.error);
+        if (data.error) console.error("Error al enviar cliente a Deudas:", data.error);
         else console.log(`Cliente ${nombre} enviado a Deudas`);
     } catch (err) { console.error("Error de red:", err); }
 }
+
 function formatearFechaParaAPI(fechaIso) {
     if (!fechaIso) return new Date().toISOString().slice(0,10);
     const d = new Date(fechaIso);
@@ -406,7 +408,9 @@ function renderWeeklyReport() {
     }
     const tbody = document.getElementById("weeklySalesBody");
     if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
-        <td>${new Date(v.fecha).toLocaleDateString()}</td><td>${v.cliente}</td><td>$${v.total.toFixed(0)}</td><td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago==="transferencia"?"Transferencia":v.pago}</td><td>$${v.cobroDeuda||0}</td>
+        <td>${new Date(v.fecha).toLocaleDateString()}</td>
+        <td>${v.cliente}</td>
+        <td>$${v.total.toFixed(0)}</td><td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago==="transferencia"?"Transferencia":v.pago}</td><td>$${v.cobroDeuda||0}</td>
     `).join('');
 }
 
@@ -436,7 +440,9 @@ function renderAdmin() {
     `;
     const salesBody = document.getElementById("salesDetailBody");
     if(salesBody) salesBody.innerHTML = ventasHoy.map(v => `<tr>
-        <td>${v.cliente}</td><td>${v.cantidades?.["1,7 KG"]||0}</td><td>${v.cantidades?.["3,5 KG"]||0}</td><td>${v.cantidades?.["14 KG"]||0}</td><td>${v.cantidades?.["ESC.20KG"]||0}</td><td>${v.cantidades?.["ESC.32KG"]||0}</td><td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td><td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td><td>$${v.cobroDeuda||0}</td>
+        <td>${v.cliente}</td>
+        <td>${v.cantidades?.["1,7 KG"]||0}</td><td>${v.cantidades?.["3,5 KG"]||0}</td><td>${v.cantidades?.["14 KG"]||0}</td><td>${v.cantidades?.["ESC.20KG"]||0}</td><td>${v.cantidades?.["ESC.32KG"]||0}</td>
+        <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td><td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td><td>$${v.cobroDeuda||0}</td>
     `).join("");
     actualizarGraficoClientes();
     renderVentasPorProducto();
@@ -508,8 +514,7 @@ function renderClientesTab() {
         const cost = costosClientes[cli] || getCostosCliente();
         tbody.innerHTML += `<tr>
             <td><div style="width:50px;height:50px;background:#ccc;border-radius:12px;display:flex;align-items:center;justify-content:center;">${cli.charAt(0)}</div></td>
-            <td>${cli}</td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" size="6"></td>
+            <td>${cli}</td><td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" size="6"></td>
             <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" size="6"></td>
             <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" size="6"></td>
             <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" size="6"></td>
@@ -530,7 +535,7 @@ function renderProductosTab() {
     if(!tbody) return;
     tbody.innerHTML = "";
     for(let p of productos) {
-        tbody.innerHTML += `<tr>
+        tbody.innerHTML += `<td>
             <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></td>
             <td>${p.clave}</td>
             <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="8"></td>
@@ -590,7 +595,8 @@ function renderDriver() {
     document.getElementById("driverNetoDia").innerText = neto.toFixed(0);
     const tbody = document.getElementById("driverSalesBody");
     if(tbody) tbody.innerHTML = ventasHoy.map(v => `<tr>
-        <td>${v.cliente}</td><td>${v.cantidades?.["1,7 KG"]||0}</td><td>${v.cantidades?.["3,5 KG"]||0}</td><td>${v.cantidades?.["14 KG"]||0}</td><td>${v.cantidades?.["ESC.20KG"]||0}</td><td>${v.cantidades?.["ESC.32KG"]||0}</td><td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td><td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td><td>$${v.cobroDeuda||0}</td>
+        <td>${v.cliente}</td><td>${v.cantidades?.["1,7 KG"]||0}</td><td>${v.cantidades?.["3,5 KG"]||0}</td><td>${v.cantidades?.["14 KG"]||0}</td><td>${v.cantidades?.["ESC.20KG"]||0}</td><td>${v.cantidades?.["ESC.32KG"]||0}</td>
+        <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td><td>${v.pago==="efectivo"?"Efectivo":v.pago==="transferencia"?"Transferencia":v.pago==="ctacte"?"Cta Cte":"Cobro Cta Cte"}</td><td>$${v.cobroDeuda||0}</td>
         <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td>
     `).join("");
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.getAttribute("data-id"))); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
