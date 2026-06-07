@@ -26,17 +26,21 @@
         th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
         th { background: #eef2ff; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
+        .badge-pagado { background: #d1fae5; color: #0a7c4a; }
+        .badge-pendiente { background: #fee2e2; color: #b91c1c; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .form-group { margin-bottom: 12px; }
         label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 4px; }
         input, select { width: 100%; padding: 8px 12px; border-radius: 24px; border: 1px solid #ccc; }
+        .filtro { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .filtro input { width: auto; flex: 1; min-width: 150px; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 8px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 1000; display: none; }
         .toast.show { display: block; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: white; max-width: 500px; width: 90%; border-radius: 28px; padding: 24px; }
         @media print {
             body { background: white; }
-            .selector, .no-print, .toast, button, .print-hide, .modal { display: none !important; }
+            .selector, .no-print, .toast, button, .print-hide, .modal, .filtro { display: none !important; }
             .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
         }
     </style>
@@ -56,7 +60,7 @@
         </div>
     </div>
 
-    <!-- Rendición -->
+    <!-- Rendición de dinero -->
     <div class="card" id="rendicionCard">
         <div class="card-title">💰 Rendición de Dinero (Neto a entregar)
             <button class="btn-sm no-print" onclick="imprimirSeccion('rendicion')">🖨️ Imprimir</button>
@@ -72,30 +76,47 @@
         <div class="grid-2" id="ventasPagosContent"></div>
     </div>
 
-    <!-- Equivalencia en bolsas (corregido) -->
-    <div class="card" id="equivalenciaCard">
-        <div class="card-title">📦 Equivalencia en Bolsas (según cliente)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('equivalencia')">🖨️ Imprimir</button>
+    <!-- Ganancia real -->
+    <div class="card" id="gananciaCard">
+        <div class="card-title">📈 Ganancia Real
+            <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
         </div>
-        <div class="flex-between" style="margin-bottom: 16px;">
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
-                <div class="form-group" style="min-width: 180px;">
-                    <label>Cliente</label>
-                    <select id="equiClienteSelect" style="width: auto; min-width: 160px;"></select>
-                </div>
-                <div class="form-group">
-                    <label>Monto a convertir ($)</label>
-                    <input type="number" id="equiMonto" placeholder="Ingrese monto" style="width: 150px;">
-                </div>
-                <button id="calcularEquiBtn" class="btn-sm">Calcular</button>
-            </div>
-        </div>
-        <div id="equivalenciaResultado" class="stat-card"></div>
+        <div class="grid-2" id="gananciaContent"></div>
     </div>
 
-    <!-- Inventario (con edición manual) -->
+    <!-- Ventas por cliente del día (con buscador) -->
+    <div class="card" id="ventasClienteCard">
+        <div class="card-title">📦 Ventas por Cliente del Día
+            <button class="btn-sm no-print" onclick="imprimirSeccion('ventasCliente')">🖨️ Imprimir</button>
+        </div>
+        <div class="filtro">
+            <input type="text" id="filtroClienteVentas" placeholder="Buscar cliente...">
+            <button id="buscarVentasClienteBtn" class="btn-sm">Buscar</button>
+            <button id="limpiarFiltroVentasBtn" class="btn-sm btn-red">Limpiar</button>
+        </div>
+        <div id="ventasClienteResultado"></div>
+    </div>
+
+    <!-- Calendario (con productos y financiero) -->
+    <div class="card" id="calendarioCard">
+        <div class="card-title">📅 Ver movimientos de una fecha
+            <button class="btn-sm no-print" onclick="imprimirSeccion('calendario')">🖨️ Imprimir</button>
+        </div>
+        <div class="flex-between">
+            <input type="date" id="fechaCalendario" style="width: auto;">
+            <button id="verFechaBtn" class="btn-sm">Ver movimientos</button>
+        </div>
+        <!-- Resumen por cliente y producto -->
+        <div id="resumenProductosFecha" style="margin-top: 20px;"></div>
+        <!-- Resumen financiero por cliente -->
+        <div id="resumenFinancieroFecha" style="margin-top: 20px;"></div>
+        <!-- Detalle unitario -->
+        <div id="movimientosFechaResultado" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Inventario -->
     <div class="card" id="inventarioCard">
-        <div class="card-title">🏭 Inventario / Stock (carga fábrica - vendido)
+        <div class="card-title">🏭 Inventario / Stock
             <div>
                 <button id="editStockBtn" class="btn-sm btn-green no-print">✏️ Editar stock manual</button>
                 <button class="btn-sm no-print" onclick="imprimirSeccion('inventario')">🖨️ Imprimir</button>
@@ -104,19 +125,16 @@
         <div id="inventarioContent"></div>
     </div>
 
-    <!-- Ganancia real -->
-    <div class="card" id="gananciaCard">
-        <div class="card-title">📈 Ganancia Real (Ventas - Costos + Cobros)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
-        </div>
-        <div class="grid-2" id="gananciaContent"></div>
-    </div>
-
-    <!-- Movimientos -->
+    <!-- Movimientos históricos con buscador -->
     <div class="card" id="movimientosCard">
         <div class="card-title">📜 Movimientos Históricos
             <button id="agregarMovBtn" class="btn-sm btn-green no-print">➕ Agregar Movimiento</button>
             <button class="btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
+        </div>
+        <div class="filtro">
+            <input type="text" id="filtroClienteMov" placeholder="Filtrar por cliente...">
+            <button id="buscarMovBtn" class="btn-sm">Buscar</button>
+            <button id="limpiarFiltroMovBtn" class="btn-sm btn-red">Limpiar</button>
         </div>
         <div style="overflow-x:auto;">
             <table id="movimientosTabla">
@@ -127,53 +145,30 @@
     </div>
 </div>
 
-<!-- Modal editar stock -->
+<!-- Modales -->
 <div id="stockModal" class="modal">
     <div class="modal-content">
         <h3>Editar Stock Fábrica</h3>
-        <div id="stockForm">
-            <div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div>
-            <div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div>
-            <div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div>
-            <div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div>
-            <div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div>
-        </div>
-        <div style="display:flex; gap:12px; margin-top:20px;">
-            <button id="saveStockBtn" class="btn-sm">Guardar</button>
-            <button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button>
-        </div>
+        <div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div>
+        <div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div>
+        <div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div>
+        <div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div>
+        <div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div>
+        <div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div>
     </div>
 </div>
-
-<!-- Modal movimiento -->
 <div id="movModal" class="modal">
     <div class="modal-content">
         <h3 id="modalTitle">Agregar Movimiento</h3>
         <div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div>
         <div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div>
-        <div class="form-group"><label>Tipo</label>
-            <select id="modalTipo">
-                <option value="deuda">Deuda (venta a crédito)</option>
-                <option value="pago">Pago (cobro de deuda)</option>
-                <option value="gasto">Gasto (nafta, choferes, otros)</option>
-            </select>
-        </div>
+        <div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div>
         <div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div>
-        <div class="form-group"><label>Forma de pago (si aplica)</label>
-            <select id="modalFormaPago">
-                <option value="">Seleccionar</option>
-                <option value="Efectivo">Efectivo</option>
-                <option value="Transferencia">Transferencia</option>
-            </select>
-        </div>
+        <div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div>
         <div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div>
-        <div style="display:flex; gap:12px; margin-top:20px;">
-            <button id="modalSaveBtn" class="btn-sm">Guardar</button>
-            <button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button>
-        </div>
+        <div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div>
     </div>
 </div>
-
 <div id="toast" class="toast"></div>
 
 <script>
@@ -196,16 +191,9 @@ async function cargarClientesPrecios() {
         let precios = localStorage.getItem("myc_precios_globales");
         let costos = localStorage.getItem("myc_costos_globales");
         if (precios) preciosClientes = JSON.parse(precios);
-        else {
-            preciosClientes = {};
-            clientesList.forEach(c => preciosClientes[c] = getPreciosPorDefecto(c));
-        }
+        else { preciosClientes = {}; clientesList.forEach(c => preciosClientes[c] = getPreciosPorDefecto(c)); }
         if (costos) costosClientes = JSON.parse(costos);
-        else {
-            costosClientes = {};
-            clientesList.forEach(c => costosClientes[c] = getCostosPorDefecto());
-        }
-        llenarSelectClientes();
+        else { costosClientes = {}; clientesList.forEach(c => costosClientes[c] = getCostosPorDefecto()); }
         llenarSelectModalClientes();
     } catch(e) { console.error("Error cargando clientes", e); }
 }
@@ -216,16 +204,9 @@ function getPreciosPorDefecto(cliente) {
     return { p17, p35, p14, p20, p32 };
 }
 function getCostosPorDefecto() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
-function llenarSelectClientes() {
-    const select = document.getElementById("equiClienteSelect");
-    if (select) select.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
-}
-function llenarSelectModalClientes() {
-    const select = document.getElementById("modalCliente");
-    if (select) select.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
-}
+function llenarSelectModalClientes() { const s = document.getElementById("modalCliente"); if(s) s.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join(''); }
 
-// ========== CARGAR DATOS DEL CHOFER ==========
+// ========== DATOS CHOFER ==========
 function cargarDatosChofer(pin) {
     const prefix = `myc_${pin}_`;
     let ventas = localStorage.getItem(prefix + "ventas");
@@ -245,27 +226,21 @@ function guardarDatosChofer(pin) {
     localStorage.setItem(prefix + "stock", JSON.stringify(stockFabrica));
 }
 function cargarDatosConsolidado() {
-    let ventas1 = [], ventas2 = [];
-    let gastos1 = { nafta:0, choferes:0, otros:0 }, gastos2 = { nafta:0, choferes:0, otros:0 };
-    let stock1 = {}, stock2 = {};
-    const prefix1 = `myc_1234_`, prefix2 = `myc_5678_`;
-    let v1 = localStorage.getItem(prefix1 + "ventas"); ventas1 = v1 ? JSON.parse(v1) : [];
-    let v2 = localStorage.getItem(prefix2 + "ventas"); ventas2 = v2 ? JSON.parse(v2) : [];
-    ventasData = [...ventas1, ...ventas2];
-    let g1 = localStorage.getItem(prefix1 + "gastosDetalle");
-    let g2 = localStorage.getItem(prefix2 + "gastosDetalle");
-    gastos1 = g1 ? JSON.parse(g1) : { nafta:0, choferes:0, otros:0 };
-    gastos2 = g2 ? JSON.parse(g2) : { nafta:0, choferes:0, otros:0 };
-    gastosData = {
-        nafta: gastos1.nafta + gastos2.nafta,
-        choferes: gastos1.choferes + gastos2.choferes,
-        otros: gastos1.otros + gastos2.otros
-    };
-    let s1 = localStorage.getItem(prefix1 + "stock");
-    let s2 = localStorage.getItem(prefix2 + "stock");
-    stock1 = s1 ? JSON.parse(s1) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    stock2 = s2 ? JSON.parse(s2) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    for (let prod of productosBase) stockFabrica[prod] = (stock1[prod] || 0) + (stock2[prod] || 0);
+    let v1=[], v2=[], g1={nafta:0,choferes:0,otros:0}, g2={nafta:0,choferes:0,otros:0}, s1={}, s2={};
+    const p1=`myc_1234_`, p2=`myc_5678_`;
+    v1 = JSON.parse(localStorage.getItem(p1+"ventas") || "[]");
+    v2 = JSON.parse(localStorage.getItem(p2+"ventas") || "[]");
+    ventasData = [...v1, ...v2];
+    let gd1 = localStorage.getItem(p1+"gastosDetalle");
+    let gd2 = localStorage.getItem(p2+"gastosDetalle");
+    g1 = gd1 ? JSON.parse(gd1) : {nafta:0,choferes:0,otros:0};
+    g2 = gd2 ? JSON.parse(gd2) : {nafta:0,choferes:0,otros:0};
+    gastosData = { nafta: g1.nafta+g2.nafta, choferes: g1.choferes+g2.choferes, otros: g1.otros+g2.otros };
+    let st1 = localStorage.getItem(p1+"stock");
+    let st2 = localStorage.getItem(p2+"stock");
+    s1 = st1 ? JSON.parse(st1) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+    s2 = st2 ? JSON.parse(st2) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+    for (let prod of productosBase) stockFabrica[prod] = (s1[prod]||0)+(s2[prod]||0);
 }
 async function actualizarTodo() {
     currentDriver = document.getElementById("driverSelect").value;
@@ -274,55 +249,74 @@ async function actualizarTodo() {
     await cargarClientesPrecios();
     renderRendicion();
     renderVentasPagosDeuda();
-    renderInventario();
     renderGananciaReal();
+    renderInventario();
     renderMovimientosTabla();
+    renderVentasClienteDelDia();
 }
 function renderRendicion() {
-    let totalEfectivo = 0, totalTransferencia = 0, totalCobros = 0;
+    let totalEfectivo=0, totalCobros=0;
     ventasData.forEach(v => {
         if (v.pago === "efectivo") totalEfectivo += v.total;
-        else if (v.pago === "transferencia") totalTransferencia += v.total;
-        else if (v.pago === "cobrocc") totalCobros += v.cobroDeuda || v.total;
-        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") totalCobros += v.cobroDeuda;
+        if (v.cobroDeuda>0) totalCobros += v.cobroDeuda;
+        else if (v.pago === "cobrocc") totalCobros += v.total;
     });
     const totalGastos = gastosData.nafta + gastosData.choferes + gastosData.otros;
-    const neto = totalEfectivo + totalTransferencia + totalCobros - totalGastos;
+    const neto = totalEfectivo + totalCobros - totalGastos;
     document.getElementById("rendicionContent").innerHTML = `
         <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Efectivo cobrado</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Transferencia cobrada</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de deuda</div></div>
         <div class="stat-card"><div class="stat-value">$${totalGastos.toLocaleString('es-AR')}</div><div class="stat-label">Total Gastos</div></div>
-        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d; color:white; padding:8px; border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR (Efectivo + Transferencia + Cobros - Gastos)</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR (Efectivo + Cobros - Gastos)</div></div>
     `;
 }
 function renderVentasPagosDeuda() {
-    let totalVentas = 0, totalEfectivo = 0, totalTransferencia = 0, totalCtaCte = 0, totalCobrosDeuda = 0, saldoDeudor = 0;
+    let totalVentas=0,totalEfectivo=0,totalTransferencia=0,totalCtaCte=0,totalCobrosDeuda=0,saldoDeudor=0;
     ventasData.forEach(v => {
-        if (v.pago === "cobrocc") {
-            totalCobrosDeuda += v.cobroDeuda || v.total;
-            saldoDeudor -= (v.cobroDeuda || v.total);
-        } else {
+        if (v.pago === "cobrocc") { totalCobrosDeuda += v.cobroDeuda||v.total; saldoDeudor -= (v.cobroDeuda||v.total); }
+        else {
             totalVentas += v.total;
             if (v.pago === "efectivo") totalEfectivo += v.total;
             else if (v.pago === "transferencia") totalTransferencia += v.total;
-            else if (v.pago === "ctacte") {
-                totalCtaCte += v.total;
-                saldoDeudor += v.total;
-            }
+            else if (v.pago === "ctacte") { totalCtaCte += v.total; saldoDeudor += v.total; }
         }
-        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") {
-            totalCobrosDeuda += v.cobroDeuda;
-            saldoDeudor -= v.cobroDeuda;
-        }
+        if (v.cobroDeuda>0 && v.pago!=="cobrocc") { totalCobrosDeuda += v.cobroDeuda; saldoDeudor -= v.cobroDeuda; }
     });
     document.getElementById("ventasPagosContent").innerHTML = `
         <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Total Ventas</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Ventas en Efectivo</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Ventas por Transferencia</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Efectivo</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Transferencia</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCtaCte.toLocaleString('es-AR')}</div><div class="stat-label">Ventas a Crédito</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
         <div class="stat-card"><div class="stat-value">$${saldoDeudor.toLocaleString('es-AR')}</div><div class="stat-label">Saldo Deudor Actual</div></div>
+    `;
+}
+function renderGananciaReal() {
+    let totalVentas=0, totalCosto=0, totalCobrosDeuda=0;
+    ventasData.forEach(v => {
+        if (v.pago !== "cobrocc") {
+            totalVentas += v.total;
+            let costo=0;
+            if (v.cantidades && costosClientes[v.cliente]) {
+                const c = costosClientes[v.cliente];
+                costo += (v.cantidades["1,7 KG"]||0)*c.c17;
+                costo += (v.cantidades["3,5 KG"]||0)*c.c35;
+                costo += (v.cantidades["14 KG"]||0)*c.c14;
+                costo += (v.cantidades["ESC.20KG"]||0)*c.c20;
+                costo += (v.cantidades["ESC.32KG"]||0)*c.c32;
+            }
+            totalCosto += costo;
+        } else totalCobrosDeuda += v.cobroDeuda||v.total;
+        if (v.cobroDeuda>0 && v.pago!=="cobrocc") totalCobrosDeuda += v.cobroDeuda;
+    });
+    const gananciaSin = totalVentas - totalCosto;
+    const gananciaCon = gananciaSin + totalCobrosDeuda;
+    document.getElementById("gananciaContent").innerHTML = `
+        <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Brutas</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo Fábrica</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#16a34a;color:white;padding:8px;border-radius:24px;">$${gananciaSin.toLocaleString('es-AR')}</div><div class="stat-label">GANANCIA REAL (sin cobros)</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${gananciaCon.toLocaleString('es-AR')}</div><div class="stat-label">GANANCIA REAL (con cobros)</div></div>
     `;
 }
 function renderInventario() {
@@ -332,46 +326,128 @@ function renderInventario() {
             for (let prod of productosBase) vendido[prod] += v.cantidades[prod] || 0;
         }
     });
-    let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody>`;
     for (let prod of productosBase) {
-        let carga = stockFabrica[prod] || 0;
-        let vend = vendido[prod] || 0;
-        html += `<tr><td>${prod}</td><td>${carga}</td><td>${vend}</td><td>${carga - vend}</td></tr>`;
+        let carga = stockFabrica[prod]||0, vend = vendido[prod]||0;
+        html += `<tr><td>${prod}</td><td>${carga}</td><td>${vend}</td><td>${carga-vend}</td></tr>`;
     }
     html += `</tbody></table>`;
     document.getElementById("inventarioContent").innerHTML = html;
 }
-function renderGananciaReal() {
-    let totalVentas = 0, totalCosto = 0, totalCobrosDeuda = 0;
-    ventasData.forEach(v => {
-        if (v.pago !== "cobrocc") {
-            totalVentas += v.total;
-            let costo = 0;
-            if (v.cantidades && costosClientes[v.cliente]) {
-                const cost = costosClientes[v.cliente];
-                costo += (v.cantidades["1,7 KG"]||0)*cost.c17;
-                costo += (v.cantidades["3,5 KG"]||0)*cost.c35;
-                costo += (v.cantidades["14 KG"]||0)*cost.c14;
-                costo += (v.cantidades["ESC.20KG"]||0)*cost.c20;
-                costo += (v.cantidades["ESC.32KG"]||0)*cost.c32;
-            }
-            totalCosto += costo;
-        } else totalCobrosDeuda += v.cobroDeuda || v.total;
-        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") totalCobrosDeuda += v.cobroDeuda;
+function renderVentasClienteDelDia(filtro="") {
+    const hoy = new Date().toISOString().slice(0,10);
+    let ventasHoy = ventasData.filter(v => v.fecha === hoy && v.pago !== "cobrocc");
+    if (filtro) ventasHoy = ventasHoy.filter(v => v.cliente.toLowerCase().includes(filtro.toLowerCase()));
+    if (ventasHoy.length===0) { document.getElementById("ventasClienteResultado").innerHTML = "<div class='stat-card'>Sin ventas hoy.</div>"; return; }
+    let html = `<table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Estado</th></tr></thead><tbody>`;
+    ventasHoy.forEach(v => {
+        const cant = v.cantidades || {};
+        const estado = (v.pago === "efectivo" || v.pago === "transferencia") ? "Pagado" : "Pendiente";
+        const badge = estado === "Pagado" ? "badge-pagado" : "badge-pendiente";
+        html += `<tr>
+            <td>${v.cliente}</td>
+            <td>${cant["1,7 KG"]||0}</td>
+            <td>${cant["3,5 KG"]||0}</td>
+            <td>${cant["14 KG"]||0}</td>
+            <td>${cant["ESC.20KG"]||0}</td>
+            <td>${cant["ESC.32KG"]||0}</td>
+            <td>$${v.total.toLocaleString('es-AR')}</td>
+            <td><span class="badge ${badge}">${estado}</span></td>
+        </tr>`;
     });
-    const ganancia = totalVentas - totalCosto + totalCobrosDeuda;
-    document.getElementById("gananciaContent").innerHTML = `
-        <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Brutas</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo Fábrica</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
-        <div class="stat-card"><div class="stat-value" style="background:#16a34a; color:white; padding:8px; border-radius:24px;">$${ganancia.toLocaleString('es-AR')}</div><div class="stat-label">GANANCIA REAL</div></div>
-    `;
+    html += `</tbody></table>`;
+    document.getElementById("ventasClienteResultado").innerHTML = html;
 }
-function renderMovimientosTabla() {
+// ========== CALENDARIO: muestra productos, financiero y detalle ==========
+function mostrarMovimientosFecha(fecha) {
+    if (!fecha) return;
+    const movs = ventasData.filter(v => v.fecha === fecha);
+    // 1. Resumen por cliente y producto (solo ventas, no cobros)
+    const prodPorCliente = {};
+    movs.forEach(v => {
+        if (v.pago === "cobrocc") return; // no son productos
+        const cant = v.cantidades || {};
+        if (!prodPorCliente[v.cliente]) prodPorCliente[v.cliente] = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0, totalFacturado: 0 };
+        for (let prod of productosBase) {
+            prodPorCliente[v.cliente][prod] += cant[prod] || 0;
+        }
+        prodPorCliente[v.cliente].totalFacturado += v.total;
+    });
+    let prodHTML = `<div class="stat-card"><strong>📦 Cantidad de bolsas vendidas (por cliente) - ${fecha}</strong><br><div style="overflow-x:auto;">`;
+    if (Object.keys(prodPorCliente).length === 0) prodHTML += "No hay ventas de productos en esta fecha.";
+    else {
+        prodHTML += `<table><thead><tr><th>Cliente</th><th>1,7 Kg</th><th>3,5 Kg</th><th>14 Kg</th><th>20 Kg</th><th>32 Kg</th><th>Total $</th></tr></thead><tbody>`;
+        for (let cli in prodPorCliente) {
+            const p = prodPorCliente[cli];
+            prodHTML += `<tr>
+                <td>${cli}</td>
+                <td>${p["1,7 KG"]}</td>
+                <td>${p["3,5 KG"]}</td>
+                <td>${p["14 KG"]}</td>
+                <td>${p["ESC.20KG"]}</td>
+                <td>${p["ESC.32KG"]}</td>
+                <td>$${p.totalFacturado.toLocaleString('es-AR')}</td>
+            </tr>`;
+        }
+        prodHTML += `</tbody></table>`;
+    }
+    prodHTML += `</div></div>`;
+    document.getElementById("resumenProductosFecha").innerHTML = prodHTML;
+
+    // 2. Resumen financiero por cliente (ventas, cobros, saldo)
+    const financiero = {};
+    movs.forEach(v => {
+        if (!financiero[v.cliente]) financiero[v.cliente] = { ventas:0, cobros:0, saldo:0 };
+        if (v.pago === "cobrocc") financiero[v.cliente].cobros += v.total;
+        else {
+            financiero[v.cliente].ventas += v.total;
+            if (v.pago === "ctacte") financiero[v.cliente].saldo += v.total;
+            if (v.cobroDeuda>0) financiero[v.cliente].saldo -= v.cobroDeuda;
+        }
+    });
+    let finHTML = `<div class="stat-card"><strong>💰 Resumen financiero por cliente - ${fecha}</strong><br><div style="overflow-x:auto;">`;
+    if (Object.keys(financiero).length === 0) finHTML += "No hay movimientos financieros.";
+    else {
+        finHTML += `<table><thead><tr><th>Cliente</th><th>Ventas ($)</th><th>Cobros de deuda ($)</th><th>Saldo del día</th></tr></thead><tbody>`;
+        for (let cli in financiero) {
+            finHTML += `<tr>
+                <td>${cli}</td>
+                <td>$${financiero[cli].ventas.toLocaleString('es-AR')}</td>
+                <td>$${financiero[cli].cobros.toLocaleString('es-AR')}</td>
+                <td>$${financiero[cli].saldo.toLocaleString('es-AR')}</td>
+            </tr>`;
+        }
+        finHTML += `</tbody></table>`;
+    }
+    finHTML += `</div></div>`;
+    document.getElementById("resumenFinancieroFecha").innerHTML = finHTML;
+
+    // 3. Detalle unitario
+    if (movs.length === 0) {
+        document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>No hay movimientos unitarios en esa fecha.</div>";
+        return;
+    }
+    let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
+    movs.forEach(v => {
+        let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta a crédito" : (v.pago === "efectivo" ? "Venta efectivo" : "Venta transferencia"));
+        detHTML += `<tr>
+            <td>${v.cliente}</td>
+            <td>${tipo}</td>
+            <td>$${v.total.toLocaleString('es-AR')}</td>
+            <td>${v.forma_pago || v.pago || ""}</td>
+            <td>${v.detalle || ""}</td>
+        </tr>`;
+    });
+    detHTML += `</tbody></table></div></div>`;
+    document.getElementById("movimientosFechaResultado").innerHTML = detHTML;
+}
+function renderMovimientosTabla(filtro="") {
     const tbody = document.querySelector("#movimientosTabla tbody");
     if (!tbody) return;
+    let datos = [...ventasData];
+    if (filtro) datos = datos.filter(v => v.cliente && v.cliente.toLowerCase().includes(filtro.toLowerCase()));
     tbody.innerHTML = "";
-    ventasData.slice().reverse().forEach(v => {
+    datos.slice().reverse().forEach(v => {
         const row = tbody.insertRow();
         row.insertCell(0).textContent = v.fecha || "";
         row.insertCell(1).textContent = v.cliente || "";
@@ -380,8 +456,7 @@ function renderMovimientosTabla() {
         row.insertCell(3).textContent = `$${v.total?.toLocaleString('es-AR') || 0}`;
         row.insertCell(4).textContent = v.forma_pago || v.pago || "";
         row.insertCell(5).textContent = v.detalle || "";
-        const acciones = row.insertCell(6);
-        acciones.className = "no-print";
+        const acciones = row.insertCell(6); acciones.className = "no-print";
         const btnEdit = document.createElement("button"); btnEdit.textContent = "✏️"; btnEdit.className = "btn-sm"; btnEdit.style.marginRight = "5px"; btnEdit.onclick = () => editarMovimiento(v);
         const btnDel = document.createElement("button"); btnDel.textContent = "🗑️"; btnDel.className = "btn-sm btn-red"; btnDel.onclick = () => eliminarMovimiento(v.id);
         acciones.appendChild(btnEdit); acciones.appendChild(btnDel);
@@ -455,7 +530,6 @@ async function guardarMovimientoModal() {
     toast(window.editandoId ? "Movimiento editado" : "Movimiento agregado");
 }
 function cerrarModalMov() { document.getElementById("movModal").style.display = "none"; window.editandoId = null; }
-// Stock manual
 function abrirEditarStock() {
     document.getElementById("stock_17").value = stockFabrica["1,7 KG"];
     document.getElementById("stock_35").value = stockFabrica["3,5 KG"];
@@ -478,50 +552,36 @@ function guardarStockManual() {
     toast("Stock actualizado manualmente");
     document.getElementById("stockModal").style.display = "none";
 }
-function calcularEquivalencia() {
-    const cliente = document.getElementById("equiClienteSelect").value;
-    const monto = parseFloat(document.getElementById("equiMonto").value);
-    if (!cliente || isNaN(monto) || monto <= 0) { document.getElementById("equivalenciaResultado").innerHTML = '<div class="stat-card">Ingrese un monto válido</div>'; return; }
-    const precios = preciosClientes[cliente];
-    if (!precios) { document.getElementById("equivalenciaResultado").innerHTML = '<div class="stat-card">No hay precios para este cliente</div>'; return; }
-    const orden = Object.entries(precios).sort((a,b)=>b[1]-a[1]);
-    let temp = monto;
-    let cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    for (let [prod, precio] of orden) {
-        let maxCant = Math.floor(temp / precio);
-        cant[prod] = maxCant;
-        temp -= maxCant * precio;
-    }
-    const totalCalculado = Object.entries(cant).reduce((sum, [prod, qty]) => sum + qty * precios[prod], 0);
-    const resto = monto - totalCalculado;
-    let html = `<div class="stat-card"><strong>Para $${monto.toLocaleString('es-AR')} con precios de ${cliente}:</strong><br>`;
-    for (let [prod, qty] of Object.entries(cant)) if (qty > 0) html += `${prod}: ${qty} bolsas = $${(qty * precios[prod]).toLocaleString('es-AR')}<br>`;
-    html += `<strong>Total aproximado: $${totalCalculado.toLocaleString('es-AR')}</strong> (resto $${resto.toLocaleString('es-AR')})<br>`;
-    html += `Precios: 1,7KG $${precios.p17}, 3,5KG $${precios.p35}, 14KG $${precios.p14}, 20KG $${precios.p20}, 32KG $${precios.p32}</div>`;
-    document.getElementById("equivalenciaResultado").innerHTML = html;
-}
 function imprimirSeccion(seccionId) {
     const element = document.getElementById(seccionId + "Card");
     if (!element) return;
     const clone = element.cloneNode(true);
-    clone.querySelectorAll(".no-print, button, .btn-sm").forEach(el => el.remove());
+    clone.querySelectorAll(".no-print, button, .btn-sm, .filtro").forEach(el => el.remove());
     const ventana = window.open('', '_blank');
     ventana.document.write(`<html><head><title>MYC HIELO - ${seccionId}</title><style>${Array.from(document.styleSheets).reduce((acc, sheet) => { try { return acc + Array.from(sheet.cssRules || []).map(r=>r.cssText).join('') } catch(e){return acc} }, '')} body{margin:20px;} .no-print{display:none;}</style></head><body>${clone.outerHTML}</body></html>`);
     ventana.document.close(); ventana.print(); ventana.close();
 }
 function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
+
 // Eventos
-document.getElementById("refreshBtn").addEventListener("click", actualizarTodo);
-document.getElementById("calcularEquiBtn").addEventListener("click", calcularEquivalencia);
+document.getElementById("refreshBtn").addEventListener("click", () => actualizarTodo());
 document.getElementById("agregarMovBtn").addEventListener("click", abrirAgregarMovimiento);
 document.getElementById("modalSaveBtn").addEventListener("click", guardarMovimientoModal);
 document.getElementById("modalCancelBtn").addEventListener("click", cerrarModalMov);
 document.getElementById("editStockBtn").addEventListener("click", abrirEditarStock);
 document.getElementById("saveStockBtn").addEventListener("click", guardarStockManual);
 document.getElementById("closeStockBtn").addEventListener("click", () => document.getElementById("stockModal").style.display = "none");
+document.getElementById("buscarMovBtn").addEventListener("click", () => { renderMovimientosTabla(document.getElementById("filtroClienteMov").value); });
+document.getElementById("limpiarFiltroMovBtn").addEventListener("click", () => { document.getElementById("filtroClienteMov").value = ""; renderMovimientosTabla(""); });
+document.getElementById("buscarVentasClienteBtn").addEventListener("click", () => { renderVentasClienteDelDia(document.getElementById("filtroClienteVentas").value); });
+document.getElementById("limpiarFiltroVentasBtn").addEventListener("click", () => { document.getElementById("filtroClienteVentas").value = ""; renderVentasClienteDelDia(""); });
+document.getElementById("verFechaBtn").addEventListener("click", () => { mostrarMovimientosFecha(document.getElementById("fechaCalendario").value); });
 window.onclick = (e) => { if (e.target === document.getElementById("movModal")) cerrarModalMov(); if (e.target === document.getElementById("stockModal")) document.getElementById("stockModal").style.display = "none"; };
 // Inicializar
-cargarClientesPrecios().then(() => actualizarTodo());
+cargarClientesPrecios().then(() => {
+    actualizarTodo();
+    document.getElementById("fechaCalendario").value = new Date().toISOString().slice(0,10);
+});
 </script>
 </body>
 </html>
