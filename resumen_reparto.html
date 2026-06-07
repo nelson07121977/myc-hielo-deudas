@@ -3,40 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Panel Resumen de Reparto (Avanzado)</title>
+    <title>MYC HIELO – Panel Resumen de Reparto</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         body { background: #e9f0f5; margin: 0; padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
         .card { background: white; border-radius: 28px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .card-title { font-weight: 800; font-size: 1.3rem; color: #0a3e6d; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .card-title { font-weight: 800; font-size: 1.3rem; color: #0a3e6d; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .selector { display: flex; gap: 12px; align-items: center; background: #f1f5f9; padding: 12px 20px; border-radius: 40px; margin-bottom: 20px; flex-wrap: wrap; }
         .selector label { font-weight: 600; }
-        select, button, input { padding: 8px 16px; border-radius: 40px; border: 1px solid #cbd5e1; background: white; font-size: 0.9rem; cursor: pointer; }
-        button { background: #0a3e6d; color: white; border: none; }
+        select, button, .btn { padding: 8px 16px; border-radius: 40px; border: 1px solid #cbd5e1; background: white; font-size: 0.9rem; cursor: pointer; }
+        button, .btn-primary { background: #0a3e6d; color: white; border: none; }
         .btn-sm { padding: 4px 12px; font-size: 0.7rem; }
-        .btn-green { background: #16a34a; }
         .btn-red { background: #b91c1c; }
+        .btn-green { background: #16a34a; }
         .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 20px; }
         .stat-card { background: #f8fafc; border-radius: 24px; padding: 16px; }
-        .stat-value { font-size: 1.5rem; font-weight: 800; color: #0a3e6d; }
+        .stat-value { font-size: 1.6rem; font-weight: 800; color: #0a3e6d; }
         .stat-label { font-size: 0.8rem; color: #475569; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
         th { background: #eef2ff; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
-        .badge-deuda { background: #fee2e2; color: #b91c1c; }
-        .badge-pago { background: #d1fae5; color: #0a7c4a; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end; }
-        .form-group { flex: 1 1 180px; }
+        .form-group { margin-bottom: 12px; }
         label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border-radius: 24px; border: 1px solid #ccc; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 8px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 1000; display: none; }
         .toast.show { display: block; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; max-width: 500px; width: 90%; border-radius: 28px; padding: 24px; }
         @media print {
             body { background: white; }
-            .selector, .no-print, .toast, button, .print-hide { display: none !important; }
+            .selector, .no-print, .toast, button, .print-hide, .modal { display: none !important; }
             .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
         }
     </style>
@@ -44,7 +44,7 @@
 <body>
 <div class="container">
     <div class="card">
-        <div class="card-title">🧊 Panel Resumen de Reparto (Avanzado)</div>
+        <div class="card-title">🧊 Panel Resumen de Reparto</div>
         <div class="selector">
             <label>📌 Ver datos de:</label>
             <select id="driverSelect">
@@ -52,12 +52,7 @@
                 <option value="5678">Chofer 5678</option>
                 <option value="both">Ambos (consolidado)</option>
             </select>
-            <label>📅 Desde:</label>
-            <input type="date" id="fechaDesde">
-            <label>Hasta:</label>
-            <input type="date" id="fechaHasta">
             <button id="refreshBtn">🔄 Actualizar</button>
-            <button id="exportCsvBtn" class="btn-sm btn-green">📎 Exportar CSV</button>
         </div>
     </div>
 
@@ -69,63 +64,28 @@
         <div class="grid-2" id="rendicionContent"></div>
     </div>
 
-    <!-- Ventas, Pagos, Deuda -->
+    <!-- Ventas, pagos, deuda -->
     <div class="card" id="ventasPagosCard">
-        <div class="card-title">📊 Resumen Financiero
+        <div class="card-title">📊 Ventas, Pagos, Cobros y Deuda
             <button class="btn-sm no-print" onclick="imprimirSeccion('ventasPagos')">🖨️ Imprimir</button>
         </div>
         <div class="grid-2" id="ventasPagosContent"></div>
     </div>
 
-    <!-- Top Clientes y Gráfico -->
-    <div class="card">
-        <div class="card-title">🏆 Top 5 Clientes por Volumen de Compra</div>
-        <div id="topClientesList" class="stat-card"></div>
-        <div class="card-title" style="margin-top:20px;">📈 Evolución de Ventas (últimos 7 días)</div>
-        <canvas id="evolucionChart" width="400" height="200"></canvas>
-    </div>
-
-    <!-- Inventario con edición manual -->
-    <div class="card" id="inventarioCard">
-        <div class="card-title">🏭 Inventario / Stock (carga fábrica - vendido)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('inventario')">🖨️ Imprimir</button>
-        </div>
-        <div id="inventarioContent"></div>
-        <div style="margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
-            <div class="card-title" style="font-size:1rem;">✏️ Editar carga de fábrica (stock inicial)</div>
-            <div class="form-row">
-                <div class="form-group"><label>1,7 KG</label><input type="number" id="edit_stock_17" step="1"></div>
-                <div class="form-group"><label>3,5 KG</label><input type="number" id="edit_stock_35" step="1"></div>
-                <div class="form-group"><label>14 KG</label><input type="number" id="edit_stock_14" step="1"></div>
-                <div class="form-group"><label>20 KG</label><input type="number" id="edit_stock_20" step="1"></div>
-                <div class="form-group"><label>32 KG</label><input type="number" id="edit_stock_32" step="1"></div>
-                <div><button id="guardarStockBtn" class="btn-sm">Guardar stock</button></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ganancia Real -->
-    <div class="card" id="gananciaCard">
-        <div class="card-title">📈 Ganancia Real (Ventas - Costos + Cobros)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
-        </div>
-        <div class="grid-2" id="gananciaContent"></div>
-    </div>
-
-    <!-- Equivalencia en bolsas -->
+    <!-- Equivalencia en bolsas (corregido) -->
     <div class="card" id="equivalenciaCard">
         <div class="card-title">📦 Equivalencia en Bolsas (según cliente)
             <button class="btn-sm no-print" onclick="imprimirSeccion('equivalencia')">🖨️ Imprimir</button>
         </div>
         <div class="flex-between" style="margin-bottom: 16px;">
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
                 <div class="form-group" style="min-width: 180px;">
                     <label>Cliente</label>
-                    <select id="equiClienteSelect"></select>
+                    <select id="equiClienteSelect" style="width: auto; min-width: 160px;"></select>
                 </div>
                 <div class="form-group">
                     <label>Monto a convertir ($)</label>
-                    <input type="number" id="equiMonto" placeholder="Ingrese monto">
+                    <input type="number" id="equiMonto" placeholder="Ingrese monto" style="width: 150px;">
                 </div>
                 <button id="calcularEquiBtn" class="btn-sm">Calcular</button>
             </div>
@@ -133,11 +93,30 @@
         <div id="equivalenciaResultado" class="stat-card"></div>
     </div>
 
-    <!-- Movimientos históricos -->
+    <!-- Inventario (con edición manual) -->
+    <div class="card" id="inventarioCard">
+        <div class="card-title">🏭 Inventario / Stock (carga fábrica - vendido)
+            <div>
+                <button id="editStockBtn" class="btn-sm btn-green no-print">✏️ Editar stock manual</button>
+                <button class="btn-sm no-print" onclick="imprimirSeccion('inventario')">🖨️ Imprimir</button>
+            </div>
+        </div>
+        <div id="inventarioContent"></div>
+    </div>
+
+    <!-- Ganancia real -->
+    <div class="card" id="gananciaCard">
+        <div class="card-title">📈 Ganancia Real (Ventas - Costos + Cobros)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
+        </div>
+        <div class="grid-2" id="gananciaContent"></div>
+    </div>
+
+    <!-- Movimientos -->
     <div class="card" id="movimientosCard">
         <div class="card-title">📜 Movimientos Históricos
+            <button id="agregarMovBtn" class="btn-sm btn-green no-print">➕ Agregar Movimiento</button>
             <button class="btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
-            <button id="agregarMovBtn" class="btn-sm btn-green">➕ Agregar Movimiento</button>
         </div>
         <div style="overflow-x:auto;">
             <table id="movimientosTabla">
@@ -148,9 +127,27 @@
     </div>
 </div>
 
-<!-- Modal para agregar/editar movimiento -->
-<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:white; max-width:500px; width:90%; border-radius:28px; padding:24px;">
+<!-- Modal editar stock -->
+<div id="stockModal" class="modal">
+    <div class="modal-content">
+        <h3>Editar Stock Fábrica</h3>
+        <div id="stockForm">
+            <div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div>
+            <div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div>
+            <div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div>
+            <div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div>
+            <div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:20px;">
+            <button id="saveStockBtn" class="btn-sm">Guardar</button>
+            <button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal movimiento -->
+<div id="movModal" class="modal">
+    <div class="modal-content">
         <h3 id="modalTitle">Agregar Movimiento</h3>
         <div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div>
         <div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div>
@@ -190,9 +187,8 @@ let ventasData = [];
 let gastosData = { nafta:0, choferes:0, otros:0 };
 let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
 const productosBase = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
-let evolucionChart = null;
 
-// ========== CARGAR DATOS DESDE LA NUBE ==========
+// ========== CARGAR CLIENTES, PRECIOS, COSTOS ==========
 async function cargarClientesPrecios() {
     try {
         const res = await fetch(`${API_URL}?ruta=clientes`);
@@ -210,6 +206,7 @@ async function cargarClientesPrecios() {
             clientesList.forEach(c => costosClientes[c] = getCostosPorDefecto());
         }
         llenarSelectClientes();
+        llenarSelectModalClientes();
     } catch(e) { console.error("Error cargando clientes", e); }
 }
 function getPreciosPorDefecto(cliente) {
@@ -219,8 +216,16 @@ function getPreciosPorDefecto(cliente) {
     return { p17, p35, p14, p20, p32 };
 }
 function getCostosPorDefecto() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
+function llenarSelectClientes() {
+    const select = document.getElementById("equiClienteSelect");
+    if (select) select.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+function llenarSelectModalClientes() {
+    const select = document.getElementById("modalCliente");
+    if (select) select.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
+}
 
-// ========== CARGAR DATOS DESDE LOCALSTORAGE ==========
+// ========== CARGAR DATOS DEL CHOFER ==========
 function cargarDatosChofer(pin) {
     const prefix = `myc_${pin}_`;
     let ventas = localStorage.getItem(prefix + "ventas");
@@ -231,12 +236,6 @@ function cargarDatosChofer(pin) {
     let stock = localStorage.getItem(prefix + "stock");
     if (stock) stockFabrica = JSON.parse(stock);
     else stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    // Actualizar inputs de stock
-    document.getElementById("edit_stock_17").value = stockFabrica["1,7 KG"];
-    document.getElementById("edit_stock_35").value = stockFabrica["3,5 KG"];
-    document.getElementById("edit_stock_14").value = stockFabrica["14 KG"];
-    document.getElementById("edit_stock_20").value = stockFabrica["ESC.20KG"];
-    document.getElementById("edit_stock_32").value = stockFabrica["ESC.32KG"];
 }
 function guardarDatosChofer(pin) {
     const prefix = `myc_${pin}_`;
@@ -249,12 +248,9 @@ function cargarDatosConsolidado() {
     let ventas1 = [], ventas2 = [];
     let gastos1 = { nafta:0, choferes:0, otros:0 }, gastos2 = { nafta:0, choferes:0, otros:0 };
     let stock1 = {}, stock2 = {};
-    const prefix1 = `myc_1234_`;
-    const prefix2 = `myc_5678_`;
-    let v1 = localStorage.getItem(prefix1 + "ventas");
-    ventas1 = v1 ? JSON.parse(v1) : [];
-    let v2 = localStorage.getItem(prefix2 + "ventas");
-    ventas2 = v2 ? JSON.parse(v2) : [];
+    const prefix1 = `myc_1234_`, prefix2 = `myc_5678_`;
+    let v1 = localStorage.getItem(prefix1 + "ventas"); ventas1 = v1 ? JSON.parse(v1) : [];
+    let v2 = localStorage.getItem(prefix2 + "ventas"); ventas2 = v2 ? JSON.parse(v2) : [];
     ventasData = [...ventas1, ...ventas2];
     let g1 = localStorage.getItem(prefix1 + "gastosDetalle");
     let g2 = localStorage.getItem(prefix2 + "gastosDetalle");
@@ -269,35 +265,22 @@ function cargarDatosConsolidado() {
     let s2 = localStorage.getItem(prefix2 + "stock");
     stock1 = s1 ? JSON.parse(s1) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     stock2 = s2 ? JSON.parse(s2) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    for (let prod of productosBase) {
-        stockFabrica[prod] = (stock1[prod] || 0) + (stock2[prod] || 0);
-    }
-    // Mostrar stock en inputs (pero no se puede editar en modo consolidado)
-    document.getElementById("edit_stock_17").value = stockFabrica["1,7 KG"];
-    document.getElementById("edit_stock_35").value = stockFabrica["3,5 KG"];
-    document.getElementById("edit_stock_14").value = stockFabrica["14 KG"];
-    document.getElementById("edit_stock_20").value = stockFabrica["ESC.20KG"];
-    document.getElementById("edit_stock_32").value = stockFabrica["ESC.32KG"];
+    for (let prod of productosBase) stockFabrica[prod] = (stock1[prod] || 0) + (stock2[prod] || 0);
 }
-
-// Filtrar por fechas
-function getFechas() {
-    let desde = document.getElementById("fechaDesde").value;
-    let hasta = document.getElementById("fechaHasta").value;
-    if (!desde && !hasta) return ventasData;
-    return ventasData.filter(v => {
-        if (!v.fecha) return true;
-        if (desde && v.fecha < desde) return false;
-        if (hasta && v.fecha > hasta) return false;
-        return true;
-    });
+async function actualizarTodo() {
+    currentDriver = document.getElementById("driverSelect").value;
+    if (currentDriver === "both") cargarDatosConsolidado();
+    else cargarDatosChofer(currentDriver);
+    await cargarClientesPrecios();
+    renderRendicion();
+    renderVentasPagosDeuda();
+    renderInventario();
+    renderGananciaReal();
+    renderMovimientosTabla();
 }
-
-// ========== RENDERIZADO ==========
 function renderRendicion() {
-    const filtradas = getFechas();
     let totalEfectivo = 0, totalTransferencia = 0, totalCobros = 0;
-    filtradas.forEach(v => {
+    ventasData.forEach(v => {
         if (v.pago === "efectivo") totalEfectivo += v.total;
         else if (v.pago === "transferencia") totalTransferencia += v.total;
         else if (v.pago === "cobrocc") totalCobros += v.cobroDeuda || v.total;
@@ -310,14 +293,12 @@ function renderRendicion() {
         <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Transferencia cobrada</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de deuda</div></div>
         <div class="stat-card"><div class="stat-value">$${totalGastos.toLocaleString('es-AR')}</div><div class="stat-label">Total Gastos</div></div>
-        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d; color:white; padding:8px; border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d; color:white; padding:8px; border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR (Efectivo + Transferencia + Cobros - Gastos)</div></div>
     `;
 }
 function renderVentasPagosDeuda() {
-    const filtradas = getFechas();
-    let totalVentas = 0, totalEfectivo = 0, totalTransferencia = 0, totalCtaCte = 0, totalCobrosDeuda = 0;
-    let saldoDeudor = 0;
-    filtradas.forEach(v => {
+    let totalVentas = 0, totalEfectivo = 0, totalTransferencia = 0, totalCtaCte = 0, totalCobrosDeuda = 0, saldoDeudor = 0;
+    ventasData.forEach(v => {
         if (v.pago === "cobrocc") {
             totalCobrosDeuda += v.cobroDeuda || v.total;
             saldoDeudor -= (v.cobroDeuda || v.total);
@@ -337,80 +318,32 @@ function renderVentasPagosDeuda() {
     });
     document.getElementById("ventasPagosContent").innerHTML = `
         <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Total Ventas</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Efectivo</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Transferencia</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Ventas en Efectivo</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Ventas por Transferencia</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCtaCte.toLocaleString('es-AR')}</div><div class="stat-label">Ventas a Crédito</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
         <div class="stat-card"><div class="stat-value">$${saldoDeudor.toLocaleString('es-AR')}</div><div class="stat-label">Saldo Deudor Actual</div></div>
     `;
 }
-function renderTopClientes() {
-    const filtradas = getFechas();
-    const comprasPorCliente = {};
-    filtradas.forEach(v => {
-        if (v.pago !== "cobrocc") {
-            comprasPorCliente[v.cliente] = (comprasPorCliente[v.cliente] || 0) + v.total;
-        }
-    });
-    const top = Object.entries(comprasPorCliente).sort((a,b)=>b[1]-a[1]).slice(0,5);
-    let html = '<div class="stat-card"><table style="margin:0"><thead><tr><th>Cliente</th><th>Monto comprado</th></tr></thead><tbody>';
-    top.forEach(([cli, monto]) => {
-        html += `<tr><td>${cli}</td><td>$${monto.toLocaleString('es-AR')}</td></tr>`;
-    });
-    if (top.length === 0) html += '<tr><td colspan="2">Sin datos</td></tr>';
-    html += '</tbody></table></div>';
-    document.getElementById("topClientesList").innerHTML = html;
-}
-function renderEvolucion() {
-    const filtradas = getFechas();
-    // Últimos 7 días
-    const hoy = new Date();
-    const fechas = [];
-    for (let i = 6; i >= 0; i--) {
-        let d = new Date();
-        d.setDate(hoy.getDate() - i);
-        fechas.push(d.toISOString().slice(0,10));
-    }
-    const ventasPorDia = {};
-    fechas.forEach(f => ventasPorDia[f] = 0);
-    filtradas.forEach(v => {
-        if (v.pago !== "cobrocc" && v.fecha && fechas.includes(v.fecha)) {
-            ventasPorDia[v.fecha] += v.total;
-        }
-    });
-    const valores = fechas.map(f => ventasPorDia[f]);
-    const ctx = document.getElementById('evolucionChart').getContext('2d');
-    if (evolucionChart) evolucionChart.destroy();
-    evolucionChart = new Chart(ctx, {
-        type: 'line',
-        data: { labels: fechas.map(f=>f.slice(5)), datasets: [{ label: 'Ventas $', data: valores, borderColor: '#0a3e6d', backgroundColor: 'rgba(10,62,109,0.1)', fill: true, tension: 0.2 }] },
-        options: { responsive: true }
-    });
-}
 function renderInventario() {
-    // Calcular vendido
     let vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    getFechas().forEach(v => {
+    ventasData.forEach(v => {
         if (v.pago !== "cobrocc" && v.cantidades) {
-            for (let prod of productosBase) {
-                vendido[prod] += v.cantidades[prod] || 0;
-            }
+            for (let prod of productosBase) vendido[prod] += v.cantidades[prod] || 0;
         }
     });
     let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody>`;
     for (let prod of productosBase) {
         let carga = stockFabrica[prod] || 0;
         let vend = vendido[prod] || 0;
-        let restante = carga - vend;
-        html += `<tr><td>${prod}</td><td>${carga}</td><td>${vend}</td><td>${restante}</td></tr>`;
+        html += `<tr><td>${prod}</td><td>${carga}</td><td>${vend}</td><td>${carga - vend}</td></tr>`;
     }
     html += `</tbody></table>`;
     document.getElementById("inventarioContent").innerHTML = html;
 }
 function renderGananciaReal() {
-    const filtradas = getFechas();
-    let totalVentas = 0, totalCosto = 0, totalCobros = 0;
-    filtradas.forEach(v => {
+    let totalVentas = 0, totalCosto = 0, totalCobrosDeuda = 0;
+    ventasData.forEach(v => {
         if (v.pago !== "cobrocc") {
             totalVentas += v.total;
             let costo = 0;
@@ -423,25 +356,22 @@ function renderGananciaReal() {
                 costo += (v.cantidades["ESC.32KG"]||0)*cost.c32;
             }
             totalCosto += costo;
-        } else {
-            totalCobros += v.cobroDeuda || v.total;
-        }
-        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") totalCobros += v.cobroDeuda;
+        } else totalCobrosDeuda += v.cobroDeuda || v.total;
+        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") totalCobrosDeuda += v.cobroDeuda;
     });
-    const ganancia = totalVentas - totalCosto + totalCobros;
+    const ganancia = totalVentas - totalCosto + totalCobrosDeuda;
     document.getElementById("gananciaContent").innerHTML = `
         <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Brutas</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo de Fábrica</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo Fábrica</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
         <div class="stat-card"><div class="stat-value" style="background:#16a34a; color:white; padding:8px; border-radius:24px;">$${ganancia.toLocaleString('es-AR')}</div><div class="stat-label">GANANCIA REAL</div></div>
     `;
 }
 function renderMovimientosTabla() {
-    const filtradas = getFechas();
     const tbody = document.querySelector("#movimientosTabla tbody");
     if (!tbody) return;
     tbody.innerHTML = "";
-    filtradas.slice().reverse().forEach((v, idx) => {
+    ventasData.slice().reverse().forEach(v => {
         const row = tbody.insertRow();
         row.insertCell(0).textContent = v.fecha || "";
         row.insertCell(1).textContent = v.cliente || "";
@@ -452,40 +382,33 @@ function renderMovimientosTabla() {
         row.insertCell(5).textContent = v.detalle || "";
         const acciones = row.insertCell(6);
         acciones.className = "no-print";
-        const btnEdit = document.createElement("button");
-        btnEdit.textContent = "✏️";
-        btnEdit.className = "btn-sm";
-        btnEdit.style.marginRight = "5px";
-        btnEdit.onclick = () => editarMovimiento(v.id, v);
-        const btnDel = document.createElement("button");
-        btnDel.textContent = "🗑️";
-        btnDel.className = "btn-sm btn-red";
-        btnDel.onclick = () => eliminarMovimiento(v.id);
-        acciones.appendChild(btnEdit);
-        acciones.appendChild(btnDel);
+        const btnEdit = document.createElement("button"); btnEdit.textContent = "✏️"; btnEdit.className = "btn-sm"; btnEdit.style.marginRight = "5px"; btnEdit.onclick = () => editarMovimiento(v);
+        const btnDel = document.createElement("button"); btnDel.textContent = "🗑️"; btnDel.className = "btn-sm btn-red"; btnDel.onclick = () => eliminarMovimiento(v.id);
+        acciones.appendChild(btnEdit); acciones.appendChild(btnDel);
     });
 }
-// Editar y eliminar
 function eliminarMovimiento(id) {
-    if (confirm("¿Eliminar este movimiento?")) {
-        ventasData = ventasData.filter(m => m.id !== id);
-        if (currentDriver !== "both") guardarDatosChofer(currentDriver);
-        actualizarTodo();
-        toast("Movimiento eliminado");
-    }
+    if (!confirm("¿Eliminar este movimiento?")) return;
+    if (currentDriver === "both") { alert("No se puede eliminar en modo consolidado. Seleccione un chofer específico."); return; }
+    ventasData = ventasData.filter(m => m.id !== id);
+    guardarDatosChofer(currentDriver);
+    actualizarTodo();
+    toast("Movimiento eliminado");
 }
-function editarMovimiento(id, viejo) {
+function editarMovimiento(viejo) {
     document.getElementById("modalTitle").innerText = "Editar Movimiento";
     document.getElementById("modalFecha").value = viejo.fecha || "";
     document.getElementById("modalCliente").value = viejo.cliente || "";
-    document.getElementById("modalTipo").value = viejo.pago === "cobrocc" ? "pago" : (viejo.pago === "ctacte" ? "deuda" : (viejo.pago === "efectivo" || viejo.pago === "transferencia" ? "pago" : "deuda"));
+    let tipoMap = { ctacte:"deuda", cobrocc:"pago", efectivo:"pago", transferencia:"pago" };
+    document.getElementById("modalTipo").value = tipoMap[viejo.pago] || "deuda";
     document.getElementById("modalMonto").value = viejo.total || 0;
     document.getElementById("modalFormaPago").value = viejo.forma_pago || (viejo.pago === "transferencia" ? "Transferencia" : (viejo.pago === "efectivo" ? "Efectivo" : ""));
     document.getElementById("modalDetalle").value = viejo.detalle || "";
-    window.editandoId = id;
-    document.getElementById("modal").style.display = "flex";
+    window.editandoId = viejo.id;
+    document.getElementById("movModal").style.display = "flex";
 }
 function abrirAgregarMovimiento() {
+    if (currentDriver === "both") { alert("No se puede agregar en modo consolidado. Seleccione un chofer específico."); return; }
     document.getElementById("modalTitle").innerText = "Agregar Movimiento";
     document.getElementById("modalFecha").value = new Date().toISOString().slice(0,10);
     document.getElementById("modalCliente").value = clientesList[0] || "";
@@ -494,7 +417,7 @@ function abrirAgregarMovimiento() {
     document.getElementById("modalFormaPago").value = "";
     document.getElementById("modalDetalle").value = "";
     window.editandoId = null;
-    document.getElementById("modal").style.display = "flex";
+    document.getElementById("movModal").style.display = "flex";
 }
 async function guardarMovimientoModal() {
     const fecha = document.getElementById("modalFecha").value;
@@ -506,11 +429,8 @@ async function guardarMovimientoModal() {
     if (!fecha || !cliente || isNaN(monto) || monto <= 0) { alert("Complete campos válidos"); return; }
     let nuevoMov = {
         id: window.editandoId || Date.now(),
-        fecha,
-        cliente,
-        total: monto,
-        detalle,
-        pago: tipo === "deuda" ? "ctacte" : (tipo === "pago" ? (formaPago === "Efectivo" ? "efectivo" : (formaPago === "Transferencia" ? "transferencia" : "cobrocc")) : (tipo === "gasto" ? "gasto" : "ctacte")),
+        fecha, cliente, total: monto, detalle,
+        pago: tipo === "deuda" ? "ctacte" : (tipo === "pago" ? (formaPago === "Efectivo" ? "efectivo" : (formaPago === "Transferencia" ? "transferencia" : "cobrocc")) : "gasto"),
         forma_pago: tipo === "pago" ? formaPago : null,
         cobroDeuda: (tipo === "pago" ? monto : 0),
         cantidades: { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 }
@@ -519,43 +439,44 @@ async function guardarMovimientoModal() {
         if (detalle.toLowerCase().includes("nafta")) gastosData.nafta += monto;
         else if (detalle.toLowerCase().includes("chofer")) gastosData.choferes += monto;
         else gastosData.otros += monto;
-        if (currentDriver !== "both") guardarDatosChofer(currentDriver);
+        guardarDatosChofer(currentDriver);
         actualizarTodo();
-        cerrarModal();
+        cerrarModalMov();
         toast("Gasto registrado");
         return;
     }
     if (window.editandoId) {
         const index = ventasData.findIndex(m => m.id === window.editandoId);
         if (index !== -1) ventasData[index] = nuevoMov;
-    } else {
-        ventasData.push(nuevoMov);
-    }
-    if (currentDriver !== "both") guardarDatosChofer(currentDriver);
+    } else ventasData.push(nuevoMov);
+    guardarDatosChofer(currentDriver);
     actualizarTodo();
-    cerrarModal();
+    cerrarModalMov();
     toast(window.editandoId ? "Movimiento editado" : "Movimiento agregado");
+}
+function cerrarModalMov() { document.getElementById("movModal").style.display = "none"; window.editandoId = null; }
+// Stock manual
+function abrirEditarStock() {
+    document.getElementById("stock_17").value = stockFabrica["1,7 KG"];
+    document.getElementById("stock_35").value = stockFabrica["3,5 KG"];
+    document.getElementById("stock_14").value = stockFabrica["14 KG"];
+    document.getElementById("stock_20").value = stockFabrica["ESC.20KG"];
+    document.getElementById("stock_32").value = stockFabrica["ESC.32KG"];
+    document.getElementById("stockModal").style.display = "flex";
 }
 function guardarStockManual() {
     if (currentDriver === "both") { alert("No se puede editar stock en modo consolidado. Seleccione un chofer específico."); return; }
     stockFabrica = {
-        "1,7 KG": parseInt(document.getElementById("edit_stock_17").value) || 0,
-        "3,5 KG": parseInt(document.getElementById("edit_stock_35").value) || 0,
-        "14 KG": parseInt(document.getElementById("edit_stock_14").value) || 0,
-        "ESC.20KG": parseInt(document.getElementById("edit_stock_20 parseInt(document.getElementById("edit_stock_17").value) || 0,
-        "3,5 KG": parseInt(document.getElementById("edit_stock_35").value) || 0,
-        "14 KG": parseInt(document.getElementById("edit_stock_14").value) || 0,
-        "ESC.20KG": parseInt(document.getElementById("edit_stock_20").value) || 0,
-        "ESC.32KG": parseInt(document.getElementById("edit_stock_32").value) || 0
+        "1,7 KG": parseInt(document.getElementById("stock_17").value) || 0,
+        "3,5 KG": parseInt(document.getElementById("stock_35").value) || 0,
+        "14 KG": parseInt(document.getElementById("stock_14").value) || 0,
+        "ESC.20KG": parseInt(document.getElementById("stock_20").value) || 0,
+        "ESC.32KG": parseInt(document.getElementById("stock_32").value) || 0
     };
     guardarDatosChofer(currentDriver);
     renderInventario();
-    toast("Stock actual").value) || 0,
-        "ESC.32KG": parseInt(document.getElementById("edit_stock_32").value) || 0
-    };
-    guardarDatosChofer(currentDriver);
-    renderInventario();
-    toast("Stock actualizado");
+    toast("Stock actualizado manualmente");
+    document.getElementById("stockModal").style.display = "none";
 }
 function calcularEquivalencia() {
     const cliente = document.getElementById("equiClienteSelect").value;
@@ -563,15 +484,6 @@ function calcularEquivalencia() {
     if (!cliente || isNaN(monto) || monto <= 0) { document.getElementById("equivalenciaResultado").innerHTML = '<div class="stat-card">Ingrese un monto válido</div>'; return; }
     const precios = preciosClientes[cliente];
     if (!precios) { document.getElementById("equivalenciaResultado").innerHTML = '<div class="stat-card">No hay precios para este cliente</div>'; return; }
-    // Greedy porizado");
-}
-function calcularEquivalencia() {
-    const cliente = document.getElementById("equiClienteSelect").value;
-    const monto = parseFloat(document.getElementById("equiMonto").value);
-    if (!cliente || isNaN(monto) || monto <= 0) { document.getElementById("equivalenciaResultado").innerHTML = '<div class="stat-card">Ingrese un monto válido</div>'; return; }
-    const precios = preciosClientes[cliente];
-    if (!precios) { document.getElementById("equivalenciaResultado").innerHTML = '<div class="stat-card">No hay precios para este cliente</div>'; return; }
-    // Greedy por precio descendente
     const orden = Object.entries(precios).sort((a,b)=>b[1]-a[1]);
     let temp = monto;
     let cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
@@ -580,151 +492,35 @@ function calcularEquivalencia() {
         cant[prod] = maxCant;
         temp -= maxCant * precio;
     }
-    const totalCalc = Object.entries(cant).reduce((sum, [prod, qty]) => sum + qty * precios[prod], 0);
-    let html = `<div class="stat-card"><strong>Para $${monto.toLocaleString('es-AR')} (precios ${cliente}):</strong><br>`;
-    for (let precio descendente
-    const orden = Object.entries(precios).sort((a,b)=>b[1]-a[1]);
-    let temp = monto;
-    let cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    for (let [prod, precio] of orden) {
-        let maxCant = Math.floor(temp / precio);
-        cant[prod] = maxCant;
-        temp -= maxCant * precio;
-    }
-    const totalCalc = Object.entries(cant).reduce((sum, [prod, qty]) => sum + qty * precios[prod], 0);
-    let html = `<div class="stat-card"><strong>Para $${monto.toLocaleString('es-AR')} (precios ${cliente}):</strong><br>`;
-    for (let [prod, qty [prod, qty] of Object.entries(cant)) {
-        if (qty > 0) html += `${prod}: ${qty} bolsas = $${(qty * precios[prod]).toLocaleString('es-AR')}<br>`;
-    }
-    html += `<strong>Total aproximado: $${totalCalc.toLocaleString('es-AR')}</strong> (resto $${(monto - totalCalc).toLocaleString('es-AR')})<br>`;
-    html += `Precios: 1,7 $${precios.p17}, 3,5 $${precios.p35}, 14 $${precios.p14}, 20 $${precios.p20}, 32 $${precios.p32}</div>`;
+    const totalCalculado = Object.entries(cant).reduce((sum, [prod, qty]) => sum + qty * precios[prod], 0);
+    const resto = monto - totalCalculado;
+    let html = `<div class="stat-card"><strong>Para $${monto.toLocaleString('es-AR')} con precios de ${cliente}:</strong><br>`;
+    for (let [prod, qty] of Object.entries(cant)) if (qty > 0) html += `${prod}: ${qty} bolsas = $${(qty * precios[prod]).toLocaleString('es-AR')}<br>`;
+    html += `<strong>Total aproximado: $${totalCalculado.toLocaleString('es-AR')}</strong> (resto $${resto.toLocaleString('es-AR')})<br>`;
+    html += `Precios: 1,7KG $${precios.p17}, 3,5KG $${precios.p35}, 14KG $${precios.p14}, 20KG $${precios.p20}, 32KG $${precios.p32}</div>`;
     document.getElementById("equivalenciaResultado").innerHTML = html;
-}
-function llenarSelectClientes() {
-    const select = document.getElementById("equiClienteSelect");
-    select.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
-    const modalCliente = document.getElementById("modalCliente");
-    modalCliente.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
-}
-async function actualizarTodo() {
-    currentDriver = document.getElementById("driverSelect").value;
-    if (currentDriver === "both") {
-        cargarDatosConsolidado();
-    } else {
-        cargarDatosChofer(currentDriver);
-    }
-    await cargarClient] of Object.entries(cant)) {
-        if (qty > 0) html += `${prod}: ${qty} bolsas = $${(qty * precios[prod]).toLocaleString('es-AR')}<br>`;
-    }
-    html += `<strong>Total aproximado: $${totalCalc.toLocaleString('es-AR')}</strong> (resto $${(monto - totalCalc).toLocaleString('es-AR')})<br>`;
-    html += `Precios: 1,7 $${precios.p17}, 3,5 $${precios.p35}, 14 $${precios.p14}, 20 $${precios.p20}, 32 $${precios.p32}</div>`;
-    document.getElementById("equivalenciaResultado").innerHTML = html;
-}
-function llenarSelectClientes() {
-    const select = document.getElementById("equiClienteSelect");
-    select.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
-    const modalCliente = document.getElementById("modalCliente");
-    modalCliente.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
-}
-async function actualizarTodo() {
-    currentDriver = document.getElementById("driverSelect").value;
-    if (currentDriver === "both") {
-        cargarDatosConsolidado();
-    } else {
-        cargarDatosChofer(currentDriver);
-    }
-   esPrecios();
-    renderRendicion();
-    renderVentasPagosDeuda();
-    renderTopClientes();
-    renderEvolucion();
-    renderInventario();
-    renderGananciaReal();
-    renderMovimientosTabla();
-}
-function exportarCSV() {
-    const filtradas = getFechas();
-    if (!filtradas.length) { toast("No hay movimientos para exportar"); return; }
-    let csv = "Fecha,Cliente,Tipo,Monto,FormaPago,Detalle\n";
-    filtradas.forEach(v => {
-        let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta crédito" : (v.pago === "efectivo" ? "Venta efectivo" : "Venta transferencia"));
-        csv += `"${v.fecha}","${v.cliente}","${tipo}",${v.total},"${v.forma_pago || v.pago}","${v.detalle || ""}"\n`;
-    });
-    const blob = new Blob([csv], {type: "text/csv"});
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `movimientos_${currentDriver}_${new Date().toISOString().slice(0,10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast("CSV exportado");
 }
 function imprimirSeccion(seccionId) {
     const element = document.getElementById(seccionId + "Card");
     if (!element) return;
     const clone = element.cloneNode(true);
-    clone.querySelectorAll(".no-print, button").forEach(el => el.remove());
+    clone.querySelectorAll(".no-print, button, .btn-sm").forEach(el => el.remove());
     const ventana = window.open('', '_blank');
-    ventana.document.write(`<html><head><title>MYC HIELO - ${seccionId}</title><style>${Array.from(document.styleSheets).reduce((acc, sheet) => { await cargarClientesPrecios();
-    renderRendicion();
-    renderVentasPagosDeuda();
-    renderTopClientes();
-    renderEvolucion();
-    renderInventario();
-    renderGananciaReal();
-    renderMovimientosTabla();
+    ventana.document.write(`<html><head><title>MYC HIELO - ${seccionId}</title><style>${Array.from(document.styleSheets).reduce((acc, sheet) => { try { return acc + Array.from(sheet.cssRules || []).map(r=>r.cssText).join('') } catch(e){return acc} }, '')} body{margin:20px;} .no-print{display:none;}</style></head><body>${clone.outerHTML}</body></html>`);
+    ventana.document.close(); ventana.print(); ventana.close();
 }
-function exportarCSV() {
-    const filtradas = getFechas();
-    if (!filtradas.length) { toast("No hay movimientos para exportar"); return; }
-    let csv = "Fecha,Cliente,Tipo,Monto,FormaPago,Detalle\n";
-    filtradas.forEach(v => {
-        let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta crédito" : (v.pago === "efectivo" ? "Venta efectivo" : "Venta transferencia"));
-        csv += `"${v.fecha}","${v.cliente}","${tipo}",${v.total},"${v.forma_pago || v.pago}","${v.detalle || ""}"\n`;
-    });
-    const blob = new Blob([csv], {type: "text/csv"});
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `movimientos_${currentDriver}_${new Date().toISOString().slice(0,10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    toast("CSV exportado");
-}
-function imprimirSeccion(seccionId) {
-    const element = document.getElementById(seccionId + "Card");
-    if (!element) return;
-    const clone = element.cloneNode(true);
-    clone.querySelectorAll(".no-print, button").forEach(el => el.remove());
-    const ventana = window.open('', '_blank');
-    ventana.document.write(`<html><head><title>MYC HIELO - ${seccionId}</title><style>${Array.from(document.styleSheets).reduce((acc, sheet) => { try { return acc + Array try { return acc + Array.from(sheet.cssRules || []).map(r=>r.cssText).join('') } catch(e){return acc} }, '')} body{margin:20px;} .no-print{display:none;}</style></head><body>${clone.outerHTML}</body></html>`);
-    ventana.document.close();
-    ventana.print();
-    ventana.close();
-}
-function toast(msg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 2500);
-}
-function cerrarModal() {
-    document.getElementById("modal").style.display = "none";
-    window.editandoId = null;
-}
+function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 // Eventos
 document.getElementById("refreshBtn").addEventListener("click", actualizarTodo);
 document.getElementById("calcularEquiBtn").addEventListener("click", calcularEquivalencia);
 document.getElementById("agregarMovBtn").addEventListener("click", abrirAgregarMovimiento);
 document.getElementById("modalSaveBtn").addEventListener("click", guardarMovimientoModal);
-document.getElementById("modalCancelBtn").addEventListener("click", cerrarModal);
-document.getElementById("guardarStockBtn").addEventListener("click", guardarStockManual);
-document.getElementById("exportCsvBtn").addEventListener("click", exportarCSV);
-window.addEventListener("click", (e) => { if (e.target === document.getElementById("modal")) cerrarModal(); });
-// Inicializar fechas
-const hoy = new Date().toISOString().slice(0,10);
-const semanaPasada = new Date();
-semanaPasada.setDate(semanaPasada.getDate() - 7);
-document.getElementById("fechaDesde").value = semanaPasada.toISOString().slice(0,10);
-document.getElementById("fechaHasta").value = hoy;
+document.getElementById("modalCancelBtn").addEventListener("click", cerrarModalMov);
+document.getElementById("editStockBtn").addEventListener("click", abrirEditarStock);
+document.getElementById("saveStockBtn").addEventListener("click", guardarStockManual);
+document.getElementById("closeStockBtn").addEventListener("click", () => document.getElementById("stockModal").style.display = "none");
+window.onclick = (e) => { if (e.target === document.getElementById("movModal")) cerrarModalMov(); if (e.target === document.getElementById("stockModal")) document.getElementById("stockModal").style.display = "none"; };
+// Inicializar
 cargarClientesPrecios().then(() => actualizarTodo());
 </script>
 </body>
