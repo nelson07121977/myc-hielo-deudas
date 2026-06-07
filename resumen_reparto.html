@@ -26,8 +26,6 @@
         th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
         th { background: #eef2ff; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
-        .badge-pagado { background: #d1fae5; color: #0a7c4a; }
-        .badge-pendiente { background: #fee2e2; color: #b91c1c; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .form-group { margin-bottom: 12px; }
         label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 4px; }
@@ -111,9 +109,9 @@
         <div id="movimientosFechaResultado" style="margin-top: 20px;"></div>
     </div>
 
-    <!-- NUEVAS TARJETAS: Libro Diario y Libro Mayor -->
+    <!-- Libro Diario y Libro Mayor -->
     <div class="card" id="libroDiarioCard">
-        <div class="card-title">📓 Libro Diario (todas las transacciones históricas)
+        <div class="card-title">📓 Libro Diario (todas las transacciones)
             <button class="btn-sm no-print" onclick="imprimirSeccion('libroDiario')">🖨️ Imprimir</button>
         </div>
         <div class="filtro">
@@ -122,33 +120,20 @@
             <button id="filtrarLibroDiarioBtn" class="btn-sm">Filtrar</button>
             <button id="limpiarFiltroDiarioBtn" class="btn-sm btn-red">Limpiar</button>
         </div>
-        <div style="overflow-x:auto;">
-            <table id="libroDiarioTabla">
-                <thead><tr><th>Fecha</th><th>Cuenta</th><th>Concepto</th><th>Debe ($)</th><th>Haber ($)</th><th>Saldo</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div style="overflow-x:auto;"><table id="libroDiarioTabla"><thead><tr><th>Fecha</th><th>Cuenta</th><th>Concepto</th><th>Debe</th><th>Haber</th><th>Saldo</th></tr></thead><tbody></tbody></table></div>
     </div>
 
     <div class="card" id="libroMayorCard">
         <div class="card-title">📒 Libro Mayor (saldo por cliente)
             <button class="btn-sm no-print" onclick="imprimirSeccion('libroMayor')">🖨️ Imprimir</button>
         </div>
-        <div style="overflow-x:auto;">
-            <table id="libroMayorTabla">
-                <thead><tr><th>Cliente / Cuenta</th><th>Total Debe ($)</th><th>Total Haber ($)</th><th>Saldo ($)</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div style="overflow-x:auto;"><table id="libroMayorTabla"><thead><tr><th>Cliente / Cuenta</th><th>Total Debe</th><th>Total Haber</th><th>Saldo</th></tr></thead><tbody></tbody></table></div>
     </div>
 
     <!-- Inventario -->
     <div class="card" id="inventarioCard">
         <div class="card-title">🏭 Inventario / Stock
-            <div>
-                <button id="editStockBtn" class="btn-sm btn-green no-print">✏️ Editar stock manual</button>
-                <button class="btn-sm no-print" onclick="imprimirSeccion('inventario')">🖨️ Imprimir</button>
-            </div>
+            <div><button id="editStockBtn" class="btn-sm btn-green no-print">✏️ Editar stock manual</button><button class="btn-sm no-print" onclick="imprimirSeccion('inventario')">🖨️ Imprimir</button></div>
         </div>
         <div id="inventarioContent"></div>
     </div>
@@ -159,27 +144,14 @@
             <button id="agregarMovBtn" class="btn-sm btn-green no-print">➕ Agregar Movimiento</button>
             <button class="btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
         </div>
-        <div class="filtro">
-            <input type="text" id="filtroClienteMov" placeholder="Filtrar por cliente...">
-            <button id="buscarMovBtn" class="btn-sm">Buscar</button>
-            <button id="limpiarFiltroMovBtn" class="btn-sm btn-red">Limpiar</button>
-        </div>
-        <div style="overflow-x:auto;">
-            <table id="movimientosTabla">
-                <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <div class="filtro"><input type="text" id="filtroClienteMov" placeholder="Filtrar por cliente..."><button id="buscarMovBtn" class="btn-sm">Buscar</button><button id="limpiarFiltroMovBtn" class="btn-sm btn-red">Limpiar</button></div>
+        <div style="overflow-x:auto;"><table id="movimientosTabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody></tbody></table></div>
     </div>
 </div>
 
-<!-- Modales (stock, movimiento) igual que antes -->
-<div id="stockModal" class="modal">
-    <div class="modal-content"><h3>Editar Stock Fábrica</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div>
-</div>
-<div id="movModal" class="modal">
-    <div class="modal-content"><h3 id="modalTitle">Agregar Movimiento</h3><div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div><div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div><div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div><div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div><div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div><div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div></div>
-</div>
+<!-- Modales -->
+<div id="stockModal" class="modal"><div class="modal-content"><h3>Editar Stock</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
+<div id="movModal" class="modal"><div class="modal-content"><h3 id="modalTitle">Agregar Movimiento</h3><div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div><div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div><div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div><div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div><div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div><div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
 <div id="toast" class="toast"></div>
 
 <script>
@@ -194,11 +166,31 @@ let gastosData = { nafta:0, choferes:0, otros:0 };
 let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
 const productosBase = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
 
-// ========== CARGAR CLIENTES, PRECIOS, COSTOS ==========
-async function cargarClientesPrecios() {
+// ========== FUNCIONES PARA LEER DATOS DE GOOGLE SHEETS (DEUDAS) ==========
+async function obtenerMovimientosDesdeDeudas() {
+    try {
+        const res = await fetch(`${API_URL}?ruta=movimientos`);
+        return await res.json();
+    } catch(e) {
+        console.error("Error al cargar movimientos desde Deudas", e);
+        return [];
+    }
+}
+async function obtenerClientesDesdeDeudas() {
     try {
         const res = await fetch(`${API_URL}?ruta=clientes`);
-        clientesList = await res.json();
+        return await res.json();
+    } catch(e) {
+        console.error("Error al cargar clientes desde Deudas", e);
+        return [];
+    }
+}
+
+// ========== CARGAR CLIENTES, PRECIOS, COSTOS (desde la nube) ==========
+async function cargarClientesPrecios() {
+    try {
+        const clientes = await obtenerClientesDesdeDeudas();
+        clientesList = clientes;
         let precios = localStorage.getItem("myc_precios_globales");
         let costos = localStorage.getItem("myc_costos_globales");
         if (precios) preciosClientes = JSON.parse(precios);
@@ -217,7 +209,7 @@ function getPreciosPorDefecto(cliente) {
 function getCostosPorDefecto() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
 function llenarSelectModalClientes() { const s = document.getElementById("modalCliente"); if(s) s.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join(''); }
 
-// ========== DATOS CHOFER ==========
+// ========== CARGAR DATOS DESDE LOCALSTORAGE (ventas y gastos de la planilla) ==========
 function cargarDatosChofer(pin) {
     const prefix = `myc_${pin}_`;
     let ventas = localStorage.getItem(prefix + "ventas");
@@ -253,10 +245,42 @@ function cargarDatosConsolidado() {
     s2 = st2 ? JSON.parse(st2) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     for (let prod of productosBase) stockFabrica[prod] = (s1[prod]||0)+(s2[prod]||0);
 }
-async function actualizarTodo() {
-    currentDriver = document.getElementById("driverSelect").value;
+
+// ========== OBTENER MOVIMIENTOS COMBINADOS (LOCAL + DEUDAS) ==========
+async function cargarMovimientosCombinados() {
+    // Cargar movimientos locales (de la planilla)
     if (currentDriver === "both") cargarDatosConsolidado();
     else cargarDatosChofer(currentDriver);
+    // Cargar movimientos de deudas (Google Sheets)
+    const movimientosDeudas = await obtenerMovimientosDesdeDeudas();
+    // Convertir movimientos de deudas al mismo formato que ventasData
+    const movimientosDeudasFormateados = movimientosDeudas.map(m => ({
+        id: m.id,
+        fecha: m.fecha,
+        cliente: m.cliente_nombre,
+        total: m.monto,
+        pago: m.tipo === "deuda" ? "ctacte" : (m.tipo === "pago" ? "cobrocc" : null),
+        forma_pago: m.forma_pago,
+        cobroDeuda: m.tipo === "pago" ? m.monto : 0,
+        detalle: m.detalle,
+        cantidades: { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 }
+    }));
+    // Combinar y eliminar duplicados por id
+    const todosMovimientos = [...ventasData, ...movimientosDeudasFormateados];
+    const unique = [];
+    const ids = new Set();
+    for (const mov of todosMovimientos) {
+        if (!ids.has(mov.id)) {
+            ids.add(mov.id);
+            unique.push(mov);
+        }
+    }
+    ventasData = unique;
+}
+
+async function actualizarTodo() {
+    currentDriver = document.getElementById("driverSelect").value;
+    await cargarMovimientosCombinados();
     await cargarClientesPrecios();
     renderRendicion();
     renderVentasPagosDeuda();
@@ -266,7 +290,10 @@ async function actualizarTodo() {
     renderVentasClienteDelDia();
     renderLibroDiario();
     renderLibroMayor();
+    toast("Datos actualizados desde la nube");
 }
+
+// ========== FUNCIONES DE RENDERIZADO (sin cambios, pero se asegura que usen ventasData global) ==========
 function renderRendicion() {
     let totalEfectivo=0, totalCobros=0;
     ventasData.forEach(v => {
@@ -388,7 +415,7 @@ function renderVentasClienteDelDia(filtro="") {
 function mostrarMovimientosFecha(fecha) {
     if (!fecha) return;
     const movs = ventasData.filter(v => v.fecha === fecha);
-    // Resumen por cliente y producto
+    // Productos
     const prodPorCliente = {};
     movs.forEach(v => {
         if (v.pago === "cobrocc") return;
@@ -397,10 +424,10 @@ function mostrarMovimientosFecha(fecha) {
         for (let prod of productosBase) prodPorCliente[v.cliente][prod] += cant[prod] || 0;
         prodPorCliente[v.cliente].totalFacturado += v.total;
     });
-    let prodHTML = `<div class="stat-card"><strong>📦 Cantidad de bolsas vendidas (por cliente) - ${fecha}</strong><br><div style="overflow-x:auto;">`;
-    if (Object.keys(prodPorCliente).length === 0) prodHTML += "No hay ventas de productos en esta fecha.";
+    let prodHTML = `<div class="stat-card"><strong>📦 Cantidad de bolsas - ${fecha}</strong><br><div style="overflow-x:auto;">`;
+    if (Object.keys(prodPorCliente).length===0) prodHTML += "No hay ventas de productos.";
     else {
-        prodHTML += `<table><thead><tr><th>Cliente</th><th>1,7 Kg</th><th>3,5 Kg</th><th>14 Kg</th><th>20 Kg</th><th>32 Kg</th><th>Total $</th></tr></thead><tbody>`;
+        prodHTML += `</table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th></tr></thead><tbody>`;
         for (let cli in prodPorCliente) {
             const p = prodPorCliente[cli];
             prodHTML += `<tr>
@@ -417,7 +444,7 @@ function mostrarMovimientosFecha(fecha) {
     }
     prodHTML += `</div></div>`;
     document.getElementById("resumenProductosFecha").innerHTML = prodHTML;
-    // Resumen financiero por cliente
+    // Financiero
     const financiero = {};
     movs.forEach(v => {
         if (!financiero[v.cliente]) financiero[v.cliente] = { ventas:0, cobros:0, saldo:0 };
@@ -428,10 +455,10 @@ function mostrarMovimientosFecha(fecha) {
             if (v.cobroDeuda>0) financiero[v.cliente].saldo -= v.cobroDeuda;
         }
     });
-    let finHTML = `<div class="stat-card"><strong>💰 Resumen financiero por cliente - ${fecha}</strong><br><div style="overflow-x:auto;">`;
-    if (Object.keys(financiero).length === 0) finHTML += "No hay movimientos financieros.";
+    let finHTML = `<div class="stat-card"><strong>💰 Financiero - ${fecha}</strong><br><div style="overflow-x:auto;">`;
+    if (Object.keys(financiero).length===0) finHTML += "No hay movimientos.";
     else {
-        finHTML += `<table><thead></table><th>Cliente</th><th>Ventas ($)</th><th>Cobros de deuda ($)</th><th>Saldo del día</th></tr></thead><tbody>`;
+        finHTML += `<table><thead><tr><th>Cliente</th><th>Ventas</th><th>Cobros</th><th>Saldo</th></tr></thead><tbody>`;
         for (let cli in financiero) {
             finHTML += `<tr>
                 <td>${cli}</td>
@@ -446,7 +473,7 @@ function mostrarMovimientosFecha(fecha) {
     document.getElementById("resumenFinancieroFecha").innerHTML = finHTML;
     // Detalle unitario
     if (movs.length === 0) {
-        document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>No hay movimientos unitarios en esa fecha.</div>";
+        document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>Sin movimientos.</div>";
         return;
     }
     let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
@@ -458,7 +485,7 @@ function mostrarMovimientosFecha(fecha) {
             <td>$${v.total.toLocaleString('es-AR')}</td>
             <td>${v.forma_pago || v.pago || ""}</td>
             <td>${v.detalle || ""}</td>
-        </tr>`;
+        </td>`;
     });
     detHTML += `</tbody></table></div></div>`;
     document.getElementById("movimientosFechaResultado").innerHTML = detHTML;
@@ -479,7 +506,7 @@ function renderMovimientosTabla(filtro="") {
         row.insertCell(4).textContent = v.forma_pago || v.pago || "";
         row.insertCell(5).textContent = v.detalle || "";
         const acciones = row.insertCell(6); acciones.className = "no-print";
-        const btnEdit = document.createElement("button"); btnEdit.textContent = "✏️"; btnEdit.className = "btn-sm"; btnEdit.style.marginRight = "5px"; btnEdit.onclick = () => editarMovimiento(v);
+        const btnEdit = document.createElement("button"); btnEdit.textContent = "✏️"; btnEdit.className = "btn-sm"; btnEdit.onclick = () => editarMovimiento(v);
         const btnDel = document.createElement("button"); btnDel.textContent = "🗑️"; btnDel.className = "btn-sm btn-red"; btnDel.onclick = () => eliminarMovimiento(v.id);
         acciones.appendChild(btnEdit); acciones.appendChild(btnDel);
     });
@@ -585,25 +612,9 @@ function imprimirSeccion(seccionId) {
 }
 function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 
-// ========== LIBRO DIARIO Y LIBRO MAYOR ==========
-function obtenerTodosLosMovimientosHistoricos() {
-    let todos = [...ventasData]; // datos actuales del chofer
-    // También agregar movimientos de días archivados (históricos)
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(`myc_${currentDriver}_historico_`)) {
-            const historico = JSON.parse(localStorage.getItem(key));
-            if (historico && historico.ventas) {
-                todos.push(...historico.ventas);
-            }
-        }
-    }
-    // Ordenar por fecha
-    todos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
-    return todos;
-}
+// ========== LIBRO DIARIO Y MAYOR (usando ventasData combinada) ==========
 function renderLibroDiario() {
-    const movimientos = obtenerTodosLosMovimientosHistoricos();
+    const movimientos = [...ventasData];
     const fechaInicio = document.getElementById("filtroFechaInicio").value;
     const fechaFin = document.getElementById("filtroFechaFin").value;
     let filtrados = movimientos;
@@ -612,43 +623,29 @@ function renderLibroDiario() {
     const tbody = document.querySelector("#libroDiarioTabla tbody");
     tbody.innerHTML = "";
     let saldoAcumulado = 0;
-    filtrados.forEach(m => {
-        // Determinar cuenta y valores Debe/Haber
+    filtrados.sort((a,b) => new Date(a.fecha) - new Date(b.fecha)).forEach(m => {
         let cuenta = m.cliente || "Gastos";
         let debe = 0, haber = 0;
-        if (m.pago === "cobrocc") {
-            // Cobro de deuda: Haber a Cliente (disminuye deuda)
-            haber = m.total;
-            cuenta = m.cliente;
-        } else if (m.pago === "ctacte") {
-            // Venta a crédito: Debe a Cliente
-            debe = m.total;
-            cuenta = m.cliente;
-        } else if (m.pago === "efectivo" || m.pago === "transferencia") {
-            // Venta de contado: Debe a Caja/Banco, Haber a Ventas. Mostramos como Debe a Caja.
-            debe = m.total;
-            cuenta = "Caja / Banco";
-        } else if (m.pago === "gasto") {
-            debe = m.total;
-            cuenta = "Gastos";
-        }
+        if (m.pago === "cobrocc") { haber = m.total; cuenta = m.cliente; }
+        else if (m.pago === "ctacte") { debe = m.total; cuenta = m.cliente; }
+        else if (m.pago === "efectivo" || m.pago === "transferencia") { debe = m.total; cuenta = "Caja / Banco"; }
+        else if (m.pago === "gasto") { debe = m.total; cuenta = "Gastos"; }
         saldoAcumulado += debe - haber;
         const row = tbody.insertRow();
         row.insertCell(0).textContent = m.fecha;
         row.insertCell(1).textContent = cuenta;
-        row.insertCell(2).textContent = m.detalle || (m.pago === "cobrocc" ? "Cobro de deuda" : (m.pago === "ctacte" ? "Venta a crédito" : "Venta"));
-        row.insertCell(3).textContent = debe > 0 ? `$${debe.toLocaleString('es-AR')}` : "";
-        row.insertCell(4).textContent = haber > 0 ? `$${haber.toLocaleString('es-AR')}` : "";
+        row.insertCell(2).textContent = m.detalle || (m.pago === "cobrocc" ? "Cobro de deuda" : "Venta");
+        row.insertCell(3).textContent = debe ? `$${debe.toLocaleString('es-AR')}` : "";
+        row.insertCell(4).textContent = haber ? `$${haber.toLocaleString('es-AR')}` : "";
         row.insertCell(5).textContent = `$${saldoAcumulado.toLocaleString('es-AR')}`;
     });
 }
 function renderLibroMayor() {
-    const movimientos = obtenerTodosLosMovimientosHistoricos();
+    const movimientos = [...ventasData];
     const saldos = {};
     movimientos.forEach(m => {
         let cuenta = m.cliente || "Gastos";
         if (m.pago === "cobrocc") {
-            // Haber
             if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
             saldos[cuenta].haber += m.total;
         } else if (m.pago === "ctacte") {
@@ -676,15 +673,17 @@ function renderLibroMayor() {
     }
 }
 
-// Eventos adicionales para los filtros del libro diario
-document.getElementById("filtrarLibroDiarioBtn").addEventListener("click", () => renderLibroDiario());
-document.getElementById("limpiarFiltroDiarioBtn").addEventListener("click", () => {
-    document.getElementById("filtroFechaInicio").value = "";
-    document.getElementById("filtroFechaFin").value = "";
-    renderLibroDiario();
-});
+// ========== CONFIGURAR ACTUALIZACIÓN AUTOMÁTICA ==========
+let intervaloAutoActualizacion = null;
 
-// Eventos ya existentes
+function iniciarAutoActualizacion() {
+    if (intervaloAutoActualizacion) clearInterval(intervaloAutoActualizacion);
+    intervaloAutoActualizacion = setInterval(() => {
+        actualizarTodo();
+    }, 30000); // 30 segundos
+}
+
+// ========== EVENTOS ==========
 document.getElementById("refreshBtn").addEventListener("click", () => actualizarTodo());
 document.getElementById("agregarMovBtn").addEventListener("click", abrirAgregarMovimiento);
 document.getElementById("modalSaveBtn").addEventListener("click", guardarMovimientoModal);
@@ -697,10 +696,14 @@ document.getElementById("limpiarFiltroMovBtn").addEventListener("click", () => {
 document.getElementById("buscarVentasClienteBtn").addEventListener("click", () => { renderVentasClienteDelDia(document.getElementById("filtroClienteVentas").value); });
 document.getElementById("limpiarFiltroVentasBtn").addEventListener("click", () => { document.getElementById("filtroClienteVentas").value = ""; renderVentasClienteDelDia(""); });
 document.getElementById("verFechaBtn").addEventListener("click", () => { mostrarMovimientosFecha(document.getElementById("fechaCalendario").value); });
+document.getElementById("filtrarLibroDiarioBtn").addEventListener("click", () => renderLibroDiario());
+document.getElementById("limpiarFiltroDiarioBtn").addEventListener("click", () => { document.getElementById("filtroFechaInicio").value = ""; document.getElementById("filtroFechaFin").value = ""; renderLibroDiario(); });
 window.onclick = (e) => { if (e.target === document.getElementById("movModal")) cerrarModalMov(); if (e.target === document.getElementById("stockModal")) document.getElementById("stockModal").style.display = "none"; };
+
 // Inicializar
 cargarClientesPrecios().then(() => {
     actualizarTodo();
+    iniciarAutoActualizacion();
     document.getElementById("fechaCalendario").value = new Date().toISOString().slice(0,10);
 });
 </script>
