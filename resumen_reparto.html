@@ -60,7 +60,7 @@
         </div>
     </div>
 
-    <!-- Rendición de dinero -->
+    <!-- Rendición de dinero (con fórmula visible) -->
     <div class="card" id="rendicionCard">
         <div class="card-title">💰 Rendición de Dinero (Neto a entregar)
             <button class="btn-sm no-print" onclick="imprimirSeccion('rendicion')">🖨️ Imprimir</button>
@@ -76,7 +76,7 @@
         <div class="grid-2" id="ventasPagosContent"></div>
     </div>
 
-    <!-- Ganancia real -->
+    <!-- Ganancia real (con y sin cobros) -->
     <div class="card" id="gananciaCard">
         <div class="card-title">📈 Ganancia Real
             <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
@@ -84,7 +84,7 @@
         <div class="grid-2" id="gananciaContent"></div>
     </div>
 
-    <!-- Ventas por cliente del día (con buscador) -->
+    <!-- Ventas por cliente del día (con buscador y estado de pago) -->
     <div class="card" id="ventasClienteCard">
         <div class="card-title">📦 Ventas por Cliente del Día
             <button class="btn-sm no-print" onclick="imprimirSeccion('ventasCliente')">🖨️ Imprimir</button>
@@ -97,7 +97,7 @@
         <div id="ventasClienteResultado"></div>
     </div>
 
-    <!-- Calendario (con productos y financiero) -->
+    <!-- Calendario (con productos, financiero y detalle) -->
     <div class="card" id="calendarioCard">
         <div class="card-title">📅 Ver movimientos de una fecha
             <button class="btn-sm no-print" onclick="imprimirSeccion('calendario')">🖨️ Imprimir</button>
@@ -147,27 +147,10 @@
 
 <!-- Modales -->
 <div id="stockModal" class="modal">
-    <div class="modal-content">
-        <h3>Editar Stock Fábrica</h3>
-        <div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div>
-        <div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div>
-        <div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div>
-        <div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div>
-        <div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div>
-        <div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div>
-    </div>
+    <div class="modal-content"><h3>Editar Stock Fábrica</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div>
 </div>
 <div id="movModal" class="modal">
-    <div class="modal-content">
-        <h3 id="modalTitle">Agregar Movimiento</h3>
-        <div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div>
-        <div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div>
-        <div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div>
-        <div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div>
-        <div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div>
-        <div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div>
-        <div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div>
-    </div>
+    <div class="modal-content"><h3 id="modalTitle">Agregar Movimiento</h3><div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div><div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div><div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div><div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div><div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div><div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div></div>
 </div>
 <div id="toast" class="toast"></div>
 
@@ -263,11 +246,12 @@ function renderRendicion() {
     });
     const totalGastos = gastosData.nafta + gastosData.choferes + gastosData.otros;
     const neto = totalEfectivo + totalCobros - totalGastos;
+    // Mostramos también la fórmula
     document.getElementById("rendicionContent").innerHTML = `
         <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Efectivo cobrado</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de deuda</div></div>
         <div class="stat-card"><div class="stat-value">$${totalGastos.toLocaleString('es-AR')}</div><div class="stat-label">Total Gastos</div></div>
-        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR (Efectivo + Cobros - Gastos)</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR = Efectivo + Cobros - Gastos</div></div>
     `;
 }
 function renderVentasPagosDeuda() {
@@ -339,7 +323,7 @@ function renderVentasClienteDelDia(filtro="") {
     let ventasHoy = ventasData.filter(v => v.fecha === hoy && v.pago !== "cobrocc");
     if (filtro) ventasHoy = ventasHoy.filter(v => v.cliente.toLowerCase().includes(filtro.toLowerCase()));
     if (ventasHoy.length===0) { document.getElementById("ventasClienteResultado").innerHTML = "<div class='stat-card'>Sin ventas hoy.</div>"; return; }
-    let html = `<table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Estado</th></tr></thead><tbody>`;
+    let html = `<tr><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Estado</th></tr></thead><tbody>`;
     ventasHoy.forEach(v => {
         const cant = v.cantidades || {};
         const estado = (v.pago === "efectivo" || v.pago === "transferencia") ? "Pagado" : "Pendiente";
@@ -358,19 +342,16 @@ function renderVentasClienteDelDia(filtro="") {
     html += `</tbody></table>`;
     document.getElementById("ventasClienteResultado").innerHTML = html;
 }
-// ========== CALENDARIO: muestra productos, financiero y detalle ==========
 function mostrarMovimientosFecha(fecha) {
     if (!fecha) return;
     const movs = ventasData.filter(v => v.fecha === fecha);
-    // 1. Resumen por cliente y producto (solo ventas, no cobros)
+    // 1. Resumen por cliente y producto
     const prodPorCliente = {};
     movs.forEach(v => {
-        if (v.pago === "cobrocc") return; // no son productos
+        if (v.pago === "cobrocc") return;
         const cant = v.cantidades || {};
         if (!prodPorCliente[v.cliente]) prodPorCliente[v.cliente] = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0, totalFacturado: 0 };
-        for (let prod of productosBase) {
-            prodPorCliente[v.cliente][prod] += cant[prod] || 0;
-        }
+        for (let prod of productosBase) prodPorCliente[v.cliente][prod] += cant[prod] || 0;
         prodPorCliente[v.cliente].totalFacturado += v.total;
     });
     let prodHTML = `<div class="stat-card"><strong>📦 Cantidad de bolsas vendidas (por cliente) - ${fecha}</strong><br><div style="overflow-x:auto;">`;
@@ -393,8 +374,7 @@ function mostrarMovimientosFecha(fecha) {
     }
     prodHTML += `</div></div>`;
     document.getElementById("resumenProductosFecha").innerHTML = prodHTML;
-
-    // 2. Resumen financiero por cliente (ventas, cobros, saldo)
+    // 2. Resumen financiero por cliente
     const financiero = {};
     movs.forEach(v => {
         if (!financiero[v.cliente]) financiero[v.cliente] = { ventas:0, cobros:0, saldo:0 };
@@ -421,13 +401,12 @@ function mostrarMovimientosFecha(fecha) {
     }
     finHTML += `</div></div>`;
     document.getElementById("resumenFinancieroFecha").innerHTML = finHTML;
-
     // 3. Detalle unitario
     if (movs.length === 0) {
         document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>No hay movimientos unitarios en esa fecha.</div>";
         return;
     }
-    let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
+    let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"></table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
     movs.forEach(v => {
         let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta a crédito" : (v.pago === "efectivo" ? "Venta efectivo" : "Venta transferencia"));
         detHTML += `<tr>
