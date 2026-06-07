@@ -26,6 +26,8 @@
         th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
         th { background: #eef2ff; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
+        .badge-pagado { background: #d1fae5; color: #0a7c4a; }
+        .badge-pendiente { background: #fee2e2; color: #b91c1c; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .form-group { margin-bottom: 12px; }
         label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 4px; }
@@ -109,6 +111,37 @@
         <div id="movimientosFechaResultado" style="margin-top: 20px;"></div>
     </div>
 
+    <!-- NUEVAS TARJETAS: Libro Diario y Libro Mayor -->
+    <div class="card" id="libroDiarioCard">
+        <div class="card-title">📓 Libro Diario (todas las transacciones históricas)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('libroDiario')">🖨️ Imprimir</button>
+        </div>
+        <div class="filtro">
+            <input type="date" id="filtroFechaInicio" placeholder="Fecha inicio">
+            <input type="date" id="filtroFechaFin" placeholder="Fecha fin">
+            <button id="filtrarLibroDiarioBtn" class="btn-sm">Filtrar</button>
+            <button id="limpiarFiltroDiarioBtn" class="btn-sm btn-red">Limpiar</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table id="libroDiarioTabla">
+                <thead><tr><th>Fecha</th><th>Cuenta</th><th>Concepto</th><th>Debe ($)</th><th>Haber ($)</th><th>Saldo</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" id="libroMayorCard">
+        <div class="card-title">📒 Libro Mayor (saldo por cliente)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('libroMayor')">🖨️ Imprimir</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table id="libroMayorTabla">
+                <thead><tr><th>Cliente / Cuenta</th><th>Total Debe ($)</th><th>Total Haber ($)</th><th>Saldo ($)</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Inventario -->
     <div class="card" id="inventarioCard">
         <div class="card-title">🏭 Inventario / Stock
@@ -140,7 +173,7 @@
     </div>
 </div>
 
-<!-- Modales -->
+<!-- Modales (stock, movimiento) igual que antes -->
 <div id="stockModal" class="modal">
     <div class="modal-content"><h3>Editar Stock Fábrica</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div>
 </div>
@@ -231,6 +264,8 @@ async function actualizarTodo() {
     renderInventario();
     renderMovimientosTabla();
     renderVentasClienteDelDia();
+    renderLibroDiario();
+    renderLibroMayor();
 }
 function renderRendicion() {
     let totalEfectivo=0, totalCobros=0;
@@ -304,7 +339,7 @@ function renderInventario() {
             for (let prod of productosBase) vendido[prod] += v.cantidades[prod] || 0;
         }
     });
-    let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></table></thead><tbody>`;
+    let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody>`;
     for (let prod of productosBase) {
         let carga = stockFabrica[prod]||0, vend = vendido[prod]||0;
         html += `<tr>
@@ -320,7 +355,6 @@ ${prod}
     html += `</tbody></table>`;
     document.getElementById("inventarioContent").innerHTML = html;
 }
-// ========== VENTAS POR CLIENTE DEL DÍA (con forma de pago) ==========
 function renderVentasClienteDelDia(filtro="") {
     const hoy = new Date().toISOString().slice(0,10);
     let ventasHoy = ventasData.filter(v => v.fecha === hoy && v.pago !== "cobrocc");
@@ -354,7 +388,7 @@ function renderVentasClienteDelDia(filtro="") {
 function mostrarMovimientosFecha(fecha) {
     if (!fecha) return;
     const movs = ventasData.filter(v => v.fecha === fecha);
-    // 1. Resumen por cliente y producto
+    // Resumen por cliente y producto
     const prodPorCliente = {};
     movs.forEach(v => {
         if (v.pago === "cobrocc") return;
@@ -383,7 +417,7 @@ function mostrarMovimientosFecha(fecha) {
     }
     prodHTML += `</div></div>`;
     document.getElementById("resumenProductosFecha").innerHTML = prodHTML;
-    // 2. Resumen financiero por cliente
+    // Resumen financiero por cliente
     const financiero = {};
     movs.forEach(v => {
         if (!financiero[v.cliente]) financiero[v.cliente] = { ventas:0, cobros:0, saldo:0 };
@@ -397,7 +431,7 @@ function mostrarMovimientosFecha(fecha) {
     let finHTML = `<div class="stat-card"><strong>💰 Resumen financiero por cliente - ${fecha}</strong><br><div style="overflow-x:auto;">`;
     if (Object.keys(financiero).length === 0) finHTML += "No hay movimientos financieros.";
     else {
-        finHTML += `<table><thead><tr><th>Cliente</th><th>Ventas ($)</th><th>Cobros de deuda ($)</th><th>Saldo del día</th></tr></thead><tbody>`;
+        finHTML += `<table><thead></table><th>Cliente</th><th>Ventas ($)</th><th>Cobros de deuda ($)</th><th>Saldo del día</th></tr></thead><tbody>`;
         for (let cli in financiero) {
             finHTML += `<tr>
                 <td>${cli}</td>
@@ -410,7 +444,7 @@ function mostrarMovimientosFecha(fecha) {
     }
     finHTML += `</div></div>`;
     document.getElementById("resumenFinancieroFecha").innerHTML = finHTML;
-    // 3. Detalle unitario
+    // Detalle unitario
     if (movs.length === 0) {
         document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>No hay movimientos unitarios en esa fecha.</div>";
         return;
@@ -551,7 +585,106 @@ function imprimirSeccion(seccionId) {
 }
 function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 
-// Eventos
+// ========== LIBRO DIARIO Y LIBRO MAYOR ==========
+function obtenerTodosLosMovimientosHistoricos() {
+    let todos = [...ventasData]; // datos actuales del chofer
+    // También agregar movimientos de días archivados (históricos)
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(`myc_${currentDriver}_historico_`)) {
+            const historico = JSON.parse(localStorage.getItem(key));
+            if (historico && historico.ventas) {
+                todos.push(...historico.ventas);
+            }
+        }
+    }
+    // Ordenar por fecha
+    todos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+    return todos;
+}
+function renderLibroDiario() {
+    const movimientos = obtenerTodosLosMovimientosHistoricos();
+    const fechaInicio = document.getElementById("filtroFechaInicio").value;
+    const fechaFin = document.getElementById("filtroFechaFin").value;
+    let filtrados = movimientos;
+    if (fechaInicio) filtrados = filtrados.filter(m => m.fecha >= fechaInicio);
+    if (fechaFin) filtrados = filtrados.filter(m => m.fecha <= fechaFin);
+    const tbody = document.querySelector("#libroDiarioTabla tbody");
+    tbody.innerHTML = "";
+    let saldoAcumulado = 0;
+    filtrados.forEach(m => {
+        // Determinar cuenta y valores Debe/Haber
+        let cuenta = m.cliente || "Gastos";
+        let debe = 0, haber = 0;
+        if (m.pago === "cobrocc") {
+            // Cobro de deuda: Haber a Cliente (disminuye deuda)
+            haber = m.total;
+            cuenta = m.cliente;
+        } else if (m.pago === "ctacte") {
+            // Venta a crédito: Debe a Cliente
+            debe = m.total;
+            cuenta = m.cliente;
+        } else if (m.pago === "efectivo" || m.pago === "transferencia") {
+            // Venta de contado: Debe a Caja/Banco, Haber a Ventas. Mostramos como Debe a Caja.
+            debe = m.total;
+            cuenta = "Caja / Banco";
+        } else if (m.pago === "gasto") {
+            debe = m.total;
+            cuenta = "Gastos";
+        }
+        saldoAcumulado += debe - haber;
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = m.fecha;
+        row.insertCell(1).textContent = cuenta;
+        row.insertCell(2).textContent = m.detalle || (m.pago === "cobrocc" ? "Cobro de deuda" : (m.pago === "ctacte" ? "Venta a crédito" : "Venta"));
+        row.insertCell(3).textContent = debe > 0 ? `$${debe.toLocaleString('es-AR')}` : "";
+        row.insertCell(4).textContent = haber > 0 ? `$${haber.toLocaleString('es-AR')}` : "";
+        row.insertCell(5).textContent = `$${saldoAcumulado.toLocaleString('es-AR')}`;
+    });
+}
+function renderLibroMayor() {
+    const movimientos = obtenerTodosLosMovimientosHistoricos();
+    const saldos = {};
+    movimientos.forEach(m => {
+        let cuenta = m.cliente || "Gastos";
+        if (m.pago === "cobrocc") {
+            // Haber
+            if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
+            saldos[cuenta].haber += m.total;
+        } else if (m.pago === "ctacte") {
+            if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
+            saldos[cuenta].debe += m.total;
+        } else if (m.pago === "efectivo" || m.pago === "transferencia") {
+            cuenta = "Caja / Banco";
+            if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
+            saldos[cuenta].debe += m.total;
+        } else if (m.pago === "gasto") {
+            cuenta = "Gastos";
+            if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
+            saldos[cuenta].debe += m.total;
+        }
+    });
+    const tbody = document.querySelector("#libroMayorTabla tbody");
+    tbody.innerHTML = "";
+    for (let cuenta in saldos) {
+        const saldo = saldos[cuenta].debe - saldos[cuenta].haber;
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = cuenta;
+        row.insertCell(1).textContent = `$${saldos[cuenta].debe.toLocaleString('es-AR')}`;
+        row.insertCell(2).textContent = `$${saldos[cuenta].haber.toLocaleString('es-AR')}`;
+        row.insertCell(3).textContent = `$${saldo.toLocaleString('es-AR')}`;
+    }
+}
+
+// Eventos adicionales para los filtros del libro diario
+document.getElementById("filtrarLibroDiarioBtn").addEventListener("click", () => renderLibroDiario());
+document.getElementById("limpiarFiltroDiarioBtn").addEventListener("click", () => {
+    document.getElementById("filtroFechaInicio").value = "";
+    document.getElementById("filtroFechaFin").value = "";
+    renderLibroDiario();
+});
+
+// Eventos ya existentes
 document.getElementById("refreshBtn").addEventListener("click", () => actualizarTodo());
 document.getElementById("agregarMovBtn").addEventListener("click", abrirAgregarMovimiento);
 document.getElementById("modalSaveBtn").addEventListener("click", guardarMovimientoModal);
