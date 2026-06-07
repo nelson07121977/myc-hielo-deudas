@@ -26,8 +26,6 @@
         th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
         th { background: #eef2ff; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
-        .badge-pagado { background: #d1fae5; color: #0a7c4a; }
-        .badge-pendiente { background: #fee2e2; color: #b91c1c; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .form-group { margin-bottom: 12px; }
         label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 4px; }
@@ -60,7 +58,7 @@
         </div>
     </div>
 
-    <!-- Rendición de dinero (con fórmula visible) -->
+    <!-- Rendición de dinero -->
     <div class="card" id="rendicionCard">
         <div class="card-title">💰 Rendición de Dinero (Neto a entregar)
             <button class="btn-sm no-print" onclick="imprimirSeccion('rendicion')">🖨️ Imprimir</button>
@@ -76,7 +74,7 @@
         <div class="grid-2" id="ventasPagosContent"></div>
     </div>
 
-    <!-- Ganancia real (con y sin cobros) -->
+    <!-- Ganancia real -->
     <div class="card" id="gananciaCard">
         <div class="card-title">📈 Ganancia Real
             <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
@@ -84,7 +82,7 @@
         <div class="grid-2" id="gananciaContent"></div>
     </div>
 
-    <!-- Ventas por cliente del día (con buscador y estado de pago) -->
+    <!-- Ventas por cliente del día (con forma de pago) -->
     <div class="card" id="ventasClienteCard">
         <div class="card-title">📦 Ventas por Cliente del Día
             <button class="btn-sm no-print" onclick="imprimirSeccion('ventasCliente')">🖨️ Imprimir</button>
@@ -106,11 +104,8 @@
             <input type="date" id="fechaCalendario" style="width: auto;">
             <button id="verFechaBtn" class="btn-sm">Ver movimientos</button>
         </div>
-        <!-- Resumen por cliente y producto -->
         <div id="resumenProductosFecha" style="margin-top: 20px;"></div>
-        <!-- Resumen financiero por cliente -->
         <div id="resumenFinancieroFecha" style="margin-top: 20px;"></div>
-        <!-- Detalle unitario -->
         <div id="movimientosFechaResultado" style="margin-top: 20px;"></div>
     </div>
 
@@ -246,7 +241,6 @@ function renderRendicion() {
     });
     const totalGastos = gastosData.nafta + gastosData.choferes + gastosData.otros;
     const neto = totalEfectivo + totalCobros - totalGastos;
-    // Mostramos también la fórmula
     document.getElementById("rendicionContent").innerHTML = `
         <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Efectivo cobrado</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de deuda</div></div>
@@ -310,24 +304,39 @@ function renderInventario() {
             for (let prod of productosBase) vendido[prod] += v.cantidades[prod] || 0;
         }
     });
-    let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></table></thead><tbody>`;
     for (let prod of productosBase) {
         let carga = stockFabrica[prod]||0, vend = vendido[prod]||0;
-        html += `<tr><td>${prod}</td><td>${carga}</td><td>${vend}</td><td>${carga-vend}</td></tr>`;
+        html += `<tr>
+  
+${prod}
+
+        </td>
+        <td>${carga}</td>
+        <td>${vend}</td>
+        <td>${carga-vend}</td>
+    </tr>`;
     }
     html += `</tbody></table>`;
     document.getElementById("inventarioContent").innerHTML = html;
 }
+// ========== VENTAS POR CLIENTE DEL DÍA (con forma de pago) ==========
 function renderVentasClienteDelDia(filtro="") {
     const hoy = new Date().toISOString().slice(0,10);
     let ventasHoy = ventasData.filter(v => v.fecha === hoy && v.pago !== "cobrocc");
     if (filtro) ventasHoy = ventasHoy.filter(v => v.cliente.toLowerCase().includes(filtro.toLowerCase()));
-    if (ventasHoy.length===0) { document.getElementById("ventasClienteResultado").innerHTML = "<div class='stat-card'>Sin ventas hoy.</div>"; return; }
-    let html = `<tr><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Estado</th></tr></thead><tbody>`;
+    if (ventasHoy.length===0) {
+        document.getElementById("ventasClienteResultado").innerHTML = "<div class='stat-card'>Sin ventas hoy.</div>";
+        return;
+    }
+    let html = `<table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Forma de Pago</th></tr></thead><tbody>`;
     ventasHoy.forEach(v => {
         const cant = v.cantidades || {};
-        const estado = (v.pago === "efectivo" || v.pago === "transferencia") ? "Pagado" : "Pendiente";
-        const badge = estado === "Pagado" ? "badge-pagado" : "badge-pendiente";
+        let formaPago = "";
+        if (v.pago === "efectivo") formaPago = "💵 Efectivo";
+        else if (v.pago === "transferencia") formaPago = "💳 Transferencia";
+        else if (v.pago === "ctacte") formaPago = "📘 Cta Cte";
+        else formaPago = v.pago;
         html += `<tr>
             <td>${v.cliente}</td>
             <td>${cant["1,7 KG"]||0}</td>
@@ -336,7 +345,7 @@ function renderVentasClienteDelDia(filtro="") {
             <td>${cant["ESC.20KG"]||0}</td>
             <td>${cant["ESC.32KG"]||0}</td>
             <td>$${v.total.toLocaleString('es-AR')}</td>
-            <td><span class="badge ${badge}">${estado}</span></td>
+            <td>${formaPago}</td>
         </tr>`;
     });
     html += `</tbody></table>`;
@@ -406,7 +415,7 @@ function mostrarMovimientosFecha(fecha) {
         document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>No hay movimientos unitarios en esa fecha.</div>";
         return;
     }
-    let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"></table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
+    let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
     movs.forEach(v => {
         let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta a crédito" : (v.pago === "efectivo" ? "Venta efectivo" : "Venta transferencia"));
         detHTML += `<tr>
