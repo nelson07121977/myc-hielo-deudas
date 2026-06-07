@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (sin reinicio automático)</title>
+    <title>MYC HIELO – Planilla de Reparto</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -80,6 +80,7 @@
                 </select>
                 <button id="exportPdfBtn" class="btn-small" style="background:#16a34a;">📄 Exportar Dashboard PDF</button>
                 <button id="exportReportPdfBtn" class="btn-small" style="background:#f59e0b;">📊 Exportar Reporte Semanal PDF</button>
+                <button id="cerrarDiaBtn" class="btn-small" style="background:#b91c1c;">📦 Cerrar día (archivar histórico)</button>
                 <button id="logoutAdmin" style="background:#ef4444; width:auto; padding:6px 16px;">Cerrar sesión</button>
             </div>
         </div>
@@ -96,14 +97,14 @@
             <div class="chart-container"><h3>📦 Ventas por producto (día actual)</h3><div id="productosReport" class="productos-vendidos"></div></div>
             <div class="chart-container no-print"><h3>📈 Evolución diaria (ventas totales últimos 7 días)</h3><canvas id="evolucionChart" width="400" height="200"></canvas></div>
             <h3>📋 Ventas y Cobros del día</h3>
-            <div style="overflow-x:auto"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></td></thead><tbody id="salesDetailBody"></tbody></table></div>
+            <div style="overflow-x:auto"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></tr></thead><tbody id="salesDetailBody"></tbody></table></div>
         </div>
         <div id="tabReportes" class="panel-content" style="display:none;">
             <h2>📅 Resumen de la última semana (últimos 7 días)</h2>
             <div class="summary-cards" id="weeklyStats"></div>
             <div class="chart-container"><h3>🏆 Top 10 clientes por volumen de compra (semana)</h3><canvas id="topClientesChart" width="400" height="200"></canvas></div>
             <div class="chart-container"><h3>📈 Evolución de ventas diarias (semana)</h3><canvas id="weeklySalesChart" width="400" height="200"></canvas></div>
-            <div class="report-container"><h3>💸 Detalle de ventas de la semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable" class="rank-table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></td></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
+            <div class="report-container"><h3>💸 Detalle de ventas de la semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable" class="rank-table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
         </div>
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3>Gestión de clientes (precios de venta y costos de fábrica)</h3>
@@ -142,7 +143,7 @@
                 <div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div>
             </div>
             <h3>📊 Resumen vendido / restante</h3>
-            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table>
+            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th><tr></thead><tbody></tbody></table>
         </div>
     </div>
 
@@ -189,11 +190,11 @@
                 <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small>(Efectivo + Transferencia + Cobros - Gastos)</small></div>
             </div>
             <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
-            <button id="resetDayBtn" style="background:#b91c1c; margin-top:20px;">🔄 Reiniciar Jornada</button>
+            <button id="resetDayBtn" style="background:#b91c1c; margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
         </div>
     </div>
 </div>
-<footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Datos de ventas por chofer separados. Precios y costos globales. Clientes sincronizados en la nube. <strong>Sin reinicio automático.</strong></footer>
+<footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Los datos de cada chofer se guardan por separado. Precios y costos globales. Sin reinicio automático. Usa el botón "Cerrar día" para archivar el día actual.</footer>
 
 <script>
 // ==================== CONFIGURACIÓN ====================
@@ -217,7 +218,6 @@ async function enviarMovimientoADeudas(fecha, cliente, tipo, monto, formaPago = 
         else console.log(`Movimiento ${tipo} de $${monto} para ${cliente} enviado a Deudas`);
     } catch (err) { console.error("Error de red:", err); }
 }
-
 async function enviarClienteADeudas(nombre) {
     try {
         const form = new URLSearchParams();
@@ -229,7 +229,6 @@ async function enviarClienteADeudas(nombre) {
         else console.log(`Cliente ${nombre} enviado a Deudas`);
     } catch (err) { console.error("Error de red:", err); }
 }
-
 async function eliminarClienteApi(nombre) {
     try {
         const form = new URLSearchParams();
@@ -242,7 +241,6 @@ async function eliminarClienteApi(nombre) {
         return data;
     } catch (err) { console.error("Error de red:", err); }
 }
-
 function formatearFechaParaAPI(fechaIso) {
     if (!fechaIso) return new Date().toISOString().slice(0,10);
     const d = new Date(fechaIso);
@@ -299,7 +297,7 @@ function saveGlobalPrices() {
     localStorage.setItem("myc_costos_globales", JSON.stringify(costosClientes));
 }
 
-// ========== CARGA DE DATOS SIN REINICIO AUTOMÁTICO ==========
+// ========== CARGA Y GUARDADO DE DATOS POR CHOFER (sin reinicio automático) ==========
 function loadDataByPin(pin) {
     const prefix = `myc_${pin}_`;
     let sv = localStorage.getItem(prefix + "ventas");
@@ -331,6 +329,7 @@ function saveAll() {
     saveGlobalPrices();
 }
 
+// ========== FUNCIONES DE NEGOCIO ==========
 function getVentasHoy() { const hoy = new Date().toDateString(); return ventas.filter(v => new Date(v.fecha).toDateString() === hoy); }
 function getVentasUltimos7Dias() {
     const hoy = new Date();
@@ -367,6 +366,33 @@ function resetJornada() {
     saveAll();
 }
 
+// ========== NUEVO: CERRAR DÍA (ARCHIVAR HISTÓRICO) ==========
+function cerrarDia() {
+    if (!confirm("⚠️ Cerrar el día archivará todas las ventas, gastos y cobros de hoy en el historial y luego limpiará la jornada actual. ¿Continuar?")) return;
+    if (currentDriverPin === null) {
+        alert("Selecciona un chofer específico (no modo consolidado) para cerrar el día.");
+        return;
+    }
+    const today = new Date().toISOString().slice(0,10);
+    const historicoKey = `myc_${currentDriverPin}_historico_${today}`;
+    // Guardar los datos actuales en histórico
+    const historico = {
+        fecha: today,
+        ventas: ventas.filter(v => new Date(v.fecha).toDateString() === new Date().toDateString()),
+        gastosDetalle: { ...gastosDetalle },
+        cobrosCC: cobrosCC,
+        stock: { ...stockFabrica }
+    };
+    localStorage.setItem(historicoKey, JSON.stringify(historico));
+    // Limpiar jornada actual
+    resetJornada();
+    // Refrescar UI
+    if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
+    if (document.getElementById("driverPanel").style.display === "block") renderDriver();
+    alert("✅ Día cerrado y archivado correctamente. Los datos históricos están guardados.");
+}
+
+// ========== FUNCIONES DE CLIENTES SINCRONIZADAS CON LA NUBE ==========
 async function cargarClientesDesdeNube() {
     try {
         const res = await fetch(`${API_URL}?ruta=clientes`);
@@ -407,7 +433,7 @@ async function eliminarClienteGlobal(nombre) {
     return false;
 }
 
-// ========== FUNCIONES DE RENDERIZADO (completas, sin atajos) ==========
+// ========== FUNCIONES DE RENDERIZADO (sin cambios, solo se añade el botón cerrar día) ==========
 function renderWeeklyReport() {
     const weeklyVentas = getVentasUltimos7Dias();
     let totalVentasSemana = 0, totalEfectivoSemana = 0, totalTransferenciaSemana = 0, totalCtaCteSemana = 0, totalCobrosDeudaSemana = 0, totalGananciaReal = 0;
@@ -692,115 +718,7 @@ ESC.32KG
         
 3,5 KG
 
-        </tr>
         <tr>
-        
-14 KG
-
-        </tr>
-        <tr>
-        
-ESC.20KG
-
-        </tr>
-        <tr>
-        
-ESC.32KG
-
-        </tr>
-    `;
-    if(tbody) tbody.innerHTML = `
-        <tr>
-        
-1,7 KG
-
-        </tr>
-        <tr>
-        
-3,5 KG
-
-        </tr>
-        <tr>
-        
-14 KG
-
-        </tr>
-        <tr>
-        
-ESC.20KG
-
-        </tr>
-        <tr>
-        
-ESC.32KG
-
-        </tr>
-    `;
-    if(tbody) tbody.innerHTML = `
-        <tr>
-        
-1,7 KG
-
-        </tr>
-        <tr>
-        
-3,5 KG
-
-        </tr>
-        <tr>
-        
-14 KG
-
-        </tr>
-        <tr>
-        
-ESC.20KG
-
-        </tr>
-        <tr>
-        
-ESC.32KG
-
-        </tr>
-    `;
-    if(tbody) tbody.innerHTML = `
-        <tr>
-        
-1,7 KG
-
-        </tr>
-        <tr>
-        
-3,5 KG
-
-        </tr>
-        <tr>
-        
-14 KG
-
-        </tr>
-        <tr>
-        
-ESC.20KG
-
-        </tr>
-        <tr>
-        
-ESC.32KG
-
-        </tr>
-    `;
-    if(tbody) tbody.innerHTML = `
-        <tr>
-        
-1,7 KG
-
-        </tr>
-        <tr>
-        
-3,5 KG
-
-        </tr>
         <tr>
         
 14 KG
@@ -812,33 +730,6 @@ ESC.20KG
 
         </tr>
         <td>
-        
-ESC.32KG
-
-        </tr>
-    `;
-    if(tbody) tbody.innerHTML = `
-        <tr>
-        
-1,7 KG
-
-        </tr>
-        <tr>
-        
-3,5 KG
-
-        </tr>
-        <tr>
-        
-14 KG
-
-        </tr>
-        <tr>
-        
-ESC.20KG
-
-        </tr>
-        <tr>
         
 ESC.32KG
 
@@ -1032,6 +923,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             location.reload();
         }
     });
+    document.getElementById("cerrarDiaBtn")?.addEventListener("click", cerrarDia);
     document.getElementById("saveAllPricesBtn")?.addEventListener("click", () => {
         document.querySelectorAll(".priceInput").forEach(inp => {
             const cli = inp.dataset.cli, prod = inp.dataset.prod;
