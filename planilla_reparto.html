@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (sin reinicio automático)</title>
+    <title>MYC HIELO – Planilla de Reparto</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -96,7 +96,7 @@
             <div class="chart-container"><h3>📦 Ventas por producto (día actual)</h3><div id="productosReport" class="productos-vendidos"></div></div>
             <div class="chart-container no-print"><h3>📈 Evolución diaria (ventas totales últimos 7 días)</h3><canvas id="evolucionChart" width="400" height="200"></canvas></div>
             <h3>📋 Ventas y Cobros del día</h3>
-            <div style="overflow-x:auto"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></tr></thead><tbody id="salesDetailBody"></tbody></table></div>
+            <div style="overflow-x:auto"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></td></thead><tbody id="salesDetailBody"></tbody></table></div>
         </div>
         <div id="tabReportes" class="panel-content" style="display:none;">
             <h2>📅 Resumen de la última semana (últimos 7 días)</h2>
@@ -117,7 +117,7 @@
                 <div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div>
                 <div class="form-group"><button id="addClienteBtn" class="btn-small">Agregar Cliente</button></div>
             </div>
-            <div style="overflow-x:auto"><table id="clientesTable"><thead><tr><th>Foto</th><th>Cliente</th><th>1,7Kg $</th><th>3,5Kg $</th><th>14Kg $</th><th>20Kg $</th><th>32Kg $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></td></thead><tbody id="clientesTbody"></tbody></table></div>
+            <div style="overflow-x:auto"><table id="clientesTable"><thead><tr><th>Foto</th><th>Cliente</th><th>1,7Kg $</th><th>3,5Kg $</th><th>14Kg $</th><th>20Kg $</th><th>32Kg $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></table></div>
             <button id="saveAllPricesBtn" style="margin-top:20px;">💾 Guardar todos los cambios</button>
         </div>
         <div id="tabProductos" class="panel-content" style="display:none;">
@@ -142,7 +142,7 @@
                 <div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div>
             </div>
             <h3>📊 Resumen vendido / restante</h3>
-            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody></tbody><tr>
+            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></td></thead><tbody></tbody></tr>
         </div>
     </div>
 
@@ -188,12 +188,12 @@
                 </div>
                 <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small>(Efectivo + Transferencia + Cobros - Gastos)</small></div>
             </div>
-            <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
+            <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></table></thead><tbody id="driverSalesBody"></tbody></table></div>
             <button id="resetDayBtn" style="background:#b91c1c; margin-top:20px;">🔄 Reiniciar Jornada</button>
         </div>
     </div>
 </div>
-<footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Datos de ventas por chofer separados. Precios y costos globales. Clientes sincronizados en la nube. Sin reinicio automático. Usa el botón "Reiniciar Jornada" para borrar el día actual.</footer>
+<footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Los datos de cada chofer se guardan por separado. Precios y costos globales. Clientes sincronizados en la nube. Sin reinicio automático.</footer>
 
 <script>
 // ==================== CONFIGURACIÓN ====================
@@ -201,10 +201,6 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6
 let currentDriverPin = null;
 
 // ========== FUNCIONES DE SINCRONIZACIÓN ==========
-async function obtenerClientes() {
-    const res = await fetch(`${API_URL}?ruta=clientes`);
-    return await res.json();
-}
 async function enviarMovimientoADeudas(fecha, cliente, tipo, monto, formaPago = null, detalle = "") {
     try {
         const form = new URLSearchParams();
@@ -221,6 +217,7 @@ async function enviarMovimientoADeudas(fecha, cliente, tipo, monto, formaPago = 
         else console.log(`Movimiento ${tipo} de $${monto} para ${cliente} enviado a Deudas`);
     } catch (err) { console.error("Error de red:", err); }
 }
+
 async function enviarClienteADeudas(nombre) {
     try {
         const form = new URLSearchParams();
@@ -232,6 +229,7 @@ async function enviarClienteADeudas(nombre) {
         else console.log(`Cliente ${nombre} enviado a Deudas`);
     } catch (err) { console.error("Error de red:", err); }
 }
+
 async function eliminarClienteApi(nombre) {
     try {
         const form = new URLSearchParams();
@@ -244,6 +242,7 @@ async function eliminarClienteApi(nombre) {
         return data;
     } catch (err) { console.error("Error de red:", err); }
 }
+
 function formatearFechaParaAPI(fechaIso) {
     if (!fechaIso) return new Date().toISOString().slice(0,10);
     const d = new Date(fechaIso);
@@ -300,7 +299,6 @@ function saveGlobalPrices() {
     localStorage.setItem("myc_costos_globales", JSON.stringify(costosClientes));
 }
 
-// Cargar datos de un chofer (ventas, gastos, stock) desde localStorage (sin reinicio automático)
 function loadDataByPin(pin) {
     const prefix = `myc_${pin}_`;
     let sv = localStorage.getItem(prefix + "ventas");
@@ -332,7 +330,6 @@ function saveAll() {
     saveGlobalPrices();
 }
 
-// ========== FUNCIONES DE NEGOCIO ==========
 function getVentasHoy() { const hoy = new Date().toDateString(); return ventas.filter(v => new Date(v.fecha).toDateString() === hoy); }
 function getVentasUltimos7Dias() {
     const hoy = new Date();
@@ -365,16 +362,14 @@ function eliminarVenta(id) {
 function resetJornada() {
     const hoy = new Date().toDateString();
     ventas = ventas.filter(v => new Date(v.fecha).toDateString() !== hoy);
-    gastos = 0;
-    gastosDetalle = { nafta:0, choferes:0, otros:0 };
-    cobrosCC = 0;
+    gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0;
     saveAll();
 }
 
-// ========== FUNCIONES DE CLIENTES SINCRONIZADAS ==========
 async function cargarClientesDesdeNube() {
     try {
-        const clientes = await obtenerClientes();
+        const res = await fetch(`${API_URL}?ruta=clientes`);
+        const clientes = await res.json();
         CLIENTES_LIST = clientes;
         for (let c of CLIENTES_LIST) {
             if (!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c);
@@ -389,11 +384,7 @@ async function cargarClientesDesdeNube() {
 
 async function agregarClienteGlobal(nombre) {
     if (!CLIENTES_LIST.includes(nombre)) {
-        const res = await enviarClienteADeudas(nombre);
-        if (res && res.error) {
-            alert("Error al guardar cliente en la nube");
-            return false;
-        }
+        await enviarClienteADeudas(nombre);
         await cargarClientesDesdeNube();
         preciosClientes[nombre] = getPreciosCliente(nombre);
         costosClientes[nombre] = getCostosCliente();
@@ -405,11 +396,7 @@ async function agregarClienteGlobal(nombre) {
 
 async function eliminarClienteGlobal(nombre) {
     if (confirm(`¿Eliminar cliente "${nombre}" y todos sus movimientos?`)) {
-        const res = await eliminarClienteApi(nombre);
-        if (res && res.error) {
-            alert("Error al eliminar cliente de la nube: " + res.error);
-            return false;
-        }
+        await eliminarClienteApi(nombre);
         CLIENTES_LIST = CLIENTES_LIST.filter(c => c !== nombre);
         delete preciosClientes[nombre];
         delete costosClientes[nombre];
@@ -421,7 +408,7 @@ async function eliminarClienteGlobal(nombre) {
     return false;
 }
 
-// ========== FUNCIONES DE RENDERIZADO COMPLETAS ==========
+// ========== FUNCIONES DE RENDERIZADO ==========
 function renderWeeklyReport() {
     const weeklyVentas = getVentasUltimos7Dias();
     let totalVentasSemana = 0, totalEfectivoSemana = 0, totalTransferenciaSemana = 0, totalCtaCteSemana = 0, totalCobrosDeudaSemana = 0, totalGananciaReal = 0;
