@@ -1,0 +1,561 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>MYC HIELO – Panel Resumen de Reparto</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        body { background: #e9f0f5; margin: 0; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .card { background: white; border-radius: 28px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card-title { font-weight: 800; font-size: 1.3rem; color: #0a3e6d; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .selector { display: flex; gap: 12px; align-items: center; background: #f1f5f9; padding: 12px 20px; border-radius: 40px; margin-bottom: 20px; flex-wrap: wrap; }
+        .selector label { font-weight: 600; }
+        select, button { padding: 8px 16px; border-radius: 40px; border: 1px solid #cbd5e1; background: white; font-size: 0.9rem; cursor: pointer; }
+        button { background: #0a3e6d; color: white; border: none; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px,1fr)); gap: 20px; }
+        .stat-card { background: #f8fafc; border-radius: 24px; padding: 16px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: #0a3e6d; }
+        .stat-label { font-size: 0.8rem; color: #475569; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
+        th { background: #eef2ff; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
+        .badge-deuda { background: #fee2e2; color: #b91c1c; }
+        .badge-pago { background: #d1fae5; color: #0a7c4a; }
+        .badge-efectivo { background: #fef9c3; color: #92400e; }
+        .badge-transfer { background: #e0f2fe; color: #0369a1; }
+        .btn-sm { padding: 4px 12px; font-size: 0.7rem; }
+        .btn-red { background: #b91c1c; }
+        .btn-green { background: #16a34a; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end; }
+        .form-group { flex: 1 1 180px; }
+        label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border-radius: 24px; border: 1px solid #ccc; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 8px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 1000; display: none; }
+        .toast.show { display: block; }
+        @media print {
+            body { background: white; }
+            .selector, .no-print, .toast, button, .print-hide { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+            .stat-value { color: black; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="card-title">🧊 Panel Resumen de Reparto</div>
+        <div class="selector">
+            <label>📌 Ver datos de:</label>
+            <select id="driverSelect">
+                <option value="1234">Chofer 1234</option>
+                <option value="5678">Chofer 5678</option>
+                <option value="both">Ambos (consolidado)</option>
+            </select>
+            <button id="refreshBtn">🔄 Actualizar</button>
+        </div>
+    </div>
+
+    <!-- Sección 1: Rendición de dinero (neto a entregar) -->
+    <div class="card" id="rendicionCard">
+        <div class="card-title">💰 Rendición de Dinero (Neto a entregar por el chofer)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('rendicion')">🖨️ Imprimir</button>
+        </div>
+        <div class="grid-2" id="rendicionContent"></div>
+    </div>
+
+    <!-- Sección 2: Ventas, Pagos, Cobros y Deuda -->
+    <div class="card" id="ventasPagosCard">
+        <div class="card-title">📊 Ventas, Pagos, Cobros y Deuda
+            <button class="btn-sm no-print" onclick="imprimirSeccion('ventasPagos')">🖨️ Imprimir</button>
+        </div>
+        <div class="grid-2" id="ventasPagosContent"></div>
+    </div>
+
+    <!-- Sección 3: Equivalencia en bolsas -->
+    <div class="card" id="equivalenciaCard">
+        <div class="card-title">📦 Equivalencia en Bolsas (según cliente)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('equivalencia')">🖨️ Imprimir</button>
+        </div>
+        <div class="flex-between" style="margin-bottom: 16px;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <div class="form-group" style="min-width: 180px;">
+                    <label>Cliente</label>
+                    <select id="equiClienteSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label>Monto a convertir ($)</label>
+                    <input type="number" id="equiMonto" placeholder="Ingrese monto">
+                </div>
+                <button id="calcularEquiBtn" class="btn-sm">Calcular</button>
+            </div>
+        </div>
+        <div id="equivalenciaResultado" class="stat-card"></div>
+    </div>
+
+    <!-- Sección 4: Inventario / Stock -->
+    <div class="card" id="inventarioCard">
+        <div class="card-title">🏭 Inventario / Stock (carga fábrica - vendido)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('inventario')">🖨️ Imprimir</button>
+        </div>
+        <div id="inventarioContent"></div>
+    </div>
+
+    <!-- Sección 5: Ganancia Real (ventas vs costos) -->
+    <div class="card" id="gananciaCard">
+        <div class="card-title">📈 Ganancia Real (Ventas - Costos + Cobros de deuda)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
+        </div>
+        <div class="grid-2" id="gananciaContent"></div>
+    </div>
+
+    <!-- Sección 6: Movimientos históricos (con eliminar y editar) -->
+    <div class="card" id="movimientosCard">
+        <div class="card-title">📜 Movimientos Históricos
+            <button class="btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
+            <button id="agregarMovBtn" class="btn-sm btn-green">➕ Agregar Movimiento</button>
+        </div>
+        <div style="overflow-x:auto;">
+            <table id="movimientosTabla">
+                <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar/editar movimiento -->
+<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:white; max-width:500px; width:90%; border-radius:28px; padding:24px;">
+        <h3 id="modalTitle">Agregar Movimiento</h3>
+        <div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div>
+        <div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div>
+        <div class="form-group"><label>Tipo</label>
+            <select id="modalTipo">
+                <option value="deuda">Deuda (venta a crédito)</option>
+                <option value="pago">Pago (cobro de deuda)</option>
+                <option value="gasto">Gasto (nafta, choferes, otros)</option>
+            </select>
+        </div>
+        <div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div>
+        <div class="form-group"><label>Forma de pago (si aplica)</label>
+            <select id="modalFormaPago">
+                <option value="">Seleccionar</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+            </select>
+        </div>
+        <div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div>
+        <div style="display:flex; gap:12px; margin-top:20px;">
+            <button id="modalSaveBtn" class="btn-sm">Guardar</button>
+            <button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ==================== CONFIGURACIÓN ====================
+const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
+let clientesList = [];
+let preciosClientes = {};
+let costosClientes = {};
+let currentDriver = "1234"; // o "5678" o "both"
+let ventasData = []; // array de movimientos (deuda, pago) del driver seleccionado
+let gastosData = { nafta:0, choferes:0, otros:0 };
+let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+let productosBase = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
+
+// ========== CARGAR DATOS DESDE LA NUBE (clientes, precios, costos) ==========
+async function cargarClientesPrecios() {
+    try {
+        const res = await fetch(`${API_URL}?ruta=clientes`);
+        clientesList = await res.json();
+        // Cargar precios y costos desde localStorage global (myc_precios_globales, myc_costos_globales)
+        let precios = localStorage.getItem("myc_precios_globales");
+        let costos = localStorage.getItem("myc_costos_globales");
+        if (precios) preciosClientes = JSON.parse(precios);
+        else {
+            preciosClientes = {};
+            clientesList.forEach(c => preciosClientes[c] = getPreciosPorDefecto(c));
+        }
+        if (costos) costosClientes = JSON.parse(costos);
+        else {
+            costosClientes = {};
+            clientesList.forEach(c => costosClientes[c] = getCostosPorDefecto());
+        }
+        llenarSelectClientes();
+    } catch(e) { console.error("Error cargando clientes", e); }
+}
+
+function getPreciosPorDefecto(cliente) {
+    let p17=1500, p35=2500, p14=7000, p20=8000, p32=12000;
+    const specials = {"AFRICA":{p14:5000},"LETS GO":{p14:6000},"GUTIERREZ":{p14:5500},"TERRANO":{p14:7500},"PADDEL TURCO":{p14:5500},"ROSADITA":{p14:7000},"ICONOS":{p14:7000},"WILLIAMS":{p14:8000},"ERIC SALON":{p14:6000},"GABRIEL BARRIO DORREGO":{p35:3500,p14:7000},"KIOSCO VAMPIRO":{p35:3500,p14:7000}};
+    if(specials[cliente]) { if(specials[cliente].p14) p14 = specials[cliente].p14; if(specials[cliente].p35) p35 = specials[cliente].p35; }
+    return { p17, p35, p14, p20, p32 };
+}
+function getCostosPorDefecto() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
+
+// ========== CARGAR DATOS DESDE LOCALSTORAGE DEL CHOFER ==========
+function cargarDatosChofer(pin) {
+    const prefix = `myc_${pin}_`;
+    let ventas = localStorage.getItem(prefix + "ventas");
+    ventasData = ventas ? JSON.parse(ventas) : [];
+    let gastos = localStorage.getItem(prefix + "gastos");
+    let gastosDetalle = localStorage.getItem(prefix + "gastosDetalle");
+    if (gastosDetalle) gastosData = JSON.parse(gastosDetalle);
+    else gastosData = { nafta:0, choferes:0, otros:0 };
+    let stock = localStorage.getItem(prefix + "stock");
+    if (stock) stockFabrica = JSON.parse(stock);
+    else stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+}
+function guardarDatosChofer(pin) {
+    const prefix = `myc_${pin}_`;
+    localStorage.setItem(prefix + "ventas", JSON.stringify(ventasData));
+    localStorage.setItem(prefix + "gastos", gastosData.nafta + gastosData.choferes + gastosData.otros);
+    localStorage.setItem(prefix + "gastosDetalle", JSON.stringify(gastosData));
+    localStorage.setItem(prefix + "stock", JSON.stringify(stockFabrica));
+}
+// Consolidado: suma de ambos choferes
+function cargarDatosConsolidado() {
+    let ventas1 = [], ventas2 = [];
+    let gastos1 = { nafta:0, choferes:0, otros:0 }, gastos2 = { nafta:0, choferes:0, otros:0 };
+    let stock1 = {}, stock2 = {};
+    const prefix1 = `myc_1234_`;
+    const prefix2 = `myc_5678_`;
+    let v1 = localStorage.getItem(prefix1 + "ventas");
+    ventas1 = v1 ? JSON.parse(v1) : [];
+    let v2 = localStorage.getItem(prefix2 + "ventas");
+    ventas2 = v2 ? JSON.parse(v2) : [];
+    ventasData = [...ventas1, ...ventas2];
+    let g1 = localStorage.getItem(prefix1 + "gastosDetalle");
+    let g2 = localStorage.getItem(prefix2 + "gastosDetalle");
+    gastos1 = g1 ? JSON.parse(g1) : { nafta:0, choferes:0, otros:0 };
+    gastos2 = g2 ? JSON.parse(g2) : { nafta:0, choferes:0, otros:0 };
+    gastosData = {
+        nafta: gastos1.nafta + gastos2.nafta,
+        choferes: gastos1.choferes + gastos2.choferes,
+        otros: gastos1.otros + gastos2.otros
+    };
+    let s1 = localStorage.getItem(prefix1 + "stock");
+    let s2 = localStorage.getItem(prefix2 + "stock");
+    stock1 = s1 ? JSON.parse(s1) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+    stock2 = s2 ? JSON.parse(s2) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+    for (let prod of productosBase) {
+        stockFabrica[prod] = (stock1[prod] || 0) + (stock2[prod] || 0);
+    }
+}
+// Función principal de actualización
+async function actualizarTodo() {
+    currentDriver = document.getElementById("driverSelect").value;
+    if (currentDriver === "both") {
+        cargarDatosConsolidado();
+    } else {
+        cargarDatosChofer(currentDriver);
+    }
+    await cargarClientesPrecios(); // ya carga clientes y precios
+    renderRendicion();
+    renderVentasPagosDeuda();
+    renderInventario();
+    renderGananciaReal();
+    renderMovimientosTabla();
+    // Equivalencia se recalcula a demanda
+}
+function renderRendicion() {
+    // Neto = total efectivo + total transferencia + cobros de deuda - gastos
+    let totalEfectivo = 0, totalTransferencia = 0, totalCobros = 0;
+    ventasData.forEach(v => {
+        if (v.pago === "efectivo") totalEfectivo += v.total;
+        else if (v.pago === "transferencia") totalTransferencia += v.total;
+        else if (v.pago === "cobrocc") totalCobros += v.cobroDeuda || v.total;
+        else if (v.pago === "ctacte") {
+            // no suma al efectivo/transferencia
+        }
+        // Además, cobroDeuda puede estar en ventas normales
+        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") totalCobros += v.cobroDeuda;
+    });
+    const totalGastos = gastosData.nafta + gastosData.choferes + gastosData.otros;
+    const neto = totalEfectivo + totalTransferencia + totalCobros - totalGastos;
+    const container = document.getElementById("rendicionContent");
+    container.innerHTML = `
+        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Efectivo cobrado</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Transferencia cobrada</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de deuda</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalGastos.toLocaleString('es-AR')}</div><div class="stat-label">Total Gastos (nafta, choferes, otros)</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d; color:white; padding:8px; border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR (Efectivo + Transferencia + Cobros - Gastos)</div></div>
+    `;
+}
+function renderVentasPagosDeuda() {
+    let totalVentas = 0, totalEfectivo = 0, totalTransferencia = 0, totalCtaCte = 0, totalCobrosDeuda = 0;
+    let saldoDeudor = 0; // suma de ventas en ctacte menos cobros de deuda
+    ventasData.forEach(v => {
+        if (v.pago === "cobrocc") {
+            totalCobrosDeuda += v.cobroDeuda || v.total;
+            saldoDeudor -= (v.cobroDeuda || v.total);
+        } else {
+            totalVentas += v.total;
+            if (v.pago === "efectivo") totalEfectivo += v.total;
+            else if (v.pago === "transferencia") totalTransferencia += v.total;
+            else if (v.pago === "ctacte") {
+                totalCtaCte += v.total;
+                saldoDeudor += v.total;
+            }
+        }
+        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") {
+            totalCobrosDeuda += v.cobroDeuda;
+            saldoDeudor -= v.cobroDeuda;
+        }
+    });
+    const container = document.getElementById("ventasPagosContent");
+    container.innerHTML = `
+        <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Total Ventas (contado + crédito)</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Ventas en Efectivo</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Ventas por Transferencia</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCtaCte.toLocaleString('es-AR')}</div><div class="stat-label">Ventas a Crédito (Cta Cte)</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda (incluye cobros de ctacte)</div></div>
+        <div class="stat-card"><div class="stat-value">$${saldoDeudor.toLocaleString('es-AR')}</div><div class="stat-label">Saldo Deudor Actual (Cta Cte - Cobros)</div></div>
+    `;
+}
+function renderInventario() {
+    // Calcular total vendido por producto desde ventasData (solo ventas, no cobros)
+    let vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+    ventasData.forEach(v => {
+        if (v.pago !== "cobrocc" && v.cantidades) {
+            for (let prod of productosBase) {
+                vendido[prod] += v.cantidades[prod] || 0;
+            }
+        }
+    });
+    const container = document.getElementById("inventarioContent");
+    let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody>`;
+    for (let prod of productosBase) {
+        let carga = stockFabrica[prod] || 0;
+        let vend = vendido[prod] || 0;
+        let restante = carga - vend;
+        html += `<tr><td>${prod}</td><td>${carga}</td><td>${vend}</td><td>${restante}</td></tr>`;
+    }
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+function renderGananciaReal() {
+    let totalVentas = 0, totalCosto = 0, totalCobrosDeuda = 0;
+    ventasData.forEach(v => {
+        if (v.pago !== "cobrocc") {
+            totalVentas += v.total;
+            // calcular costo según cantidades
+            let costo = 0;
+            if (v.cantidades && costosClientes[v.cliente]) {
+                const cost = costosClientes[v.cliente];
+                costo += (v.cantidades["1,7 KG"]||0)*cost.c17;
+                costo += (v.cantidades["3,5 KG"]||0)*cost.c35;
+                costo += (v.cantidades["14 KG"]||0)*cost.c14;
+                costo += (v.cantidades["ESC.20KG"]||0)*cost.c20;
+                costo += (v.cantidades["ESC.32KG"]||0)*cost.c32;
+            }
+            totalCosto += costo;
+        } else {
+            totalCobrosDeuda += v.cobroDeuda || v.total;
+        }
+        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") totalCobrosDeuda += v.cobroDeuda;
+    });
+    const ganancia = totalVentas - totalCosto + totalCobrosDeuda;
+    const container = document.getElementById("gananciaContent");
+    container.innerHTML = `
+        <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Brutas</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo de Fábrica (estimado)</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#16a34a; color:white; padding:8px; border-radius:24px;">$${ganancia.toLocaleString('es-AR')}</div><div class="stat-label">GANANCIA REAL (Ventas - Costos + Cobros)</div></div>
+    `;
+}
+function renderMovimientosTabla() {
+    const tbody = document.querySelector("#movimientosTabla tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    ventasData.slice().reverse().forEach((v, idx) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = v.fecha || "";
+        row.insertCell(1).textContent = v.cliente || "";
+        let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta a crédito" : (v.pago === "efectivo" ? "Venta efectivo" : (v.pago === "transferencia" ? "Venta transferencia" : "Desconocido")));
+        row.insertCell(2).textContent = tipo;
+        row.insertCell(3).textContent = `$${v.total?.toLocaleString('es-AR') || 0}`;
+        row.insertCell(4).textContent = v.forma_pago || v.pago || "";
+        row.insertCell(5).textContent = v.detalle || "";
+        const acciones = row.insertCell(6);
+        acciones.className = "no-print";
+        const btnEdit = document.createElement("button");
+        btnEdit.textContent = "✏️";
+        btnEdit.className = "btn-sm";
+        btnEdit.style.marginRight = "5px";
+        btnEdit.onclick = () => editarMovimiento(v.id, v);
+        const btnDel = document.createElement("button");
+        btnDel.textContent = "🗑️";
+        btnDel.className = "btn-sm btn-red";
+        btnDel.onclick = () => eliminarMovimiento(v.id);
+        acciones.appendChild(btnEdit);
+        acciones.appendChild(btnDel);
+    });
+}
+// Editar y eliminar
+function eliminarMovimiento(id) {
+    if (confirm("¿Eliminar este movimiento?")) {
+        ventasData = ventasData.filter(m => m.id !== id);
+        guardarDatosChofer(currentDriver);
+        if (currentDriver === "both") {
+            // actualizar ambos por separado? Mejor no soportar edición en consolidado, solo lectura.
+            alert("No se puede eliminar en modo consolidado. Seleccione un chofer específico.");
+            return;
+        }
+        guardarDatosChofer(currentDriver);
+        actualizarTodo();
+        toast("Movimiento eliminado");
+    }
+}
+function editarMovimiento(id, viejo) {
+    document.getElementById("modalTitle").innerText = "Editar Movimiento";
+    document.getElementById("modalFecha").value = viejo.fecha || "";
+    document.getElementById("modalCliente").value = viejo.cliente || "";
+    document.getElementById("modalTipo").value = viejo.pago === "cobrocc" ? "cobro" : (viejo.pago === "ctacte" ? "deuda" : (viejo.pago === "efectivo" || viejo.pago === "transferencia" ? "pago" : "deuda"));
+    document.getElementById("modalMonto").value = viejo.total || 0;
+    document.getElementById("modalFormaPago").value = viejo.forma_pago || (viejo.pago === "transferencia" ? "Transferencia" : (viejo.pago === "efectivo" ? "Efectivo" : ""));
+    document.getElementById("modalDetalle").value = viejo.detalle || "";
+    // Guardar id en una variable global
+    window.editandoId = id;
+    document.getElementById("modal").style.display = "flex";
+}
+// Agregar movimiento
+function abrirAgregarMovimiento() {
+    document.getElementById("modalTitle").innerText = "Agregar Movimiento";
+    document.getElementById("modalFecha").value = new Date().toISOString().slice(0,10);
+    document.getElementById("modalCliente").value = clientesList[0] || "";
+    document.getElementById("modalTipo").value = "deuda";
+    document.getElementById("modalMonto").value = "";
+    document.getElementById("modalFormaPago").value = "";
+    document.getElementById("modalDetalle").value = "";
+    window.editandoId = null;
+    document.getElementById("modal").style.display = "flex";
+}
+async function guardarMovimientoModal() {
+    const fecha = document.getElementById("modalFecha").value;
+    const cliente = document.getElementById("modalCliente").value;
+    const tipo = document.getElementById("modalTipo").value; // "deuda", "pago", "gasto"
+    const monto = parseFloat(document.getElementById("modalMonto").value);
+    const formaPago = document.getElementById("modalFormaPago").value;
+    const detalle = document.getElementById("modalDetalle").value;
+    if (!fecha || !cliente || isNaN(monto) || monto <= 0) { alert("Complete campos válidos"); return; }
+    let nuevoMov = {
+        id: window.editandoId || Date.now(),
+        fecha,
+        cliente,
+        total: monto,
+        detalle,
+        pago: tipo === "deuda" ? "ctacte" : (tipo === "pago" ? (formaPago === "Efectivo" ? "efectivo" : (formaPago === "Transferencia" ? "transferencia" : "cobrocc")) : (tipo === "gasto" ? "gasto" : "ctacte")),
+        forma_pago: tipo === "pago" ? formaPago : null,
+        cobroDeuda: (tipo === "pago" ? monto : 0),
+        cantidades: { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 }
+    };
+    if (tipo === "deuda") {
+        // Para calcular el total según precios del cliente, necesitamos las cantidades, pero no tenemos. Podríamos pedir cantidades en el modal, pero simplificamos: asumimos que el monto es el total de la venta.
+        nuevoMov.total = monto;
+    } else if (tipo === "pago") {
+        nuevoMov.pago = "cobrocc";
+        nuevoMov.cobroDeuda = monto;
+    } else if (tipo === "gasto") {
+        // gasto: actualizar gastosData
+        if (detalle.toLowerCase().includes("nafta")) gastosData.nafta += monto;
+        else if (detalle.toLowerCase().includes("chofer")) gastosData.choferes += monto;
+        else gastosData.otros += monto;
+        guardarDatosChofer(currentDriver);
+        actualizarTodo();
+        cerrarModal();
+        toast("Gasto registrado");
+        return;
+    }
+    if (window.editandoId) {
+        // editar: reemplazar
+        const index = ventasData.findIndex(m => m.id === window.editandoId);
+        if (index !== -1) ventasData[index] = nuevoMov;
+    } else {
+        ventasData.push(nuevoMov);
+    }
+    guardarDatosChofer(currentDriver);
+    actualizarTodo();
+    cerrarModal();
+    toast(window.editandoId ? "Movimiento editado" : "Movimiento agregado");
+}
+function cerrarModal() {
+    document.getElementById("modal").style.display = "none";
+    window.editandoId = null;
+}
+// Equivalencia en bolsas
+function calcularEquivalencia() {
+    const cliente = document.getElementById("equiClienteSelect").value;
+    const monto = parseFloat(document.getElementById("equiMonto").value);
+    if (!cliente || isNaN(monto) || monto <= 0) { document.getElementById("equivalenciaResultado").innerHTML = '<div class="stat-card">Ingrese un monto válido</div>'; return; }
+    const precios = preciosClientes[cliente];
+    if (!precios) { document.getElementById("equivalenciaResultado").innerHTML = '<div class="stat-card">No hay precios para este cliente</div>'; return; }
+    // Determinar combinación de bolsas que más se aproxima al monto (usando los precios)
+    let mejor = { cantidades: { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 }, resto: monto };
+    // Algoritmo greedy simple (para fines prácticos)
+    const orden = Object.entries(precios).sort((a,b)=>b[1]-a[1]); // mayor precio primero
+    let temp = monto;
+    let cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+    for (let [prod, precio] of orden) {
+        let maxCant = Math.floor(temp / precio);
+        cant[prod] = maxCant;
+        temp -= maxCant * precio;
+    }
+    const totalCalculado = Object.entries(cant).reduce((sum, [prod, qty]) => sum + qty * precios[prod], 0);
+    const resto = monto - totalCalculado;
+    let html = `<div class="stat-card"><strong>Para $${monto.toLocaleString('es-AR')} con precios de ${cliente}:</strong><br>`;
+    for (let [prod, qty] of Object.entries(cant)) {
+        if (qty > 0) html += `${prod}: ${qty} bolsas = $${(qty * precios[prod]).toLocaleString('es-AR')}<br>`;
+    }
+    html += `<strong>Total aproximado: $${totalCalculado.toLocaleString('es-AR')}</strong> (resto $${resto.toLocaleString('es-AR')})<br>`;
+    html += `Precios: 1,7KG $${precios.p17}, 3,5KG $${precios.p35}, 14KG $${precios.p14}, 20KG $${precios.p20}, 32KG $${precios.p32}</div>`;
+    document.getElementById("equivalenciaResultado").innerHTML = html;
+}
+function llenarSelectClientes() {
+    const select = document.getElementById("equiClienteSelect");
+    select.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+function imprimirSeccion(seccionId) {
+    const element = document.getElementById(seccionId + "Card");
+    if (!element) return;
+    const clone = element.cloneNode(true);
+    // eliminar botones de impresión dentro
+    clone.querySelectorAll(".no-print, button").forEach(el => el.remove());
+    const ventana = window.open('', '_blank');
+    ventana.document.write(`
+        <html><head><title>MYC HIELO - ${seccionId}</title>
+        <style>${Array.from(document.styleSheets).reduce((acc, sheet) => { try { return acc + Array.from(sheet.cssRules || []).map(r=>r.cssText).join('') } catch(e){return acc} }, '')} body{margin:20px;} .no-print{display:none;} button{display:none;}</style>
+        </head><body>${clone.outerHTML}</body></html>
+    `);
+    ventana.document.close();
+    ventana.print();
+    ventana.close();
+}
+function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2500);
+}
+// Eventos
+document.getElementById("refreshBtn").addEventListener("click", actualizarTodo);
+document.getElementById("calcularEquiBtn").addEventListener("click", calcularEquivalencia);
+document.getElementById("agregarMovBtn").addEventListener("click", abrirAgregarMovimiento);
+document.getElementById("modalSaveBtn").addEventListener("click", guardarMovimientoModal);
+document.getElementById("modalCancelBtn").addEventListener("click", cerrarModal);
+window.addEventListener("click", (e) => { if (e.target === document.getElementById("modal")) cerrarModal(); });
+// Inicializar
+cargarClientesPrecios().then(() => {
+    actualizarTodo();
+});
+</script>
+</body>
+</html>
