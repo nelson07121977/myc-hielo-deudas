@@ -322,7 +322,7 @@
 
 <script>
 // ==================== CONFIGURACIÓN GLOBAL ====================
-const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzOocHdqaQwBFji_vS5GWj60tkAvlyIKTzCTLsr0uj6fWoPoviHZ5UBg4BYqBJt1oIv/exec";
 let clientesList = [];
 let preciosClientes = {};
 let costosClientes = {};
@@ -383,15 +383,13 @@ async function obtenerClientesDesdeDeudas() {
     } catch(e) { console.error(e); return []; }
 }
 async function enviarMovimientoAGSheets(movimiento) {
-    // Enviar a Google Sheets vía POST (requiere Apps Script configurado)
     try {
-        const response = await fetch(API_URL, {
+        await fetch(API_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'nuevoMovimiento', data: movimiento })
         });
-        console.log("Enviado a Sheets (no-cors)", response);
     } catch(e) { console.error("Error al enviar a Sheets", e); }
 }
 async function cargarClientesPrecios() {
@@ -463,7 +461,7 @@ function verificarStockBajo() {
     }
 }
 
-// ========== RENDERIZACIÓN DE TODOS LOS COMPONENTES (similar a antes pero actualizado) ==========
+// ========== RENDERIZACIÓN DE TODOS LOS COMPONENTES ==========
 function renderRendicion() {
     let totalEfectivo=0, totalCobros=0;
     ventasData.forEach(v => {
@@ -679,13 +677,13 @@ function renderClientesPanel() {
         if (v.cobroDeuda > 0) saldos[v.cliente] -= v.cobroDeuda;
         if (v.pago === "cobrocc") saldos[v.cliente] -= v.total;
     });
-    let html = `<div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Precio 14KG</th><th>Precio 3.5KG</th><th>Acciones</th></tr></thead><tbody>`;
+    let html = `<div style="overflow-x:auto;"> <table> <thead> <tr> <th>Cliente</th> <th>Saldo Deudor</th> <th>Precio 14KG</th> <th>Precio 3.5KG</th> <th>Acciones</th> </tr> </thead> <tbody>`;
     for (let cli of clientesList) {
         let saldo = saldos[cli] || 0;
         let precios = preciosClientes[cli] || getPreciosPorDefecto(cli);
-        html += `<tr><td>${cli}</td><td class="${saldo>0?'badge-pendiente':'badge-pagado'}">$${saldo.toLocaleString('es-AR')}</td><td>$${precios.p14}</td><td>$${precios.p35}</td><td><button class="btn-sm btn-outline-print" onclick="editarPreciosCliente('${cli}')">Editar precios</button></td></tr>`;
+        html += `<tr> <td>${cli}</td> <td class="${saldo>0?'badge-pendiente':'badge-pagado'}">$${saldo.toLocaleString('es-AR')}</td> <td>$${precios.p14}</td> <td>$${precios.p35}</td> <td><button class="btn-sm btn-outline-print" onclick="editarPreciosCliente('${cli}')">Editar precios</button></td> </tr>`;
     }
-    html += `</tbody></table></div>`;
+    html += `</tbody> </table> </div>`;
     document.getElementById("clientesPanelContent").innerHTML = html;
 }
 function editarPreciosCliente(cliente) {
@@ -750,7 +748,7 @@ function renderLibroMayor() {
 function renderRendicionChoferes() {
     const hoy = new Date().toISOString().slice(0,10);
     const choferes = ["1234", "5678"];
-    let html = `<div style="overflow-x:auto;"><table id="rendicionChoferesTabla"><thead><tr><th>Chofer</th><th>Efectivo</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto a entregar</th></tr></thead><tbody>`;
+    let html = `<div style="overflow-x:auto;"><table id="rendicionChoferesTabla"><thead> <tr> <th>Chofer</th> <th>Efectivo</th> <th>Cobros Deuda</th> <th>Gastos</th> <th>Neto a entregar</th> </tr> </thead> <tbody>`;
     for (let pin of choferes) {
         const prefix = `myc_${pin}_`;
         let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
@@ -765,15 +763,15 @@ function renderRendicionChoferes() {
             }
         });
         let neto = efectivo + cobros - gastos;
-        html += `<tr><td><strong>Chofer ${pin}</strong></td><td>$${efectivo.toLocaleString('es-AR')}</td><td>$${cobros.toLocaleString('es-AR')}</td><td>$${gastos.toLocaleString('es-AR')}</td><td style="font-weight:800;">$${neto.toLocaleString('es-AR')}</td></tr>`;
+        html += `<tr> <td><strong>Chofer ${pin}</strong></td> <td>$${efectivo.toLocaleString('es-AR')}</td> <td>$${cobros.toLocaleString('es-AR')}</td> <td>$${gastos.toLocaleString('es-AR')}</td> <td style="font-weight:800;">$${neto.toLocaleString('es-AR')}</td> </tr>`;
     }
-    html += `</tbody></table></div>`;
+    html += `</tbody> </table> </div>`;
     document.getElementById("rendicionChoferesContent").innerHTML = html;
 }
 function mostrarMovimientosFecha(fecha) {
     if (!fecha) return;
     const movs = ventasData.filter(v => v.fecha === fecha);
-    // Similar a antes pero más compacto
+    // Productos
     let prodHTML = `<div class="stat-card"><strong>Productos - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th></tr></thead><tbody>`;
     const prodPorCliente = {};
     movs.forEach(v => {
@@ -788,7 +786,7 @@ function mostrarMovimientosFecha(fecha) {
     }
     prodHTML += `</tbody></table></div></div>`;
     document.getElementById("resumenProductosFecha").innerHTML = prodHTML;
-    // finanzas...
+    // Financiero
     let finHTML = `<div class="stat-card"><strong>Financiero - ${fecha}</strong><br><table><thead><tr><th>Cliente</th><th>Ventas</th><th>Cobros</th><th>Saldo</th></tr></thead><tbody>`;
     const financiero = {};
     movs.forEach(v => {
@@ -812,6 +810,14 @@ function mostrarMovimientosFecha(fecha) {
         else if (v.pago === "cobrocc") cobrosDia += v.total;
     });
     document.getElementById("rendicionFecha").innerHTML = `<div class="stat-card"><strong>Rendición del día</strong><br>Efectivo: $${efectivoDia.toLocaleString('es-AR')}<br>Cobros deuda: $${cobrosDia.toLocaleString('es-AR')}<br><strong>Neto: $${(efectivoDia+cobrosDia).toLocaleString('es-AR')}</strong></div>`;
+    // Detalle
+    let detHTML = `<div class="stat-card"><strong>Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
+    movs.forEach(v => {
+        let tipo = v.pago === "cobrocc" ? "Cobro" : (v.pago === "ctacte" ? "Venta crédito" : "Venta contado");
+        detHTML += `<tr><td>${v.cliente}</td><td>${tipo}</td><td>$${v.total.toLocaleString('es-AR')}</td><td>${v.forma_pago||v.pago}</td><td>${v.detalle||""}</td></tr>`;
+    });
+    detHTML += `</tbody></table></div></div>`;
+    document.getElementById("movimientosFechaResultado").innerHTML = detHTML;
 }
 
 // ========== GRÁFICOS ==========
