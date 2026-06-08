@@ -347,7 +347,7 @@
     </div>
 </div>
 
-<!-- Modales (sin cambios) -->
+<!-- Modales -->
 <div id="stockModal" class="modal"><div class="modal-content"><h3><i class="fas fa-boxes"></i> Editar Stock</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm btn-primary">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
 <div id="movModal" class="modal"><div class="modal-content"><h3 id="modalTitle"><i class="fas fa-exchange-alt"></i> Agregar Movimiento</h3><div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div><div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div><div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div><div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div><div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div><div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm btn-primary">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
 <div id="toast" class="toast"></div>
@@ -480,7 +480,7 @@ async function actualizarTodo() {
     toast("Datos actualizados");
 }
 
-// ========== RENDERIZACIÓN (la misma que antes, sin cambios) ==========
+// ========== RENDERIZACIÓN ==========
 function renderRendicion() {
     let totalEfectivo=0, totalCobros=0;
     ventasData.forEach(v => {
@@ -558,15 +558,7 @@ function renderInventario() {
     let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody>`;
     for (let prod of productosBase) {
         let carga = stockFabrica[prod]||0, vend = vendido[prod]||0;
-        html += `<tr>
-  
-${prod}
-
-        </td>
-        <td>${carga}</td>
-        <td>${vend}</td>
-        <td>${carga-vend}</td>
-    </tr>`;
+        html += `<tr><td>${prod}</td><td>${carga}</td><td>${vend}</td><td>${carga-vend}</td></tr>`;
     }
     html += `</tbody></table>`;
     document.getElementById("inventarioContent").innerHTML = html;
@@ -579,7 +571,7 @@ function renderVentasClienteDelDia(filtro="") {
         document.getElementById("ventasClienteResultado").innerHTML = "<div class='stat-card'>Sin ventas hoy.</div>";
         return;
     }
-    let html = `<tr><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total (registrado)</th><th>Total (precios actuales)</th><th>Forma Pago</th></tr></thead><tbody>`;
+    let html = `<table id="ventasClienteTabla"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total (registrado)</th><th>Total (precios actuales)</th><th>Forma Pago</th></tr></thead><tbody>`;
     ventasHoy.forEach(v => {
         const cant = v.cantidades || {};
         let preciosActuales = preciosClientes[v.cliente] || getPreciosPorDefecto(v.cliente);
@@ -658,7 +650,7 @@ function mostrarMovimientosFecha(fecha) {
     let finHTML = `<div class="stat-card"><strong><i class="fas fa-chart-line"></i> Financiero - ${fecha}</strong><br><div style="overflow-x:auto;">`;
     if (Object.keys(financiero).length===0) finHTML += "No hay movimientos financieros.";
     else {
-        finHTML += `</tr><thead><tr><th>Cliente</th><th>Ventas</th><th>Cobros</th><th>Saldo</th></tr></thead><tbody>`;
+        finHTML += `<table><thead><tr><th>Cliente</th><th>Ventas</th><th>Cobros</th><th>Saldo</th></tr></thead><tbody>`;
         for (let cli in financiero) {
             finHTML += `<tr>
                 <td>${cli}</td>
@@ -720,8 +712,8 @@ function renderMovimientosTabla(filtro="") {
         row.insertCell(4).textContent = v.forma_pago || v.pago || "";
         row.insertCell(5).textContent = v.detalle || "";
         const acciones = row.insertCell(6); acciones.className = "no-print";
-        const btnEdit = document.createElement("button"); btnEdit.textContent = "<i class='fas fa-edit'></i>"; btnEdit.className = "btn-sm"; btnEdit.style.background = "#eef2ff"; btnEdit.style.color = "#0a3e6d"; btnEdit.onclick = () => editarMovimiento(v);
-        const btnDel = document.createElement("button"); btnDel.textContent = "<i class='fas fa-trash-alt'></i>"; btnDel.className = "btn-sm btn-red"; btnDel.style.marginLeft = "8px"; btnDel.onclick = () => eliminarMovimiento(v.id);
+        const btnEdit = document.createElement("button"); btnEdit.innerHTML = "<i class='fas fa-edit'></i>"; btnEdit.className = "btn-sm"; btnEdit.style.background = "#eef2ff"; btnEdit.style.color = "#0a3e6d"; btnEdit.onclick = () => editarMovimiento(v);
+        const btnDel = document.createElement("button"); btnDel.innerHTML = "<i class='fas fa-trash-alt'></i>"; btnDel.className = "btn-sm btn-red"; btnDel.style.marginLeft = "8px"; btnDel.onclick = () => eliminarMovimiento(v.id);
         acciones.appendChild(btnEdit); acciones.appendChild(btnDel);
     });
 }
@@ -919,7 +911,6 @@ function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) { toast("No se encontró la tabla"); return; }
     let filas = [];
-    // Extraer cabeceras y datos
     const cabeceras = [];
     tabla.querySelectorAll("thead th").forEach(th => cabeceras.push(th.innerText.trim()));
     filas.push(cabeceras.join("\t"));
@@ -932,7 +923,6 @@ function copiarTabla(tablaId) {
     navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada al portapapeles")).catch(() => toast("Error al copiar"));
 }
 function copiarResumen() {
-    // Recopilar todos los valores de las tarjetas de resumen
     let texto = "=== RENDICIÓN DE DINERO ===\n";
     const rendicionDiv = document.getElementById("rendicionContent");
     if (rendicionDiv) {
@@ -963,9 +953,7 @@ function copiarResumen() {
     navigator.clipboard.writeText(texto).then(() => toast("Resumen copiado al portapapeles")).catch(() => toast("Error al copiar"));
 }
 function copiarTodo() {
-    // Copiar resumen + todas las tablas principales
     let texto = "";
-    // Resumen
     const rendicionDiv = document.getElementById("rendicionContent");
     if (rendicionDiv) {
         texto += "=== RENDICIÓN DE DINERO ===\n";
@@ -996,7 +984,6 @@ function copiarTodo() {
         });
         texto += "\n";
     }
-    // Libro Diario
     const diarioTabla = document.getElementById("libroDiarioTabla");
     if (diarioTabla) {
         texto += "=== LIBRO DIARIO ===\n";
@@ -1011,7 +998,6 @@ function copiarTodo() {
         });
         texto += filas.join("\n") + "\n\n";
     }
-    // Libro Mayor
     const mayorTabla = document.getElementById("libroMayorTabla");
     if (mayorTabla) {
         texto += "=== LIBRO MAYOR ===\n";
