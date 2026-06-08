@@ -4,44 +4,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>MYC HIELO – Panel Resumen de Reparto</title>
+    <!-- Font Awesome 6 (iconos gratuitos) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
-        body { background: #e9f0f5; margin: 0; padding: 20px; }
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif; }
+        body { background: #f0f4f8; margin: 0; padding: 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
-        .card { background: white; border-radius: 28px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .card-title { font-weight: 800; font-size: 1.3rem; color: #0a3e6d; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .selector { display: flex; gap: 12px; align-items: center; background: #f1f5f9; padding: 12px 20px; border-radius: 40px; margin-bottom: 20px; flex-wrap: wrap; }
-        .selector label { font-weight: 600; }
-        select, button, .btn { padding: 8px 16px; border-radius: 40px; border: 1px solid #cbd5e1; background: white; font-size: 0.9rem; cursor: pointer; }
-        button, .btn-primary { background: #0a3e6d; color: white; border: none; }
-        .btn-sm { padding: 4px 12px; font-size: 0.7rem; }
-        .btn-red { background: #b91c1c; }
-        .btn-green { background: #16a34a; }
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 20px; }
-        .stat-card { background: #f8fafc; border-radius: 24px; padding: 16px; }
-        .stat-value { font-size: 1.6rem; font-weight: 800; color: #0a3e6d; }
-        .stat-label { font-size: 0.8rem; color: #475569; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
-        th { background: #eef2ff; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .form-group { margin-bottom: 12px; }
-        label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 4px; }
-        input, select { width: 100%; padding: 8px 12px; border-radius: 24px; border: 1px solid #ccc; }
-        .filtro { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-        .filtro input { width: auto; flex: 1; min-width: 150px; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 8px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 1000; display: none; }
+        /* Tarjetas */
+        .card {
+            background: white;
+            border-radius: 32px;
+            padding: 20px;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e4e9f0;
+            transition: box-shadow 0.2s;
+        }
+        .card:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.08); }
+        .card-title {
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #0a3e6d;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-left: 5px solid #0a3e6d;
+            padding-left: 14px;
+        }
+        /* Selector y botones */
+        .selector {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: #f8fafc;
+            padding: 10px 20px;
+            border-radius: 48px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            border: 1px solid #e2e8f0;
+        }
+        .selector label { font-weight: 600; color: #1e293b; margin-right: 4px; }
+        select, button, .btn {
+            padding: 8px 18px;
+            border-radius: 40px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        button, .btn-primary {
+            background: #0a3e6d;
+            color: white;
+            border: none;
+        }
+        button:hover, .btn-primary:hover { background: #1e4a8a; transform: translateY(-1px); }
+        .btn-sm { padding: 5px 14px; font-size: 0.75rem; border-radius: 32px; }
+        .btn-red { background: #b91c1c; color: white; border: none; }
+        .btn-red:hover { background: #991b1b; }
+        .btn-green { background: #16a34a; color: white; border: none; }
+        .btn-green:hover { background: #15803d; }
+        .btn-outline-print { background: #eef2ff; color: #1e3a8a; border: 1px solid #c7d2fe; }
+        .btn-outline-print:hover { background: #e0e7ff; }
+        /* Grillas y tarjetas de estadísticas */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 20px; }
+        .stat-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #eef2ff;
+            transition: all 0.2s;
+        }
+        .stat-card:hover { border-color: #cbd5e1; background: #fefefe; }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0a3e6d;
+            line-height: 1.2;
+            margin-bottom: 6px;
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 8px;
+            border-bottom: 1px solid #eef2ff;
+        }
+        th {
+            background: #f8fafc;
+            font-weight: 700;
+            color: #0a3e6d;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-pagado { background: #d1fae5; color: #0a7c4a; }
+        .badge-pendiente { background: #fee2e2; color: #b91c1c; }
+        .warning {
+            background: #fffbeb;
+            color: #b45309;
+            padding: 2px 6px;
+            border-radius: 24px;
+            font-size: 0.7rem;
+            margin-left: 6px;
+        }
+        /* Filtros */
+        .filtro {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .filtro input, .filtro select {
+            width: auto;
+            flex: 1;
+            min-width: 140px;
+            padding: 8px 12px;
+            border-radius: 28px;
+            border: 1px solid #cbd5e1;
+        }
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0a3e6d;
+            color: white;
+            padding: 10px 22px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
         .toast.show { display: block; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: white; max-width: 500px; width: 90%; border-radius: 28px; padding: 24px; }
+        /* Modales */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            max-width: 500px;
+            width: 90%;
+            border-radius: 32px;
+            padding: 24px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        }
+        /* Impresión */
         @media print {
-            body { background: white; }
+            body { background: white; margin: 0; padding: 0; }
             .selector, .no-print, .toast, button, .print-hide, .modal, .filtro { display: none !important; }
             .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+            .stat-card { border: 1px solid #ccc; }
         }
-        .warning { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: 8px; }
+        /* Responsive */
+        @media (max-width: 700px) {
+            body { padding: 12px; }
+            .card-title { font-size: 1.2rem; }
+            .stat-value { font-size: 1.4rem; }
+            th, td { font-size: 0.75rem; padding: 8px 4px; }
+            .btn-sm { padding: 4px 10px; font-size: 0.7rem; }
+        }
     </style>
 </head>
 <body>
@@ -49,20 +208,21 @@
     <div class="card">
         <div class="card-title">🧊 Panel Resumen de Reparto</div>
         <div class="selector">
+            <i class="fas fa-chart-line"></i>
             <label>📌 Ver datos de:</label>
             <select id="driverSelect">
                 <option value="1234">Chofer 1234</option>
                 <option value="5678">Chofer 5678</option>
                 <option value="both">Ambos (consolidado)</option>
             </select>
-            <button id="refreshBtn">🔄 Actualizar</button>
+            <button id="refreshBtn"><i class="fas fa-sync-alt"></i> Actualizar</button>
         </div>
     </div>
 
     <!-- Rendición de dinero -->
     <div class="card" id="rendicionCard">
         <div class="card-title">💰 Rendición de Dinero (Neto a entregar)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('rendicion')">🖨️ Imprimir</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('rendicion')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
         <div class="grid-2" id="rendicionContent"></div>
     </div>
@@ -70,7 +230,7 @@
     <!-- Ventas, pagos, deuda -->
     <div class="card" id="ventasPagosCard">
         <div class="card-title">📊 Ventas, Pagos, Cobros y Deuda
-            <button class="btn-sm no-print" onclick="imprimirSeccion('ventasPagos')">🖨️ Imprimir</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('ventasPagos')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
         <div class="grid-2" id="ventasPagosContent"></div>
     </div>
@@ -78,20 +238,21 @@
     <!-- Ganancia real detallada -->
     <div class="card" id="gananciaCard">
         <div class="card-title">📈 Ganancia Real (Detallada)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('ganancia')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
         <div class="grid-2" id="gananciaContent"></div>
     </div>
 
-    <!-- Ventas por cliente del día (con verificación de precios) -->
+    <!-- Ventas por cliente del día -->
     <div class="card" id="ventasClienteCard">
         <div class="card-title">📦 Ventas por Cliente del Día
-            <button class="btn-sm no-print" onclick="imprimirSeccion('ventasCliente')">🖨️ Imprimir</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('ventasCliente')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
         <div class="filtro">
+            <i class="fas fa-search"></i>
             <input type="text" id="filtroClienteVentas" placeholder="Buscar cliente...">
-            <button id="buscarVentasClienteBtn" class="btn-sm">Buscar</button>
-            <button id="limpiarFiltroVentasBtn" class="btn-sm btn-red">Limpiar</button>
+            <button id="buscarVentasClienteBtn" class="btn-sm"><i class="fas fa-filter"></i> Buscar</button>
+            <button id="limpiarFiltroVentasBtn" class="btn-sm btn-red"><i class="fas fa-times"></i> Limpiar</button>
         </div>
         <div id="ventasClienteResultado"></div>
     </div>
@@ -99,11 +260,11 @@
     <!-- Calendario (con rendición histórica) -->
     <div class="card" id="calendarioCard">
         <div class="card-title">📅 Ver movimientos de una fecha (incluye rendición del día)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('calendario')">🖨️ Imprimir</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('calendario')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
-        <div class="flex-between">
+        <div class="flex-between" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
             <input type="date" id="fechaCalendario" style="width: auto;">
-            <button id="verFechaBtn" class="btn-sm">Ver movimientos</button>
+            <button id="verFechaBtn" class="btn-sm"><i class="fas fa-calendar-day"></i> Ver movimientos</button>
         </div>
         <div id="resumenProductosFecha" style="margin-top: 20px;"></div>
         <div id="resumenFinancieroFecha" style="margin-top: 20px;"></div>
@@ -114,7 +275,7 @@
     <!-- Rendición por chofer (día actual) -->
     <div class="card" id="rendicionChoferesCard">
         <div class="card-title">👥 Rendición por Chofer (día actual)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('rendicionChoferes')">🖨️ Imprimir</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('rendicionChoferes')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
         <div id="rendicionChoferesContent"></div>
     </div>
@@ -122,28 +283,32 @@
     <!-- Libro Diario y Libro Mayor -->
     <div class="card" id="libroDiarioCard">
         <div class="card-title">📓 Libro Diario (todas las transacciones)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('libroDiario')">🖨️ Imprimir</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('libroDiario')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
         <div class="filtro">
+            <i class="fas fa-calendar-alt"></i>
             <input type="date" id="filtroFechaInicio" placeholder="Fecha inicio">
             <input type="date" id="filtroFechaFin" placeholder="Fecha fin">
-            <button id="filtrarLibroDiarioBtn" class="btn-sm">Filtrar</button>
-            <button id="limpiarFiltroDiarioBtn" class="btn-sm btn-red">Limpiar</button>
+            <button id="filtrarLibroDiarioBtn" class="btn-sm"><i class="fas fa-filter"></i> Filtrar</button>
+            <button id="limpiarFiltroDiarioBtn" class="btn-sm btn-red"><i class="fas fa-times"></i> Limpiar</button>
         </div>
         <div style="overflow-x:auto;"><table id="libroDiarioTabla"><thead><tr><th>Fecha</th><th>Cuenta</th><th>Concepto</th><th>Debe</th><th>Haber</th><th>Saldo</th></tr></thead><tbody></tbody></table></div>
     </div>
 
     <div class="card" id="libroMayorCard">
         <div class="card-title">📒 Libro Mayor (saldo por cliente)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('libroMayor')">🖨️ Imprimir</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('libroMayor')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
-        <div style="overflow-x:auto;"><table id="libroMayorTabla"><thead><tr><th>Cliente / Cuenta</th><th>Total Debe</th><th>Total Haber</th><th>Saldo</th></tr></thead><tbody></tbody></table></div>
+        <div style="overflow-x:auto;"><table id="libroMayorTabla"><thead><tr><th>Cliente / Cuenta</th><th>Total Debe</th><th>Total Haber</th><th>Saldo</th></tr></thead><tbody></tbody></tr></div>
     </div>
 
     <!-- Inventario -->
     <div class="card" id="inventarioCard">
         <div class="card-title">🏭 Inventario / Stock
-            <div><button id="editStockBtn" class="btn-sm btn-green no-print">✏️ Editar stock manual</button><button class="btn-sm no-print" onclick="imprimirSeccion('inventario')">🖨️ Imprimir</button></div>
+            <div>
+                <button id="editStockBtn" class="btn-sm btn-green no-print"><i class="fas fa-edit"></i> Editar stock manual</button>
+                <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('inventario')"><i class="fas fa-print"></i> Imprimir</button>
+            </div>
         </div>
         <div id="inventarioContent"></div>
     </div>
@@ -151,17 +316,22 @@
     <!-- Movimientos históricos con buscador -->
     <div class="card" id="movimientosCard">
         <div class="card-title">📜 Movimientos Históricos
-            <button id="agregarMovBtn" class="btn-sm btn-green no-print">➕ Agregar Movimiento</button>
-            <button class="btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
+            <button id="agregarMovBtn" class="btn-sm btn-green no-print"><i class="fas fa-plus"></i> Agregar Movimiento</button>
+            <button class="btn-sm btn-outline-print no-print" onclick="imprimirSeccion('movimientos')"><i class="fas fa-print"></i> Imprimir</button>
         </div>
-        <div class="filtro"><input type="text" id="filtroClienteMov" placeholder="Filtrar por cliente..."><button id="buscarMovBtn" class="btn-sm">Buscar</button><button id="limpiarFiltroMovBtn" class="btn-sm btn-red">Limpiar</button></div>
+        <div class="filtro">
+            <i class="fas fa-user"></i>
+            <input type="text" id="filtroClienteMov" placeholder="Filtrar por cliente...">
+            <button id="buscarMovBtn" class="btn-sm"><i class="fas fa-search"></i> Buscar</button>
+            <button id="limpiarFiltroMovBtn" class="btn-sm btn-red"><i class="fas fa-times"></i> Limpiar</button>
+        </div>
         <div style="overflow-x:auto;"><table id="movimientosTabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody></tbody></table></div>
     </div>
 </div>
 
-<!-- Modales -->
-<div id="stockModal" class="modal"><div class="modal-content"><h3>Editar Stock</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
-<div id="movModal" class="modal"><div class="modal-content"><h3 id="modalTitle">Agregar Movimiento</h3><div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div><div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div><div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div><div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div><div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div><div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
+<!-- Modales (sin cambios visuales importantes, solo mantienen la lógica) -->
+<div id="stockModal" class="modal"><div class="modal-content"><h3><i class="fas fa-boxes"></i> Editar Stock</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm btn-primary">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
+<div id="movModal" class="modal"><div class="modal-content"><h3 id="modalTitle"><i class="fas fa-exchange-alt"></i> Agregar Movimiento</h3><div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div><div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div><div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div><div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div><div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div><div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm btn-primary">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
 <div id="toast" class="toast"></div>
 
 <script>
@@ -176,6 +346,7 @@ let gastosData = { nafta:0, choferes:0, otros:0 };
 let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
 const productosBase = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
 
+// ========== FUNCIONES PARA LEER DATOS DE GOOGLE SHEETS (DEUDAS) ==========
 async function obtenerMovimientosDesdeDeudas() {
     try {
         const res = await fetch(`${API_URL}?ruta=movimientos`);
@@ -209,6 +380,8 @@ function getPreciosPorDefecto(cliente) {
 }
 function getCostosPorDefecto() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
 function llenarSelectModalClientes() { const s = document.getElementById("modalCliente"); if(s) s.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join(''); }
+
+// ========== CARGAR DATOS DESDE LOCALSTORAGE (planilla de reparto) ==========
 function cargarDatosChofer(pin) {
     const prefix = `myc_${pin}_`;
     let ventas = localStorage.getItem(prefix + "ventas");
@@ -244,6 +417,8 @@ function cargarDatosConsolidado() {
     s2 = st2 ? JSON.parse(st2) : { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     for (let prod of productosBase) stockFabrica[prod] = (s1[prod]||0)+(s2[prod]||0);
 }
+
+// ========== OBTENER MOVIMIENTOS COMBINADOS (LOCAL + DEUDAS) ==========
 async function cargarMovimientosCombinados() {
     if (currentDriver === "both") cargarDatosConsolidado();
     else cargarDatosChofer(currentDriver);
@@ -270,6 +445,7 @@ async function cargarMovimientosCombinados() {
     }
     ventasData = unique;
 }
+
 async function actualizarTodo() {
     currentDriver = document.getElementById("driverSelect").value;
     await cargarMovimientosCombinados();
@@ -285,6 +461,8 @@ async function actualizarTodo() {
     renderRendicionChoferes();
     toast("Datos actualizados");
 }
+
+// ========== RENDERIZACIÓN (misma lógica, solo se asegura que use ventasData) ==========
 function renderRendicion() {
     let totalEfectivo=0, totalCobros=0;
     ventasData.forEach(v => {
@@ -295,10 +473,10 @@ function renderRendicion() {
     const totalGastos = gastosData.nafta + gastosData.choferes + gastosData.otros;
     const neto = totalEfectivo + totalCobros - totalGastos;
     document.getElementById("rendicionContent").innerHTML = `
-        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Efectivo cobrado</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de deuda</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalGastos.toLocaleString('es-AR')}</div><div class="stat-label">Total Gastos</div></div>
-        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR = Efectivo + Cobros - Gastos</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label"><i class="fas fa-money-bill-wave"></i> Efectivo cobrado</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label"><i class="fas fa-hand-holding-usd"></i> Cobros de deuda</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalGastos.toLocaleString('es-AR')}</div><div class="stat-label"><i class="fas fa-receipt"></i> Total Gastos</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:10px;border-radius:28px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label"><i class="fas fa-calculator"></i> NETO A ENTREGAR = Efectivo + Cobros - Gastos</div></div>
     `;
 }
 function renderVentasPagosDeuda() {
@@ -345,7 +523,7 @@ function renderGananciaReal() {
     const margen = totalVentas ? (gananciaCon / totalVentas * 100) : 0;
     document.getElementById("gananciaContent").innerHTML = `
         <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Brutas</div></div>
-        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo de Mercadería Vendida</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo de Mercadería</div></div>
         <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
         <div class="stat-card"><div class="stat-value" style="background:#16a34a;color:white;padding:8px;border-radius:24px;">$${gananciaSin.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Bruta (sin cobros)</div></div>
         <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${gananciaCon.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Neta (con cobros)</div></div>
@@ -366,7 +544,7 @@ function renderInventario() {
   
 ${prod}
 
-        </td>
+        <tr>
         <td>${carga}</td>
         <td>${vend}</td>
         <td>${carga-vend}</td>
@@ -395,11 +573,11 @@ function renderVentasClienteDelDia(filtro="") {
         totalRecalculado += (cant["ESC.32KG"]||0) * preciosActuales.p32;
         const totalRegistrado = v.total;
         const diff = Math.abs(totalRecalculado - totalRegistrado);
-        let advertencia = (diff > 1) ? `<span class="warning">⚠️ Discrepancia $${diff.toLocaleString('es-AR')}</span>` : "";
+        let advertencia = (diff > 1) ? `<span class="warning"><i class="fas fa-exclamation-triangle"></i> Discrepancia $${diff.toLocaleString('es-AR')}</span>` : "";
         let formaPago = "";
-        if (v.pago === "efectivo") formaPago = "💵 Efectivo";
-        else if (v.pago === "transferencia") formaPago = "💳 Transferencia";
-        else if (v.pago === "ctacte") formaPago = "📘 Cta Cte";
+        if (v.pago === "efectivo") formaPago = "<i class='fas fa-money-bill-wave'></i> Efectivo";
+        else if (v.pago === "transferencia") formaPago = "<i class='fas fa-university'></i> Transferencia";
+        else if (v.pago === "ctacte") formaPago = "<i class='fas fa-book'></i> Cta Cte";
         else formaPago = v.pago;
         html += `<tr>
             <td>${v.cliente}${advertencia}</td>
@@ -428,10 +606,10 @@ function mostrarMovimientosFecha(fecha) {
         for (let prod of productosBase) prodPorCliente[v.cliente][prod] += cant[prod] || 0;
         prodPorCliente[v.cliente].totalFacturado += v.total;
     });
-    let prodHTML = `<div class="stat-card"><strong>📦 Cantidad de bolsas - ${fecha}</strong><br><div style="overflow-x:auto;">`;
+    let prodHTML = `<div class="stat-card"><strong><i class="fas fa-boxes"></i> Cantidad de bolsas - ${fecha}</strong><br><div style="overflow-x:auto;">`;
     if (Object.keys(prodPorCliente).length===0) prodHTML += "No hay ventas de productos.";
     else {
-        prodHTML += `<table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th></tr></thead><tbody>`;
+        prodHTML += `</table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th></tr></thead><tbody>`;
         for (let cli in prodPorCliente) {
             const p = prodPorCliente[cli];
             prodHTML += `<tr>
@@ -444,7 +622,7 @@ function mostrarMovimientosFecha(fecha) {
                 <td>$${p.totalFacturado.toLocaleString('es-AR')}</td>
             </tr>`;
         }
-        prodHTML += `</tbody></table>`;
+        prodHTML += `</tbody></td>`;
     }
     prodHTML += `</div></div>`;
     document.getElementById("resumenProductosFecha").innerHTML = prodHTML;
@@ -459,10 +637,10 @@ function mostrarMovimientosFecha(fecha) {
             if (v.cobroDeuda>0) financiero[v.cliente].saldo -= v.cobroDeuda;
         }
     });
-    let finHTML = `<div class="stat-card"><strong>💰 Financiero - ${fecha}</strong><br><div style="overflow-x:auto;">`;
+    let finHTML = `<div class="stat-card"><strong><i class="fas fa-chart-line"></i> Financiero - ${fecha}</strong><br><div style="overflow-x:auto;">`;
     if (Object.keys(financiero).length===0) finHTML += "No hay movimientos financieros.";
     else {
-        finHTML += `<table><thead><tr><th>Cliente</th><th>Ventas</th><th>Cobros</th><th>Saldo</th></tr></thead><tbody>`;
+        finHTML += `</table><thead><tr><th>Cliente</th><th>Ventas</th><th>Cobros</th><th>Saldo</th></tr></thead><tbody>`;
         for (let cli in financiero) {
             finHTML += `<tr>
                 <td>${cli}</td>
@@ -475,18 +653,18 @@ function mostrarMovimientosFecha(fecha) {
     }
     finHTML += `</div></div>`;
     document.getElementById("resumenFinancieroFecha").innerHTML = finHTML;
-    // Rendición del día (solo efectivo y cobros)
+    // Rendición del día
     let efectivoDia = 0, cobrosDia = 0;
     movs.forEach(v => {
         if (v.pago === "efectivo") efectivoDia += v.total;
         if (v.cobroDeuda > 0) cobrosDia += v.cobroDeuda;
         else if (v.pago === "cobrocc") cobrosDia += v.total;
     });
-    let rendicionHTML = `<div class="stat-card"><strong>💵 Rendición del día ${fecha}</strong><br>
-        Efectivo cobrado: $${efectivoDia.toLocaleString('es-AR')}<br>
-        Cobros de deuda: $${cobrosDia.toLocaleString('es-AR')}<br>
-        <strong>Neto (sin gastos): $${(efectivoDia + cobrosDia).toLocaleString('es-AR')}</strong><br>
-        <small>(Los gastos no se registran por fecha en el histórico)</small>
+    let rendicionHTML = `<div class="stat-card"><strong><i class="fas fa-cash-register"></i> Rendición del día ${fecha}</strong><br>
+        <i class="fas fa-money-bill-wave"></i> Efectivo cobrado: $${efectivoDia.toLocaleString('es-AR')}<br>
+        <i class="fas fa-hand-holding-usd"></i> Cobros de deuda: $${cobrosDia.toLocaleString('es-AR')}<br>
+        <strong><i class="fas fa-calculator"></i> Neto (sin gastos): $${(efectivoDia + cobrosDia).toLocaleString('es-AR')}</strong><br>
+        <small><i class="fas fa-info-circle"></i> Los gastos no se registran por fecha en el histórico</small>
     </div>`;
     document.getElementById("rendicionFecha").innerHTML = rendicionHTML;
     // Detalle unitario
@@ -494,7 +672,7 @@ function mostrarMovimientosFecha(fecha) {
         document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>Sin movimientos unitarios.</div>";
         return;
     }
-    let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
+    let detHTML = `<div class="stat-card"><strong><i class="fas fa-list-ul"></i> Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"></td><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
     movs.forEach(v => {
         let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta a crédito" : (v.pago === "efectivo" ? "Venta efectivo" : "Venta transferencia"));
         detHTML += `<tr>
@@ -524,8 +702,8 @@ function renderMovimientosTabla(filtro="") {
         row.insertCell(4).textContent = v.forma_pago || v.pago || "";
         row.insertCell(5).textContent = v.detalle || "";
         const acciones = row.insertCell(6); acciones.className = "no-print";
-        const btnEdit = document.createElement("button"); btnEdit.textContent = "✏️"; btnEdit.className = "btn-sm"; btnEdit.onclick = () => editarMovimiento(v);
-        const btnDel = document.createElement("button"); btnDel.textContent = "🗑️"; btnDel.className = "btn-sm btn-red"; btnDel.onclick = () => eliminarMovimiento(v.id);
+        const btnEdit = document.createElement("button"); btnEdit.textContent = "<i class='fas fa-edit'></i>"; btnEdit.className = "btn-sm"; btnEdit.style.background = "#eef2ff"; btnEdit.style.color = "#0a3e6d"; btnEdit.onclick = () => editarMovimiento(v);
+        const btnDel = document.createElement("button"); btnDel.textContent = "<i class='fas fa-trash-alt'></i>"; btnDel.className = "btn-sm btn-red"; btnDel.style.marginLeft = "8px"; btnDel.onclick = () => eliminarMovimiento(v.id);
         acciones.appendChild(btnEdit); acciones.appendChild(btnDel);
     });
 }
@@ -538,7 +716,7 @@ function eliminarMovimiento(id) {
     toast("Movimiento eliminado");
 }
 function editarMovimiento(viejo) {
-    document.getElementById("modalTitle").innerText = "Editar Movimiento";
+    document.getElementById("modalTitle").innerHTML = "<i class='fas fa-edit'></i> Editar Movimiento";
     document.getElementById("modalFecha").value = viejo.fecha || "";
     document.getElementById("modalCliente").value = viejo.cliente || "";
     let tipoMap = { ctacte:"deuda", cobrocc:"pago", efectivo:"pago", transferencia:"pago" };
@@ -551,7 +729,7 @@ function editarMovimiento(viejo) {
 }
 function abrirAgregarMovimiento() {
     if (currentDriver === "both") { alert("No se puede agregar en modo consolidado. Seleccione un chofer específico."); return; }
-    document.getElementById("modalTitle").innerText = "Agregar Movimiento";
+    document.getElementById("modalTitle").innerHTML = "<i class='fas fa-plus-circle'></i> Agregar Movimiento";
     document.getElementById("modalFecha").value = new Date().toISOString().slice(0,10);
     document.getElementById("modalCliente").value = clientesList[0] || "";
     document.getElementById("modalTipo").value = "deuda";
@@ -623,16 +801,16 @@ function imprimirSeccion(seccionId) {
     const element = document.getElementById(seccionId + "Card");
     if (!element) return;
     const clone = element.cloneNode(true);
-    clone.querySelectorAll(".no-print, button, .btn-sm, .filtro").forEach(el => el.remove());
+    clone.querySelectorAll(".no-print, button, .btn-sm, .filtro, .btn-outline-print").forEach(el => el.remove());
     const ventana = window.open('', '_blank');
     ventana.document.write(`<html><head><title>MYC HIELO - ${seccionId}</title><style>${Array.from(document.styleSheets).reduce((acc, sheet) => { try { return acc + Array.from(sheet.cssRules || []).map(r=>r.cssText).join('') } catch(e){return acc} }, '')} body{margin:20px;} .no-print{display:none;}</style></head><body>${clone.outerHTML}</body></html>`);
     ventana.document.close(); ventana.print(); ventana.close();
 }
-function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
+function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 3000); }
 function renderRendicionChoferes() {
     const hoy = new Date().toISOString().slice(0,10);
     const choferes = ["1234", "5678"];
-    let html = `<div style="overflow-x:auto;"><table class="stat-card"><thead><tr><th>Chofer</th><th>Efectivo</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto a entregar</th></tr></thead><tbody>`;
+    let html = `<div style="overflow-x:auto;"><table class="stat-card"><thead><tr><th><i class="fas fa-user"></i> Chofer</th><th><i class="fas fa-money-bill-wave"></i> Efectivo</th><th><i class="fas fa-hand-holding-usd"></i> Cobros Deuda</th><th><i class="fas fa-receipt"></i> Gastos</th><th><i class="fas fa-cash-register"></i> Neto a entregar</th></tr></thead><tbody>`;
     for (let pin of choferes) {
         const prefix = `myc_${pin}_`;
         let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
@@ -648,15 +826,12 @@ function renderRendicionChoferes() {
         });
         let neto = efectivo + cobros - gastos;
         html += `<tr>
-  
-Chofer ${pin}
-
-        </td>
-        <td>$${efectivo.toLocaleString('es-AR')}</td>
-        <td>$${cobros.toLocaleString('es-AR')}</td>
-        <td>$${gastos.toLocaleString('es-AR')}</td>
-        <td><strong>$${neto.toLocaleString('es-AR')}</strong></td>
-    </tr>`;
+            <td><strong>Chofer ${pin}</strong></td>
+            <td>$${efectivo.toLocaleString('es-AR')}</td>
+            <td>$${cobros.toLocaleString('es-AR')}</td>
+            <td>$${gastos.toLocaleString('es-AR')}</td>
+            <td style="font-weight:800; background:#eef2ff; border-radius: 20px;">$${neto.toLocaleString('es-AR')}</td>
+        </tr>`;
     }
     html += `</tbody></table></div>`;
     document.getElementById("rendicionChoferesContent").innerHTML = html;
@@ -725,6 +900,7 @@ function iniciarAutoActualizacion() {
     if (intervaloAutoActualizacion) clearInterval(intervaloAutoActualizacion);
     intervaloAutoActualizacion = setInterval(() => actualizarTodo(), 30000);
 }
+// Eventos
 document.getElementById("refreshBtn").addEventListener("click", () => actualizarTodo());
 document.getElementById("agregarMovBtn").addEventListener("click", abrirAgregarMovimiento);
 document.getElementById("modalSaveBtn").addEventListener("click", guardarMovimientoModal);
