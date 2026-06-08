@@ -41,6 +41,7 @@
             .selector, .no-print, .toast, button, .print-hide, .modal, .filtro { display: none !important; }
             .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
         }
+        .warning { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: 8px; }
     </style>
 </head>
 <body>
@@ -58,7 +59,7 @@
         </div>
     </div>
 
-    <!-- Rendición de dinero -->
+    <!-- Rendición de dinero (mejorada con desglose) -->
     <div class="card" id="rendicionCard">
         <div class="card-title">💰 Rendición de Dinero (Neto a entregar)
             <button class="btn-sm no-print" onclick="imprimirSeccion('rendicion')">🖨️ Imprimir</button>
@@ -74,15 +75,15 @@
         <div class="grid-2" id="ventasPagosContent"></div>
     </div>
 
-    <!-- Ganancia real (con y sin cobros) -->
+    <!-- Ganancia real con desglose -->
     <div class="card" id="gananciaCard">
-        <div class="card-title">📈 Ganancia Real
+        <div class="card-title">📈 Ganancia Real (Detallada)
             <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
         </div>
         <div class="grid-2" id="gananciaContent"></div>
     </div>
 
-    <!-- Ventas por cliente del día (con detalle de bolsas y precio personalizado) -->
+    <!-- Ventas por cliente del día (con verificación de precios) -->
     <div class="card" id="ventasClienteCard">
         <div class="card-title">📦 Ventas por Cliente del Día
             <button class="btn-sm no-print" onclick="imprimirSeccion('ventasCliente')">🖨️ Imprimir</button>
@@ -95,9 +96,9 @@
         <div id="ventasClienteResultado"></div>
     </div>
 
-    <!-- Calendario (con productos, financiero y detalle) -->
+    <!-- Calendario (con rendición histórica por día) -->
     <div class="card" id="calendarioCard">
-        <div class="card-title">📅 Ver movimientos de una fecha
+        <div class="card-title">📅 Ver movimientos de una fecha (incluye rendición del día)
             <button class="btn-sm no-print" onclick="imprimirSeccion('calendario')">🖨️ Imprimir</button>
         </div>
         <div class="flex-between">
@@ -106,7 +107,16 @@
         </div>
         <div id="resumenProductosFecha" style="margin-top: 20px;"></div>
         <div id="resumenFinancieroFecha" style="margin-top: 20px;"></div>
+        <div id="rendicionFecha" style="margin-top: 20px;"></div>
         <div id="movimientosFechaResultado" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Resumen de rendiciones por chofer (día actual) -->
+    <div class="card" id="rendicionChoferesCard">
+        <div class="card-title">👥 Rendición por Chofer (día actual)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('rendicionChoferes')">🖨️ Imprimir</button>
+        </div>
+        <div id="rendicionChoferesContent"></div>
     </div>
 
     <!-- Libro Diario y Libro Mayor -->
@@ -145,11 +155,11 @@
             <button class="btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
         </div>
         <div class="filtro"><input type="text" id="filtroClienteMov" placeholder="Filtrar por cliente..."><button id="buscarMovBtn" class="btn-sm">Buscar</button><button id="limpiarFiltroMovBtn" class="btn-sm btn-red">Limpiar</button></div>
-        <div style="overflow-x:auto;"><table id="movimientosTabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody></tbody><tr></div>
+        <div style="overflow-x:auto;"><table id="movimientosTabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody></tbody></tr></div>
     </div>
 </div>
 
-<!-- Modales (stock, movimiento) -->
+<!-- Modales (sin cambios) -->
 <div id="stockModal" class="modal"><div class="modal-content"><h3>Editar Stock</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
 <div id="movModal" class="modal"><div class="modal-content"><h3 id="modalTitle">Agregar Movimiento</h3><div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div><div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div><div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div><div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div><div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div><div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
 <div id="toast" class="toast"></div>
@@ -186,7 +196,7 @@ async function obtenerClientesDesdeDeudas() {
     }
 }
 
-// ========== CARGAR CLIENTES, PRECIOS, COSTOS ==========
+// ========== CARGAR CLIENTES, PRECIOS, COSTOS (desde la nube) ==========
 async function cargarClientesPrecios() {
     try {
         const clientes = await obtenerClientesDesdeDeudas();
@@ -278,18 +288,45 @@ async function actualizarTodo() {
     currentDriver = document.getElementById("driverSelect").value;
     await cargarMovimientosCombinados();
     await cargarClientesPrecios();
-    renderRendicion();
+    renderRendicion();               // neto a entregar del chofer seleccionado
     renderVentasPagosDeuda();
-    renderGananciaReal();
+    renderGananciaReal();            // detallada
     renderInventario();
     renderMovimientosTabla();
-    renderVentasClienteDelDia();
+    renderVentasClienteDelDia();     // con verificación de precios
     renderLibroDiario();
     renderLibroMayor();
+    renderRendicionChoferes();       // nueva: rendición por cada chofer para el día actual
     toast("Datos actualizados desde la nube");
 }
 
-// ========== FUNCIONES DE RENDERIZADO ==========
+// ========== NUEVA FUNCIÓN: RENDICIÓN POR CHOFER (día actual) ==========
+function renderRendicionChoferes() {
+    const hoy = new Date().toISOString().slice(0,10);
+    const choferes = ["1234", "5678"];
+    let html = `<div style="overflow-x:auto;"><table class="stat-card"><thead><tr><th>Chofer</th><th>Efectivo</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto a entregar</th></tr></thead><tbody>`;
+    for (let pin of choferes) {
+        // Cargar datos de cada chofer individualmente
+        const prefix = `myc_${pin}_`;
+        let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
+        let gastosDetalle = JSON.parse(localStorage.getItem(prefix + "gastosDetalle") || "{nafta:0,choferes:0,otros:0}");
+        let gastos = (gastosDetalle.nafta || 0) + (gastosDetalle.choferes || 0) + (gastosDetalle.otros || 0);
+        let efectivo = 0, cobros = 0;
+        ventas.forEach(v => {
+            if (v.fecha === hoy) {
+                if (v.pago === "efectivo") efectivo += v.total;
+                if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
+                else if (v.pago === "cobrocc") cobros += v.total;
+            }
+        });
+        let neto = efectivo + cobros - gastos;
+        html += `<tr><td>Chofer ${pin}</td><td>$${efectivo.toLocaleString('es-AR')}</td><td>$${cobros.toLocaleString('es-AR')}</td><td>$${gastos.toLocaleString('es-AR')}</td><td><strong>$${neto.toLocaleString('es-AR')}</strong></td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+    document.getElementById("rendicionChoferesContent").innerHTML = html;
+}
+
+// ========== RENDICIÓN DE DINERO (chofer seleccionado) ==========
 function renderRendicion() {
     let totalEfectivo=0, totalCobros=0;
     ventasData.forEach(v => {
@@ -327,13 +364,13 @@ function renderVentasPagosDeuda() {
         <div class="stat-card"><div class="stat-value">$${saldoDeudor.toLocaleString('es-AR')}</div><div class="stat-label">Saldo Deudor Actual</div></div>
     `;
 }
+// ========== GANANCIA REAL DETALLADA ==========
 function renderGananciaReal() {
-    let gananciaSinCobros = 0;
-    let totalCobrosDeuda = 0;
+    let totalVentas=0, totalCosto=0, totalCobrosDeuda=0;
     ventasData.forEach(v => {
         if (v.pago !== "cobrocc") {
-            // Calcular costo para esta venta
-            let costo = 0;
+            totalVentas += v.total;
+            let costo=0;
             if (v.cantidades && costosClientes[v.cliente]) {
                 const c = costosClientes[v.cliente];
                 costo += (v.cantidades["1,7 KG"]||0)*c.c17;
@@ -342,16 +379,20 @@ function renderGananciaReal() {
                 costo += (v.cantidades["ESC.20KG"]||0)*c.c20;
                 costo += (v.cantidades["ESC.32KG"]||0)*c.c32;
             }
-            gananciaSinCobros += (v.total - costo);
-        } else {
-            totalCobrosDeuda += v.cobroDeuda||v.total;
-        }
-        if (v.cobroDeuda > 0 && v.pago !== "cobrocc") totalCobrosDeuda += v.cobroDeuda;
+            totalCosto += costo;
+        } else totalCobrosDeuda += v.cobroDeuda||v.total;
+        if (v.cobroDeuda>0 && v.pago!=="cobrocc") totalCobrosDeuda += v.cobroDeuda;
     });
-    const gananciaConCobros = gananciaSinCobros + totalCobrosDeuda;
+    const gananciaSin = totalVentas - totalCosto;
+    const gananciaCon = gananciaSin + totalCobrosDeuda;
+    const margen = totalVentas ? (gananciaCon / totalVentas * 100) : 0;
     document.getElementById("gananciaContent").innerHTML = `
-        <div class="stat-card"><div class="stat-value">$${gananciaSinCobros.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Real (sin cobros de deuda)</div></div>
-        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${gananciaConCobros.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Real (con cobros de deuda)</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Brutas</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo de Mercadería Vendida</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#16a34a;color:white;padding:8px;border-radius:24px;">$${gananciaSin.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Bruta (sin cobros)</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${gananciaCon.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Neta (incluyendo cobros)</div></div>
+        <div class="stat-card"><div class="stat-value">${margen.toFixed(1)}%</div><div class="stat-label">Margen de Ganancia (sobre ventas)</div></div>
     `;
 }
 function renderInventario() {
@@ -377,6 +418,7 @@ ${prod}
     html += `</tbody></table>`;
     document.getElementById("inventarioContent").innerHTML = html;
 }
+// ========== VENTAS POR CLIENTE DEL DÍA (con verificación de precios) ==========
 function renderVentasClienteDelDia(filtro="") {
     const hoy = new Date().toISOString().slice(0,10);
     let ventasHoy = ventasData.filter(v => v.fecha === hoy && v.pago !== "cobrocc");
@@ -385,49 +427,45 @@ function renderVentasClienteDelDia(filtro="") {
         document.getElementById("ventasClienteResultado").innerHTML = "<div class='stat-card'>Sin ventas hoy.</div>";
         return;
     }
-    // Agrupar por cliente
-    const resumenClientes = {};
+    let html = `</table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total (registrado)</th><th>Total (precios actuales)</th><th>Forma de Pago</th></tr></thead><tbody>`;
     ventasHoy.forEach(v => {
-        if (!resumenClientes[v.cliente]) {
-            resumenClientes[v.cliente] = {
-                cantidades: { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 },
-                total: 0,
-                pago: v.pago
-            };
-        }
         const cant = v.cantidades || {};
-        for (let prod of productosBase) {
-            resumenClientes[v.cliente].cantidades[prod] += cant[prod] || 0;
-        }
-        resumenClientes[v.cliente].total += v.total;
-    });
-    // Construir tabla
-    let html = `<table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Forma de Pago</th></tr></thead><tbody>`;
-    for (let cliente in resumenClientes) {
-        const data = resumenClientes[cliente];
+        // Recalcular total usando los precios actuales del cliente
+        let preciosActuales = preciosClientes[v.cliente] || getPreciosPorDefecto(v.cliente);
+        let totalRecalculado = 0;
+        totalRecalculado += (cant["1,7 KG"]||0) * preciosActuales.p17;
+        totalRecalculado += (cant["3,5 KG"]||0) * preciosActuales.p35;
+        totalRecalculado += (cant["14 KG"]||0) * preciosActuales.p14;
+        totalRecalculado += (cant["ESC.20KG"]||0) * preciosActuales.p20;
+        totalRecalculado += (cant["ESC.32KG"]||0) * preciosActuales.p32;
+        const totalRegistrado = v.total;
+        const diff = Math.abs(totalRecalculado - totalRegistrado);
+        let advertencia = (diff > 1) ? `<span class="warning">⚠️ Discrepancia $${diff.toLocaleString('es-AR')}</span>` : "";
         let formaPago = "";
-        if (data.pago === "efectivo") formaPago = "💵 Efectivo";
-        else if (data.pago === "transferencia") formaPago = "💳 Transferencia";
-        else if (data.pago === "ctacte") formaPago = "📘 Cta Cte";
-        else formaPago = data.pago;
+        if (v.pago === "efectivo") formaPago = "💵 Efectivo";
+        else if (v.pago === "transferencia") formaPago = "💳 Transferencia";
+        else if (v.pago === "ctacte") formaPago = "📘 Cta Cte";
+        else formaPago = v.pago;
         html += `<tr>
-            <td>${cliente}</td>
-            <td>${data.cantidades["1,7 KG"]}</td>
-            <td>${data.cantidades["3,5 KG"]}</td>
-            <td>${data.cantidades["14 KG"]}</td>
-            <td>${data.cantidades["ESC.20KG"]}</td>
-            <td>${data.cantidades["ESC.32KG"]}</td>
-            <td>$${data.total.toLocaleString('es-AR')}</td>
+            <td>${v.cliente}${advertencia}</td>
+            <td>${cant["1,7 KG"]||0}</td>
+            <td>${cant["3,5 KG"]||0}</td>
+            <td>${cant["14 KG"]||0}</td>
+            <td>${cant["ESC.20KG"]||0}</td>
+            <td>${cant["ESC.32KG"]||0}</td>
+            <td>$${totalRegistrado.toLocaleString('es-AR')}</td>
+            <td>$${totalRecalculado.toLocaleString('es-AR')}</td>
             <td>${formaPago}</td>
         </tr>`;
-    }
+    });
     html += `</tbody></table>`;
     document.getElementById("ventasClienteResultado").innerHTML = html;
 }
+// ========== CALENDARIO: muestra movimientos + rendición del día ==========
 function mostrarMovimientosFecha(fecha) {
     if (!fecha) return;
     const movs = ventasData.filter(v => v.fecha === fecha);
-    // Productos
+    // ---- Resumen productos ----
     const prodPorCliente = {};
     movs.forEach(v => {
         if (v.pago === "cobrocc") return;
@@ -439,7 +477,7 @@ function mostrarMovimientosFecha(fecha) {
     let prodHTML = `<div class="stat-card"><strong>📦 Cantidad de bolsas - ${fecha}</strong><br><div style="overflow-x:auto;">`;
     if (Object.keys(prodPorCliente).length===0) prodHTML += "No hay ventas de productos.";
     else {
-        prodHTML += `<td><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th></tr></thead><tbody>`;
+        prodHTML += `<tr><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th></tr></thead><tbody>`;
         for (let cli in prodPorCliente) {
             const p = prodPorCliente[cli];
             prodHTML += `<tr>
@@ -452,11 +490,11 @@ function mostrarMovimientosFecha(fecha) {
                 <td>$${p.totalFacturado.toLocaleString('es-AR')}</td>
             </tr>`;
         }
-        prodHTML += `</tbody></tr>`;
+        prodHTML += `</tbody></table>`;
     }
     prodHTML += `</div></div>`;
     document.getElementById("resumenProductosFecha").innerHTML = prodHTML;
-    // Financiero
+    // ---- Resumen financiero ----
     const financiero = {};
     movs.forEach(v => {
         if (!financiero[v.cliente]) financiero[v.cliente] = { ventas:0, cobros:0, saldo:0 };
@@ -468,7 +506,7 @@ function mostrarMovimientosFecha(fecha) {
         }
     });
     let finHTML = `<div class="stat-card"><strong>💰 Financiero - ${fecha}</strong><br><div style="overflow-x:auto;">`;
-    if (Object.keys(financiero).length===0) finHTML += "No hay movimientos.";
+    if (Object.keys(financiero).length===0) finHTML += "No hay movimientos financieros.";
     else {
         finHTML += `<table><thead><tr><th>Cliente</th><th>Ventas</th><th>Cobros</th><th>Saldo</th></tr></thead><tbody>`;
         for (let cli in financiero) {
@@ -483,9 +521,27 @@ function mostrarMovimientosFecha(fecha) {
     }
     finHTML += `</div></div>`;
     document.getElementById("resumenFinancieroFecha").innerHTML = finHTML;
-    // Detalle unitario
+    // ---- RENDICIÓN DEL DÍA (efectivo, cobros, gastos, neto) ----
+    let efectivoDia = 0, cobrosDia = 0, gastosDia = 0;
+    // Usamos los gastos del chofer seleccionado? Para la fecha seleccionada, no tenemos gastos por fecha, solo gastos acumulados del día actual.
+    // Para histórico, necesitaríamos tener gastos guardados por fecha (no se guardan). Por ahora mostramos solo efectivo y cobros.
+    movs.forEach(v => {
+        if (v.pago === "efectivo") efectivoDia += v.total;
+        if (v.cobroDeuda > 0) cobrosDia += v.cobroDeuda;
+        else if (v.pago === "cobrocc") cobrosDia += v.total;
+    });
+    // Para los gastos del día seleccionado, como no se guardan históricamente, no podemos mostrarlos con exactitud.
+    // Si tienes un sistema de gastos por fecha, podrías mejorarlo, pero por ahora lo omitimos.
+    let rendicionHTML = `<div class="stat-card"><strong>💵 Rendición del día ${fecha}</strong><br>
+        Efectivo cobrado: $${efectivoDia.toLocaleString('es-AR')}<br>
+        Cobros de deuda: $${cobrosDia.toLocaleString('es-AR')}<br>
+        <strong>Neto (sin gastos): $${(efectivoDia + cobrosDia).toLocaleString('es-AR')}</strong><br>
+        <small>(Los gastos no se registran por fecha en el histórico, por eso no se incluyen aquí)</small>
+    </div>`;
+    document.getElementById("rendicionFecha").innerHTML = rendicionHTML;
+    // ---- Detalle unitario ----
     if (movs.length === 0) {
-        document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>Sin movimientos.</div>";
+        document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>Sin movimientos unitarios en esa fecha.</div>";
         return;
     }
     let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
@@ -502,6 +558,7 @@ function mostrarMovimientosFecha(fecha) {
     detHTML += `</tbody></table></div></div>`;
     document.getElementById("movimientosFechaResultado").innerHTML = detHTML;
 }
+// ========== MOVIMIENTOS TABLA ==========
 function renderMovimientosTabla(filtro="") {
     const tbody = document.querySelector("#movimientosTabla tbody");
     if (!tbody) return;
@@ -624,7 +681,7 @@ function imprimirSeccion(seccionId) {
 }
 function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 
-// ========== LIBRO DIARIO Y MAYOR (usando ventasData combinada) ==========
+// ========== LIBRO DIARIO Y MAYOR ==========
 function renderLibroDiario() {
     const movimientos = [...ventasData];
     const fechaInicio = document.getElementById("filtroFechaInicio").value;
@@ -685,16 +742,13 @@ function renderLibroMayor() {
     }
 }
 
-// ========== AUTOACTUALIZACIÓN ==========
+// ========== EVENTOS Y AUTO ACTUALIZACIÓN ==========
 let intervaloAutoActualizacion = null;
 function iniciarAutoActualizacion() {
     if (intervaloAutoActualizacion) clearInterval(intervaloAutoActualizacion);
-    intervaloAutoActualizacion = setInterval(() => {
-        actualizarTodo();
-    }, 30000);
+    intervaloAutoActualizacion = setInterval(() => actualizarTodo(), 30000);
 }
 
-// ========== EVENTOS ==========
 document.getElementById("refreshBtn").addEventListener("click", () => actualizarTodo());
 document.getElementById("agregarMovBtn").addEventListener("click", abrirAgregarMovimiento);
 document.getElementById("modalSaveBtn").addEventListener("click", guardarMovimientoModal);
@@ -711,7 +765,6 @@ document.getElementById("filtrarLibroDiarioBtn").addEventListener("click", () =>
 document.getElementById("limpiarFiltroDiarioBtn").addEventListener("click", () => { document.getElementById("filtroFechaInicio").value = ""; document.getElementById("filtroFechaFin").value = ""; renderLibroDiario(); });
 window.onclick = (e) => { if (e.target === document.getElementById("movModal")) cerrarModalMov(); if (e.target === document.getElementById("stockModal")) document.getElementById("stockModal").style.display = "none"; };
 
-// Inicializar
 cargarClientesPrecios().then(() => {
     actualizarTodo();
     iniciarAutoActualizacion();
