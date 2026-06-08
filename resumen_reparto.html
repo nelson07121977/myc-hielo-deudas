@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Panel Contable Profesional</title>
+    <title>MYC HIELO – Panel Resumen de Reparto</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         body { background: #e9f0f5; margin: 0; padding: 20px; }
-        .container { max-width: 1600px; margin: 0 auto; }
+        .container { max-width: 1400px; margin: 0 auto; }
         .card { background: white; border-radius: 28px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .card-title { font-weight: 800; font-size: 1.3rem; color: #0a3e6d; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
         .selector { display: flex; gap: 12px; align-items: center; background: #f1f5f9; padding: 12px 20px; border-radius: 40px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -18,37 +18,36 @@
         .btn-sm { padding: 4px 12px; font-size: 0.7rem; }
         .btn-red { background: #b91c1c; }
         .btn-green { background: #16a34a; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 16px; }
-        .stat-card { background: #f8fafc; border-radius: 24px; padding: 16px; text-align: center; }
-        .stat-value { font-size: 1.8rem; font-weight: 800; color: #0a3e6d; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 20px; }
+        .stat-card { background: #f8fafc; border-radius: 24px; padding: 16px; }
+        .stat-value { font-size: 1.6rem; font-weight: 800; color: #0a3e6d; }
         .stat-label { font-size: 0.8rem; color: #475569; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9rem; }
-        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { text-align: left; padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
         th { background: #eef2ff; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
-        .badge-peligro { background: #fee2e2; color: #b91c1c; }
-        .badge-cuidado { background: #ffedd5; color: #c2410c; }
-        .badge-normal { background: #fef9c3; color: #854d0e; }
-        .badge-bueno { background: #d1fae5; color: #0a7c4a; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .form-group { margin-bottom: 12px; }
+        label { font-size: 0.7rem; font-weight: 600; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px 12px; border-radius: 24px; border: 1px solid #ccc; }
         .filtro { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-        .filtro input, .filtro select { width: auto; min-width: 130px; }
+        .filtro input { width: auto; flex: 1; min-width: 150px; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 8px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 1000; display: none; }
         .toast.show { display: block; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; max-width: 500px; width: 90%; border-radius: 28px; padding: 24px; }
         @media print {
-            body { background: white; margin: 0; padding: 0; }
-            .selector, .no-print, .toast, button, .btn, .filtro, .print-hide { display: none !important; }
+            body { background: white; }
+            .selector, .no-print, .toast, button, .print-hide, .modal, .filtro { display: none !important; }
             .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
-            .stat-card { border: 1px solid #ccc; }
-            table { font-size: 9pt; }
         }
+        .warning { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: 8px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <!-- Header con selector de período y empresa -->
     <div class="card">
-        <div class="card-title">🧊 MYC HIELO - Contabilidad Profesional</div>
+        <div class="card-title">🧊 Panel Resumen de Reparto</div>
         <div class="selector">
             <label>📌 Ver datos de:</label>
             <select id="driverSelect">
@@ -56,102 +55,127 @@
                 <option value="5678">Chofer 5678</option>
                 <option value="both">Ambos (consolidado)</option>
             </select>
-            <label>📅 Período:</label>
-            <select id="periodoSelect">
-                <option value="hoy">Hoy</option>
-                <option value="semana">Esta semana</option>
-                <option value="mes">Este mes</option>
-                <option value="rango">Rango personalizado</option>
-            </select>
-            <div id="rangoFechas" style="display: flex; gap: 8px;">
-                <input type="date" id="fechaInicio">
-                <input type="date" id="fechaFin">
-            </div>
-            <button id="refreshBtn" class="btn-primary">🔄 Actualizar</button>
+            <button id="refreshBtn">🔄 Actualizar</button>
         </div>
     </div>
 
-    <!-- Tarjetas de indicadores clave -->
-    <div class="card">
-        <div class="card-title">📊 Indicadores Clave</div>
-        <div class="grid-3" id="indicadoresContent"></div>
-    </div>
-
-    <!-- Estado de Resultados (PyG) -->
-    <div class="card" id="estadoResultadosCard">
-        <div class="card-title">📈 Estado de Resultados
-            <div>
-                <button class="btn-sm no-print" onclick="exportarCSV('estadoResultados')">📎 Exportar CSV</button>
-                <button class="btn-sm no-print" onclick="imprimirSeccion('estadoResultados')">🖨️ Imprimir</button>
-            </div>
+    <!-- Rendición de dinero -->
+    <div class="card" id="rendicionCard">
+        <div class="card-title">💰 Rendición de Dinero (Neto a entregar)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('rendicion')">🖨️ Imprimir</button>
         </div>
-        <div id="estadoResultadosContent"></div>
+        <div class="grid-2" id="rendicionContent"></div>
     </div>
 
-    <!-- Antigüedad de Deudas (Aging) -->
-    <div class="card" id="agingCard">
-        <div class="card-title">📅 Antigüedad de Deudas
-            <div>
-                <button class="btn-sm no-print" onclick="exportarCSV('aging')">📎 Exportar CSV</button>
-                <button class="btn-sm no-print" onclick="imprimirSeccion('aging')">🖨️ Imprimir</button>
-            </div>
+    <!-- Ventas, pagos, deuda -->
+    <div class="card" id="ventasPagosCard">
+        <div class="card-title">📊 Ventas, Pagos, Cobros y Deuda
+            <button class="btn-sm no-print" onclick="imprimirSeccion('ventasPagos')">🖨️ Imprimir</button>
         </div>
-        <div id="agingContent"></div>
+        <div class="grid-2" id="ventasPagosContent"></div>
     </div>
 
-    <!-- Evolución de Ventas y Ganancias (gráfico) -->
-    <div class="card" id="evolucionCard">
-        <div class="card-title">📈 Evolución de Ventas y Ganancias (últimos 30 días)
-            <button class="btn-sm no-print" onclick="imprimirSeccion('evolucion')">🖨️ Imprimir</button>
+    <!-- Ganancia real detallada -->
+    <div class="card" id="gananciaCard">
+        <div class="card-title">📈 Ganancia Real (Detallada)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('ganancia')">🖨️ Imprimir</button>
         </div>
-        <canvas id="evolucionChart" width="400" height="200"></canvas>
+        <div class="grid-2" id="gananciaContent"></div>
     </div>
 
-    <!-- Resumen por Cliente (Libro Mayor mejorado) -->
-    <div class="card" id="resumenClientesCard">
-        <div class="card-title">👥 Resumen por Cliente (Libro Mayor)
-            <div>
-                <button class="btn-sm no-print" onclick="exportarCSV('resumenClientes')">📎 Exportar CSV</button>
-                <button class="btn-sm no-print" onclick="imprimirSeccion('resumenClientes')">🖨️ Imprimir</button>
-            </div>
-        </div>
-        <div style="overflow-x:auto;"><table id="resumenClientesTabla"><thead><tr><th>Cliente</th><th>Total Ventas ($)</th><th>Total Pagos ($)</th><th>Saldo Actual ($)</th></tr></thead><tbody></tbody><table></div>
-    </div>
-
-    <!-- Libro Diario (detalle) -->
-    <div class="card" id="libroDiarioCard">
-        <div class="card-title">📓 Libro Diario (detalle por fecha)
-            <div>
-                <button class="btn-sm no-print" onclick="exportarCSV('libroDiario')">📎 Exportar CSV</button>
-                <button class="btn-sm no-print" onclick="imprimirSeccion('libroDiario')">🖨️ Imprimir</button>
-            </div>
+    <!-- Ventas por cliente del día (con verificación de precios) -->
+    <div class="card" id="ventasClienteCard">
+        <div class="card-title">📦 Ventas por Cliente del Día
+            <button class="btn-sm no-print" onclick="imprimirSeccion('ventasCliente')">🖨️ Imprimir</button>
         </div>
         <div class="filtro">
-            <input type="date" id="diarioFiltroInicio" placeholder="Fecha inicio">
-            <input type="date" id="diarioFiltroFin" placeholder="Fecha fin">
-            <button id="filtrarDiarioBtn" class="btn-sm">Filtrar</button>
-            <button id="limpiarDiarioBtn" class="btn-sm btn-red">Limpiar</button>
+            <input type="text" id="filtroClienteVentas" placeholder="Buscar cliente...">
+            <button id="buscarVentasClienteBtn" class="btn-sm">Buscar</button>
+            <button id="limpiarFiltroVentasBtn" class="btn-sm btn-red">Limpiar</button>
+        </div>
+        <div id="ventasClienteResultado"></div>
+    </div>
+
+    <!-- Calendario (con rendición histórica) -->
+    <div class="card" id="calendarioCard">
+        <div class="card-title">📅 Ver movimientos de una fecha (incluye rendición del día)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('calendario')">🖨️ Imprimir</button>
+        </div>
+        <div class="flex-between">
+            <input type="date" id="fechaCalendario" style="width: auto;">
+            <button id="verFechaBtn" class="btn-sm">Ver movimientos</button>
+        </div>
+        <div id="resumenProductosFecha" style="margin-top: 20px;"></div>
+        <div id="resumenFinancieroFecha" style="margin-top: 20px;"></div>
+        <div id="rendicionFecha" style="margin-top: 20px;"></div>
+        <div id="movimientosFechaResultado" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Rendición por chofer (día actual) -->
+    <div class="card" id="rendicionChoferesCard">
+        <div class="card-title">👥 Rendición por Chofer (día actual)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('rendicionChoferes')">🖨️ Imprimir</button>
+        </div>
+        <div id="rendicionChoferesContent"></div>
+    </div>
+
+    <!-- Libro Diario y Libro Mayor -->
+    <div class="card" id="libroDiarioCard">
+        <div class="card-title">📓 Libro Diario (todas las transacciones)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('libroDiario')">🖨️ Imprimir</button>
+        </div>
+        <div class="filtro">
+            <input type="date" id="filtroFechaInicio" placeholder="Fecha inicio">
+            <input type="date" id="filtroFechaFin" placeholder="Fecha fin">
+            <button id="filtrarLibroDiarioBtn" class="btn-sm">Filtrar</button>
+            <button id="limpiarFiltroDiarioBtn" class="btn-sm btn-red">Limpiar</button>
         </div>
         <div style="overflow-x:auto;"><table id="libroDiarioTabla"><thead><tr><th>Fecha</th><th>Cuenta</th><th>Concepto</th><th>Debe</th><th>Haber</th><th>Saldo</th></tr></thead><tbody></tbody></table></div>
     </div>
+
+    <div class="card" id="libroMayorCard">
+        <div class="card-title">📒 Libro Mayor (saldo por cliente)
+            <button class="btn-sm no-print" onclick="imprimirSeccion('libroMayor')">🖨️ Imprimir</button>
+        </div>
+        <div style="overflow-x:auto;"><table id="libroMayorTabla"><thead><tr><th>Cliente / Cuenta</th><th>Total Debe</th><th>Total Haber</th><th>Saldo</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <!-- Inventario -->
+    <div class="card" id="inventarioCard">
+        <div class="card-title">🏭 Inventario / Stock
+            <div><button id="editStockBtn" class="btn-sm btn-green no-print">✏️ Editar stock manual</button><button class="btn-sm no-print" onclick="imprimirSeccion('inventario')">🖨️ Imprimir</button></div>
+        </div>
+        <div id="inventarioContent"></div>
+    </div>
+
+    <!-- Movimientos históricos con buscador -->
+    <div class="card" id="movimientosCard">
+        <div class="card-title">📜 Movimientos Históricos
+            <button id="agregarMovBtn" class="btn-sm btn-green no-print">➕ Agregar Movimiento</button>
+            <button class="btn-sm no-print" onclick="imprimirSeccion('movimientos')">🖨️ Imprimir</button>
+        </div>
+        <div class="filtro"><input type="text" id="filtroClienteMov" placeholder="Filtrar por cliente..."><button id="buscarMovBtn" class="btn-sm">Buscar</button><button id="limpiarFiltroMovBtn" class="btn-sm btn-red">Limpiar</button></div>
+        <div style="overflow-x:auto;"><table id="movimientosTabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody></tbody></table></div>
+    </div>
 </div>
 
+<!-- Modales -->
+<div id="stockModal" class="modal"><div class="modal-content"><h3>Editar Stock</h3><div class="form-group"><label>1,7 KG</label><input type="number" id="stock_17" step="1"></div><div class="form-group"><label>3,5 KG</label><input type="number" id="stock_35" step="1"></div><div class="form-group"><label>14 KG</label><input type="number" id="stock_14" step="1"></div><div class="form-group"><label>ESC.20KG</label><input type="number" id="stock_20" step="1"></div><div class="form-group"><label>ESC.32KG</label><input type="number" id="stock_32" step="1"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="saveStockBtn" class="btn-sm">Guardar</button><button id="closeStockBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
+<div id="movModal" class="modal"><div class="modal-content"><h3 id="modalTitle">Agregar Movimiento</h3><div class="form-group"><label>Fecha</label><input type="date" id="modalFecha"></div><div class="form-group"><label>Cliente</label><select id="modalCliente"></select></div><div class="form-group"><label>Tipo</label><select id="modalTipo"><option value="deuda">Deuda (venta a crédito)</option><option value="pago">Pago (cobro de deuda)</option><option value="gasto">Gasto</option></select></div><div class="form-group"><label>Monto ($)</label><input type="number" id="modalMonto" step="0.01"></div><div class="form-group"><label>Forma de pago</label><select id="modalFormaPago"><option value="">Seleccionar</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div><div class="form-group"><label>Detalle</label><input type="text" id="modalDetalle"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalSaveBtn" class="btn-sm">Guardar</button><button id="modalCancelBtn" class="btn-sm btn-red">Cancelar</button></div></div></div>
 <div id="toast" class="toast"></div>
 
 <script>
-// ==================== CONFIGURACIÓN GLOBAL ====================
+// ==================== CONFIGURACIÓN ====================
 const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 let clientesList = [];
 let preciosClientes = {};
 let costosClientes = {};
-let currentDriver = "both";
+let currentDriver = "1234";
 let ventasData = [];
 let gastosData = { nafta:0, choferes:0, otros:0 };
 let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-let evolucionChart = null;
 const productosBase = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
 
-// ========== FUNCIONES PARA LEER DATOS DE GOOGLE SHEETS ==========
 async function obtenerMovimientosDesdeDeudas() {
     try {
         const res = await fetch(`${API_URL}?ruta=movimientos`);
@@ -164,8 +188,6 @@ async function obtenerClientesDesdeDeudas() {
         return await res.json();
     } catch(e) { console.error(e); return []; }
 }
-
-// ========== CARGAR CLIENTES, PRECIOS, COSTOS ==========
 async function cargarClientesPrecios() {
     try {
         const clientes = await obtenerClientesDesdeDeudas();
@@ -176,7 +198,8 @@ async function cargarClientesPrecios() {
         else { preciosClientes = {}; clientesList.forEach(c => preciosClientes[c] = getPreciosPorDefecto(c)); }
         if (costos) costosClientes = JSON.parse(costos);
         else { costosClientes = {}; clientesList.forEach(c => costosClientes[c] = getCostosPorDefecto()); }
-    } catch(e) { console.error("Error cargando clientes", e); }
+        llenarSelectModalClientes();
+    } catch(e) { console.error(e); }
 }
 function getPreciosPorDefecto(cliente) {
     let p17=1500, p35=2500, p14=7000, p20=8000, p32=12000;
@@ -185,8 +208,7 @@ function getPreciosPorDefecto(cliente) {
     return { p17, p35, p14, p20, p32 };
 }
 function getCostosPorDefecto() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
-
-// ========== CARGAR DATOS DESDE LOCALSTORAGE (planilla) ==========
+function llenarSelectModalClientes() { const s = document.getElementById("modalCliente"); if(s) s.innerHTML = clientesList.map(c => `<option value="${c}">${c}</option>`).join(''); }
 function cargarDatosChofer(pin) {
     const prefix = `myc_${pin}_`;
     let ventas = localStorage.getItem(prefix + "ventas");
@@ -197,6 +219,13 @@ function cargarDatosChofer(pin) {
     let stock = localStorage.getItem(prefix + "stock");
     if (stock) stockFabrica = JSON.parse(stock);
     else stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+}
+function guardarDatosChofer(pin) {
+    const prefix = `myc_${pin}_`;
+    localStorage.setItem(prefix + "ventas", JSON.stringify(ventasData));
+    localStorage.setItem(prefix + "gastos", gastosData.nafta + gastosData.choferes + gastosData.otros);
+    localStorage.setItem(prefix + "gastosDetalle", JSON.stringify(gastosData));
+    localStorage.setItem(prefix + "stock", JSON.stringify(stockFabrica));
 }
 function cargarDatosConsolidado() {
     let v1=[], v2=[], g1={nafta:0,choferes:0,otros:0}, g2={nafta:0,choferes:0,otros:0}, s1={}, s2={};
@@ -241,48 +270,64 @@ async function cargarMovimientosCombinados() {
     }
     ventasData = unique;
 }
-
-// ========== OBTENER FECHAS DEL PERÍODO ==========
-let periodoInicio = null, periodoFin = null;
-function actualizarRangoFechas() {
-    const periodo = document.getElementById("periodoSelect").value;
-    const hoy = new Date();
-    if (periodo === "hoy") {
-        periodoInicio = new Date().toISOString().slice(0,10);
-        periodoFin = periodoInicio;
-        document.getElementById("rangoFechas").style.display = "none";
-    } else if (periodo === "semana") {
-        const inicio = new Date(hoy);
-        inicio.setDate(hoy.getDate() - hoy.getDay()); // domingo
-        periodoInicio = inicio.toISOString().slice(0,10);
-        periodoFin = hoy.toISOString().slice(0,10);
-        document.getElementById("rangoFechas").style.display = "none";
-    } else if (periodo === "mes") {
-        const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-        periodoInicio = inicio.toISOString().slice(0,10);
-        periodoFin = hoy.toISOString().slice(0,10);
-        document.getElementById("rangoFechas").style.display = "none";
-    } else {
-        document.getElementById("rangoFechas").style.display = "flex";
-        periodoInicio = document.getElementById("fechaInicio").value;
-        periodoFin = document.getElementById("fechaFin").value;
-        if (!periodoInicio) periodoInicio = new Date().toISOString().slice(0,10);
-        if (!periodoFin) periodoFin = new Date().toISOString().slice(0,10);
-    }
+async function actualizarTodo() {
+    currentDriver = document.getElementById("driverSelect").value;
+    await cargarMovimientosCombinados();
+    await cargarClientesPrecios();
+    renderRendicion();
+    renderVentasPagosDeuda();
+    renderGananciaReal();
+    renderInventario();
+    renderMovimientosTabla();
+    renderVentasClienteDelDia();
+    renderLibroDiario();
+    renderLibroMayor();
+    renderRendicionChoferes();
+    toast("Datos actualizados");
 }
-function filtrarMovimientosPorPeriodo(movs) {
-    if (!periodoInicio || !periodoFin) return movs;
-    return movs.filter(m => m.fecha >= periodoInicio && m.fecha <= periodoFin);
+function renderRendicion() {
+    let totalEfectivo=0, totalCobros=0;
+    ventasData.forEach(v => {
+        if (v.pago === "efectivo") totalEfectivo += v.total;
+        if (v.cobroDeuda>0) totalCobros += v.cobroDeuda;
+        else if (v.pago === "cobrocc") totalCobros += v.total;
+    });
+    const totalGastos = gastosData.nafta + gastosData.choferes + gastosData.otros;
+    const neto = totalEfectivo + totalCobros - totalGastos;
+    document.getElementById("rendicionContent").innerHTML = `
+        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Efectivo cobrado</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de deuda</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalGastos.toLocaleString('es-AR')}</div><div class="stat-label">Total Gastos</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${neto.toLocaleString('es-AR')}</div><div class="stat-label">NETO A ENTREGAR = Efectivo + Cobros - Gastos</div></div>
+    `;
 }
-
-// ========== INDICADORES CLAVE ==========
-function renderIndicadores() {
-    const movsPeriodo = filtrarMovimientosPorPeriodo(ventasData);
-    let ventas = 0, costos = 0, cobros = 0, gastos = 0;
-    movsPeriodo.forEach(v => {
+function renderVentasPagosDeuda() {
+    let totalVentas=0,totalEfectivo=0,totalTransferencia=0,totalCtaCte=0,totalCobrosDeuda=0,saldoDeudor=0;
+    ventasData.forEach(v => {
+        if (v.pago === "cobrocc") { totalCobrosDeuda += v.cobroDeuda||v.total; saldoDeudor -= (v.cobroDeuda||v.total); }
+        else {
+            totalVentas += v.total;
+            if (v.pago === "efectivo") totalEfectivo += v.total;
+            else if (v.pago === "transferencia") totalTransferencia += v.total;
+            else if (v.pago === "ctacte") { totalCtaCte += v.total; saldoDeudor += v.total; }
+        }
+        if (v.cobroDeuda>0 && v.pago!=="cobrocc") { totalCobrosDeuda += v.cobroDeuda; saldoDeudor -= v.cobroDeuda; }
+    });
+    document.getElementById("ventasPagosContent").innerHTML = `
+        <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Total Ventas</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalEfectivo.toLocaleString('es-AR')}</div><div class="stat-label">Efectivo</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalTransferencia.toLocaleString('es-AR')}</div><div class="stat-label">Transferencia</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCtaCte.toLocaleString('es-AR')}</div><div class="stat-label">Ventas a Crédito</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
+        <div class="stat-card"><div class="stat-value">$${saldoDeudor.toLocaleString('es-AR')}</div><div class="stat-label">Saldo Deudor Actual</div></div>
+    `;
+}
+function renderGananciaReal() {
+    let totalVentas=0, totalCosto=0, totalCobrosDeuda=0;
+    ventasData.forEach(v => {
         if (v.pago !== "cobrocc") {
-            ventas += v.total;
-            let costo = 0;
+            totalVentas += v.total;
+            let costo=0;
             if (v.cantidades && costosClientes[v.cliente]) {
                 const c = costosClientes[v.cliente];
                 costo += (v.cantidades["1,7 KG"]||0)*c.c17;
@@ -291,275 +336,415 @@ function renderIndicadores() {
                 costo += (v.cantidades["ESC.20KG"]||0)*c.c20;
                 costo += (v.cantidades["ESC.32KG"]||0)*c.c32;
             }
-            costos += costo;
-        } else cobros += v.total;
+            totalCosto += costo;
+        } else totalCobrosDeuda += v.cobroDeuda||v.total;
+        if (v.cobroDeuda>0 && v.pago!=="cobrocc") totalCobrosDeuda += v.cobroDeuda;
     });
-    const gastosOperativos = gastosData.nafta + gastosData.choferes + gastosData.otros;
-    const gananciaBruta = ventas - costos;
-    const gananciaNeta = gananciaBruta + cobros - gastosOperativos;
-    // Deuda actual (saldo deudor)
-    let saldos = {};
-    ventasData.forEach(v => {
-        if (v.pago === "ctacte") saldos[v.cliente] = (saldos[v.cliente] || 0) + v.total;
-        if (v.cobroDeuda > 0) saldos[v.cliente] = (saldos[v.cliente] || 0) - v.cobroDeuda;
-    });
-    let deudaActual = Object.values(saldos).reduce((a,b)=>a+(b>0?b:0),0);
-    document.getElementById("indicadoresContent").innerHTML = `
-        <div class="stat-card"><div class="stat-value">$${ventas.toLocaleString('es-AR')}</div><div class="stat-label">Ventas del período</div></div>
-        <div class="stat-card"><div class="stat-value">$${gananciaBruta.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Bruta</div></div>
-        <div class="stat-card"><div class="stat-value">$${gananciaNeta.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Neta (después de gastos)</div></div>
-        <div class="stat-card"><div class="stat-value">$${deudaActual.toLocaleString('es-AR')}</div><div class="stat-label">Deuda Actual (clientes)</div></div>
-        <div class="stat-card"><div class="stat-value">$${gastosOperativos.toLocaleString('es-AR')}</div><div class="stat-label">Gastos Operativos</div></div>
-        <div class="stat-card"><div class="stat-value">$${cobros.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de deuda</div></div>
+    const gananciaSin = totalVentas - totalCosto;
+    const gananciaCon = gananciaSin + totalCobrosDeuda;
+    const margen = totalVentas ? (gananciaCon / totalVentas * 100) : 0;
+    document.getElementById("gananciaContent").innerHTML = `
+        <div class="stat-card"><div class="stat-value">$${totalVentas.toLocaleString('es-AR')}</div><div class="stat-label">Ventas Brutas</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCosto.toLocaleString('es-AR')}</div><div class="stat-label">Costo de Mercadería Vendida</div></div>
+        <div class="stat-card"><div class="stat-value">$${totalCobrosDeuda.toLocaleString('es-AR')}</div><div class="stat-label">Cobros de Deuda</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#16a34a;color:white;padding:8px;border-radius:24px;">$${gananciaSin.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Bruta (sin cobros)</div></div>
+        <div class="stat-card"><div class="stat-value" style="background:#0a3e6d;color:white;padding:8px;border-radius:24px;">$${gananciaCon.toLocaleString('es-AR')}</div><div class="stat-label">Ganancia Neta (con cobros)</div></div>
+        <div class="stat-card"><div class="stat-value">${margen.toFixed(1)}%</div><div class="stat-label">Margen de Ganancia</div></div>
     `;
 }
-
-// ========== ESTADO DE RESULTADOS ==========
-function renderEstadoResultados() {
-    const movsPeriodo = filtrarMovimientosPorPeriodo(ventasData);
-    let ventas = 0, costos = 0, cobros = 0;
-    movsPeriodo.forEach(v => {
-        if (v.pago !== "cobrocc") {
-            ventas += v.total;
-            let costo = 0;
-            if (v.cantidades && costosClientes[v.cliente]) {
-                const c = costosClientes[v.cliente];
-                costo += (v.cantidades["1,7 KG"]||0)*c.c17;
-                costo += (v.cantidades["3,5 KG"]||0)*c.c35;
-                costo += (v.cantidades["14 KG"]||0)*c.c14;
-                costo += (v.cantidades["ESC.20KG"]||0)*c.c20;
-                costo += (v.cantidades["ESC.32KG"]||0)*c.c32;
-            }
-            costos += costo;
-        } else cobros += v.total;
-    });
-    const gastosOperativos = gastosData.nafta + gastosData.choferes + gastosData.otros;
-    const gananciaBruta = ventas - costos;
-    const gananciaNeta = gananciaBruta + cobros - gastosOperativos;
-    const html = `
-        <table>
-            <thead><tr><th>Concepto</th><th>Monto</th></tr></thead>
-            <tbody>
-                <tr><td>Ingresos por Ventas</td><td>$${ventas.toLocaleString('es-AR')}</td></tr>
-                <tr><td>Costo de Mercadería Vendida</td><td>$${costos.toLocaleString('es-AR')}</td></tr>
-                <tr style="background:#eef2ff;"><td><strong>Ganancia Bruta</strong></td><td><strong>$${gananciaBruta.toLocaleString('es-AR')}</strong></td></tr>
-                <tr><td>+ Cobros de deuda</td><td>$${cobros.toLocaleString('es-AR')}</td></tr>
-                <tr><td>- Gastos Operativos (nafta, choferes, otros)</td><td>$${gastosOperativos.toLocaleString('es-AR')}</td></tr>
-                <tr style="background:#d1fae5;"><td><strong>Ganancia Neta del período</strong></td><td><strong>$${gananciaNeta.toLocaleString('es-AR')}</strong></td></tr>
-            </tbody>
-        </table>
-    `;
-    document.getElementById("estadoResultadosContent").innerHTML = html;
-}
-
-// ========== ANTIGÜEDAD DE DEUDAS ==========
-function renderAging() {
-    let saldos = {};
+function renderInventario() {
+    let vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     ventasData.forEach(v => {
-        if (v.pago === "ctacte") saldos[v.cliente] = (saldos[v.cliente] || 0) + v.total;
-        if (v.cobroDeuda > 0) saldos[v.cliente] = (saldos[v.cliente] || 0) - v.cobroDeuda;
-    });
-    // Obtener fecha de última venta por cliente (para clasificar antigüedad)
-    let ultimaVenta = {};
-    ventasData.forEach(v => {
-        if (v.pago === "ctacte") {
-            if (!ultimaVenta[v.cliente] || v.fecha > ultimaVenta[v.cliente]) ultimaVenta[v.cliente] = v.fecha;
+        if (v.pago !== "cobrocc" && v.cantidades) {
+            for (let prod of productosBase) vendido[prod] += v.cantidades[prod] || 0;
         }
     });
-    const hoy = new Date();
-    const rangos = { "1-30":0, "31-60":0, "61-90":0, "+90":0 };
-    const detalle = [];
-    for (let [cliente, saldo] of Object.entries(saldos)) {
-        if (saldo <= 0) continue;
-        let fechaUlt = ultimaVenta[cliente] || new Date().toISOString().slice(0,10);
-        let diffDias = Math.floor((hoy - new Date(fechaUlt)) / (1000*60*60*24));
-        let rango = "";
-        if (diffDias <= 30) { rango = "1-30"; rangos["1-30"] += saldo; }
-        else if (diffDias <= 60) { rango = "31-60"; rangos["31-60"] += saldo; }
-        else if (diffDias <= 90) { rango = "61-90"; rangos["61-90"] += saldo; }
-        else { rango = "+90"; rangos["+90"] += saldo; }
-        detalle.push({ cliente, saldo, rango, diffDias });
-    }
-    let html = `<div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Días desde última venta</th><th>Antigüedad</th></tr></thead><tbody>`;
-    detalle.forEach(d => {
-        let badge = "";
-        if (d.diffDias <= 30) badge = "badge-bueno";
-        else if (d.diffDias <= 60) badge = "badge-normal";
-        else if (d.diffDias <= 90) badge = "badge-cuidado";
-        else badge = "badge-peligro";
-        html += `<tr><td>${d.cliente}</td><td>$${d.saldo.toLocaleString('es-AR')}</td><td>${d.diffDias}</td><td><span class="badge ${badge}">${d.rango} días</span></td></tr>`;
-    });
-    html += `</tbody></table></div>`;
-    html += `<div class="grid-3" style="margin-top:20px;"><div class="stat-card"><div class="stat-value">$${rangos["1-30"].toLocaleString('es-AR')}</div><div class="stat-label">1-30 días</div></div>
-             <div class="stat-card"><div class="stat-value">$${rangos["31-60"].toLocaleString('es-AR')}</div><div class="stat-label">31-60 días</div></div>
-             <div class="stat-card"><div class="stat-value">$${rangos["61-90"].toLocaleString('es-AR')}</div><div class="stat-label">61-90 días</div></div>
-             <div class="stat-card"><div class="stat-value">$${rangos["+90"].toLocaleString('es-AR')}</div><div class="stat-label">Más de 90 días</div></div></div>`;
-    document.getElementById("agingContent").innerHTML = html;
-}
+    let html = `<table><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody>`;
+    for (let prod of productosBase) {
+        let carga = stockFabrica[prod]||0, vend = vendido[prod]||0;
+        html += `<tr>
+  
+${prod}
 
-// ========== EVOLUCIÓN (GRÁFICO) ==========
-function renderEvolucion() {
-    // Agrupar ventas por día (últimos 30 días)
-    const hoy = new Date();
-    const labels = [];
-    const ventasDiarias = [];
-    for (let i = 29; i >= 0; i--) {
-        let fecha = new Date();
-        fecha.setDate(hoy.getDate() - i);
-        let fechaStr = fecha.toISOString().slice(0,10);
-        labels.push(fechaStr);
-        let total = 0;
-        ventasData.forEach(v => {
-            if (v.fecha === fechaStr && v.pago !== "cobrocc") total += v.total;
-        });
-        ventasDiarias.push(total);
+        </td>
+        <td>${carga}</td>
+        <td>${vend}</td>
+        <td>${carga-vend}</td>
+    </tr>`;
     }
-    const ctx = document.getElementById('evolucionChart').getContext('2d');
-    if (evolucionChart) evolucionChart.destroy();
-    evolucionChart = new Chart(ctx, {
-        type: 'line',
-        data: { labels, datasets: [{ label: 'Ventas diarias $', data: ventasDiarias, borderColor: '#0a3e6d', backgroundColor: 'rgba(10,62,109,0.1)', fill: true, tension: 0.3 }] },
-        options: { responsive: true, maintainAspectRatio: true }
-    });
+    html += `</tbody></table>`;
+    document.getElementById("inventarioContent").innerHTML = html;
 }
-
-// ========== RESUMEN POR CLIENTE ==========
-function renderResumenClientes() {
-    let ventasPorCliente = {}, pagosPorCliente = {};
-    ventasData.forEach(v => {
-        if (v.pago !== "cobrocc") {
-            ventasPorCliente[v.cliente] = (ventasPorCliente[v.cliente] || 0) + v.total;
-        } else {
-            pagosPorCliente[v.cliente] = (pagosPorCliente[v.cliente] || 0) + v.total;
+function renderVentasClienteDelDia(filtro="") {
+    const hoy = new Date().toISOString().slice(0,10);
+    let ventasHoy = ventasData.filter(v => v.fecha === hoy && v.pago !== "cobrocc");
+    if (filtro) ventasHoy = ventasHoy.filter(v => v.cliente.toLowerCase().includes(filtro.toLowerCase()));
+    if (ventasHoy.length===0) {
+        document.getElementById("ventasClienteResultado").innerHTML = "<div class='stat-card'>Sin ventas hoy.</div>";
+        return;
+    }
+    let html = `<table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total (registrado)</th><th>Total (precios actuales)</th><th>Forma Pago</th></tr></thead><tbody>`;
+    ventasHoy.forEach(v => {
+        const cant = v.cantidades || {};
+        let preciosActuales = preciosClientes[v.cliente] || getPreciosPorDefecto(v.cliente);
+        let totalRecalculado = 0;
+        totalRecalculado += (cant["1,7 KG"]||0) * preciosActuales.p17;
+        totalRecalculado += (cant["3,5 KG"]||0) * preciosActuales.p35;
+        totalRecalculado += (cant["14 KG"]||0) * preciosActuales.p14;
+        totalRecalculado += (cant["ESC.20KG"]||0) * preciosActuales.p20;
+        totalRecalculado += (cant["ESC.32KG"]||0) * preciosActuales.p32;
+        const totalRegistrado = v.total;
+        const diff = Math.abs(totalRecalculado - totalRegistrado);
+        let advertencia = (diff > 1) ? `<span class="warning">⚠️ Discrepancia $${diff.toLocaleString('es-AR')}</span>` : "";
+        let formaPago = "";
+        if (v.pago === "efectivo") formaPago = "💵 Efectivo";
+        else if (v.pago === "transferencia") formaPago = "💳 Transferencia";
+        else if (v.pago === "ctacte") formaPago = "📘 Cta Cte";
+        else formaPago = v.pago;
+        html += `<tr>
+            <td>${v.cliente}${advertencia}</td>
+            <td>${cant["1,7 KG"]||0}</td>
+            <td>${cant["3,5 KG"]||0}</td>
+            <td>${cant["14 KG"]||0}</td>
+            <td>${cant["ESC.20KG"]||0}</td>
+            <td>${cant["ESC.32KG"]||0}</td>
+            <td>$${totalRegistrado.toLocaleString('es-AR')}</td>
+            <td>$${totalRecalculado.toLocaleString('es-AR')}</td>
+            <td>${formaPago}</td>
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    document.getElementById("ventasClienteResultado").innerHTML = html;
+}
+function mostrarMovimientosFecha(fecha) {
+    if (!fecha) return;
+    const movs = ventasData.filter(v => v.fecha === fecha);
+    // Productos
+    const prodPorCliente = {};
+    movs.forEach(v => {
+        if (v.pago === "cobrocc") return;
+        const cant = v.cantidades || {};
+        if (!prodPorCliente[v.cliente]) prodPorCliente[v.cliente] = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0, totalFacturado: 0 };
+        for (let prod of productosBase) prodPorCliente[v.cliente][prod] += cant[prod] || 0;
+        prodPorCliente[v.cliente].totalFacturado += v.total;
+    });
+    let prodHTML = `<div class="stat-card"><strong>📦 Cantidad de bolsas - ${fecha}</strong><br><div style="overflow-x:auto;">`;
+    if (Object.keys(prodPorCliente).length===0) prodHTML += "No hay ventas de productos.";
+    else {
+        prodHTML += `<table><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th></tr></thead><tbody>`;
+        for (let cli in prodPorCliente) {
+            const p = prodPorCliente[cli];
+            prodHTML += `<tr>
+                <td>${cli}</td>
+                <td>${p["1,7 KG"]}</td>
+                <td>${p["3,5 KG"]}</td>
+                <td>${p["14 KG"]}</td>
+                <td>${p["ESC.20KG"]}</td>
+                <td>${p["ESC.32KG"]}</td>
+                <td>$${p.totalFacturado.toLocaleString('es-AR')}</td>
+            </tr>`;
         }
-        if (v.cobroDeuda > 0) pagosPorCliente[v.cliente] = (pagosPorCliente[v.cliente] || 0) + v.cobroDeuda;
+        prodHTML += `</tbody></table>`;
+    }
+    prodHTML += `</div></div>`;
+    document.getElementById("resumenProductosFecha").innerHTML = prodHTML;
+    // Financiero
+    const financiero = {};
+    movs.forEach(v => {
+        if (!financiero[v.cliente]) financiero[v.cliente] = { ventas:0, cobros:0, saldo:0 };
+        if (v.pago === "cobrocc") financiero[v.cliente].cobros += v.total;
+        else {
+            financiero[v.cliente].ventas += v.total;
+            if (v.pago === "ctacte") financiero[v.cliente].saldo += v.total;
+            if (v.cobroDeuda>0) financiero[v.cliente].saldo -= v.cobroDeuda;
+        }
     });
-    const tbody = document.querySelector("#resumenClientesTabla tbody");
+    let finHTML = `<div class="stat-card"><strong>💰 Financiero - ${fecha}</strong><br><div style="overflow-x:auto;">`;
+    if (Object.keys(financiero).length===0) finHTML += "No hay movimientos financieros.";
+    else {
+        finHTML += `<table><thead><tr><th>Cliente</th><th>Ventas</th><th>Cobros</th><th>Saldo</th></tr></thead><tbody>`;
+        for (let cli in financiero) {
+            finHTML += `<tr>
+                <td>${cli}</td>
+                <td>$${financiero[cli].ventas.toLocaleString('es-AR')}</td>
+                <td>$${financiero[cli].cobros.toLocaleString('es-AR')}</td>
+                <td>$${financiero[cli].saldo.toLocaleString('es-AR')}</td>
+            </tr>`;
+        }
+        finHTML += `</tbody></table>`;
+    }
+    finHTML += `</div></div>`;
+    document.getElementById("resumenFinancieroFecha").innerHTML = finHTML;
+    // Rendición del día (solo efectivo y cobros)
+    let efectivoDia = 0, cobrosDia = 0;
+    movs.forEach(v => {
+        if (v.pago === "efectivo") efectivoDia += v.total;
+        if (v.cobroDeuda > 0) cobrosDia += v.cobroDeuda;
+        else if (v.pago === "cobrocc") cobrosDia += v.total;
+    });
+    let rendicionHTML = `<div class="stat-card"><strong>💵 Rendición del día ${fecha}</strong><br>
+        Efectivo cobrado: $${efectivoDia.toLocaleString('es-AR')}<br>
+        Cobros de deuda: $${cobrosDia.toLocaleString('es-AR')}<br>
+        <strong>Neto (sin gastos): $${(efectivoDia + cobrosDia).toLocaleString('es-AR')}</strong><br>
+        <small>(Los gastos no se registran por fecha en el histórico)</small>
+    </div>`;
+    document.getElementById("rendicionFecha").innerHTML = rendicionHTML;
+    // Detalle unitario
+    if (movs.length === 0) {
+        document.getElementById("movimientosFechaResultado").innerHTML = "<div class='stat-card'>Sin movimientos unitarios.</div>";
+        return;
+    }
+    let detHTML = `<div class="stat-card"><strong>📜 Detalle unitario - ${fecha}</strong><br><div style="overflow-x:auto;"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Forma Pago</th><th>Detalle</th></tr></thead><tbody>`;
+    movs.forEach(v => {
+        let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta a crédito" : (v.pago === "efectivo" ? "Venta efectivo" : "Venta transferencia"));
+        detHTML += `<tr>
+            <td>${v.cliente}</td>
+            <td>${tipo}</td>
+            <td>$${v.total.toLocaleString('es-AR')}</td>
+            <td>${v.forma_pago || v.pago || ""}</td>
+            <td>${v.detalle || ""}</td>
+        </tr>`;
+    });
+    detHTML += `</tbody></table></div></div>`;
+    document.getElementById("movimientosFechaResultado").innerHTML = detHTML;
+}
+function renderMovimientosTabla(filtro="") {
+    const tbody = document.querySelector("#movimientosTabla tbody");
+    if (!tbody) return;
+    let datos = [...ventasData];
+    if (filtro) datos = datos.filter(v => v.cliente && v.cliente.toLowerCase().includes(filtro.toLowerCase()));
     tbody.innerHTML = "";
-    for (let cliente of clientesList) {
-        let ventas = ventasPorCliente[cliente] || 0;
-        let pagos = pagosPorCliente[cliente] || 0;
-        let saldo = ventas - pagos;
-        tbody.innerHTML += `<tr><td>${cliente}</td><td>$${ventas.toLocaleString('es-AR')}</td><td>$${pagos.toLocaleString('es-AR')}</td><td><strong>$${saldo.toLocaleString('es-AR')}</strong></td></tr>`;
-    }
+    datos.slice().reverse().forEach(v => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = v.fecha || "";
+        row.insertCell(1).textContent = v.cliente || "";
+        let tipo = v.pago === "cobrocc" ? "Cobro de deuda" : (v.pago === "ctacte" ? "Venta a crédito" : (v.pago === "efectivo" ? "Venta efectivo" : (v.pago === "transferencia" ? "Venta transferencia" : "Desconocido")));
+        row.insertCell(2).textContent = tipo;
+        row.insertCell(3).textContent = `$${v.total?.toLocaleString('es-AR') || 0}`;
+        row.insertCell(4).textContent = v.forma_pago || v.pago || "";
+        row.insertCell(5).textContent = v.detalle || "";
+        const acciones = row.insertCell(6); acciones.className = "no-print";
+        const btnEdit = document.createElement("button"); btnEdit.textContent = "✏️"; btnEdit.className = "btn-sm"; btnEdit.onclick = () => editarMovimiento(v);
+        const btnDel = document.createElement("button"); btnDel.textContent = "🗑️"; btnDel.className = "btn-sm btn-red"; btnDel.onclick = () => eliminarMovimiento(v.id);
+        acciones.appendChild(btnEdit); acciones.appendChild(btnDel);
+    });
 }
+function eliminarMovimiento(id) {
+    if (!confirm("¿Eliminar este movimiento?")) return;
+    if (currentDriver === "both") { alert("No se puede eliminar en modo consolidado. Seleccione un chofer específico."); return; }
+    ventasData = ventasData.filter(m => m.id !== id);
+    guardarDatosChofer(currentDriver);
+    actualizarTodo();
+    toast("Movimiento eliminado");
+}
+function editarMovimiento(viejo) {
+    document.getElementById("modalTitle").innerText = "Editar Movimiento";
+    document.getElementById("modalFecha").value = viejo.fecha || "";
+    document.getElementById("modalCliente").value = viejo.cliente || "";
+    let tipoMap = { ctacte:"deuda", cobrocc:"pago", efectivo:"pago", transferencia:"pago" };
+    document.getElementById("modalTipo").value = tipoMap[viejo.pago] || "deuda";
+    document.getElementById("modalMonto").value = viejo.total || 0;
+    document.getElementById("modalFormaPago").value = viejo.forma_pago || (viejo.pago === "transferencia" ? "Transferencia" : (viejo.pago === "efectivo" ? "Efectivo" : ""));
+    document.getElementById("modalDetalle").value = viejo.detalle || "";
+    window.editandoId = viejo.id;
+    document.getElementById("movModal").style.display = "flex";
+}
+function abrirAgregarMovimiento() {
+    if (currentDriver === "both") { alert("No se puede agregar en modo consolidado. Seleccione un chofer específico."); return; }
+    document.getElementById("modalTitle").innerText = "Agregar Movimiento";
+    document.getElementById("modalFecha").value = new Date().toISOString().slice(0,10);
+    document.getElementById("modalCliente").value = clientesList[0] || "";
+    document.getElementById("modalTipo").value = "deuda";
+    document.getElementById("modalMonto").value = "";
+    document.getElementById("modalFormaPago").value = "";
+    document.getElementById("modalDetalle").value = "";
+    window.editandoId = null;
+    document.getElementById("movModal").style.display = "flex";
+}
+async function guardarMovimientoModal() {
+    const fecha = document.getElementById("modalFecha").value;
+    const cliente = document.getElementById("modalCliente").value;
+    const tipo = document.getElementById("modalTipo").value;
+    const monto = parseFloat(document.getElementById("modalMonto").value);
+    const formaPago = document.getElementById("modalFormaPago").value;
+    const detalle = document.getElementById("modalDetalle").value;
+    if (!fecha || !cliente || isNaN(monto) || monto <= 0) { alert("Complete campos válidos"); return; }
+    let nuevoMov = {
+        id: window.editandoId || Date.now(),
+        fecha, cliente, total: monto, detalle,
+        pago: tipo === "deuda" ? "ctacte" : (tipo === "pago" ? (formaPago === "Efectivo" ? "efectivo" : (formaPago === "Transferencia" ? "transferencia" : "cobrocc")) : "gasto"),
+        forma_pago: tipo === "pago" ? formaPago : null,
+        cobroDeuda: (tipo === "pago" ? monto : 0),
+        cantidades: { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 }
+    };
+    if (tipo === "gasto") {
+        if (detalle.toLowerCase().includes("nafta")) gastosData.nafta += monto;
+        else if (detalle.toLowerCase().includes("chofer")) gastosData.choferes += monto;
+        else gastosData.otros += monto;
+        guardarDatosChofer(currentDriver);
+        actualizarTodo();
+        cerrarModalMov();
+        toast("Gasto registrado");
+        return;
+    }
+    if (window.editandoId) {
+        const index = ventasData.findIndex(m => m.id === window.editandoId);
+        if (index !== -1) ventasData[index] = nuevoMov;
+    } else ventasData.push(nuevoMov);
+    guardarDatosChofer(currentDriver);
+    actualizarTodo();
+    cerrarModalMov();
+    toast(window.editandoId ? "Movimiento editado" : "Movimiento agregado");
+}
+function cerrarModalMov() { document.getElementById("movModal").style.display = "none"; window.editandoId = null; }
+function abrirEditarStock() {
+    document.getElementById("stock_17").value = stockFabrica["1,7 KG"];
+    document.getElementById("stock_35").value = stockFabrica["3,5 KG"];
+    document.getElementById("stock_14").value = stockFabrica["14 KG"];
+    document.getElementById("stock_20").value = stockFabrica["ESC.20KG"];
+    document.getElementById("stock_32").value = stockFabrica["ESC.32KG"];
+    document.getElementById("stockModal").style.display = "flex";
+}
+function guardarStockManual() {
+    if (currentDriver === "both") { alert("No se puede editar stock en modo consolidado. Seleccione un chofer específico."); return; }
+    stockFabrica = {
+        "1,7 KG": parseInt(document.getElementById("stock_17").value) || 0,
+        "3,5 KG": parseInt(document.getElementById("stock_35").value) || 0,
+        "14 KG": parseInt(document.getElementById("stock_14").value) || 0,
+        "ESC.20KG": parseInt(document.getElementById("stock_20").value) || 0,
+        "ESC.32KG": parseInt(document.getElementById("stock_32").value) || 0
+    };
+    guardarDatosChofer(currentDriver);
+    renderInventario();
+    toast("Stock actualizado manualmente");
+    document.getElementById("stockModal").style.display = "none";
+}
+function imprimirSeccion(seccionId) {
+    const element = document.getElementById(seccionId + "Card");
+    if (!element) return;
+    const clone = element.cloneNode(true);
+    clone.querySelectorAll(".no-print, button, .btn-sm, .filtro").forEach(el => el.remove());
+    const ventana = window.open('', '_blank');
+    ventana.document.write(`<html><head><title>MYC HIELO - ${seccionId}</title><style>${Array.from(document.styleSheets).reduce((acc, sheet) => { try { return acc + Array.from(sheet.cssRules || []).map(r=>r.cssText).join('') } catch(e){return acc} }, '')} body{margin:20px;} .no-print{display:none;}</style></head><body>${clone.outerHTML}</body></html>`);
+    ventana.document.close(); ventana.print(); ventana.close();
+}
+function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
+function renderRendicionChoferes() {
+    const hoy = new Date().toISOString().slice(0,10);
+    const choferes = ["1234", "5678"];
+    let html = `<div style="overflow-x:auto;"><table class="stat-card"><thead><tr><th>Chofer</th><th>Efectivo</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto a entregar</th></tr></thead><tbody>`;
+    for (let pin of choferes) {
+        const prefix = `myc_${pin}_`;
+        let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
+        let gastosDetalle = JSON.parse(localStorage.getItem(prefix + "gastosDetalle") || "{nafta:0,choferes:0,otros:0}");
+        let gastos = (gastosDetalle.nafta || 0) + (gastosDetalle.choferes || 0) + (gastosDetalle.otros || 0);
+        let efectivo = 0, cobros = 0;
+        ventas.forEach(v => {
+            if (v.fecha === hoy) {
+                if (v.pago === "efectivo") efectivo += v.total;
+                if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
+                else if (v.pago === "cobrocc") cobros += v.total;
+            }
+        });
+        let neto = efectivo + cobros - gastos;
+        html += `<tr>
+  
+Chofer ${pin}
 
-// ========== LIBRO DIARIO ==========
+        </td>
+        <td>$${efectivo.toLocaleString('es-AR')}</td>
+        <td>$${cobros.toLocaleString('es-AR')}</td>
+        <td>$${gastos.toLocaleString('es-AR')}</td>
+        <td><strong>$${neto.toLocaleString('es-AR')}</strong></td>
+    </tr>`;
+    }
+    html += `</tbody></table></div>`;
+    document.getElementById("rendicionChoferesContent").innerHTML = html;
+}
 function renderLibroDiario() {
-    const inicio = document.getElementById("diarioFiltroInicio").value;
-    const fin = document.getElementById("diarioFiltroFin").value;
-    let movimientos = [...ventasData];
-    if (inicio) movimientos = movimientos.filter(m => m.fecha >= inicio);
-    if (fin) movimientos = movimientos.filter(m => m.fecha <= fin);
-    movimientos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+    const movimientos = [...ventasData];
+    const fechaInicio = document.getElementById("filtroFechaInicio").value;
+    const fechaFin = document.getElementById("filtroFechaFin").value;
+    let filtrados = movimientos;
+    if (fechaInicio) filtrados = filtrados.filter(m => m.fecha >= fechaInicio);
+    if (fechaFin) filtrados = filtrados.filter(m => m.fecha <= fechaFin);
     const tbody = document.querySelector("#libroDiarioTabla tbody");
     tbody.innerHTML = "";
-    let saldo = 0;
-    movimientos.forEach(m => {
+    let saldoAcumulado = 0;
+    filtrados.sort((a,b) => new Date(a.fecha) - new Date(b.fecha)).forEach(m => {
         let cuenta = m.cliente || "Gastos";
         let debe = 0, haber = 0;
         if (m.pago === "cobrocc") { haber = m.total; cuenta = m.cliente; }
         else if (m.pago === "ctacte") { debe = m.total; cuenta = m.cliente; }
         else if (m.pago === "efectivo" || m.pago === "transferencia") { debe = m.total; cuenta = "Caja / Banco"; }
         else if (m.pago === "gasto") { debe = m.total; cuenta = "Gastos"; }
-        saldo += debe - haber;
+        saldoAcumulado += debe - haber;
         const row = tbody.insertRow();
         row.insertCell(0).textContent = m.fecha;
         row.insertCell(1).textContent = cuenta;
         row.insertCell(2).textContent = m.detalle || (m.pago === "cobrocc" ? "Cobro de deuda" : "Venta");
         row.insertCell(3).textContent = debe ? `$${debe.toLocaleString('es-AR')}` : "";
         row.insertCell(4).textContent = haber ? `$${haber.toLocaleString('es-AR')}` : "";
-        row.insertCell(5).textContent = `$${saldo.toLocaleString('es-AR')}`;
+        row.insertCell(5).textContent = `$${saldoAcumulado.toLocaleString('es-AR')}`;
     });
 }
-
-// ========== FUNCIONES GENERALES ==========
-async function actualizarTodo() {
-    currentDriver = document.getElementById("driverSelect").value;
-    await cargarMovimientosCombinados();
-    await cargarClientesPrecios();
-    actualizarRangoFechas();
-    renderIndicadores();
-    renderEstadoResultados();
-    renderAging();
-    renderEvolucion();
-    renderResumenClientes();
-    renderLibroDiario();
-    toast("Datos actualizados");
-}
-
-function imprimirSeccion(seccionId) {
-    const element = document.getElementById(seccionId + "Card");
-    if (!element) return;
-    const clone = element.cloneNode(true);
-    clone.querySelectorAll(".no-print, button, .btn, .filtro").forEach(el => el.remove());
-    const ventana = window.open('', '_blank');
-    ventana.document.write(`<html><head><title>MYC HIELO - ${seccionId}</title><style>${Array.from(document.styleSheets).reduce((acc, sheet) => { try { return acc + Array.from(sheet.cssRules || []).map(r=>r.cssText).join('') } catch(e){return acc} }, '')} body{margin:20px;} .no-print{display:none;}</style></head><body>${clone.outerHTML}</body></html>`);
-    ventana.document.close(); ventana.print(); ventana.close();
-}
-function exportarCSV(seccionId) {
-    let data = [];
-    if (seccionId === "estadoResultados") {
-        data = [["Concepto","Monto"]];
-        // obtener datos del estado de resultados (se puede extraer del DOM o recalcular)
-        alert("Función exportar CSV en desarrollo. Próximamente.");
-        return;
-    } else if (seccionId === "aging") {
-        // similar
-        alert("Función exportar CSV en desarrollo. Próximamente.");
-        return;
-    } else if (seccionId === "resumenClientes") {
-        let csv = "Cliente,Total Ventas,Total Pagos,Saldo Actual\n";
-        const rows = document.querySelectorAll("#resumenClientesTabla tbody tr");
-        rows.forEach(row => {
-            const cells = row.querySelectorAll("td");
-            if (cells.length) csv += `${cells[0].innerText},${cells[1].innerText},${cells[2].innerText},${cells[3].innerText}\n`;
-        });
-        const blob = new Blob([csv], {type: "text/csv"});
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "resumen_clientes.csv";
-        link.click();
-        URL.revokeObjectURL(link.href);
-    } else if (seccionId === "libroDiario") {
-        let csv = "Fecha,Cuenta,Concepto,Debe,Haber,Saldo\n";
-        const rows = document.querySelectorAll("#libroDiarioTabla tbody tr");
-        rows.forEach(row => {
-            const cells = row.querySelectorAll("td");
-            if (cells.length) csv += `${cells[0].innerText},${cells[1].innerText},${cells[2].innerText},${cells[3].innerText},${cells[4].innerText},${cells[5].innerText}\n`;
-        });
-        const blob = new Blob([csv], {type: "text/csv"});
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "libro_diario.csv";
-        link.click();
-        URL.revokeObjectURL(link.href);
+function renderLibroMayor() {
+    const movimientos = [...ventasData];
+    const saldos = {};
+    movimientos.forEach(m => {
+        let cuenta = m.cliente || "Gastos";
+        if (m.pago === "cobrocc") {
+            if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
+            saldos[cuenta].haber += m.total;
+        } else if (m.pago === "ctacte") {
+            if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
+            saldos[cuenta].debe += m.total;
+        } else if (m.pago === "efectivo" || m.pago === "transferencia") {
+            cuenta = "Caja / Banco";
+            if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
+            saldos[cuenta].debe += m.total;
+        } else if (m.pago === "gasto") {
+            cuenta = "Gastos";
+            if (!saldos[cuenta]) saldos[cuenta] = { debe:0, haber:0 };
+            saldos[cuenta].debe += m.total;
+        }
+    });
+    const tbody = document.querySelector("#libroMayorTabla tbody");
+    tbody.innerHTML = "";
+    for (let cuenta in saldos) {
+        const saldo = saldos[cuenta].debe - saldos[cuenta].haber;
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = cuenta;
+        row.insertCell(1).textContent = `$${saldos[cuenta].debe.toLocaleString('es-AR')}`;
+        row.insertCell(2).textContent = `$${saldos[cuenta].haber.toLocaleString('es-AR')}`;
+        row.insertCell(3).textContent = `$${saldo.toLocaleString('es-AR')}`;
     }
-    toast("CSV exportado");
 }
-function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
-
-// ========== EVENTOS ==========
+let intervaloAutoActualizacion = null;
+function iniciarAutoActualizacion() {
+    if (intervaloAutoActualizacion) clearInterval(intervaloAutoActualizacion);
+    intervaloAutoActualizacion = setInterval(() => actualizarTodo(), 30000);
+}
 document.getElementById("refreshBtn").addEventListener("click", () => actualizarTodo());
-document.getElementById("periodoSelect").addEventListener("change", () => { actualizarRangoFechas(); actualizarTodo(); });
-document.getElementById("fechaInicio").addEventListener("change", () => { if (document.getElementById("periodoSelect").value === "rango") actualizarTodo(); });
-document.getElementById("fechaFin").addEventListener("change", () => { if (document.getElementById("periodoSelect").value === "rango") actualizarTodo(); });
-document.getElementById("filtrarDiarioBtn").addEventListener("click", () => renderLibroDiario());
-document.getElementById("limpiarDiarioBtn").addEventListener("click", () => {
-    document.getElementById("diarioFiltroInicio").value = "";
-    document.getElementById("diarioFiltroFin").value = "";
-    renderLibroDiario();
+document.getElementById("agregarMovBtn").addEventListener("click", abrirAgregarMovimiento);
+document.getElementById("modalSaveBtn").addEventListener("click", guardarMovimientoModal);
+document.getElementById("modalCancelBtn").addEventListener("click", cerrarModalMov);
+document.getElementById("editStockBtn").addEventListener("click", abrirEditarStock);
+document.getElementById("saveStockBtn").addEventListener("click", guardarStockManual);
+document.getElementById("closeStockBtn").addEventListener("click", () => document.getElementById("stockModal").style.display = "none");
+document.getElementById("buscarMovBtn").addEventListener("click", () => { renderMovimientosTabla(document.getElementById("filtroClienteMov").value); });
+document.getElementById("limpiarFiltroMovBtn").addEventListener("click", () => { document.getElementById("filtroClienteMov").value = ""; renderMovimientosTabla(""); });
+document.getElementById("buscarVentasClienteBtn").addEventListener("click", () => { renderVentasClienteDelDia(document.getElementById("filtroClienteVentas").value); });
+document.getElementById("limpiarFiltroVentasBtn").addEventListener("click", () => { document.getElementById("filtroClienteVentas").value = ""; renderVentasClienteDelDia(""); });
+document.getElementById("verFechaBtn").addEventListener("click", () => { mostrarMovimientosFecha(document.getElementById("fechaCalendario").value); });
+document.getElementById("filtrarLibroDiarioBtn").addEventListener("click", () => renderLibroDiario());
+document.getElementById("limpiarFiltroDiarioBtn").addEventListener("click", () => { document.getElementById("filtroFechaInicio").value = ""; document.getElementById("filtroFechaFin").value = ""; renderLibroDiario(); });
+window.onclick = (e) => { if (e.target === document.getElementById("movModal")) cerrarModalMov(); if (e.target === document.getElementById("stockModal")) document.getElementById("stockModal").style.display = "none"; };
+cargarClientesPrecios().then(() => {
+    actualizarTodo();
+    iniciarAutoActualizacion();
+    document.getElementById("fechaCalendario").value = new Date().toISOString().slice(0,10);
 });
-window.onload = async () => {
-    await cargarClientesPrecios();
-    actualizarRangoFechas();
-    await actualizarTodo();
-    document.getElementById("driverSelect").addEventListener("change", () => actualizarTodo());
-    // precargar fechas de rango personalizado
-    const hoy = new Date().toISOString().slice(0,10);
-    document.getElementById("fechaInicio").value = hoy;
-    document.getElementById("fechaFin").value = hoy;
-};
 </script>
 </body>
 </html>
