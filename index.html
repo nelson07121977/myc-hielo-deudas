@@ -3,8 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <title>MYC HIELO · Control de Deudas</title>
 <style>
 :root{--azul:#0f2a6e;--azul-med:#1a3d9e;--azul-light:#e8eeff;--verde:#0a7c4a;--rojo:#b91c1c;--bg:#f1f5fb;--white:#fff;--borde:#cbd5e1;}
@@ -38,16 +36,6 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 .tag button{background:none;border:none;margin-left:6px;color:var(--rojo);cursor:pointer;font-weight:bold;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--azul);color:white;padding:8px 16px;border-radius:40px;font-size:.8rem;z-index:100;display:none;}
 .toast.show{display:block;}
-@media print {
-  body * { visibility: hidden; }
-  .content.active, .content.active * { visibility: visible; }
-  .content.active { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 20px; background: white; }
-  .header, .tabs, .toast, .btn, .filtros, .no-print, .btn-sm, .tab, .card-title button { display: none !important; }
-  .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
-  .total-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { border: 1px solid #ccc; padding: 8px; }
-}
 </style>
 </head>
 <body>
@@ -97,9 +85,7 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
     </div>
     <div class="scroll-table" style="overflow-x:auto;">
       <table id="tablaMovimientos" style="min-width:600px;">
-        <thead>
-          <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th><th class="no-print">Acción</th></tr>
-        </thead>
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th><th class="no-print">Acción</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -144,6 +130,12 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 <script>
 // ================= CONFIGURACIÓN =================
 const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
+
+// ========== FUNCIÓN PARA NORMALIZAR NOMBRES (mayúsculas, sin espacios extra) ==========
+function normalizarNombre(nombre) {
+    if (!nombre) return '';
+    return String(nombre).trim().toUpperCase().replace(/\s+/g, ' ');
+}
 
 // ========== FUNCIÓN PARA CONVERTIR CUALQUIER COSA A NÚMERO ==========
 function convertirANumero(valor) {
@@ -211,11 +203,17 @@ async function cargarDatos() {
   isLoading = true;
   try {
     const [cli, mov] = await Promise.all([obtenerClientes(), obtenerMovimientos()]);
-    clientes = (cli && Array.isArray(cli)) ? cli : [];
+    // Normalizar nombres de clientes
+    clientes = (cli && Array.isArray(cli)) ? cli.map(c => normalizarNombre(c)) : [];
+    // Normalizar movimientos
     movimientos = (mov && Array.isArray(mov)) ? mov.map(m => ({
-      ...m,
+      id: m.id,
+      fecha: m.fecha,
+      cliente_nombre: normalizarNombre(m.cliente_nombre || m.cliente),
+      tipo: m.tipo,
       monto: convertirANumero(m.monto),
-      cliente_nombre: m.cliente_nombre || m.cliente || 'DESCONOCIDO'
+      forma_pago: m.forma_pago,
+      detalle: m.detalle
     })) : [];
     actualizarUI();
     toast('Datos sincronizados');
@@ -270,9 +268,10 @@ function renderResumen() {
   clientes.forEach(c => saldos[c] = 0);
   if (movimientos) {
     movimientos.forEach(m => {
-      const montoSeguro = convertirANumero(m.monto);
+      const montoSeguro = m.monto;
       const cliente = m.cliente_nombre;
-      if (!cliente || !saldos.hasOwnProperty(cliente)) return;
+      if (!cliente) return;
+      if (!saldos[cliente]) saldos[cliente] = 0;
       if (m.tipo === 'deuda') saldos[cliente] += montoSeguro;
       else saldos[cliente] -= montoSeguro;
     });
@@ -299,9 +298,10 @@ function renderDeudores() {
   clientes.forEach(c => saldos[c] = 0);
   if (movimientos) {
     movimientos.forEach(m => {
-      const montoSeguro = convertirANumero(m.monto);
+      const montoSeguro = m.monto;
       const cliente = m.cliente_nombre;
-      if (!cliente || !saldos.hasOwnProperty(cliente)) return;
+      if (!cliente) return;
+      if (!saldos[cliente]) saldos[cliente] = 0;
       if (m.tipo === 'deuda') saldos[cliente] += montoSeguro;
       else saldos[cliente] -= montoSeguro;
     });
@@ -331,20 +331,20 @@ function renderMovimientos() {
   const tbody = document.querySelector('#tablaMovimientos tbody');
   if (!tbody) return;
   if (filtrados.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</div><div></td>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</td></tr>';
     return;
   }
   tbody.innerHTML = filtrados.map(m => {
-    const montoSeguro = convertirANumero(m.monto);
+    const montoSeguro = m.monto;
     return `
     <tr>
-      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</div><div>
-      <td>${m.cliente_nombre || '?'}</div><div>
-      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></div><div>
-      <td>$${montoSeguro.toLocaleString('es-AR')}</div><div>
-      <td>${m.forma_pago || '—'}</div><div>
-      <td>${m.detalle || ''}</div><div>
-      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></div><div>
+      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</td>
+      <td>${m.cliente_nombre || '?'}</td>
+      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></td>
+      <td>$${montoSeguro.toLocaleString('es-AR')}</td>
+      <td>${m.forma_pago || '—'}</td>
+      <td>${m.detalle || ''}</td>
+      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></td>
     </tr>`;
   }).join('');
 }
