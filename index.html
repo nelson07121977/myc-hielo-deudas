@@ -38,48 +38,15 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 .tag button{background:none;border:none;margin-left:6px;color:var(--rojo);cursor:pointer;font-weight:bold;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--azul);color:white;padding:8px 16px;border-radius:40px;font-size:.8rem;z-index:100;display:none;}
 .toast.show{display:block;}
-/* ========== ESTILOS DE IMPRESIÓN MEJORADOS ========== */
 @media print {
-  /* Oculta todo el cuerpo por defecto */
-  body * {
-    visibility: hidden;
-  }
-  /* Muestra solo el contenido de la pestaña activa y sus elementos */
-  .content.active, .content.active * {
-    visibility: visible;
-  }
-  /* Posiciona el contenido activo en la parte superior y ocupa toda la página */
-  .content.active {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
-    background: white;
-  }
-  /* Oculta explícitamente elementos que no deben imprimirse */
-  .header, .tabs, .toast, .btn, .filtros, .no-print, .btn-sm, .tab, .card-title button {
-    display: none !important;
-  }
-  /* Ajustes de estilo para la impresión */
-  .card {
-    box-shadow: none;
-    border: 1px solid #ccc;
-    page-break-inside: avoid;
-  }
-  .total-box {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
-  }
+  body * { visibility: hidden; }
+  .content.active, .content.active * { visibility: visible; }
+  .content.active { position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 20px; background: white; }
+  .header, .tabs, .toast, .btn, .filtros, .no-print, .btn-sm, .tab, .card-title button { display: none !important; }
+  .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+  .total-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #ccc; padding: 8px; }
 }
 </style>
 </head>
@@ -178,6 +145,12 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 // ================= CONFIGURACIÓN =================
 const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 
+// ========== FUNCIÓN PARA SANEAR MONTOS (EVITA NaN) ==========
+function safeNumber(value) {
+    let num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
+}
+
 async function obtenerClientes() {
   const res = await fetch(`${API_URL}?ruta=clientes`);
   return await res.json();
@@ -228,7 +201,11 @@ async function cargarDatos() {
   try {
     const [cli, mov] = await Promise.all([obtenerClientes(), obtenerMovimientos()]);
     clientes = cli;
-    movimientos = mov;
+    // Sanear montos de movimientos al cargar
+    movimientos = mov.map(m => ({
+      ...m,
+      monto: safeNumber(m.monto)
+    }));
     actualizarUI();
     toast('Datos sincronizados');
   } catch(e) {
@@ -270,28 +247,31 @@ function renderResumen() {
   let saldos = {};
   clientes.forEach(c => saldos[c] = 0);
   movimientos.forEach(m => {
-    if (m.tipo === 'deuda') saldos[m.cliente_nombre] += m.monto;
-    else saldos[m.cliente_nombre] -= m.monto;
+    const montoSeguro = safeNumber(m.monto);
+    if (m.tipo === 'deuda') saldos[m.cliente_nombre] += montoSeguro;
+    else saldos[m.cliente_nombre] -= montoSeguro;
   });
   const lista = document.getElementById('resumenLista');
   if (clientes.length === 0) { lista.innerHTML = '<div>Sin clientes</div>'; return; }
   lista.innerHTML = Object.entries(saldos).map(([cliente, saldo]) => {
     let clase = '', icono = '';
+    const saldoAbs = Math.abs(saldo);
     if (saldo > 0) { clase = 'saldo-pos'; icono = '🔴 debe'; }
     else if (saldo < 0) { clase = 'saldo-neg'; icono = '🟡 crédito'; }
     else { clase = 'saldo-cero'; icono = '🟢'; }
-    return `<div class="resumen-item"><span>${cliente}</span><span class="${clase}">$${Math.abs(saldo).toLocaleString('es-AR')} ${icono}</span></div>`;
+    return `<div class="resumen-item"><span>${cliente}</span><span class="${clase}">$${saldoAbs.toLocaleString('es-AR')} ${icono}</span></div>`;
   }).join('');
   const total = Object.values(saldos).reduce((a,b) => a + (b > 0 ? b : 0), 0);
-  document.getElementById('totalGeneral').textContent = '$' + total.toLocaleString('es-AR');
+  document.getElementById('totalGeneral').textContent = '$' + (isNaN(total) ? 0 : total).toLocaleString('es-AR');
 }
 
 function renderDeudores() {
   let saldos = {};
   clientes.forEach(c => saldos[c] = 0);
   movimientos.forEach(m => {
-    if (m.tipo === 'deuda') saldos[m.cliente_nombre] += m.monto;
-    else saldos[m.cliente_nombre] -= m.monto;
+    const montoSeguro = safeNumber(m.monto);
+    if (m.tipo === 'deuda') saldos[m.cliente_nombre] += montoSeguro;
+    else saldos[m.cliente_nombre] -= montoSeguro;
   });
   const deudores = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
   const lista = document.getElementById('deudoresLista');
@@ -300,14 +280,15 @@ function renderDeudores() {
     document.getElementById('totalDeudores').textContent = '$0';
     return;
   }
-  lista.innerHTML = deudores.map(([cliente, saldo]) => `
-    <div class="resumen-item">
+  lista.innerHTML = deudores.map(([cliente, saldo]) => {
+    const saldoAbs = Math.abs(saldo);
+    return `<div class="resumen-item">
       <span>${cliente}</span>
-      <span class="saldo-pos">$${Math.abs(saldo).toLocaleString('es-AR')} 🔴 debe</span>
-    </div>
-  `).join('');
+      <span class="saldo-pos">$${saldoAbs.toLocaleString('es-AR')} 🔴 debe</span>
+    </div>`;
+  }).join('');
   const total = deudores.reduce((acc, [, saldo]) => acc + saldo, 0);
-  document.getElementById('totalDeudores').textContent = '$' + total.toLocaleString('es-AR');
+  document.getElementById('totalDeudores').textContent = '$' + (isNaN(total) ? 0 : total).toLocaleString('es-AR');
 }
 
 function renderMovimientos() {
@@ -320,17 +301,19 @@ function renderMovimientos() {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</td></tr>';
     return;
   }
-  tbody.innerHTML = filtrados.map(m => `
+  tbody.innerHTML = filtrados.map(m => {
+    const montoSeguro = safeNumber(m.monto);
+    return `
     <tr>
       <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</td>
       <td>${m.cliente_nombre}</td>
       <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></td>
-      <td>$${m.monto.toLocaleString('es-AR')}</td>
+      <td>$${montoSeguro.toLocaleString('es-AR')}</td>
       <td>${m.forma_pago || '—'}</td>
       <td>${m.detalle || ''}</td>
       <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></td>
-    </tr>
-  `).join('');
+    </table>`;
+  }).join('');
 }
 
 function renderClientes() {
