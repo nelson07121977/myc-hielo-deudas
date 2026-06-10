@@ -43,8 +43,6 @@
         .force-scale-checkbox { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
         .force-scale-checkbox label { font-size: 0.85rem; margin: 0; }
         .force-scale-checkbox input { width: auto; margin: 0; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 10px 20px; border-radius: 40px; font-size: 0.85rem; z-index: 1000; display: none; }
-        .toast.show { display: block; }
         .comprobante-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
         .comprobante-modal-content { background:#ffffff; max-width:820px; width:94%; border-radius:32px; box-shadow:0 30px 50px rgba(0,0,0,0.3); overflow:hidden; animation:fadeInUp 0.3s ease; }
         @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
@@ -66,6 +64,8 @@
         .btn-modal-premium:hover { background:#f1f5f9; transform:translateY(-2px); }
         .btn-primary-premium { background:#0a3e6d; border:none; color:white; }
         @media print { body * { visibility:hidden; } .comprobante-modal, .comprobante-modal * { visibility:visible; } .comprobante-modal { position:absolute; top:0; left:0; width:100%; background:white; } .modal-buttons-premium { display:none; } }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 10px 20px; border-radius: 40px; font-size: 0.85rem; z-index: 1000; display: none; }
+        .toast.show { display: block; }
     </style>
 </head>
 <body>
@@ -127,7 +127,7 @@
         <div id="tabProductos" class="panel-content" style="display:none;">
             <h3>📸 Tipos de Bolsas / Productos</h3>
             <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div></div>
-            <div style="overflow-x:auto"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></tr></div><button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
+            <div style="overflow-x:auto"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></table></thead><tbody id="productsTbody"></tbody></table></div><button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         <div id="tabStock" class="panel-content" style="display:none;">
             <h3>📦 Carga de fábrica (stock inicial del día)</h3>
@@ -166,7 +166,7 @@
             <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             <div class="card" style="margin-top:20px;">
                 <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">📄 Comprobantes X (No fiscales)<div style="display:flex; gap:8px;"><button id="genComprobanteDiaBtn" class="btn-small" style="background:#16a34a;">📅 Comprobante del día</button><button id="genComprobanteSemanaBtn" class="btn-small" style="background:#2563eb;">📆 Comprobante de la semana</button></div></div>
-                <div style="overflow-x:auto; margin-top:12px;"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div>
+                <div style="overflow-x:auto; margin-top:12px;"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th><tr></thead><tbody id="comprobantesBody"></tbody><table></div>
             </div>
             <button id="resetDayBtn" style="background:#b91c1c; margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
         </div>
@@ -177,7 +177,7 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// ==================== CONFIGURACIÓN LOCAL ====================
+// ==================== VERSIÓN DEFINITIVA - CLIENTES COMPARTIDOS ====================
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
 let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
@@ -186,8 +186,6 @@ let productos = [];
 let preciosClientes = {}, costosClientes = {};
 let chartClientes = null, chartEvolucion = null, topClientesChart = null, weeklySalesChart = null;
 let comprobantesHistorial = [];
-
-const API_URL_DEUDAS = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 
 const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON"];
 
@@ -248,71 +246,19 @@ function saveDataByPin(pin) {
 }
 function saveAll() { if (currentDriverPin) saveDataByPin(currentDriverPin); else { let sel = document.getElementById("adminChoferSelect")?.value; if(sel) saveDataByPin(sel); } saveGlobalPrices(); }
 
-// CORREGIDO: Comparación de fechas correcta (YYYY-MM-DD)
-function getVentasHoy() { 
-    const hoy = new Date().toISOString().slice(0,10);
-    return ventas.filter(v => v.fecha === hoy);
-}
-function getVentasUltimos7Dias() { 
-    const hoy = new Date();
-    const unaSemana = new Date();
-    unaSemana.setDate(hoy.getDate() - 6);
-    unaSemana.setHours(0,0,0,0);
-    const fechaLimite = unaSemana.toISOString().slice(0,10);
-    return ventas.filter(v => v.fecha >= fechaLimite);
-}
+function getVentasHoy() { const hoy = new Date().toDateString(); return ventas.filter(v => new Date(v.fecha).toDateString() === hoy); }
+function getVentasUltimos7Dias() { const hoy = new Date(), unaSemana = new Date(); unaSemana.setDate(hoy.getDate() - 6); unaSemana.setHours(0,0,0,0); return ventas.filter(v => new Date(v.fecha) >= unaSemana); }
 function calcularTotalVenta(cliente, cant) { const p = preciosClientes[cliente]; return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32; }
-
-async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
-    let total = 0;
-    if(pago !== "cobrocc") total = calcularTotalVenta(cliente, cantidades);
-    const fechaStr = new Date().toISOString().slice(0,10);
-    const nueva = { id: Date.now()+Math.random(), cliente, cantidades, pago, total, cobroDeuda, fecha: fechaStr };
+function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
+    let total = 0; if(pago !== "cobrocc") total = calcularTotalVenta(cliente, cantidades);
+    const nueva = { id: Date.now()+Math.random(), cliente, cantidades, pago, total, cobroDeuda, fecha: new Date().toISOString() };
     ventas.push(nueva);
     if(cobroDeuda>0) cobrosCC += cobroDeuda;
     saveAll();
-
-    try {
-        if (pago === "ctacte") {
-            await fetch(API_URL_DEUDAS, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    ruta: 'agregarMovimiento',
-                    fecha: fechaStr,
-                    cliente: cliente,
-                    tipo: 'deuda',
-                    monto: total,
-                    formaPago: '',
-                    detalle: `Venta de hielo: ${JSON.stringify(cantidades)}`
-                })
-            });
-        } else if (pago === "cobrocc" && cobroDeuda > 0) {
-            await fetch(API_URL_DEUDAS, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    ruta: 'agregarMovimiento',
-                    fecha: fechaStr,
-                    cliente: cliente,
-                    tipo: 'pago',
-                    monto: cobroDeuda,
-                    formaPago: 'Efectivo',
-                    detalle: 'Cobro de deuda registrado desde Planilla de Reparto'
-                })
-            });
-        }
-    } catch(e) {
-        console.error("Error al sincronizar con Google Sheets", e);
-    }
-
     return nueva;
 }
-
 function eliminarVenta(id) { const v = ventas.find(v=>v.id===id); if(v && v.cobroDeuda>0) cobrosCC -= v.cobroDeuda; ventas = ventas.filter(v=>v.id!==id); saveAll(); }
-function resetJornada() { const hoy = new Date().toISOString().slice(0,10); ventas = ventas.filter(v => v.fecha !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
+function resetJornada() { const hoy = new Date().toDateString(); ventas = ventas.filter(v => new Date(v.fecha).toDateString() !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
 
 function cerrarDiaAdmin() {
     let selectedPin = document.getElementById("adminChoferSelect")?.value;
@@ -320,7 +266,7 @@ function cerrarDiaAdmin() {
     if (!confirm(`⚠️ Cerrar el día para chofer ${selectedPin} archivará todas las ventas, gastos y cobros de hoy y limpiará la jornada actual. ¿Continuar?`)) return;
     const today = new Date().toISOString().slice(0,10);
     const historicoKey = `myc_${selectedPin}_historico_${today}`;
-    const dataBackup = { fecha: today, ventas: ventas.filter(v => v.fecha === today), gastosDetalle: {...gastosDetalle}, cobrosCC, stock: {...stockFabrica} };
+    const dataBackup = { fecha: today, ventas: ventas.filter(v => new Date(v.fecha).toDateString() === new Date().toDateString()), gastosDetalle: {...gastosDetalle}, cobrosCC, stock: {...stockFabrica} };
     localStorage.setItem(historicoKey, JSON.stringify(dataBackup));
     resetJornada();
     loadDataByPin(selectedPin);
@@ -330,10 +276,10 @@ function cerrarDiaAdmin() {
 
 function cargarClientesLocal() { let cli = localStorage.getItem("myc_clientes_list"); if(cli) CLIENTES_LIST = JSON.parse(cli); else CLIENTES_LIST = [...DEFAULT_CLIENTES]; }
 function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON.stringify(CLIENTES_LIST)); }
-async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre] = getPreciosCliente(nombre); costosClientes[nombre] = getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); return true; } return false; }
-async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c => c !== nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; ventas = ventas.filter(v => v.cliente !== nombre); guardarClientesLocal(); saveAll(); return true; } return false; }
+function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre] = getPreciosCliente(nombre); costosClientes[nombre] = getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); return true; } return false; }
+function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c => c !== nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; ventas = ventas.filter(v => v.cliente !== nombre); guardarClientesLocal(); saveAll(); return true; } return false; }
 
-// ========== FUNCIONES PARA COMPROBANTE PROFESIONAL ==========
+// ========== COMPROBANTES X ==========
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const numeroFormateado = String(numero).padStart(6,'0');
@@ -407,7 +353,7 @@ function guardarComprobante(tipo, datos, htmlContent, textContent) {
 function mostrarComprobante(htmlContent) { document.getElementById("comprobanteCuerpo").innerHTML = htmlContent; document.getElementById("comprobanteModal").style.display = "flex"; }
 function generarComprobanteDia() {
     let ventasHoy = getVentasHoy();
-    if(ventasHoy.length===0){ alert("No hay ventas hoy"); return; }
+    if(ventasHoy.length===0){ toast("No hay ventas hoy"); return; }
     const numero = getNextComprobanteNum();
     const fechaISO = new Date().toISOString();
     const htmlFactura = generarFacturaPremiumHTML('dia', { ventas: ventasHoy }, numero, fechaISO);
@@ -419,7 +365,7 @@ function generarComprobanteDia() {
 }
 function generarComprobanteSemana() {
     let ventasSemana = getVentasUltimos7Dias();
-    if(ventasSemana.length===0){ alert("No hay ventas en la última semana"); return; }
+    if(ventasSemana.length===0){ toast("No hay ventas en la última semana"); return; }
     const numero = getNextComprobanteNum();
     const fechaISO = new Date().toISOString();
     const htmlFactura = generarFacturaPremiumHTML('semana', { ventas: ventasSemana }, numero, fechaISO);
@@ -432,15 +378,14 @@ function generarComprobanteSemana() {
 function verComprobante(numero) { let comp = comprobantesHistorial.find(c => c.numero === numero); if (comp) { mostrarComprobante(comp.html); window.currentComprobanteTexto = comp.texto; } else alert("Comprobante no encontrado"); }
 function reimprimirComprobante(numero) { verComprobante(numero); }
 function eliminarComprobante(numero) { if(confirm("Eliminar comprobante?")) { comprobantesHistorial = comprobantesHistorial.filter(c=>c.numero!==numero); localStorage.setItem(`myc_${currentDriverPin}_comprobantes`, JSON.stringify(comprobantesHistorial)); renderComprobantesHistorial(); } }
-function copiarComprobanteTexto() { if(window.currentComprobanteTexto) { navigator.clipboard.writeText(window.currentComprobanteTexto); alert("Texto copiado"); } else alert("No hay texto"); }
+function copiarComprobanteTexto() { if(window.currentComprobanteTexto) { navigator.clipboard.writeText(window.currentComprobanteTexto); toast("Texto copiado"); } else alert("No hay texto"); }
 function descargarComprobanteTxt() { if(window.currentComprobanteTexto) { let blob = new Blob([window.currentComprobanteTexto], {type:"text/plain"}); let a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `comprobante_X_${Date.now()}.txt`; a.click(); } else alert("No hay datos"); }
 function renderComprobantesHistorial() {
     let tbody = document.getElementById("comprobantesBody");
     if(!tbody) return;
-    tbody.innerHTML = comprobantesHistorial.map(c => `<tr><td>X-${String(c.numero).padStart(6,'0')}</td><td>${new Date(c.fecha).toLocaleString()}</td><td>${c.resumen}</td><td>$${c.total.toLocaleString()}</td><td><button class="btn-small" title="Ver" onclick="verComprobante(${c.numero})">👁️ Ver</button> <button class="btn-small" title="Reimprimir" onclick="reimprimirComprobante(${c.numero})">🖨️</button> <button class="btn-small" title="Copiar texto" onclick="copiarComprobanteTexto()">📋</button> <button class="btn-small" title="Descargar" onclick="descargarComprobanteTxt()">💾</button> <button class="btn-small" title="Eliminar" style="background:#b91c1c;" onclick="eliminarComprobante(${c.numero})">🗑️</button></div></td></tr>`).join('');
+    tbody.innerHTML = comprobantesHistorial.map(c => `<tr><td>X-${String(c.numero).padStart(6,'0')}</td><td>${new Date(c.fecha).toLocaleString()}</td><td>${c.resumen}</td><td>$${c.total.toLocaleString()}</td><td><button class="btn-small" title="Ver" onclick="verComprobante(${c.numero})">👁️ Ver</button> <button class="btn-small" title="Reimprimir" onclick="reimprimirComprobante(${c.numero})">🖨️</button> <button class="btn-small" title="Copiar texto" onclick="copiarComprobanteTexto()">📋</button> <button class="btn-small" title="Descargar" onclick="descargarComprobanteTxt()">💾</button> <button class="btn-small" title="Eliminar" style="background:#b91c1c;" onclick="eliminarComprobante(${c.numero})">🗑️</button></td></tr>`).join('');
 }
 
-// ========== RENDERIZADO PRINCIPAL ==========
 function renderAdmin() {
     const ventasHoy = getVentasHoy();
     let totalVentas=0, totalEfectivo=0, totalTransferencia=0, totalCtaCte=0, gananciaTotal=0;
@@ -489,7 +434,19 @@ function renderDriver() {
     const neto = totalE + totalT + cobrosCC - gastos;
     document.getElementById("driverNetoDia").innerText = neto.toFixed(0);
     const tbody = document.getElementById("driverSalesBody");
-    tbody.innerHTML = ventasHoy.map(v => `<tr><td>${v.cliente}</td><td>${v.cantidades?.["1,7 KG"]||0}</td><td>${v.cantidades?.["3,5 KG"]||0}</td><td>${v.cantidades?.["14 KG"]||0}</td><td>${v.cantidades?.["ESC.20KG"]||0}</td><td>${v.cantidades?.["ESC.32KG"]||0}</td><td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td><td>${v.pago}</td><td>$${v.cobroDeuda||0}</td><td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td></tr>`).join('');
+    tbody.innerHTML = ventasHoy.map(v => `<td>
+        <tr>
+            <td>${v.cliente}</td>
+            <td>${v.cantidades?.["1,7 KG"]||0}</td>
+            <td>${v.cantidades?.["3,5 KG"]||0}</td>
+            <td>${v.cantidades?.["14 KG"]||0}</td>
+            <td>${v.cantidades?.["ESC.20KG"]||0}</td>
+            <td>${v.cantidades?.["ESC.32KG"]||0}</td>
+            <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td>
+            <td>${v.pago}</td>
+            <td>$${v.cobroDeuda||0}</td>
+            <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td>
+        </tr>`).join('');
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.dataset.id)); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
     renderComprobantesHistorial();
 }
@@ -509,19 +466,38 @@ function actualizarGraficoClientes() {
 function renderVentasPorProducto() {
     const ventasHoy = getVentasHoy();
     const resumen = { "1,7 KG":{cant:0,total:0}, "3,5 KG":{cant:0,total:0}, "14 KG":{cant:0,total:0}, "ESC.20KG":{cant:0,total:0}, "ESC.32KG":{cant:0,total:0} };
-    ventasHoy.forEach(v => { if(v.pago === "cobrocc") return; for(let prod in resumen) { let cant = v.cantidades[prod] || 0; if(cant > 0) { resumen[prod].cant += cant; const precioRef = getPreciosCliente("AQUELARRE")[prod.replace("ESC.","").toLowerCase()] || 0; resumen[prod].total += cant * precioRef; } } });
+    ventasHoy.forEach(v => {
+        if(v.pago === "cobrocc") return;
+        for(let prod in resumen) {
+            let cant = v.cantidades[prod] || 0;
+            if(cant > 0) {
+                resumen[prod].cant += cant;
+                const precioRef = getPreciosCliente("AQUELARRE")[prod.replace("ESC.","").toLowerCase()] || 0;
+                resumen[prod].total += cant * precioRef;
+            }
+        }
+    });
     const container = document.getElementById("productosReport");
-    if(container) { container.innerHTML = ""; for(let [prod, datos] of Object.entries(resumen)) { let nombreMostrar = prod.replace("ESC.","").replace("KG","Kg"); container.innerHTML += `<div class="prod-card"><strong>${nombreMostrar}</strong><br>Cant: ${datos.cant}<br>Total: $${datos.total.toFixed(0)}</div>`; } }
+    if(container) {
+        container.innerHTML = "";
+        for(let [prod, datos] of Object.entries(resumen)) {
+            let nombreMostrar = prod.replace("ESC.","").replace("KG","Kg");
+            container.innerHTML += `<div class="prod-card"><strong>${nombreMostrar}</strong><br>Cant: ${datos.cant}<br>Total: $${datos.total.toFixed(0)}</div>`;
+        }
+    }
 }
 function renderEvolucionDiaria() {
     const fechas = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d; }).reverse();
     const ventasPorDia = {};
-    fechas.forEach(f => ventasPorDia[f.toISOString().slice(0,10)] = 0);
-    ventas.forEach(v => { if(v.pago !== "cobrocc") { if(ventasPorDia.hasOwnProperty(v.fecha)) ventasPorDia[v.fecha] += v.total; } });
+    fechas.forEach(f => ventasPorDia[f.toDateString()] = 0);
+    ventas.forEach(v => { if(v.pago !== "cobrocc") { const fechaVenta = new Date(v.fecha).toDateString(); if(ventasPorDia.hasOwnProperty(fechaVenta)) ventasPorDia[fechaVenta] += v.total; } });
     const labels = fechas.map(f => f.toISOString().slice(0,10));
-    const datos = labels.map(l => ventasPorDia[l] || 0);
+    const datos = fechas.map(f => ventasPorDia[f.toDateString()]);
     const ctx = document.getElementById('evolucionChart')?.getContext('2d');
-    if(ctx) { if(chartEvolucion) chartEvolucion.destroy(); chartEvolucion = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Ventas totales $', data: datos, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true } }); }
+    if(ctx) {
+        if(chartEvolucion) chartEvolucion.destroy();
+        chartEvolucion = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Ventas totales $', data: datos, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true } });
+    }
 }
 function renderClientesTab() {
     let tbody = document.getElementById("clientesTbody");
@@ -532,46 +508,81 @@ function renderClientesTab() {
         const cost = costosClientes[cli] || getCostosCliente();
         tbody.innerHTML += `<tr><td><div style="width:40px;height:40px;background:#ccc;border-radius:12px;display:flex;align-items:center;justify-content:center;">${cli.charAt(0)}</div></td><td>${cli}</td><td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" size="5"></td><td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" size="5"></td><td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" size="5"></td><td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" size="5"></td><td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" size="5"></td><td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" size="5"></td><td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" size="5"></td><td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" size="5"></td><td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="5"></td><td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="5"></td><td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c;">🗑️</button></td></tr>`;
     }
-    document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => { const cli = btn.getAttribute("data-cli"); if(await eliminarClienteGlobal(cli)) { renderAdmin(); if(document.getElementById("driverPanel").style.display==="block") renderDriver(); } }));
+    document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => { const cli = btn.getAttribute("data-cli"); if(eliminarClienteGlobal(cli)) { renderAdmin(); if(document.getElementById("driverPanel").style.display==="block") renderDriver(); } }));
 }
 function renderProductosTab() {
     let tbody = document.getElementById("productsTbody");
     if(!tbody) return;
     tbody.innerHTML = "";
-    for(let p of productos) { tbody.innerHTML += `<tr><td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></td><td>${p.clave}</td><td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="6"></td><td><button class="delProdBtn" data-clave="${p.clave}" style="background:#b91c1c;">Eliminar</button></td></tr>`; }
+    for(let p of productos) {
+        tbody.innerHTML += `<tr><td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></td><td>${p.clave}</td><td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="6"></td><td><button class="delProdBtn" data-clave="${p.clave}" style="background:#b91c1c;">Eliminar</button></td></tr>`;
+    }
     document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", (e) => { const clave = btn.getAttribute("data-clave"); if(confirm(`Eliminar producto ${clave}?`)) { productos = productos.filter(p => p.clave !== clave); saveCommonProducts(); renderProductosTab(); } }));
 }
 function renderStockTab() {
     const ventasHoy = getVentasHoy();
     const vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    ventasHoy.forEach(v => { vendido["1,7 KG"] += v.cantidades["1,7 KG"] || 0; vendido["3,5 KG"] += v.cantidades["3,5 KG"] || 0; vendido["14 KG"] += v.cantidades["14 KG"] || 0; vendido["ESC.20KG"] += v.cantidades["ESC.20KG"] || 0; vendido["ESC.32KG"] += v.cantidades["ESC.32KG"] || 0; });
-    document.getElementById("fab_17").value = stockFabrica["1,7 KG"]; document.getElementById("fab_35").value = stockFabrica["3,5 KG"]; document.getElementById("fab_14").value = stockFabrica["14 KG"]; document.getElementById("fab_20").value = stockFabrica["ESC.20KG"]; document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
+    ventasHoy.forEach(v => {
+        vendido["1,7 KG"] += v.cantidades["1,7 KG"] || 0;
+        vendido["3,5 KG"] += v.cantidades["3,5 KG"] || 0;
+        vendido["14 KG"] += v.cantidades["14 KG"] || 0;
+        vendido["ESC.20KG"] += v.cantidades["ESC.20KG"] || 0;
+        vendido["ESC.32KG"] += v.cantidades["ESC.32KG"] || 0;
+    });
+    document.getElementById("fab_17").value = stockFabrica["1,7 KG"];
+    document.getElementById("fab_35").value = stockFabrica["3,5 KG"];
+    document.getElementById("fab_14").value = stockFabrica["14 KG"];
+    document.getElementById("fab_20").value = stockFabrica["ESC.20KG"];
+    document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
     const tbody = document.querySelector("#stockTable tbody");
-    if(tbody) tbody.innerHTML = `<tr><td>1,7 KG</td><td>${stockFabrica["1,7 KG"]}</td><td>${vendido["1,7 KG"]}</td><td>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</td></tr><tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr><tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr><tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr><tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>`;
+    if(tbody) tbody.innerHTML = `<tr><td>1,7 KG</td><td>${stockFabrica["1,7 KG"]}</td><td>${vendido["1,7 KG"]}</td><td>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</td></tr>
+        <tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr>
+        <tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr>
+        <tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr>
+        <tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>`;
 }
 function renderWeeklyReport() {
     const weeklyVentas = getVentasUltimos7Dias();
-    let totalVentasSemana=0, totalEfectivoSemana=0, totalTransferenciaSemana=0, totalCtaCteSemana=0, totalCobrosDeudaSemana=0, totalGananciaReal=0;
+    let totalVentasSemana = 0, totalEfectivoSemana = 0, totalTransferenciaSemana = 0, totalCtaCteSemana = 0, totalCobrosDeudaSemana = 0, totalGananciaReal = 0;
     const ventasPorCliente = {}, ventasPorDia = {};
     weeklyVentas.forEach(v => {
-        if(v.pago !== "cobrocc") { totalVentasSemana += v.total; if(v.pago === "efectivo") totalEfectivoSemana += v.total; if(v.pago === "transferencia") totalTransferenciaSemana += v.total; if(v.pago === "ctacte") totalCtaCteSemana += v.total; }
+        if(v.pago !== "cobrocc") {
+            totalVentasSemana += v.total;
+            if(v.pago === "efectivo") totalEfectivoSemana += v.total;
+            if(v.pago === "transferencia") totalTransferenciaSemana += v.total;
+            if(v.pago === "ctacte") totalCtaCteSemana += v.total;
+        }
         totalCobrosDeudaSemana += v.cobroDeuda || 0;
         const cost = costosClientes[v.cliente];
-        let costo = 0; if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32;
+        let costo = 0;
+        if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32;
         totalGananciaReal += (v.total - costo) + (v.cobroDeuda||0);
         if(v.pago !== "cobrocc") ventasPorCliente[v.cliente] = (ventasPorCliente[v.cliente] || 0) + v.total;
-        ventasPorDia[v.fecha] = (ventasPorDia[v.fecha] || 0) + v.total;
+        const fechaKey = new Date(v.fecha).toDateString();
+        ventasPorDia[fechaKey] = (ventasPorDia[fechaKey] || 0) + v.total;
     });
     document.getElementById("weeklyStats").innerHTML = `<div class="card"><h4>💰 Venta Bruta Semana</h4><div class="value">$${totalVentasSemana.toFixed(0)}</div></div><div class="card"><h4>💵 Efectivo</h4><div class="value">$${totalEfectivoSemana.toFixed(0)}</div></div><div class="card"><h4>💳 Transferencia</h4><div class="value">$${totalTransferenciaSemana.toFixed(0)}</div></div><div class="card"><h4>📘 Cta Cte</h4><div class="value">$${totalCtaCteSemana.toFixed(0)}</div></div><div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">$${totalCobrosDeudaSemana.toFixed(0)}</div></div><div class="card"><h4>📈 Ganancia Neta Semana</h4><div class="value">$${totalGananciaReal.toFixed(0)}</div><small>(Venta - Costo + Cobros)</small></div>`;
     const topClientes = Object.entries(ventasPorCliente).sort((a,b)=>b[1]-a[1]).slice(0,10);
     const ctxTop = document.getElementById('topClientesChart')?.getContext('2d');
-    if(ctxTop) { if(topClientesChart) topClientesChart.destroy(); topClientesChart = new Chart(ctxTop, { type: 'bar', data: { labels: topClientes.map(c=>c[0]), datasets: [{ label: 'Ventas $', data: topClientes.map(c=>c[1]), backgroundColor: '#f59e0b' }] }, options: { responsive: true } }); }
-    const diasSemana = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().slice(0,10); }).reverse();
+    if(ctxTop) {
+        if(topClientesChart) topClientesChart.destroy();
+        topClientesChart = new Chart(ctxTop, { type: 'bar', data: { labels: topClientes.map(c=>c[0]), datasets: [{ label: 'Ventas $', data: topClientes.map(c=>c[1]), backgroundColor: '#f59e0b' }] }, options: { responsive: true } });
+    }
+    const diasSemana = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d.toDateString(); }).reverse();
     const ventasPorDiaOrdenado = diasSemana.map(d => ventasPorDia[d] || 0);
     const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d');
-    if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: diasSemana, datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } }); }
+    if(ctxLine) {
+        if(weeklySalesChart) weeklySalesChart.destroy();
+        weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: diasSemana.map(d=>d.slice(0,10)), datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } });
+    }
     const tbody = document.getElementById("weeklySalesBody");
-    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v => `<tr><td>${v.fecha}</td><td>${v.cliente}</td><td>$${v.total.toFixed(0)}</td><td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</td><td>$${v.cobroDeuda||0}</td></td>`).join('');
+    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
+            <td>${new Date(v.fecha).toLocaleDateString()}</td>
+            <td>${v.cliente}</td>
+            <td>$${v.total.toFixed(0)}</td>
+            <td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</td>
+            <td>$${v.cobroDeuda||0}</td>
+        </tr>`).join('');
 }
 function actualizarGastosDesdeDetalle() {
     const nafta = parseFloat(document.getElementById("gastoNafta")?.value) || 0;
@@ -584,44 +595,26 @@ function actualizarGastosDesdeDetalle() {
     renderDriver();
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
 }
-
-async function agregarTransaccion() {
+function agregarTransaccion() {
     const cliente = document.getElementById("clienteSelect").value;
     const pago = document.getElementById("paymentType").value;
     let cantidades = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     let cobroMonto = parseFloat(document.getElementById("cobroDeudaInput").value) || 0;
-    
     if(pago === "cobrocc") {
-        if(cobroMonto <= 0) { 
-            alert("Para Cobro de Cta Cte debe ingresar un monto mayor a 0"); 
-            return; 
-        }
-        await guardarVenta(cliente, cantidades, pago, cobroMonto);
+        if(cobroMonto <= 0) { alert("Para Cobro de Cta Cte debe ingresar un monto mayor a 0"); return; }
+        guardarVenta(cliente, cantidades, pago, cobroMonto);
     } else {
-        cantidades = { 
-            "1,7 KG": parseInt(document.getElementById("qty_17").value)||0, 
-            "3,5 KG": parseInt(document.getElementById("qty_35").value)||0, 
-            "14 KG": parseInt(document.getElementById("qty_14").value)||0, 
-            "ESC.20KG": parseInt(document.getElementById("qty_20").value)||0, 
-            "ESC.32KG": parseInt(document.getElementById("qty_32").value)||0 
-        };
+        cantidades = { "1,7 KG": parseInt(document.getElementById("qty_17").value)||0, "3,5 KG": parseInt(document.getElementById("qty_35").value)||0, "14 KG": parseInt(document.getElementById("qty_14").value)||0, "ESC.20KG": parseInt(document.getElementById("qty_20").value)||0, "ESC.32KG": parseInt(document.getElementById("qty_32").value)||0 };
         const hayProductos = Object.values(cantidades).some(v => v > 0);
-        if(!hayProductos && cobroMonto === 0) { 
-            alert("Debe ingresar al menos una cantidad de producto o un cobro"); 
-            return; 
-        }
-        await guardarVenta(cliente, cantidades, pago, cobroMonto);
+        if(!hayProductos && cobroMonto === 0) { alert("Debe ingresar al menos una cantidad de producto o un cobro"); return; }
+        guardarVenta(cliente, cantidades, pago, cobroMonto);
     }
-    
     document.querySelectorAll("#driverPanel input[type=number]").forEach(i => i.value = 0);
     document.getElementById("cobroDeudaInput").value = 0;
-    
     renderDriver();
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
-    
-    toast("✅ Venta registrada correctamente");
+    toast("✅ Venta registrada");
 }
-
 async function exportarPDF(elementId, fileName) {
     const element = document.getElementById(elementId);
     if (!element) { alert("No se encontró el elemento para exportar."); return; }
@@ -656,14 +649,27 @@ async function exportarPDF(elementId, fileName) {
         let imgWidth = pdfWidth;
         let imgHeight = (canvas.height * imgWidth) / canvas.width;
         if (forceOnePage) {
-            if (imgHeight > pdfHeight) { const ratio = pdfHeight / imgHeight; imgWidth = imgWidth * ratio; imgHeight = pdfHeight; const xOffset = (pdfWidth - imgWidth) / 2; pdf.addImage(imgData, "PNG", xOffset, 0, imgWidth, imgHeight); }
-            else { pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight); }
+            if (imgHeight > pdfHeight) {
+                const ratio = pdfHeight / imgHeight;
+                imgWidth = imgWidth * ratio;
+                imgHeight = pdfHeight;
+                const xOffset = (pdfWidth - imgWidth) / 2;
+                pdf.addImage(imgData, "PNG", xOffset, 0, imgWidth, imgHeight);
+            } else {
+                pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+            }
             pdf.save(`${fileName}_${new Date().toISOString().slice(0,19)}.pdf`);
         } else {
             let heightLeft = imgHeight;
             let position = 0;
             let page = 0;
-            while (heightLeft > 0) { if (page > 0) pdf.addPage(); pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight); heightLeft -= pdfHeight; position -= pdfHeight; page++; }
+            while (heightLeft > 0) {
+                if (page > 0) pdf.addPage();
+                pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+                heightLeft -= pdfHeight;
+                position -= pdfHeight;
+                page++;
+            }
             pdf.save(`${fileName}_${new Date().toISOString().slice(0,19)}.pdf`);
         }
     } catch (error) { console.error(error); alert("Error al generar PDF: " + error.message); }
@@ -676,13 +682,12 @@ window.copiarComprobanteTexto = copiarComprobanteTexto;
 window.descargarComprobanteTxt = descargarComprobanteTxt;
 window.eliminarComprobante = eliminarComprobante;
 
-// Inicialización
 document.addEventListener("DOMContentLoaded", async () => {
     loadCommonProducts();
     loadGlobalPrices();
     cargarClientesLocal();
 
-    document.getElementById("loginBtn").addEventListener("click", async () => {
+    document.getElementById("loginBtn").addEventListener("click", () => {
         const pin = document.getElementById("pinInput").value;
         if(pin === "9999") {
             document.getElementById("loginScreen").style.display = "none";
@@ -713,7 +718,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelectorAll(".costInput").forEach(inp => { const cli = inp.dataset.cli, prod = inp.dataset.prod; if (!costosClientes[cli]) costosClientes[cli] = getCostosCliente(); costosClientes[cli][prod] = parseInt(inp.value); });
         saveGlobalPrices(); alert("Precios y costos guardados correctamente."); renderAdmin();
     });
-    document.getElementById("addClienteBtn")?.addEventListener("click", async () => { const nuevo = document.getElementById("newClienteName").value.trim().toUpperCase(); if(!nuevo) return; if(await agregarClienteGlobal(nuevo)) { document.getElementById("newClienteName").value = ""; alert(`Cliente ${nuevo} agregado.`); if (document.getElementById("adminPanel").style.display === "block") renderAdmin(); if (document.getElementById("driverPanel").style.display === "block") renderDriver(); } else alert("El cliente ya existe"); });
+    document.getElementById("addClienteBtn")?.addEventListener("click", () => { const nuevo = document.getElementById("newClienteName").value.trim().toUpperCase(); if(!nuevo) return; if(agregarClienteGlobal(nuevo)) { document.getElementById("newClienteName").value = ""; alert(`Cliente ${nuevo} agregado.`); if (document.getElementById("adminPanel").style.display === "block") renderAdmin(); if (document.getElementById("driverPanel").style.display === "block") renderDriver(); } else alert("El cliente ya existe"); });
     document.getElementById("exportConfigBtn")?.addEventListener("click", () => { const config = { clientesList: CLIENTES_LIST, precios: preciosClientes, costos: costosClientes, productos: productos }; const dataStr = JSON.stringify(config, null, 2); const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `myc_config_${new Date().toISOString().slice(0,19)}.json`; a.click(); URL.revokeObjectURL(url); });
     document.getElementById("importConfigInput")?.addEventListener("change", (e) => { if(e.target.files.length) { const reader = new FileReader(); reader.onload = function(ev) { try { const config = JSON.parse(ev.target.result); if(config.clientesList) { CLIENTES_LIST.length = 0; CLIENTES_LIST.push(...config.clientesList); } if(config.precios) preciosClientes = config.precios; if(config.costos) costosClientes = config.costos; if(config.productos) productos = config.productos; CLIENTES_LIST.forEach(c => { if(!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c] = getCostosCliente(); }); saveAll(); saveCommonProducts(); saveGlobalPrices(); alert("Configuración importada correctamente."); if(document.getElementById("adminPanel").style.display === "block") renderAdmin(); if(document.getElementById("driverPanel").style.display === "block") renderDriver(); } catch(err) { alert("Error al leer el archivo."); } }; reader.readAsText(e.target.files[0]); e.target.value = ''; } });
     document.getElementById("addProductBtn")?.addEventListener("click", () => { const nuevoProd = document.getElementById("newProductName").value.trim(); if(!nuevoProd) return; const precio = parseInt(document.getElementById("newProductPrice").value) || 0; const img = document.getElementById("newProductImg").value || "https://placehold.co/100x100"; productos.push({ clave: nuevoProd, precioBase: precio, imagen: img }); saveCommonProducts(); renderProductosTab(); document.getElementById("newProductName").value = ""; document.getElementById("newProductPrice").value = ""; document.getElementById("newProductImg").value = ""; });
