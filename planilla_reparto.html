@@ -255,9 +255,63 @@
             <div class="chart-container"><h3>📈 Evolución diaria (semana)</h3><canvas id="weeklySalesChart"></canvas></div>
             <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
         </div>
-        <div id="tabClientes" class="panel-content" style="display:none;">...</div>
-        <div id="tabProductos" class="panel-content" style="display:none;">...</div>
-        <div id="tabStock" class="panel-content" style="display:none;">...</div>
+        
+        <!-- ========== SECCIÓN CLIENTES CORREGIDA (contenido completo) ========== -->
+        <div id="tabClientes" class="panel-content" style="display:none;">
+            <h3>Gestión de clientes (precios de venta y costos de fábrica)</h3>
+            <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
+                <button id="exportConfigBtn" class="btn-small" style="background:#16a34a;">💾 Exportar configuración</button>
+                <label for="importConfigInput" class="btn-small" style="background:#e67e22; display: inline-block; padding: 6px 12px; cursor:pointer;">📂 Importar configuración</label>
+                <input type="file" id="importConfigInput" accept=".json" style="display: none;">
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>➕ Nuevo Cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div>
+                <div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div>
+                <div class="form-group"><button id="addClienteBtn" class="btn-small">Agregar Cliente</button></div>
+            </div>
+            <div style="overflow-x:auto">
+                <table id="clientesTable">
+                    <thead>
+                        <tr><th>Foto</th><th>Cliente</th><th>1,7Kg $</th><th>3,5Kg $</th><th>14Kg $</th><th>20Kg $</th><th>32Kg $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th>
+                        </thead>
+                    <tbody id="clientesTbody"></tbody>
+                </table>
+            </div>
+            <button id="saveAllPricesBtn" style="margin-top:20px;">💾 Guardar todos los cambios</button>
+        </div>
+        
+        <!-- ========== SECCIÓN PRODUCTOS CORREGIDA ========== -->
+        <div id="tabProductos" class="panel-content" style="display:none;">
+            <h3>📸 Tipos de Bolsas / Productos</h3>
+            <div class="form-row">
+                <div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div>
+                <div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div>
+                <div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div>
+                <div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div>
+            </div>
+            <div style="overflow-x:auto">
+                <table id="productsTable">
+                    <thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead>
+                    <tbody id="productsTbody"></tbody>
+                </table>
+            </div>
+            <button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
+        </div>
+        
+        <!-- ========== SECCIÓN STOCK CORREGIDA ========== -->
+        <div id="tabStock" class="panel-content" style="display:none;">
+            <h3>📦 Carga de fábrica (stock inicial del día)</h3>
+            <div class="form-row">
+                <div class="form-group"><label>🥤 1,7 KG</label><input type="number" id="fab_17" value="0" step="1"></div>
+                <div class="form-group"><label>🥤 3,5 KG</label><input type="number" id="fab_35" value="0" step="1"></div>
+                <div class="form-group"><label>🧊 14 KG</label><input type="number" id="fab_14" value="0" step="1"></div>
+                <div class="form-group"><label>🧊 ESC.20KG</label><input type="number" id="fab_20" value="0" step="1"></div>
+                <div class="form-group"><label>🧊 ESC.32KG</label><input type="number" id="fab_32" value="0" step="1"></div>
+                <div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div>
+            </div>
+            <h3>📊 Resumen vendido / restante</h3>
+            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table>
+        </div>
     </div>
 
     <div id="driverPanel" class="driver-panel" style="display:none;">
@@ -288,7 +342,7 @@
             </div>
             <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             
-            <!-- SECCIÓN COMPROBANTES X (NUEVO DISEÑO) -->
+            <!-- SECCIÓN COMPROBANTES X -->
             <div class="card" style="margin-top: 20px;">
                 <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
                     📄 Comprobantes X (No fiscales)
@@ -310,7 +364,7 @@
 </div>
 <footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Datos por chofer. Cerrar día archiva jornada y limpia actual.</footer>
 
-<!-- Modal para comprobante X con diseño profesional -->
+<!-- Modal para comprobante X -->
 <div id="comprobanteModal" class="comprobante-modal">
     <div class="comprobante-modal-content">
         <div class="comprobante-header-premium">
@@ -446,7 +500,6 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
         if (venta.cantidades["14 KG"]) items.push({nombre:"Hielo 14 kg", cant:venta.cantidades["14 KG"], precio:pre.p14});
         if (venta.cantidades["ESC.20KG"]) items.push({nombre:"Hielo escamas 20 kg", cant:venta.cantidades["ESC.20KG"], precio:pre.p20});
         if (venta.cantidades["ESC.32KG"]) items.push({nombre:"Hielo escamas 32 kg", cant:venta.cantidades["ESC.32KG"], precio:pre.p32});
-        
         let primerItem = true;
         for(let item of items) {
             let subtotal = item.cant * item.precio;
@@ -604,7 +657,7 @@ function renderComprobantesHistorial() {
     `).join('');
 }
 
-// ========== RENDERIZADO PRINCIPAL (TODO IGUAL QUE ORIGINAL) ==========
+// ========== RENDERIZADO PRINCIPAL ==========
 function renderAdmin() {
     const ventasHoy = getVentasHoy();
     let totalVentas=0, totalEfectivo=0, totalTransferencia=0, totalCtaCte=0, gananciaTotal=0;
@@ -805,11 +858,21 @@ function renderStockTab() {
     document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
     const tbody = document.querySelector("#stockTable tbody");
     if(tbody) tbody.innerHTML = `
-        <tr><td>1,7 KG</td><td>${stockFabrica["1,7 KG"]}</td><td>${vendido["1,7 KG"]}</td><td>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</td></tr>
-        <tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr>
-        <tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr>
-        <tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr>
-        <tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>
+        <tr>
+            <td>1,7 KG</td><td>${stockFabrica["1,7 KG"]}</td><td>${vendido["1,7 KG"]}</td><td>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</td>
+        </tr>
+        <tr>
+            <td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td>
+        </tr>
+        <tr>
+            <td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td>
+        </tr>
+        <tr>
+            <td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td>
+        </tr>
+        <tr>
+            <td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td>
+        </tr>
     `;
 }
 function renderWeeklyReport() {
@@ -959,14 +1022,14 @@ async function exportarPDF(elementId, fileName) {
     }
 }
 
-// Exponer globales para los botones del historial
+// Exponer globales
 window.verComprobante = verComprobante;
 window.reimprimirComprobante = reimprimirComprobante;
 window.copiarComprobanteTexto = copiarComprobanteTexto;
 window.descargarComprobanteTxt = descargarComprobanteTxt;
 window.eliminarComprobante = eliminarComprobante;
 
-// Inicialización y eventos (todo igual que original)
+// Inicialización
 document.addEventListener("DOMContentLoaded", async () => {
     loadCommonProducts();
     loadGlobalPrices();
