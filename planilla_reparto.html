@@ -127,7 +127,7 @@
         <div id="tabProductos" class="panel-content" style="display:none;">
             <h3>📸 Tipos de Bolsas / Productos</h3>
             <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div></div>
-            <div style="overflow-x:auto"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th><tr></thead><tbody id="productsTbody"></tbody></table></div><button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
+            <div style="overflow-x:auto"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></tr></div><button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         <div id="tabStock" class="panel-content" style="display:none;">
             <h3>📦 Carga de fábrica (stock inicial del día)</h3>
@@ -248,8 +248,19 @@ function saveDataByPin(pin) {
 }
 function saveAll() { if (currentDriverPin) saveDataByPin(currentDriverPin); else { let sel = document.getElementById("adminChoferSelect")?.value; if(sel) saveDataByPin(sel); } saveGlobalPrices(); }
 
-function getVentasHoy() { const hoy = new Date().toDateString(); return ventas.filter(v => new Date(v.fecha).toDateString() === hoy); }
-function getVentasUltimos7Dias() { const hoy = new Date(), unaSemana = new Date(); unaSemana.setDate(hoy.getDate() - 6); unaSemana.setHours(0,0,0,0); return ventas.filter(v => new Date(v.fecha) >= unaSemana); }
+// CORREGIDO: Comparación de fechas correcta (YYYY-MM-DD)
+function getVentasHoy() { 
+    const hoy = new Date().toISOString().slice(0,10);
+    return ventas.filter(v => v.fecha === hoy);
+}
+function getVentasUltimos7Dias() { 
+    const hoy = new Date();
+    const unaSemana = new Date();
+    unaSemana.setDate(hoy.getDate() - 6);
+    unaSemana.setHours(0,0,0,0);
+    const fechaLimite = unaSemana.toISOString().slice(0,10);
+    return ventas.filter(v => v.fecha >= fechaLimite);
+}
 function calcularTotalVenta(cliente, cant) { const p = preciosClientes[cliente]; return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32; }
 
 async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
@@ -301,7 +312,7 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
 }
 
 function eliminarVenta(id) { const v = ventas.find(v=>v.id===id); if(v && v.cobroDeuda>0) cobrosCC -= v.cobroDeuda; ventas = ventas.filter(v=>v.id!==id); saveAll(); }
-function resetJornada() { const hoy = new Date().toDateString(); ventas = ventas.filter(v => new Date(v.fecha).toDateString() !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
+function resetJornada() { const hoy = new Date().toISOString().slice(0,10); ventas = ventas.filter(v => v.fecha !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
 
 function cerrarDiaAdmin() {
     let selectedPin = document.getElementById("adminChoferSelect")?.value;
@@ -309,7 +320,7 @@ function cerrarDiaAdmin() {
     if (!confirm(`⚠️ Cerrar el día para chofer ${selectedPin} archivará todas las ventas, gastos y cobros de hoy y limpiará la jornada actual. ¿Continuar?`)) return;
     const today = new Date().toISOString().slice(0,10);
     const historicoKey = `myc_${selectedPin}_historico_${today}`;
-    const dataBackup = { fecha: today, ventas: ventas.filter(v => new Date(v.fecha).toDateString() === new Date().toDateString()), gastosDetalle: {...gastosDetalle}, cobrosCC, stock: {...stockFabrica} };
+    const dataBackup = { fecha: today, ventas: ventas.filter(v => v.fecha === today), gastosDetalle: {...gastosDetalle}, cobrosCC, stock: {...stockFabrica} };
     localStorage.setItem(historicoKey, JSON.stringify(dataBackup));
     resetJornada();
     loadDataByPin(selectedPin);
@@ -426,7 +437,7 @@ function descargarComprobanteTxt() { if(window.currentComprobanteTexto) { let bl
 function renderComprobantesHistorial() {
     let tbody = document.getElementById("comprobantesBody");
     if(!tbody) return;
-    tbody.innerHTML = comprobantesHistorial.map(c => `<tr><td>X-${String(c.numero).padStart(6,'0')}</td><td>${new Date(c.fecha).toLocaleString()}</td><td>${c.resumen}</td><td>$${c.total.toLocaleString()}</td><td><button class="btn-small" title="Ver" onclick="verComprobante(${c.numero})">👁️ Ver</button> <button class="btn-small" title="Reimprimir" onclick="reimprimirComprobante(${c.numero})">🖨️</button> <button class="btn-small" title="Copiar texto" onclick="copiarComprobanteTexto()">📋</button> <button class="btn-small" title="Descargar" onclick="descargarComprobanteTxt()">💾</button> <button class="btn-small" title="Eliminar" style="background:#b91c1c;" onclick="eliminarComprobante(${c.numero})">🗑️</button></td></tr>`).join('');
+    tbody.innerHTML = comprobantesHistorial.map(c => `<tr><td>X-${String(c.numero).padStart(6,'0')}</td><td>${new Date(c.fecha).toLocaleString()}</td><td>${c.resumen}</td><td>$${c.total.toLocaleString()}</td><td><button class="btn-small" title="Ver" onclick="verComprobante(${c.numero})">👁️ Ver</button> <button class="btn-small" title="Reimprimir" onclick="reimprimirComprobante(${c.numero})">🖨️</button> <button class="btn-small" title="Copiar texto" onclick="copiarComprobanteTexto()">📋</button> <button class="btn-small" title="Descargar" onclick="descargarComprobanteTxt()">💾</button> <button class="btn-small" title="Eliminar" style="background:#b91c1c;" onclick="eliminarComprobante(${c.numero})">🗑️</button></div></td></tr>`).join('');
 }
 
 // ========== RENDERIZADO PRINCIPAL ==========
@@ -505,10 +516,10 @@ function renderVentasPorProducto() {
 function renderEvolucionDiaria() {
     const fechas = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d; }).reverse();
     const ventasPorDia = {};
-    fechas.forEach(f => ventasPorDia[f.toDateString()] = 0);
-    ventas.forEach(v => { if(v.pago !== "cobrocc") { const fechaVenta = new Date(v.fecha).toDateString(); if(ventasPorDia.hasOwnProperty(fechaVenta)) ventasPorDia[fechaVenta] += v.total; } });
+    fechas.forEach(f => ventasPorDia[f.toISOString().slice(0,10)] = 0);
+    ventas.forEach(v => { if(v.pago !== "cobrocc") { if(ventasPorDia.hasOwnProperty(v.fecha)) ventasPorDia[v.fecha] += v.total; } });
     const labels = fechas.map(f => f.toISOString().slice(0,10));
-    const datos = fechas.map(f => ventasPorDia[f.toDateString()]);
+    const datos = labels.map(l => ventasPorDia[l] || 0);
     const ctx = document.getElementById('evolucionChart')?.getContext('2d');
     if(ctx) { if(chartEvolucion) chartEvolucion.destroy(); chartEvolucion = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Ventas totales $', data: datos, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true } }); }
 }
@@ -549,19 +560,18 @@ function renderWeeklyReport() {
         let costo = 0; if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32;
         totalGananciaReal += (v.total - costo) + (v.cobroDeuda||0);
         if(v.pago !== "cobrocc") ventasPorCliente[v.cliente] = (ventasPorCliente[v.cliente] || 0) + v.total;
-        const fechaKey = new Date(v.fecha).toDateString();
-        ventasPorDia[fechaKey] = (ventasPorDia[fechaKey] || 0) + v.total;
+        ventasPorDia[v.fecha] = (ventasPorDia[v.fecha] || 0) + v.total;
     });
     document.getElementById("weeklyStats").innerHTML = `<div class="card"><h4>💰 Venta Bruta Semana</h4><div class="value">$${totalVentasSemana.toFixed(0)}</div></div><div class="card"><h4>💵 Efectivo</h4><div class="value">$${totalEfectivoSemana.toFixed(0)}</div></div><div class="card"><h4>💳 Transferencia</h4><div class="value">$${totalTransferenciaSemana.toFixed(0)}</div></div><div class="card"><h4>📘 Cta Cte</h4><div class="value">$${totalCtaCteSemana.toFixed(0)}</div></div><div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">$${totalCobrosDeudaSemana.toFixed(0)}</div></div><div class="card"><h4>📈 Ganancia Neta Semana</h4><div class="value">$${totalGananciaReal.toFixed(0)}</div><small>(Venta - Costo + Cobros)</small></div>`;
     const topClientes = Object.entries(ventasPorCliente).sort((a,b)=>b[1]-a[1]).slice(0,10);
     const ctxTop = document.getElementById('topClientesChart')?.getContext('2d');
     if(ctxTop) { if(topClientesChart) topClientesChart.destroy(); topClientesChart = new Chart(ctxTop, { type: 'bar', data: { labels: topClientes.map(c=>c[0]), datasets: [{ label: 'Ventas $', data: topClientes.map(c=>c[1]), backgroundColor: '#f59e0b' }] }, options: { responsive: true } }); }
-    const diasSemana = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d.toDateString(); }).reverse();
+    const diasSemana = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().slice(0,10); }).reverse();
     const ventasPorDiaOrdenado = diasSemana.map(d => ventasPorDia[d] || 0);
     const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d');
-    if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: diasSemana.map(d=>d.slice(0,10)), datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } }); }
+    if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: diasSemana, datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } }); }
     const tbody = document.getElementById("weeklySalesBody");
-    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr><td>${new Date(v.fecha).toLocaleDateString()}</td><td>${v.cliente}</td><td>$${v.total.toFixed(0)}</td><td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</td><td>$${v.cobroDeuda||0}</td></tr>`).join('');
+    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v => `<tr><td>${v.fecha}</td><td>${v.cliente}</td><td>$${v.total.toFixed(0)}</td><td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</td><td>$${v.cobroDeuda||0}</td></td>`).join('');
 }
 function actualizarGastosDesdeDetalle() {
     const nafta = parseFloat(document.getElementById("gastoNafta")?.value) || 0;
