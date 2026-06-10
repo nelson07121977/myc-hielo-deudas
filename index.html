@@ -101,7 +101,7 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
           <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Pago</th><th>Detalle</th><th class="no-print">Acción</th></tr>
         </thead>
         <tbody></tbody>
-      追赶
+      </table>
     </div>
   </div>
 </div>
@@ -145,32 +145,20 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 // ================= CONFIGURACIÓN =================
 const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 
-// ========== FUNCIÓN SUPER ROBUSTA PARA CONVERTIR CUALQUIER COSA A NÚMERO ==========
+// ========== FUNCIÓN PARA CONVERTIR CUALQUIER COSA A NÚMERO ==========
 function convertirANumero(valor) {
-    // Si es null, undefined o vacío
     if (valor === undefined || valor === null || valor === '') return 0;
-    
-    // Si ya es número
-    if (typeof valor === 'number') {
-        return isNaN(valor) ? 0 : valor;
-    }
-    
-    // Convertir a string y limpiar
+    if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
     let str = String(valor).trim();
-    
-    // Eliminar símbolos de moneda, puntos, comas, espacios
-    str = str.replace(/[$]/g, '');      // elimina $
-    str = str.replace(/[.]/g, '');      // elimina puntos (separadores de miles)
-    str = str.replace(/[,]/g, '');      // elimina comas
-    str = str.replace(/\s/g, '');       // elimina espacios
-    
-    // Extraer solo números y punto decimal (opcional)
+    str = str.replace(/[$]/g, '');
+    str = str.replace(/[.]/g, '');
+    str = str.replace(/[,]/g, '');
+    str = str.replace(/\s/g, '');
     let match = str.match(/^-?\d+(?:\.\d+)?/);
     if (match) {
         let num = parseFloat(match[0]);
         return isNaN(num) ? 0 : num;
     }
-    
     return 0;
 }
 
@@ -223,13 +211,12 @@ async function cargarDatos() {
   isLoading = true;
   try {
     const [cli, mov] = await Promise.all([obtenerClientes(), obtenerMovimientos()]);
-    clientes = cli || [];
-    // Limpiar montos de los movimientos al cargar
-    movimientos = (mov || []).map(m => ({
+    clientes = (cli && Array.isArray(cli)) ? cli : [];
+    movimientos = (mov && Array.isArray(mov)) ? mov.map(m => ({
       ...m,
       monto: convertirANumero(m.monto),
       cliente_nombre: m.cliente_nombre || m.cliente || 'DESCONOCIDO'
-    }));
+    })) : [];
     actualizarUI();
     toast('Datos sincronizados');
   } catch(e) {
@@ -262,23 +249,35 @@ function actualizarSelects() {
   const select1 = document.getElementById('dCliente');
   const select2 = document.getElementById('pCliente');
   if (!select1 || !select2) return;
-  const opciones = (clientes || []).map(c => `<option value="${c}">${c}</option>`).join('');
+  
+  if (!clientes || clientes.length === 0) {
+    select1.innerHTML = '<option value="">Cargando clientes...</option>';
+    select2.innerHTML = '<option value="">Cargando clientes...</option>';
+    return;
+  }
+  
+  const opciones = '<option value="">Seleccionar cliente</option>' + clientes.map(c => `<option value="${c}">${c}</option>`).join('');
   select1.innerHTML = opciones;
   select2.innerHTML = opciones;
 }
 
 function renderResumen() {
   let saldos = {};
-  (clientes || []).forEach(c => saldos[c] = 0);
-  (movimientos || []).forEach(m => {
-    const montoSeguro = convertirANumero(m.monto);
-    const cliente = m.cliente_nombre;
-    if (!cliente) return;
-    if (m.tipo === 'deuda') saldos[cliente] = (saldos[cliente] || 0) + montoSeguro;
-    else saldos[cliente] = (saldos[cliente] || 0) - montoSeguro;
-  });
+  if (!clientes || clientes.length === 0) {
+    document.getElementById('resumenLista').innerHTML = '<div>Cargando clientes...</div>';
+    return;
+  }
+  clientes.forEach(c => saldos[c] = 0);
+  if (movimientos) {
+    movimientos.forEach(m => {
+      const montoSeguro = convertirANumero(m.monto);
+      const cliente = m.cliente_nombre;
+      if (!cliente || !saldos.hasOwnProperty(cliente)) return;
+      if (m.tipo === 'deuda') saldos[cliente] += montoSeguro;
+      else saldos[cliente] -= montoSeguro;
+    });
+  }
   const lista = document.getElementById('resumenLista');
-  if (!clientes || clientes.length === 0) { lista.innerHTML = '<div>Sin clientes</div>'; return; }
   lista.innerHTML = Object.entries(saldos).map(([cliente, saldo]) => {
     let clase = '', icono = '';
     const saldoAbs = Math.abs(saldo);
@@ -293,14 +292,20 @@ function renderResumen() {
 
 function renderDeudores() {
   let saldos = {};
-  (clientes || []).forEach(c => saldos[c] = 0);
-  (movimientos || []).forEach(m => {
-    const montoSeguro = convertirANumero(m.monto);
-    const cliente = m.cliente_nombre;
-    if (!cliente) return;
-    if (m.tipo === 'deuda') saldos[cliente] = (saldos[cliente] || 0) + montoSeguro;
-    else saldos[cliente] = (saldos[cliente] || 0) - montoSeguro;
-  });
+  if (!clientes || clientes.length === 0) {
+    document.getElementById('deudoresLista').innerHTML = '<div>Cargando...</div>';
+    return;
+  }
+  clientes.forEach(c => saldos[c] = 0);
+  if (movimientos) {
+    movimientos.forEach(m => {
+      const montoSeguro = convertirANumero(m.monto);
+      const cliente = m.cliente_nombre;
+      if (!cliente || !saldos.hasOwnProperty(cliente)) return;
+      if (m.tipo === 'deuda') saldos[cliente] += montoSeguro;
+      else saldos[cliente] -= montoSeguro;
+    });
+  }
   const deudores = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
   const lista = document.getElementById('deudoresLista');
   if (deudores.length === 0) {
@@ -321,25 +326,25 @@ function renderDeudores() {
 
 function renderMovimientos() {
   const filtro = document.getElementById('filtroCliente').value.toLowerCase();
-  let filtrados = (movimientos || []).filter(m => !filtro || (m.cliente_nombre && m.cliente_nombre.toLowerCase().includes(filtro)));
+  let filtrados = movimientos ? movimientos.filter(m => !filtro || (m.cliente_nombre && m.cliente_nombre.toLowerCase().includes(filtro))) : [];
   filtrados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
   const tbody = document.querySelector('#tablaMovimientos tbody');
   if (!tbody) return;
   if (filtrados.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</div><div></td>';
     return;
   }
   tbody.innerHTML = filtrados.map(m => {
     const montoSeguro = convertirANumero(m.monto);
     return `
     <tr>
-      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</td>
-      <td>${m.cliente_nombre || '?'}</td>
-      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></td>
-      <td>$${montoSeguro.toLocaleString('es-AR')}</td>
-      <td>${m.forma_pago || '—'}</td>
-      <td>${m.detalle || ''}</td>
-      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></td>
+      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</div><div>
+      <td>${m.cliente_nombre || '?'}</div><div>
+      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></div><div>
+      <td>$${montoSeguro.toLocaleString('es-AR')}</div><div>
+      <td>${m.forma_pago || '—'}</div><div>
+      <td>${m.detalle || ''}</div><div>
+      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></div><div>
     </tr>`;
   }).join('');
 }
