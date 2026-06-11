@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>MYC HIELO – Resumen de Reparto</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
@@ -13,10 +12,8 @@
             --bg-body: #f0f4f8;
             --card-bg: white;
             --text-primary: #0a3e6d;
-            --text-secondary: #475569;
             --border: #e4e9f0;
             --btn-primary: #0a3e6d;
-            --btn-primary-hover: #1e4a8a;
             --btn-red: #b91c1c;
             --btn-green: #16a34a;
             --btn-yellow: #d97706;
@@ -44,8 +41,8 @@
             border-left: 4px solid var(--btn-primary);
             padding-left: 14px;
         }
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 20px; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 16px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px,1fr)); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; }
         .stat-card {
             background: var(--card-bg);
             border-radius: 20px;
@@ -54,15 +51,15 @@
             border: 1px solid var(--border);
         }
         .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
-        .stat-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-top: 6px; }
+        .stat-label { font-size: 0.75rem; color: #475569; text-transform: uppercase; margin-top: 6px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
         th { background: #eef2ff; font-weight: 700; color: var(--text-primary); position: sticky; top: 0; }
         .badge-deuda { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
         .badge-pago { background: #d1fae5; color: #0a7c4a; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
-        .baddeuda { background: #dc2626; color: white; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; }
+        .badge-efectivo { background: #e0e7ff; color: #1e3a8a; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; display: inline-block; }
+        .badge-transferencia { background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; display: inline-block; }
         .saldo-positivo { color: #dc2626; font-weight: 800; }
-        .saldo-negativo { color: #f59e0b; font-weight: 800; }
         .btn {
             padding: 8px 16px;
             border-radius: 40px;
@@ -76,13 +73,13 @@
             gap: 6px;
         }
         .btn-primary { background: var(--btn-primary); color: white; }
-        .btn-primary:hover { background: var(--btn-primary-hover); transform: translateY(-1px); }
+        .btn-primary:hover { background: #1e4a8a; transform: translateY(-1px); }
         .btn-green { background: var(--btn-green); color: white; }
         .btn-red { background: var(--btn-red); color: white; }
         .btn-yellow { background: var(--btn-yellow); color: white; }
         .btn-sm { padding: 5px 12px; font-size: 0.7rem; }
         .filtro { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-        .filtro input, .filtro select { padding: 8px 14px; border-radius: 28px; border: 1px solid var(--border); background: white; font-size: 0.85rem; min-width: 180px; }
+        .filtro input, .filtro select { padding: 8px 14px; border-radius: 28px; border: 1px solid var(--border); background: white; font-size: 0.85rem; min-width: 160px; }
         .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--btn-primary); color: white; padding: 10px 22px; border-radius: 40px; font-size: 0.85rem; z-index: 1000; display: none; }
         .toast.show { display: block; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
@@ -95,9 +92,27 @@
             .no-print { display: none !important; }
             .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
         }
-        .productos-detalle { font-size: 0.7rem; color: #475569; margin-top: 4px; }
+        /* Estilos para productos encuadrados */
+        .productos-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .producto-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-align: center;
+            min-width: 60px;
+        }
+        .producto-item span:first-child { color: #0a3e6d; }
+        .producto-item span:last-child { color: #1e293b; margin-left: 4px; }
         .scroll-table { overflow-x: auto; max-height: 500px; overflow-y: auto; }
         .tabla-container { overflow-x: auto; }
+        hr { margin: 16px 0; }
     </style>
 </head>
 <body>
@@ -125,59 +140,73 @@
         <div id="clienteResultado"></div>
     </div>
 
-    <!-- Rendición por Chofer con calendario -->
+    <!-- Rendición por Chofer con calendario (TODAS LAS FECHAS) -->
     <div class="grid-2">
         <div class="card">
-            <div class="card-title">👨‍✈️ Chofer 1234
-                <div><input type="date" id="fechaChofer1234" class="btn-sm" style="padding: 5px;"><button id="verChofer1234Btn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Ver</button><button onclick="copiarTabla('rendicion1234Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
+            <div class="card-title">👨‍✈️ Chofer 1234 - Historial completo
+                <div><input type="date" id="fechaChofer1234"><button id="verChofer1234Btn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Agregar fecha</button><button id="cargarTodo1234Btn" class="btn btn-sm btn-green"><i class="fas fa-list"></i> Cargar todo</button><button onclick="copiarTabla('rendicion1234Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
             </div>
-            <div class="tabla-container"><table id="rendicion1234Tabla"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto</th><th class="no-print">Acciones</th></tr></thead><tbody id="rendicion1234Body"></tbody></table></div>
+            <div class="tabla-container scroll-table" style="max-height: 400px;">
+                <table id="rendicion1234Tabla">
+                    <thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto</th><th class="no-print">Acción</th></tr></thead>
+                    <tbody id="rendicion1234Body"></tbody>
+                </table>
+            </div>
         </div>
         <div class="card">
-            <div class="card-title">👨‍✈️ Chofer 5678
-                <div><input type="date" id="fechaChofer5678" class="btn-sm" style="padding: 5px;"><button id="verChofer5678Btn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Ver</button><button onclick="copiarTabla('rendicion5678Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
+            <div class="card-title">👨‍✈️ Chofer 5678 - Historial completo
+                <div><input type="date" id="fechaChofer5678"><button id="verChofer5678Btn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Agregar fecha</button><button id="cargarTodo5678Btn" class="btn btn-sm btn-green"><i class="fas fa-list"></i> Cargar todo</button><button onclick="copiarTabla('rendicion5678Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
             </div>
-            <div class="tabla-container"><table id="rendicion5678Tabla"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto</th><th class="no-print">Acciones</th></tr></thead><tbody id="rendicion5678Body"></tbody></table></div>
+            <div class="tabla-container scroll-table" style="max-height: 400px;">
+                <table id="rendicion5678Tabla">
+                    <thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto</th><th class="no-print">Acción</th></tr></thead>
+                    <tbody id="rendicion5678Body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- Calendario general de movimientos -->
+    <!-- Calendario general de movimientos con productos encuadrados -->
     <div class="card">
-        <div class="card-title">📅 Movimientos por Fecha
-            <div><input type="date" id="fechaGeneral"><button id="verFechaGeneralBtn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Ver</button><button onclick="copiarTabla('movimientosFechaTabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button><button id="exportarFechaExcelBtn" class="btn btn-sm btn-green"><i class="fas fa-file-excel"></i> Excel</button></div>
+        <div class="card-title">📅 Movimientos por Fecha (con productos detallados)
+            <div><input type="date" id="fechaGeneral"><button id="verFechaGeneralBtn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Ver</button><button id="cargarTodosMovimientosBtn" class="btn btn-sm btn-green"><i class="fas fa-list"></i> Cargar todos</button><button onclick="copiarTabla('movimientosFechaTabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button><button id="exportarFechaExcelBtn" class="btn btn-sm btn-green"><i class="fas fa-file-excel"></i> Excel</button></div>
         </div>
-        <div class="tabla-container" style="max-height: 400px; overflow-y: auto;">
-            <table id="movimientosFechaTabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody id="movimientosFechaBody"></tbody></table>
+        <div class="tabla-container scroll-table" style="max-height: 500px;">
+            <table id="movimientosFechaTabla">
+                <thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Productos (cantidades)</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead>
+                <tbody id="movimientosFechaBody"></tbody>
+            </table>
         </div>
     </div>
 
     <!-- Clientes con deuda -->
     <div class="card">
         <div class="card-title">📋 Clientes con Deuda
-            <div><button onclick="copiarTabla('deudoresTabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button><button onclick="imprimirSeccion('deudores')" class="btn btn-sm"><i class="fas fa-print"></i> Imprimir</button></div>
+            <div><button onclick="copiarTabla('deudoresTabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button><button onclick="imprimirSeccion()" class="btn btn-sm"><i class="fas fa-print"></i> Imprimir</button></div>
         </div>
         <div class="tabla-container"><table id="deudoresTabla"><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Estado</th><th class="no-print">Acciones</th></tr></thead><tbody id="deudoresBody"></tbody></table></div>
     </div>
 
-    <!-- Gastos por chofer con calendario -->
+    <!-- Gastos por chofer con calendario (TODAS LAS FECHAS) -->
     <div class="grid-2">
         <div class="card">
             <div class="card-title">💸 Gastos Chofer 1234
-                <div><input type="date" id="gastosFecha1234"><button id="verGastos1234Btn" class="btn btn-sm btn-primary">Ver</button><button onclick="copiarTabla('gastos1234Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
+                <div><input type="date" id="gastosFecha1234"><button id="verGastos1234Btn" class="btn btn-sm btn-primary">Ver</button><button id="cargarTodosGastos1234Btn" class="btn btn-sm btn-green">Cargar todos</button><button onclick="copiarTabla('gastos1234Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
             </div>
-            <div class="tabla-container"><table id="gastos1234Tabla"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead><tbody id="gastos1234Body"></tbody></table></div>
+            <div class="tabla-container scroll-table" style="max-height: 300px;">
+                <table id="gastos1234Tabla"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead><tbody id="gastos1234Body"></tbody></table>
+            </div>
         </div>
         <div class="card">
             <div class="card-title">💸 Gastos Chofer 5678
-                <div><input type="date" id="gastosFecha5678"><button id="verGastos5678Btn" class="btn btn-sm btn-primary">Ver</button><button onclick="copiarTabla('gastos5678Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
+                <div><input type="date" id="gastosFecha5678"><button id="verGastos5678Btn" class="btn btn-sm btn-primary">Ver</button><button id="cargarTodosGastos5678Btn" class="btn btn-sm btn-green">Cargar todos</button><button onclick="copiarTabla('gastos5678Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
             </div>
-            <div class="tabla-container"><table id="gastos5678Tabla"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead><tbody id="gastos5678Body"></tbody></table></div>
+            <div class="tabla-container scroll-table" style="max-height: 300px;">
+                <table id="gastos5678Tabla"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead><tbody id="gastos5678Body"></tbody></table>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Modales para editar/eliminar -->
-<div id="modal" class="modal"><div class="modal-content"><h3 id="modalTitulo">Editar</h3><div id="modalBody"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalConfirmar" class="btn btn-primary">Guardar</button><button id="modalCancelar" class="btn btn-red">Cancelar</button></div></div></div>
 
 <div id="toast" class="toast"></div>
 
@@ -187,8 +216,8 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6
 
 let clientes = [];
 let movimientos = [];
-let gastosDetallados = []; // { fecha, categoria, monto, nota, chofer }
-let ventasLocales = []; // ventas de localStorage con cantidades de productos
+let gastosDetallados = [];
+let ventasLocales = [];
 
 function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 
@@ -201,14 +230,29 @@ function normalizarMonto(valor) {
 
 function getHoyISO() { return new Date().toISOString().slice(0,10); }
 
-function formatearFechaLocal(fechaISO) {
-    if (!fechaISO) return '';
-    const partes = fechaISO.split('-');
-    if (partes.length !== 3) return fechaISO;
-    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+// Formatear productos como cuadros individuales
+function formatearProductos(cantidades) {
+    if (!cantidades) return '<span style="color:#94a3b8;">-</span>';
+    const items = [
+        { key: "1,7 KG", label: "🥤 1,7kg", color: "#0ea5e9" },
+        { key: "3,5 KG", label: "🥤 3,5kg", color: "#0ea5e9" },
+        { key: "14 KG", label: "🧊 14kg", color: "#3b82f6" },
+        { key: "ESC.20KG", label: "🧊 20kg", color: "#3b82f6" },
+        { key: "ESC.32KG", label: "🧊 32kg", color: "#3b82f6" }
+    ];
+    let html = '<div class="productos-grid">';
+    for (const item of items) {
+        const cantidad = cantidades[item.key] || 0;
+        if (cantidad > 0) {
+            html += `<div class="producto-item" style="border-left: 3px solid ${item.color};"><span>${item.label}</span><span>✖️ ${cantidad}</span></div>`;
+        }
+    }
+    if (html === '<div class="productos-grid">') html += '<span style="color:#94a3b8;">-</span>';
+    html += '</div>';
+    return html;
 }
 
-// ========== CARGAR DATOS ==========
+// Cargar gastos desde localStorage
 function cargarGastosDeChoferes() {
     gastosDetallados = [];
     const choferes = ["1234", "5678"];
@@ -229,6 +273,7 @@ function cargarGastosDeChoferes() {
     }
 }
 
+// Cargar ventas locales
 function cargarVentasLocales() {
     ventasLocales = [];
     const choferes = ["1234", "5678"];
@@ -242,6 +287,7 @@ function cargarVentasLocales() {
     }
 }
 
+// Cargar desde Sheets
 async function cargarDatosDesdeSheets() {
     try {
         const [clientesRes, movimientosRes] = await Promise.all([
@@ -262,9 +308,61 @@ async function cargarDatosDesdeSheets() {
     } catch(e) { console.error(e); toast("Error de conexión"); }
 }
 
-// ========== RENDERIZADO ==========
-function renderRendicionChofer(pin, tablaId, fechaSeleccionada = null) {
-    const fecha = fechaSeleccionada || getHoyISO();
+// Obtener todas las fechas únicas de ventas y gastos
+function obtenerTodasLasFechas(pin) {
+    const fechas = new Set();
+    const ventasChofer = ventasLocales.filter(v => v.chofer === pin);
+    const gastosChofer = gastosDetallados.filter(g => g.chofer === pin);
+    for (const v of ventasChofer) if (v.fecha) fechas.add(v.fecha);
+    for (const g of gastosChofer) if (g.fecha) fechas.add(g.fecha);
+    return Array.from(fechas).sort().reverse();
+}
+
+// Renderizar todas las fechas para un chofer
+function renderTodasLasFechasChofer(pin, tablaId) {
+    const fechas = obtenerTodasLasFechas(pin);
+    const tbody = document.getElementById(tablaId);
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    for (const fecha of fechas) {
+        let ventas = ventasLocales.filter(v => v.chofer === pin && v.fecha === fecha);
+        let efectivo = 0, transferencias = 0, cobros = 0;
+        for (const v of ventas) {
+            if (v.pago === "efectivo") efectivo += v.total || 0;
+            if (v.pago === "transferencia") transferencias += v.total || 0;
+            if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
+            else if (v.pago === "cobrocc") cobros += v.total || 0;
+        }
+        for (const m of movimientos) {
+            if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
+        }
+        let gastosChofer = gastosDetallados.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a,g) => a + g.monto, 0);
+        let neto = efectivo + transferencias + cobros - gastosChofer;
+        const row = tbody.insertRow();
+        row.insertCell(0).innerHTML = fecha;
+        row.insertCell(1).innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
+        row.insertCell(2).innerHTML = `$${transferencias.toLocaleString('es-AR')}`;
+        row.insertCell(3).innerHTML = `$${cobros.toLocaleString('es-AR')}`;
+        row.insertCell(4).innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
+        row.insertCell(5).innerHTML = `<strong style="color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
+        const acc = row.insertCell(6); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarRegistroDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button>`;
+    }
+    if (tbody.rows.length === 0) tbody.innerHTML = '<td><td colspan="7" style="text-align:center">No hay registros</div><div></tr>';
+}
+
+function renderRendicionChofer(pin, tablaId, fecha) {
+    if (!fecha) return;
+    const tbody = document.getElementById(tablaId);
+    if (!tbody) return;
+    // Verificar si ya existe la fecha
+    const existingRows = tbody.querySelectorAll('tr');
+    for (const row of existingRows) {
+        if (row.cells && row.cells[0] && row.cells[0].innerText === fecha) {
+            toast(`La fecha ${fecha} ya existe`);
+            return;
+        }
+    }
     let ventas = ventasLocales.filter(v => v.chofer === pin && v.fecha === fecha);
     let efectivo = 0, transferencias = 0, cobros = 0;
     for (const v of ventas) {
@@ -278,38 +376,33 @@ function renderRendicionChofer(pin, tablaId, fechaSeleccionada = null) {
     }
     let gastosChofer = gastosDetallados.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a,g) => a + g.monto, 0);
     let neto = efectivo + transferencias + cobros - gastosChofer;
-    const tbody = document.getElementById(tablaId);
-    if (!tbody) return;
-    // Buscar si ya existe una fila para esta fecha
-    const existingRows = tbody.querySelectorAll('tr');
-    let found = false;
-    for (const row of existingRows) {
-        if (row.cells && row.cells[0] && row.cells[0].innerText === fecha) {
-            row.cells[1].innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
-            row.cells[2].innerHTML = `$${transferencias.toLocaleString('es-AR')}`;
-            row.cells[3].innerHTML = `$${cobros.toLocaleString('es-AR')}`;
-            row.cells[4].innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
-            row.cells[5].innerHTML = `<strong style="color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
-            found = true;
-            break;
-        }
-    }
-    if (!found) {
-        const row = tbody.insertRow();
-        row.insertCell(0).innerHTML = fecha;
-        row.insertCell(1).innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
-        row.insertCell(2).innerHTML = `$${transferencias.toLocaleString('es-AR')}`;
-        row.insertCell(3).innerHTML = `$${cobros.toLocaleString('es-AR')}`;
-        row.insertCell(4).innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
-        row.insertCell(5).innerHTML = `<strong style="color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
-        const acc = row.insertCell(6); acc.className = "no-print";
-        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarRegistroDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i></button>`;
-    }
+    const row = tbody.insertRow();
+    row.insertCell(0).innerHTML = fecha;
+    row.insertCell(1).innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
+    row.insertCell(2).innerHTML = `$${transferencias.toLocaleString('es-AR')}`;
+    row.insertCell(3).innerHTML = `$${cobros.toLocaleString('es-AR')}`;
+    row.insertCell(4).innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
+    row.insertCell(5).innerHTML = `<strong style="color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
+    const acc = row.insertCell(6); acc.className = "no-print";
+    acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarRegistroDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button>`;
+}
+
+function eliminarRegistroDia(pin, fecha) {
+    if (!confirm(`¿Eliminar todos los registros del ${fecha} para chofer ${pin}?`)) return;
+    const prefix = `myc_${pin}_`;
+    let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
+    ventas = ventas.filter(v => v.fecha !== fecha);
+    localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
+    let gastosDet = JSON.parse(localStorage.getItem(prefix + "gastosDetallados") || "[]");
+    gastosDet = gastosDet.filter(g => g.fecha !== fecha);
+    localStorage.setItem(prefix + "gastosDetallados", JSON.stringify(gastosDet));
+    toast(`Registros del ${fecha} eliminados`);
+    actualizarTodo();
 }
 
 function renderMovimientosPorFecha(fecha) {
     const movs = movimientos.filter(m => m.fecha === fecha);
-    const ventasDia = ventasLocales.filter(v => v.fecha === fecha && (v.pago === "efectivo" || v.pago === "transferencia"));
+    const ventasDia = ventasLocales.filter(v => v.fecha === fecha);
     const tbody = document.getElementById("movimientosFechaBody");
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -319,40 +412,84 @@ function renderMovimientosPorFecha(fecha) {
         row.insertCell(1).innerHTML = m.cliente;
         row.insertCell(2).innerHTML = m.tipo === "deuda" ? '<span class="badge-deuda">➕ Deuda</span>' : '<span class="badge-pago">💸 Pago</span>';
         row.insertCell(3).innerHTML = `$${m.monto.toLocaleString('es-AR')}`;
-        row.insertCell(4).innerHTML = '-';
+        row.insertCell(4).innerHTML = formatearProductos({});
         row.insertCell(5).innerHTML = m.detalle || '';
         const acc = row.insertCell(6); acc.className = "no-print";
-        acc.innerHTML = `<button class="btn btn-sm btn-yellow" onclick="editarMovimiento(${m.id})"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-red" onclick="eliminarMovimiento(${m.id})"><i class="fas fa-trash-alt"></i></button>`;
+        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarMovimiento(${m.id})"><i class="fas fa-trash-alt"></i></button>`;
     }
     for (const v of ventasDia) {
         const cant = v.cantidades || {};
-        let prodTexto = '';
-        if (cant["1,7 KG"] || cant["3,5 KG"] || cant["14 KG"] || cant["ESC.20KG"] || cant["ESC.32KG"]) {
-            prodTexto = `1,7:${cant["1,7 KG"]||0} 3,5:${cant["3,5 KG"]||0} 14:${cant["14 KG"]||0} 20:${cant["ESC.20KG"]||0} 32:${cant["ESC.32KG"]||0}`;
-        }
+        let tipoHtml = '';
+        if (v.pago === "efectivo") tipoHtml = '<span class="badge-efectivo">💵 Efectivo</span>';
+        else if (v.pago === "transferencia") tipoHtml = '<span class="badge-transferencia">💳 Transferencia</span>';
+        else if (v.pago === "ctacte") tipoHtml = '<span class="badge-deuda">📘 Crédito</span>';
+        else if (v.pago === "cobrocc") tipoHtml = '<span class="badge-pago">🔄 Cobro Deuda</span>';
+        else tipoHtml = `<span class="badge-pago">${v.pago}</span>`;
         const row = tbody.insertRow();
         row.insertCell(0).innerHTML = v.fecha;
         row.insertCell(1).innerHTML = v.cliente;
-        row.insertCell(2).innerHTML = v.pago === "efectivo" ? '<span class="badge-pago">💵 Efectivo</span>' : '<span class="badge-pago">💳 Transferencia</span>';
+        row.insertCell(2).innerHTML = tipoHtml;
         row.insertCell(3).innerHTML = `$${(v.total || 0).toLocaleString('es-AR')}`;
-        row.insertCell(4).innerHTML = prodTexto;
+        row.insertCell(4).innerHTML = formatearProductos(cant);
         row.insertCell(5).innerHTML = v.detalle || '';
         const acc = row.insertCell(6); acc.className = "no-print";
         acc.innerHTML = `<button class="btn btn-sm btn-yellow" onclick="editarVentaLocal(${v.id}, '${v.chofer}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-red" onclick="eliminarVentaLocal(${v.id}, '${v.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
     }
-    if (tbody.rows.length === 0) {
-        tbody.innerHTML = '<td><td colspan="7" style="text-align:center">No hay movimientos en esta fecha</div><div></tr>';
-    }
+    if (tbody.rows.length === 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No hay movimientos en esta fecha</div><div></tr>';
 }
 
-function renderGastosChofer(pin, fecha) {
+function renderTodosLosMovimientos() {
+    const todasFechas = new Set();
+    for (const m of movimientos) if (m.fecha) todasFechas.add(m.fecha);
+    for (const v of ventasLocales) if (v.fecha) todasFechas.add(v.fecha);
+    const fechas = Array.from(todasFechas).sort().reverse();
+    const tbody = document.getElementById("movimientosFechaBody");
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    for (const fecha of fechas) {
+        const movs = movimientos.filter(m => m.fecha === fecha);
+        const ventasDia = ventasLocales.filter(v => v.fecha === fecha);
+        for (const m of movs) {
+            const row = tbody.insertRow();
+            row.insertCell(0).innerHTML = m.fecha;
+            row.insertCell(1).innerHTML = m.cliente;
+            row.insertCell(2).innerHTML = m.tipo === "deuda" ? '<span class="badge-deuda">➕ Deuda</span>' : '<span class="badge-pago">💸 Pago</span>';
+            row.insertCell(3).innerHTML = `$${m.monto.toLocaleString('es-AR')}`;
+            row.insertCell(4).innerHTML = formatearProductos({});
+            row.insertCell(5).innerHTML = m.detalle || '';
+            const acc = row.insertCell(6); acc.className = "no-print";
+            acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarMovimiento(${m.id})"><i class="fas fa-trash-alt"></i></button>`;
+        }
+        for (const v of ventasDia) {
+            const cant = v.cantidades || {};
+            let tipoHtml = v.pago === "efectivo" ? '<span class="badge-efectivo">💵 Efectivo</span>' : (v.pago === "transferencia" ? '<span class="badge-transferencia">💳 Transferencia</span>' : (v.pago === "ctacte" ? '<span class="badge-deuda">📘 Crédito</span>' : '<span class="badge-pago">🔄 Cobro</span>'));
+            const row = tbody.insertRow();
+            row.insertCell(0).innerHTML = v.fecha;
+            row.insertCell(1).innerHTML = v.cliente;
+            row.insertCell(2).innerHTML = tipoHtml;
+            row.insertCell(3).innerHTML = `$${(v.total || 0).toLocaleString('es-AR')}`;
+            row.insertCell(4).innerHTML = formatearProductos(cant);
+            row.insertCell(5).innerHTML = v.detalle || '';
+            const acc = row.insertCell(6); acc.className = "no-print";
+            acc.innerHTML = `<button class="btn btn-sm btn-yellow" onclick="editarVentaLocal(${v.id}, '${v.chofer}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-red" onclick="eliminarVentaLocal(${v.id}, '${v.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
+        }
+    }
+    if (tbody.rows.length === 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No hay movimientos</div><div></tr>';
+}
+
+function renderGastosChofer(pin, fecha, cargarTodos = false) {
     const tbodyId = pin === "1234" ? "gastos1234Body" : "gastos5678Body";
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
-    const gastos = gastosDetallados.filter(g => g.chofer === pin && g.fecha === fecha);
+    let gastos;
+    if (cargarTodos) {
+        gastos = gastosDetallados.filter(g => g.chofer === pin).sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    } else {
+        gastos = gastosDetallados.filter(g => g.chofer === pin && g.fecha === fecha);
+    }
     tbody.innerHTML = '';
     if (gastos.length === 0) {
-        tbody.innerHTML = '<td><td colspan="5" style="text-align:center">Sin gastos en esta fecha</div><div></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Sin gastos</div><div></tr>';
         return;
     }
     for (let i = 0; i < gastos.length; i++) {
@@ -363,8 +500,39 @@ function renderGastosChofer(pin, fecha) {
         row.insertCell(2).innerHTML = `$${g.monto.toLocaleString('es-AR')}`;
         row.insertCell(3).innerHTML = g.nota || '';
         const acc = row.insertCell(4); acc.className = "no-print";
-        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarGasto('${pin}', ${i}, '${g.fecha}', '${g.categoria}', ${g.monto})"><i class="fas fa-trash-alt"></i></button>`;
+        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarGasto('${pin}', '${g.fecha}', '${g.categoria}', ${g.monto})"><i class="fas fa-trash-alt"></i></button>`;
     }
+}
+
+function eliminarGasto(pin, fecha, categoria, monto) {
+    if (!confirm(`¿Eliminar gasto: ${categoria} $${monto}?`)) return;
+    const prefix = `myc_${pin}_`;
+    let gastosDet = JSON.parse(localStorage.getItem(prefix + "gastosDetallados") || "[]");
+    gastosDet = gastosDet.filter(g => !(g.fecha === fecha && g.categoria === categoria && g.monto === monto));
+    localStorage.setItem(prefix + "gastosDetallados", JSON.stringify(gastosDet));
+    toast("Gasto eliminado");
+    actualizarTodo();
+}
+
+function eliminarMovimiento(id) {
+    if (!confirm("¿Eliminar este movimiento de Google Sheets?")) return;
+    fetch(API_URL, { method: 'POST', body: new URLSearchParams({ ruta: 'eliminarMovimiento', id: id }) })
+        .then(() => { toast("Movimiento eliminado"); actualizarTodo(); })
+        .catch(e => toast("Error al eliminar"));
+}
+
+function eliminarVentaLocal(id, chofer) {
+    if (!confirm("¿Eliminar esta venta?")) return;
+    const prefix = `myc_${chofer}_`;
+    let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
+    ventas = ventas.filter(v => v.id !== id);
+    localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
+    toast("Venta eliminada");
+    actualizarTodo();
+}
+
+function editarVentaLocal(id, chofer) {
+    toast("Edición: funcionalidad en desarrollo");
 }
 
 function renderDeudores() {
@@ -394,20 +562,17 @@ function renderDeudores() {
 function verHistorialCliente(cliente) {
     const movsCliente = movimientos.filter(m => m.cliente === cliente);
     const ventasCliente = ventasLocales.filter(v => v.cliente === cliente);
-    if (movsCliente.length === 0 && ventasCliente.length === 0) {
-        toast(`No hay movimientos para ${cliente}`);
-        return;
-    }
-    let html = `<h4>Historial de ${cliente}</h4><div class="tabla-container"><table style="width:100%"><thead><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th><th>Productos</th></thead><tbody>`;
+    let html = `<h4>Historial completo de ${cliente}</h4><div class="tabla-container"><table style="width:100%"><thead><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></thead><tbody>`;
     for (const m of movsCliente) {
-        html += `<tr><td>${m.fecha}</div><div>${m.tipo === "deuda" ? 'Deuda' : 'Pago'}</div><div>$${m.monto.toLocaleString('es-AR')}</div><div>${m.detalle || ''}</div><div>-</div><div><tr>`;
+        html += `<tr><td>${m.fecha}</div><div>${m.tipo === "deuda" ? 'Deuda' : 'Pago'}</div><div>$${m.monto.toLocaleString('es-AR')}</div><div>-</div><div>${m.detalle || ''}</div><div></tr>`;
     }
     for (const v of ventasCliente) {
         const cant = v.cantidades || {};
-        let prodTexto = `1,7:${cant["1,7 KG"]||0} 3,5:${cant["3,5 KG"]||0} 14:${cant["14 KG"]||0} 20:${cant["ESC.20KG"]||0} 32:${cant["ESC.32KG"]||0}`;
-        html += `<tr><td>${v.fecha}</div><div>${v.pago === "efectivo" ? 'Efectivo' : (v.pago === "transferencia" ? 'Transferencia' : 'Crédito')}</div><div>$${(v.total || 0).toLocaleString('es-AR')}</div><div>${v.detalle || ''}</div><div>${prodTexto}</div><div></tr>`;
+        const prodHtml = Object.entries(cant).filter(([,c]) => c>0).map(([k,c]) => `${k}:${c}`).join(', ') || '-';
+        let tipo = v.pago === "efectivo" ? "Efectivo" : (v.pago === "transferencia" ? "Transferencia" : (v.pago === "ctacte" ? "Crédito" : "Cobro"));
+        html += `<tr><td>${v.fecha}</div><div>${tipo}</div><div>$${(v.total || 0).toLocaleString('es-AR')}</div><div>${prodHtml}</div><div>${v.detalle || ''}</div><div></tr>`;
     }
-    html += `</tbody></table></div><button class="btn btn-sm btn-primary" onclick="copiarTexto('${cliente}')">Copiar</button> <button class="btn btn-sm btn-green" onclick="imprimirSeccion('historial')">Imprimir</button>`;
+    html += `</tbody></table></div><button class="btn btn-sm btn-primary" onclick="copiarTexto('${cliente}')">Copiar</button> <button class="btn btn-sm btn-green" onclick="window.print()">Imprimir</button>`;
     document.getElementById("clienteResultado").innerHTML = html;
 }
 
@@ -422,50 +587,6 @@ function limpiarBusqueda() {
     document.getElementById("clienteResultado").innerHTML = "";
 }
 
-// ========== ELIMINAR Y EDITAR FUNCIONES ==========
-function eliminarRegistroDia(pin, fecha) {
-    if (!confirm(`¿Eliminar todos los registros del ${fecha} para chofer ${pin}?`)) return;
-    const prefix = `myc_${pin}_`;
-    let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
-    ventas = ventas.filter(v => v.fecha !== fecha);
-    localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
-    let gastosDet = JSON.parse(localStorage.getItem(prefix + "gastosDetallados") || "[]");
-    gastosDet = gastosDet.filter(g => g.fecha !== fecha);
-    localStorage.setItem(prefix + "gastosDetallados", JSON.stringify(gastosDet));
-    toast(`Registros del ${fecha} eliminados`);
-    actualizarTodo();
-}
-
-function eliminarGasto(pin, idx, fecha, categoria, monto) {
-    if (!confirm(`¿Eliminar gasto: ${categoria} $${monto}?`)) return;
-    const prefix = `myc_${pin}_`;
-    let gastosDet = JSON.parse(localStorage.getItem(prefix + "gastosDetallados") || "[]");
-    gastosDet = gastosDet.filter(g => !(g.fecha === fecha && g.categoria === categoria && g.monto === monto));
-    localStorage.setItem(prefix + "gastosDetallados", JSON.stringify(gastosDet));
-    toast("Gasto eliminado");
-    actualizarTodo();
-}
-
-function eliminarMovimiento(id) {
-    if (!confirm("¿Eliminar este movimiento de Google Sheets?")) return;
-    fetch(API_URL, {
-        method: 'POST',
-        body: new URLSearchParams({ ruta: 'eliminarMovimiento', id: id })
-    }).then(() => { toast("Movimiento eliminado"); actualizarTodo(); })
-      .catch(e => toast("Error al eliminar"));
-}
-
-function eliminarVentaLocal(id, chofer) {
-    if (!confirm("¿Eliminar esta venta?")) return;
-    const prefix = `myc_${chofer}_`;
-    let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
-    ventas = ventas.filter(v => v.id !== id);
-    localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
-    toast("Venta eliminada");
-    actualizarTodo();
-}
-
-// ========== COPIAR E IMPRIMIR ==========
 function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) return;
@@ -477,18 +598,11 @@ function copiarTexto(texto) {
     navigator.clipboard.writeText(texto).then(() => toast("Copiado")).catch(() => toast("Error"));
 }
 
-function imprimirSeccion(seccion) {
-    const el = document.getElementById(seccion + "Seccion") || document.querySelector(".card");
-    if (el) { const win = window.open(); win.document.write(`<html><head><title>${seccion}</title><style>body{margin:20px;}</style></head><body>${el.cloneNode(true).outerHTML}</body></html>`); win.print(); }
-    else window.print();
-}
+function imprimirSeccion() { window.print(); }
 
-// ========== EXPORTAR EXCEL ==========
 function exportarExcel() {
-    const wsData = [["Resumen MYC HIELO", getHoyISO()]];
-    wsData.push([]);
-    wsData.push(["CLIENTES CON DEUDA"]);
-    wsData.push(["Cliente", "Saldo Deudor"]);
+    const wsData = [["Resumen MYC HIELO", getHoyISO()], []];
+    wsData.push(["CLIENTES CON DEUDA"], ["Cliente", "Saldo Deudor"]);
     let saldos = {};
     for (const c of clientes) saldos[c] = 0;
     for (const m of movimientos) {
@@ -504,10 +618,17 @@ function exportarExcel() {
 }
 
 function exportarFechaExcel() {
-    const fecha = document.getElementById("fechaGeneral").value || getHoyISO();
+    const fecha = document.getElementById("fechaGeneral").value;
+    if (!fecha) { toast("Seleccione una fecha"); return; }
     const movs = movimientos.filter(m => m.fecha === fecha);
-    const wsData = [["Movimientos del", fecha], ["Fecha", "Cliente", "Tipo", "Monto", "Detalle"]];
-    for (const m of movs) wsData.push([m.fecha, m.cliente, m.tipo, m.monto, m.detalle]);
+    const ventasDia = ventasLocales.filter(v => v.fecha === fecha);
+    const wsData = [["Movimientos del", fecha], ["Fecha", "Cliente", "Tipo", "Monto", "Productos", "Detalle"]];
+    for (const m of movs) wsData.push([m.fecha, m.cliente, m.tipo, m.monto, "", m.detalle]);
+    for (const v of ventasDia) {
+        const cant = v.cantidades || {};
+        const prodStr = Object.entries(cant).filter(([,c]) => c>0).map(([k,c]) => `${k}:${c}`).join(', ');
+        wsData.push([v.fecha, v.cliente, v.pago, v.total, prodStr, v.detalle]);
+    }
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
@@ -515,23 +636,21 @@ function exportarFechaExcel() {
     toast("Excel exportado");
 }
 
-// ========== ACTUALIZAR TODO ==========
 async function actualizarTodo() {
     toast("Cargando datos...");
     await cargarDatosDesdeSheets();
     cargarGastosDeChoferes();
     cargarVentasLocales();
     renderDeudores();
-    const fechaGeneral = document.getElementById("fechaGeneral").value;
-    if (fechaGeneral) renderMovimientosPorFecha(fechaGeneral);
-    renderRendicionChofer("1234", "rendicion1234Body", document.getElementById("fechaChofer1234").value || getHoyISO());
-    renderRendicionChofer("5678", "rendicion5678Body", document.getElementById("fechaChofer5678").value || getHoyISO());
-    renderGastosChofer("1234", document.getElementById("gastosFecha1234").value || getHoyISO());
-    renderGastosChofer("5678", document.getElementById("gastosFecha5678").value || getHoyISO());
+    renderTodasLasFechasChofer("1234", "rendicion1234Body");
+    renderTodasLasFechasChofer("5678", "rendicion5678Body");
+    renderTodosLosMovimientos();
+    renderGastosChofer("1234", null, true);
+    renderGastosChofer("5678", null, true);
     toast("Datos actualizados");
 }
 
-// ========== EVENTOS E INICIALIZACIÓN ==========
+// Eventos
 document.getElementById("refreshBtn").addEventListener("click", actualizarTodo);
 document.getElementById("exportExcelBtn").addEventListener("click", exportarExcel);
 document.getElementById("verFechaGeneralBtn").addEventListener("click", () => {
@@ -539,30 +658,34 @@ document.getElementById("verFechaGeneralBtn").addEventListener("click", () => {
     if (fecha) renderMovimientosPorFecha(fecha);
     else toast("Seleccione una fecha");
 });
+document.getElementById("cargarTodosMovimientosBtn").addEventListener("click", renderTodosLosMovimientos);
 document.getElementById("exportarFechaExcelBtn").addEventListener("click", exportarFechaExcel);
 document.getElementById("verChofer1234Btn").addEventListener("click", () => {
     const fecha = document.getElementById("fechaChofer1234").value;
     if (fecha) renderRendicionChofer("1234", "rendicion1234Body", fecha);
     else toast("Seleccione fecha");
 });
+document.getElementById("cargarTodo1234Btn").addEventListener("click", () => renderTodasLasFechasChofer("1234", "rendicion1234Body"));
 document.getElementById("verChofer5678Btn").addEventListener("click", () => {
     const fecha = document.getElementById("fechaChofer5678").value;
     if (fecha) renderRendicionChofer("5678", "rendicion5678Body", fecha);
     else toast("Seleccione fecha");
 });
+document.getElementById("cargarTodo5678Btn").addEventListener("click", () => renderTodasLasFechasChofer("5678", "rendicion5678Body"));
 document.getElementById("verGastos1234Btn").addEventListener("click", () => {
     const fecha = document.getElementById("gastosFecha1234").value;
-    if (fecha) renderGastosChofer("1234", fecha);
+    if (fecha) renderGastosChofer("1234", fecha, false);
     else toast("Seleccione fecha");
 });
+document.getElementById("cargarTodosGastos1234Btn").addEventListener("click", () => renderGastosChofer("1234", null, true));
 document.getElementById("verGastos5678Btn").addEventListener("click", () => {
     const fecha = document.getElementById("gastosFecha5678").value;
-    if (fecha) renderGastosChofer("5678", fecha);
+    if (fecha) renderGastosChofer("5678", fecha, false);
     else toast("Seleccione fecha");
 });
+document.getElementById("cargarTodosGastos5678Btn").addEventListener("click", () => renderGastosChofer("5678", null, true));
 document.getElementById("buscarClienteBtn").addEventListener("click", buscarCliente);
 document.getElementById("limpiarBusquedaBtn").addEventListener("click", limpiarBusqueda);
-document.getElementById("modalCancelar").addEventListener("click", () => document.getElementById("modal").style.display = "none");
 
 actualizarTodo();
 setInterval(actualizarTodo, 60000);
