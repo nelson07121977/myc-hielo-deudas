@@ -338,7 +338,7 @@
             <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             <div class="card" style="margin-top:20px;">
                 <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">📄 Comprobantes X (No fiscales)<div style="display:flex; gap:8px;"><button id="genComprobanteDiaBtn" class="btn-small" style="background:#16a34a;">📅 Comprobante del día</button><button id="genComprobanteSemanaBtn" class="btn-small" style="background:#2563eb;">📆 Comprobante de la semana</button></div></div>
-                <div style="overflow-x:auto; margin-top:12px;"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th><tr></thead><tbody id="comprobantesBody"></tbody></table></div>
+                <div style="overflow-x:auto; margin-top:12px;"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div>
             </div>
             <button id="resetDayBtn" style="background:#b91c1c; margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
         </div>
@@ -456,8 +456,8 @@ async function guardarConfiguracionRemota() {
 
 // ========== VENTAS, GASTOS, STOCK ==========
 async function cargarVentas(chofer) {
-    const data = await apiCall('obtenerVentas', { chofer });
-    // Normalizar fechas: eliminar cualquier parte de hora si viene
+    // Cargar todas las ventas sin filtrar por chofer (así vemos todas)
+    const data = await apiCall('obtenerVentas', {});
     if (Array.isArray(data)) {
         data.forEach(v => {
             if (v.fecha && typeof v.fecha === 'string') {
@@ -466,9 +466,10 @@ async function cargarVentas(chofer) {
         });
     }
     ventas = data;
-    console.log("Ventas cargadas:", ventas.length);
+    console.log("Ventas cargadas (todas):", ventas.length);
     const hoy = getTodayUTC();
-    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || b.total), 0);
+    // Cobros del día: considerar ventas de tipo 'cobrocc' del chofer actual (si existe)
+    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc' && (!chofer || v.chofer === chofer)).reduce((a,b) => a + (b.cobroDeuda || b.total), 0);
 }
 
 async function cargarGastos(chofer) {
@@ -575,7 +576,9 @@ function renderDriver() {
     let select = document.getElementById("clienteSelect");
     if(select) select.innerHTML = CLIENTES_LIST.map(c => `<option value="${c}">${c}</option>`).join("");
     document.getElementById("driverIdLabel").innerText = `(PIN ${currentDriverPin})`;
-    const ventasHoy = getVentasHoy();
+    // Filtro local: ventas del día actual y del chofer actual (o sin chofer)
+    const hoy = getTodayUTC();
+    const ventasHoy = ventas.filter(v => v.fecha === hoy && (!v.chofer || v.chofer === currentDriverPin));
     let totalV=0, totalE=0, totalT=0, totalC=0;
     ventasHoy.forEach(v => {
         if(v.pago !== "cobrocc") totalV += v.total;
@@ -615,16 +618,13 @@ function renderDriver() {
         const id = Number(btn.dataset.id);
         ventas = ventas.filter(v => v.id !== id);
         const hoy = getTodayUTC();
-        cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || b.total), 0);
+        cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc' && (!v.chofer || v.chofer === currentDriverPin)).reduce((a,b) => a + (b.cobroDeuda || b.total), 0);
         renderDriver();
         if(document.getElementById("adminPanel").style.display==="block") renderAdmin();
     }));
     renderComprobantesHistorial();
 }
 
-// Las funciones de gráficos, tablas, etc. son las mismas que antes (las omito por brevedad, pero ya están en el archivo completo). 
-// En esta versión final las incluyo completas. Para no alargar, asumo que al copiar el archivo entero funcionará.
-// Sin embargo, por si acaso, incluí las funciones necesarias.
 function actualizarGraficoClientes() {
     const ventasHoy = getVentasHoy();
     const ventasPorCliente = {};
@@ -638,15 +638,186 @@ function actualizarGraficoClientes() {
         chartClientes = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Ventas $', data: datos, backgroundColor: '#0a3e6d', borderRadius: 8 }] }, options: { responsive: true } });
     }
 }
-function renderVentasPorProducto() { /* igual */ }
-function renderEvolucionDiaria() { /* igual */ }
-function renderClientesTab() { /* igual */ }
-function renderProductosTab() { /* igual */ }
-function renderStockTab() { /* igual */ }
-function renderWeeklyReport() { /* igual */ }
-function renderComprobantesHistorial() { /* igual */ }
-function generarComprobanteDia() { /* igual */ }
-function generarComprobanteSemana() { /* igual */ }
+function renderVentasPorProducto() {
+    const ventasHoy = getVentasHoy();
+    const resumen = { "1,7 KG":{cant:0,total:0}, "3,5 KG":{cant:0,total:0}, "14 KG":{cant:0,total:0}, "ESC.20KG":{cant:0,total:0}, "ESC.32KG":{cant:0,total:0} };
+    ventasHoy.forEach(v => {
+        if(v.pago === "cobrocc") return;
+        for(let prod in resumen) {
+            let cant = v.cantidades[prod] || 0;
+            if(cant > 0) {
+                resumen[prod].cant += cant;
+                const precioRef = getPreciosCliente("AQUELARRE")[prod.replace("ESC.","").toLowerCase()] || 0;
+                resumen[prod].total += cant * precioRef;
+            }
+        }
+    });
+    const container = document.getElementById("productosReport");
+    if(container) {
+        container.innerHTML = "";
+        for(let [prod, datos] of Object.entries(resumen)) {
+            let nombreMostrar = prod.replace("ESC.","").replace("KG","Kg");
+            container.innerHTML += `<div class="prod-card"><strong>${nombreMostrar}</strong><br>Cant: ${datos.cant}<br>Total: $${datos.total.toFixed(0)}</div>`;
+        }
+    }
+}
+function renderEvolucionDiaria() {
+    const fechas = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d; }).reverse();
+    const ventasPorDia = {};
+    fechas.forEach(f => ventasPorDia[f.toISOString().slice(0,10)] = 0);
+    ventas.forEach(v => { if(v.pago !== "cobrocc") ventasPorDia[v.fecha] = (ventasPorDia[v.fecha] || 0) + v.total; });
+    const labels = fechas.map(f => f.toISOString().slice(0,10));
+    const datos = fechas.map(f => ventasPorDia[f.toISOString().slice(0,10)]);
+    const ctx = document.getElementById('evolucionChart')?.getContext('2d');
+    if(ctx) {
+        if(chartEvolucion) chartEvolucion.destroy();
+        chartEvolucion = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Ventas totales $', data: datos, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true } });
+    }
+}
+function renderClientesTab() {
+    let tbody = document.getElementById("clientesTbody");
+    if(!tbody) return;
+    tbody.innerHTML = "";
+    for(let cli of CLIENTES_LIST) {
+        const pre = preciosClientes[cli] || getPreciosCliente(cli);
+        const cost = costosClientes[cli] || getCostosCliente();
+        tbody.innerHTML += `
+            <tr>
+                <td><div style="width:40px;height:40px;background:#ccc;border-radius:12px;display:flex;align-items:center;justify-content:center;">${cli.charAt(0)}</div></td>
+                <td>${cli}</td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" size="5"></td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" size="5"></td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" size="5"></td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" size="5"></td>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" size="5"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" size="5"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" size="5"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" size="5"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="5"></td>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="5"></td>
+                <td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c;">🗑️</button></td>
+            </tr>
+        `;
+    }
+    document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => {
+        const cli = btn.getAttribute("data-cli");
+        if(confirm(`¿Eliminar cliente ${cli}?`)) {
+            await apiCall('eliminarCliente', { nombre: cli });
+            await cargarClientesDesdeSheets();
+            delete preciosClientes[cli];
+            delete costosClientes[cli];
+            await guardarConfiguracionRemota();
+            if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
+            if (document.getElementById("driverPanel").style.display === "block") renderDriver();
+        }
+    }));
+}
+function renderProductosTab() {
+    let tbody = document.getElementById("productsTbody");
+    if(!tbody) return;
+    tbody.innerHTML = "";
+    for(let p of productos) {
+        tbody.innerHTML += `
+            <tr>
+                <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></div><div>
+                <td>${p.clave}</div><div>
+                <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="6"></div><div>
+                <td><button class="delProdBtn" data-clave="${p.clave}" style="background:#b91c1c;">Eliminar</button></div><div>
+            </tr>
+        `;
+    }
+    document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", (e) => { const clave = btn.getAttribute("data-clave"); if(confirm(`Eliminar producto ${clave}?`)) { productos = productos.filter(p => p.clave !== clave); guardarConfiguracionRemota(); renderProductosTab(); } }));
+}
+function renderStockTab() {
+    const ventasHoy = getVentasHoy();
+    const vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+    ventasHoy.forEach(v => {
+        vendido["1,7 KG"] += v.cantidades["1,7 KG"] || 0;
+        vendido["3,5 KG"] += v.cantidades["3,5 KG"] || 0;
+        vendido["14 KG"] += v.cantidades["14 KG"] || 0;
+        vendido["ESC.20KG"] += v.cantidades["ESC.20KG"] || 0;
+        vendido["ESC.32KG"] += v.cantidades["ESC.32KG"] || 0;
+    });
+    document.getElementById("fab_17").value = stockFabrica["1,7 KG"];
+    document.getElementById("fab_35").value = stockFabrica["3,5 KG"];
+    document.getElementById("fab_14").value = stockFabrica["14 KG"];
+    document.getElementById("fab_20").value = stockFabrica["ESC.20KG"];
+    document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
+    const tbody = document.querySelector("#stockTable tbody");
+    if(tbody) tbody.innerHTML = `
+        <tr><td>1,7 KG</td><td>${stockFabrica["1,7 KG"]}</td><td>${vendido["1,7 KG"]}</td><td>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</td></tr>
+        <tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr>
+        <tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr>
+        <tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr>
+        <tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>
+    `;
+}
+function renderWeeklyReport() {
+    const weeklyVentas = getVentasUltimos7Dias();
+    let totalVentasSemana = 0, totalEfectivoSemana = 0, totalTransferenciaSemana = 0, totalCtaCteSemana = 0, totalCobrosDeudaSemana = 0, totalGananciaReal = 0;
+    const ventasPorCliente = {}, ventasPorDia = {};
+    weeklyVentas.forEach(v => {
+        if(v.pago !== "cobrocc") {
+            totalVentasSemana += v.total;
+            if(v.pago === "efectivo") totalEfectivoSemana += v.total;
+            if(v.pago === "transferencia") totalTransferenciaSemana += v.total;
+            if(v.pago === "ctacte") totalCtaCteSemana += v.total;
+        }
+        totalCobrosDeudaSemana += v.cobroDeuda || 0;
+        const cost = costosClientes[v.cliente] || getCostosCliente();
+        let costo = 0;
+        if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32;
+        totalGananciaReal += (v.total - costo) + (v.cobroDeuda||0);
+        if(v.pago !== "cobrocc") ventasPorCliente[v.cliente] = (ventasPorCliente[v.cliente] || 0) + v.total;
+        ventasPorDia[v.fecha] = (ventasPorDia[v.fecha] || 0) + v.total;
+    });
+    document.getElementById("weeklyStats").innerHTML = `
+        <div class="card"><h4>💰 Venta Bruta Semana</h4><div class="value">$${totalVentasSemana.toFixed(0)}</div></div>
+        <div class="card"><h4>💵 Efectivo</h4><div class="value">$${totalEfectivoSemana.toFixed(0)}</div></div>
+        <div class="card"><h4>💳 Transferencia</h4><div class="value">$${totalTransferenciaSemana.toFixed(0)}</div></div>
+        <div class="card"><h4>📘 Cta Cte</h4><div class="value">$${totalCtaCteSemana.toFixed(0)}</div></div>
+        <div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">$${totalCobrosDeudaSemana.toFixed(0)}</div></div>
+        <div class="card"><h4>📈 Ganancia Neta Semana</h4><div class="value">$${totalGananciaReal.toFixed(0)}</div><small>(Venta - Costo + Cobros)</small></div>
+    `;
+    const topClientes = Object.entries(ventasPorCliente).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const ctxTop = document.getElementById('topClientesChart')?.getContext('2d');
+    if(ctxTop) {
+        if(topClientesChart) topClientesChart.destroy();
+        topClientesChart = new Chart(ctxTop, { type: 'bar', data: { labels: topClientes.map(c=>c[0]), datasets: [{ label: 'Ventas $', data: topClientes.map(c=>c[1]), backgroundColor: '#f59e0b' }] }, options: { responsive: true } });
+    }
+    const hoy = new Date();
+    const fechasSemana = [...Array(7).keys()].map(i => {
+        let d = new Date(hoy);
+        d.setDate(hoy.getDate() - (6 - i));
+        return d.toISOString().slice(0,10);
+    });
+    const ventasPorDiaOrdenado = fechasSemana.map(f => ventasPorDia[f] || 0);
+    const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d');
+    if(ctxLine) {
+        if(weeklySalesChart) weeklySalesChart.destroy();
+        weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: fechasSemana, datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } });
+    }
+    const tbody = document.getElementById("weeklySalesBody");
+    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v => `
+        <tr>
+            <td>${v.fecha}</td>
+            <td>${v.cliente}</td>
+            <td>$${v.total.toFixed(0)}</div><div>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</div><div>$${v.cobroDeuda||0}</div><div>
+        </tr>
+    `).join('');
+}
+
+async function guardarVentaRemota(cliente, cantidades, pago, total, cobroDeuda, chofer) {
+    const fecha = getTodayUTC();
+    const res = await apiCall('guardarVenta', {
+        fecha, cliente, cantidades: JSON.stringify(cantidades), pago, total, cobroDeuda, chofer
+    });
+    return res;
+}
+async function guardarGastoRemota(categoria, monto, nota, chofer) {
+    const fecha = getTodayUTC();
+    await apiCall('guardarGasto', { fecha, chofer, categoria, monto, nota });
+}
 async function agregarTransaccion() {
     const cliente = document.getElementById("clienteSelect").value;
     const pago = document.getElementById("paymentType").value;
@@ -669,34 +840,17 @@ async function agregarTransaccion() {
     document.querySelectorAll("#driverPanel input[type=number]").forEach(i => i.value = 0);
     document.getElementById("cobroDeudaInput").value = 0;
 }
-async function guardarVentaRemota(cliente, cantidades, pago, total, cobroDeuda, chofer) {
-    const fecha = getTodayUTC();
-    const res = await apiCall('guardarVenta', {
-        fecha, cliente, cantidades: JSON.stringify(cantidades), pago, total, cobroDeuda, chofer
-    });
-    return res;
-}
 async function actualizarGastosDesdeDetalle() {
     const nafta = parseFloat(document.getElementById("gastoNafta")?.value) || 0;
     const choferes = parseFloat(document.getElementById("gastoChoferes")?.value) || 0;
     const otros = parseFloat(document.getElementById("gastoOtros")?.value) || 0;
-    if (nafta !== gastosDetalle.nafta) {
-        await guardarGastoRemota('Nafta', nafta, '', currentDriverPin);
-    }
-    if (choferes !== gastosDetalle.choferes) {
-        await guardarGastoRemota('Chofer', choferes, '', currentDriverPin);
-    }
-    if (otros !== gastosDetalle.otros) {
-        await guardarGastoRemota('Otros', otros, '', currentDriverPin);
-    }
+    if (nafta !== gastosDetalle.nafta) await guardarGastoRemota('Nafta', nafta, '', currentDriverPin);
+    if (choferes !== gastosDetalle.choferes) await guardarGastoRemota('Chofer', choferes, '', currentDriverPin);
+    if (otros !== gastosDetalle.otros) await guardarGastoRemota('Otros', otros, '', currentDriverPin);
     gastosDetalle = { nafta, choferes, otros };
     gastos = nafta + choferes + otros;
     renderDriver();
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
-}
-async function guardarGastoRemota(categoria, monto, nota, chofer) {
-    const fecha = getTodayUTC();
-    await apiCall('guardarGasto', { fecha, chofer, categoria, monto, nota });
 }
 async function guardarTodoAdmin() {
     document.querySelectorAll(".priceInput").forEach(inp => {
@@ -720,7 +874,9 @@ async function cerrarDiaAdmin() {
     alert("Funcionalidad de cierre de día aún no implementada completamente en la nube. Se reiniciará la sesión.");
     location.reload();
 }
-function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) { return ""; } // Placeholder
+
+// ========== COMPROBANTES (abreviados) ==========
+function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) { return ""; }
 function generarComprobanteTextoPlanoPremium(tipo, datos, numero, fechaISO) { return ""; }
 let comprobantesHistorialLocal = [];
 function getNextComprobanteNum() { return 1; }
@@ -732,8 +888,15 @@ function reimprimirComprobante(num) {}
 function eliminarComprobante(num) {}
 function copiarComprobanteTexto() {}
 function descargarComprobanteTxt() {}
+function renderComprobantesHistorial() {
+    let tbody = document.getElementById("comprobantesBody");
+    if(tbody) tbody.innerHTML = "";
+}
+function generarComprobanteDia() { alert("Función no implementada aún"); }
+function generarComprobanteSemana() { alert("Función no implementada aún"); }
 async function exportarPDF(id, name) {}
 
+// ========== INICIALIZACIÓN ==========
 async function iniciarSesionChofer(pin) {
     currentDriverPin = pin;
     await cargarClientesDesdeSheets();
@@ -743,8 +906,6 @@ async function iniciarSesionChofer(pin) {
         cargarGastos(pin),
         cargarStock(pin)
     ]);
-    const comps = localStorage.getItem(`myc_${pin}_comprobantes`);
-    comprobantesHistorialLocal = comps ? JSON.parse(comps) : [];
     renderDriver();
 }
 async function iniciarSesionAdmin() {
@@ -781,13 +942,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("setGastosDetalleBtn")?.addEventListener("click", actualizarGastosDesdeDetalle);
     document.getElementById("resetDayBtn")?.addEventListener("click", () => {
         if (confirm("⚠️ REINICIAR JORNADA borrará las ventas, cobros y gastos del día actual. ¿Continuar?")) {
-            alert("Funcionalidad de reinicio parcial. Se recargará la página.");
+            alert("Se recargará la página.");
             location.reload();
         }
     });
     document.getElementById("cerrarDiaBtn")?.addEventListener("click", cerrarDiaAdmin);
-    document.getElementById("exportPdfBtn")?.addEventListener("click", () => exportarPDF("tabDashboard", "dashboard_myc"));
-    document.getElementById("exportReportPdfBtn")?.addEventListener("click", () => exportarPDF("tabReportes", "reporte_semanal_myc"));
+    document.getElementById("exportPdfBtn")?.addEventListener("click", () => alert("Función PDF no implementada aún"));
+    document.getElementById("exportReportPdfBtn")?.addEventListener("click", () => alert("Función PDF no implementada aún"));
     document.getElementById("saveAllPricesBtn")?.addEventListener("click", guardarTodoAdmin);
     document.getElementById("addClienteBtn")?.addEventListener("click", async () => {
         const nuevo = document.getElementById("newClienteName").value.trim().toUpperCase();
@@ -806,23 +967,17 @@ document.addEventListener("DOMContentLoaded", async () => {
             costosClientes[nuevo] = getCostosCliente();
             await guardarConfiguracionRemota();
             alert(`Cliente ${nuevo} agregado correctamente.`);
-            if (document.getElementById("adminPanel").style.display === "block") {
-                await iniciarSesionAdmin();
-            } else if (document.getElementById("driverPanel").style.display === "block") {
-                await iniciarSesionChofer(currentDriverPin);
-            }
-        } catch(e) {
-            alert("Error al agregar cliente: " + e.message);
-        }
+            if (document.getElementById("adminPanel").style.display === "block") await iniciarSesionAdmin();
+            else if (document.getElementById("driverPanel").style.display === "block") await iniciarSesionChofer(currentDriverPin);
+        } catch(e) { alert("Error al agregar cliente: " + e.message); }
         document.getElementById("newClienteName").value = "";
     });
     document.getElementById("exportConfigBtn")?.addEventListener("click", () => {
         const config = { clientesList: CLIENTES_LIST, precios: preciosClientes, costos: costosClientes, productos: productos };
         const dataStr = JSON.stringify(config, null, 2);
         const blob = new Blob([dataStr], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = url;
+        a.href = URL.createObjectURL(blob);
         a.download = `myc_config_${new Date().toISOString().slice(0,19)}.json`;
         a.click();
         URL.revokeObjectURL(url);
@@ -838,9 +993,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     if(config.costos) costosClientes = config.costos;
                     if(config.productos) productos = config.productos;
                     await guardarConfiguracionRemota();
-                    for (let c of CLIENTES_LIST) {
-                        await apiCall('agregarCliente', { nombre: c }).catch(()=>{});
-                    }
+                    for (let c of CLIENTES_LIST) await apiCall('agregarCliente', { nombre: c }).catch(()=>{});
                     alert("Configuración importada correctamente.");
                     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
                     if(document.getElementById("driverPanel").style.display === "block") renderDriver();
