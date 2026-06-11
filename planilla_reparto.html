@@ -43,6 +43,8 @@
         .force-scale-checkbox { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
         .force-scale-checkbox label { font-size: 0.85rem; margin: 0; }
         .force-scale-checkbox input { width: auto; margin: 0; }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .comprobante-modal {
             display: none;
@@ -362,11 +364,10 @@
 
 <script>
 // ==================== CONFIGURACIÓN GLOBAL ====================
-// === TU URL DE APPS SCRIPT ===
 const API_URL = "https://script.google.com/macros/s/AKfycbx1eFN6l_ecXxqzbSxuq3UppG7Y_7icMU8jVMPJn6cYGqUf9GcRgCXD6wx0K-OlqSaV/exec";
 
 let currentDriverPin = null;
-let CLIENTES_LIST = [];
+let CLIENTES_LIST = [];       // Lista cacheada de clientes
 let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
 let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
 let productos = [];
@@ -374,9 +375,7 @@ let preciosClientes = {}, costosClientes = {};
 let chartClientes = null, chartEvolucion = null, topClientesChart = null, weeklySalesChart = null;
 let comprobantesHistorial = [];
 
-const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON"];
-
-// ========== FUNCIONES DE FECHA (UTC) ==========
+// ========== FUNCIONES DE FECHA ==========
 function getTodayUTC() {
     return new Date().toISOString().slice(0,10);
 }
@@ -392,19 +391,41 @@ async function apiCall(ruta, params = {}) {
     return res.json();
 }
 
+// ========== CARGA DE CLIENTES DESDE LA HOJA "clientes" (fuente única) ==========
+async function cargarClientesDesdeSheets() {
+    try {
+        const data = await apiCall('clientes');
+        if (data && Array.isArray(data)) {
+            CLIENTES_LIST = data.map(c => c.toUpperCase().trim()).filter(c => c);
+            // Guardar en localStorage como caché
+            localStorage.setItem('myc_clientes_cache', JSON.stringify({ lista: CLIENTES_LIST, timestamp: Date.now() }));
+            console.log('Clientes cargados desde Sheets:', CLIENTES_LIST.length);
+            return CLIENTES_LIST;
+        }
+    } catch(e) { console.error('Error cargando clientes:', e); }
+    // Si falla, intentar cargar desde caché
+    const cache = localStorage.getItem('myc_clientes_cache');
+    if (cache) {
+        const { lista, timestamp } = JSON.parse(cache);
+        if (Date.now() - timestamp < 600000) { // 10 minutos de validez
+            CLIENTES_LIST = lista;
+            console.log('Clientes cargados desde caché');
+            return CLIENTES_LIST;
+        }
+    }
+    // Si no hay nada, usar default
+    CLIENTES_LIST = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON"];
+    localStorage.setItem('myc_clientes_cache', JSON.stringify({ lista: CLIENTES_LIST, timestamp: Date.now() }));
+    return CLIENTES_LIST;
+}
+
+// ========== CARGAR CONFIGURACIÓN (precios, costos, productos) ==========
 async function cargarConfiguracion() {
     const config = await apiCall('obtenerConfiguracion');
-    if (config.clientesList && config.clientesList.length) CLIENTES_LIST = config.clientesList;
-    else CLIENTES_LIST = [...DEFAULT_CLIENTES];
     if (config.precios) preciosClientes = config.precios;
     if (config.costos) costosClientes = config.costos;
-    if (config.productos) productos = config.productos;
-    // Asegurar que todos los clientes tengan precios por defecto
-    CLIENTES_LIST.forEach(c => {
-        if (!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c);
-        if (!costosClientes[c]) costosClientes[c] = getCostosCliente();
-    });
-    if (!productos.length) {
+    if (config.productos && config.productos.length) productos = config.productos;
+    else {
         productos = [
             { clave: "1,7 KG", precioBase: 1500, imagen: "https://placehold.co/100x100?text=1.7KG" },
             { clave: "3,5 KG", precioBase: 2500, imagen: "https://placehold.co/100x100?text=3.5KG" },
@@ -413,6 +434,20 @@ async function cargarConfiguracion() {
             { clave: "ESC.32KG", precioBase: 12000, imagen: "https://placehold.co/100x100?text=32KG" }
         ];
     }
+    // Asegurar que todos los clientes tengan precios por defecto
+    for (let c of CLIENTES_LIST) {
+        if (!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c);
+        if (!costosClientes[c]) costosClientes[c] = getCostosCliente();
+    }
+}
+
+async function guardarConfiguracionRemota() {
+    await apiCall('guardarConfiguracion', {
+        clientesList: JSON.stringify(CLIENTES_LIST),
+        precios: JSON.stringify(preciosClientes),
+        costos: JSON.stringify(costosClientes),
+        productos: JSON.stringify(productos)
+    });
 }
 
 async function cargarVentas(chofer) {
@@ -445,34 +480,12 @@ async function cargarStock(chofer) {
     }
 }
 
-async function guardarConfiguracionRemota() {
-    await apiCall('guardarConfiguracion', {
-        clientesList: JSON.stringify(CLIENTES_LIST),
-        precios: JSON.stringify(preciosClientes),
-        costos: JSON.stringify(costosClientes),
-        productos: JSON.stringify(productos)
-    });
-}
-
-async function guardarVentaRemota(cliente, cantidades, pago, total, cobroDeuda, chofer) {
-    const fecha = getTodayUTC();
-    const res = await apiCall('guardarVenta', {
-        fecha, cliente, cantidades: JSON.stringify(cantidades), pago, total, cobroDeuda, chofer
-    });
-    return res;
-}
-
-async function guardarGastoRemota(categoria, monto, nota, chofer) {
-    const fecha = getTodayUTC();
-    await apiCall('guardarGasto', { fecha, chofer, categoria, monto, nota });
-}
-
 async function guardarStockRemota(chofer) {
     const fecha = getTodayUTC();
     await apiCall('guardarStock', { fecha, chofer, stock: JSON.stringify(stockFabrica) });
 }
 
-// ========== FUNCIONES LOCALES (precios, cálculos) ==========
+// ========== FUNCIONES LOCALES ==========
 function getPreciosCliente(cliente) {
     let p17=1500, p35=2500, p14=7000, p20=8000, p32=12000;
     const specials = {"AFRICA":{p14:5000},"LETS GO":{p14:6000},"GUTIERREZ":{p14:5500},"TERRANO":{p14:7500},"PADDEL TURCO":{p14:5500},"ROSADITA":{p14:7000},"ICONOS":{p14:7000},"WILLIAMS":{p14:8000},"ERIC SALON":{p14:6000},"GABRIEL BARRIO DORREGO":{p35:3500,p14:7000},"KIOSCO VAMPIRO":{p35:3500,p14:7000}};
@@ -486,10 +499,7 @@ function calcularTotalVenta(cliente, cant) {
     return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32;
 }
 
-function getVentasHoy() {
-    const hoy = getTodayUTC();
-    return ventas.filter(v => v.fecha === hoy);
-}
+function getVentasHoy() { const hoy = getTodayUTC(); return ventas.filter(v => v.fecha === hoy); }
 function getVentasUltimos7Dias() {
     const hoy = new Date();
     const unaSemanaAtras = new Date(hoy);
@@ -673,12 +683,16 @@ function renderClientesTab() {
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => {
         const cli = btn.getAttribute("data-cli");
         if(confirm(`¿Eliminar cliente ${cli}?`)) {
-            CLIENTES_LIST = CLIENTES_LIST.filter(c => c !== cli);
+            // Eliminar de la hoja clientes
+            await apiCall('eliminarCliente', { nombre: cli });
+            // Recargar lista
+            await cargarClientesDesdeSheets();
+            // También eliminar de precios y costos
             delete preciosClientes[cli];
             delete costosClientes[cli];
             await guardarConfiguracionRemota();
-            renderAdmin();
-            if(document.getElementById("driverPanel").style.display==="block") renderDriver();
+            if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
+            if (document.getElementById("driverPanel").style.display === "block") renderDriver();
         }
     }));
 }
@@ -719,10 +733,14 @@ function renderStockTab() {
     if(tbody) tbody.innerHTML = `
         <tr><td>1,7 KG</div><div>${stockFabrica["1,7 KG"]}</div><div>${vendido["1,7 KG"]}</div><div>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</div><div>
         </tr>
-        <tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr>
-        <tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr>
-        <tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr>
-        <tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>
+        <tr><td>3,5 KG</div><div>${stockFabrica["3,5 KG"]}</div><div>${vendido["3,5 KG"]}</div><div>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</div><div>
+        </tr>
+        <tr><td>14 KG</div><div>${stockFabrica["14 KG"]}</div><div>${vendido["14 KG"]}</div><div>${stockFabrica["14 KG"] - vendido["14 KG"]}</div><div>
+        </tr>
+        <tr><td>ESC.20KG</div><div>${stockFabrica["ESC.20KG"]}</div><div>${vendido["ESC.20KG"]}</div><div>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</div><div>
+        </tr>
+        <tr><td>ESC.32KG</div><div>${stockFabrica["ESC.32KG"]}</div><div>${vendido["ESC.32KG"]}</div><div>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</div><div>
+        </tr>
     `;
 }
 
@@ -805,6 +823,14 @@ async function agregarTransaccion() {
     document.getElementById("cobroDeudaInput").value = 0;
 }
 
+async function guardarVentaRemota(cliente, cantidades, pago, total, cobroDeuda, chofer) {
+    const fecha = getTodayUTC();
+    const res = await apiCall('guardarVenta', {
+        fecha, cliente, cantidades: JSON.stringify(cantidades), pago, total, cobroDeuda, chofer
+    });
+    return res;
+}
+
 async function actualizarGastosDesdeDetalle() {
     const nafta = parseFloat(document.getElementById("gastoNafta")?.value) || 0;
     const choferes = parseFloat(document.getElementById("gastoChoferes")?.value) || 0;
@@ -822,6 +848,11 @@ async function actualizarGastosDesdeDetalle() {
     gastos = nafta + choferes + otros;
     renderDriver();
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
+}
+
+async function guardarGastoRemota(categoria, monto, nota, chofer) {
+    const fecha = getTodayUTC();
+    await apiCall('guardarGasto', { fecha, chofer, categoria, monto, nota });
 }
 
 async function guardarTodoAdmin() {
@@ -978,7 +1009,7 @@ async function exportarPDF(elementId, fileName) {
     const forceOnePage = document.getElementById("forceOnePageCheckbox")?.checked || false;
     const btn = (elementId === "tabDashboard") ? document.getElementById("exportPdfBtn") : document.getElementById("exportReportPdfBtn");
     const originalText = btn.innerText;
-    btn.innerText = "Generando PDF...";
+    btn.innerHTML = '<span class="spinner"></span> Generando PDF...';
     btn.disabled = true;
     try {
         const clone = element.cloneNode(true);
@@ -1036,10 +1067,15 @@ async function exportarPDF(elementId, fileName) {
 // ========== INICIALIZACIÓN ==========
 async function iniciarSesionChofer(pin) {
     currentDriverPin = pin;
-    await cargarConfiguracion();
-    await cargarVentas(pin);
-    await cargarGastos(pin);
-    await cargarStock(pin);
+    // Cargar clientes primero (para que el selector aparezca rápido)
+    await cargarClientesDesdeSheets();
+    // Paralelizar el resto
+    await Promise.all([
+        cargarConfiguracion(),
+        cargarVentas(pin),
+        cargarGastos(pin),
+        cargarStock(pin)
+    ]);
     const comps = localStorage.getItem(`myc_${pin}_comprobantes`);
     comprobantesHistorialLocal = comps ? JSON.parse(comps) : [];
     renderDriver();
@@ -1048,10 +1084,13 @@ async function iniciarSesionChofer(pin) {
 async function iniciarSesionAdmin() {
     currentDriverPin = null;
     const selected = document.getElementById("adminChoferSelect").value;
-    await cargarConfiguracion();
-    await cargarVentas(selected);
-    await cargarGastos(selected);
-    await cargarStock(selected);
+    await cargarClientesDesdeSheets();
+    await Promise.all([
+        cargarConfiguracion(),
+        cargarVentas(selected),
+        cargarGastos(selected),
+        cargarStock(selected)
+    ]);
     renderAdmin();
 }
 
@@ -1084,20 +1123,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("exportPdfBtn")?.addEventListener("click", () => exportarPDF("tabDashboard", "dashboard_myc"));
     document.getElementById("exportReportPdfBtn")?.addEventListener("click", () => exportarPDF("tabReportes", "reporte_semanal_myc"));
     document.getElementById("saveAllPricesBtn")?.addEventListener("click", guardarTodoAdmin);
+    
+    // NUEVO MANEJO DE AGREGAR CLIENTE: corrige el problema "ya existe"
     document.getElementById("addClienteBtn")?.addEventListener("click", async () => {
         const nuevo = document.getElementById("newClienteName").value.trim().toUpperCase();
-        if(!nuevo) return;
-        if(!CLIENTES_LIST.includes(nuevo)) {
+        if(!nuevo) { alert("Escribí un nombre"); return; }
+        // Recargar lista actualizada desde la nube
+        await cargarClientesDesdeSheets();
+        if(CLIENTES_LIST.includes(nuevo)) {
+            alert(`El cliente "${nuevo}" ya existe en la lista actual.`);
+            return;
+        }
+        // Agregar usando la ruta existente de Apps Script
+        try {
+            const res = await apiCall('agregarCliente', { nombre: nuevo });
+            if (res.error) throw new Error(res.error);
+            // Actualizar lista local
             CLIENTES_LIST.push(nuevo);
+            // Guardar caché
+            localStorage.setItem('myc_clientes_cache', JSON.stringify({ lista: CLIENTES_LIST, timestamp: Date.now() }));
+            // También agregar a la configuración de precios por defecto
             preciosClientes[nuevo] = getPreciosCliente(nuevo);
             costosClientes[nuevo] = getCostosCliente();
             await guardarConfiguracionRemota();
-            alert(`Cliente ${nuevo} agregado.`);
-            if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
-            if (document.getElementById("driverPanel").style.display === "block") renderDriver();
-        } else alert("El cliente ya existe");
+            alert(`Cliente ${nuevo} agregado correctamente.`);
+            // Refrescar toda la interfaz
+            if (document.getElementById("adminPanel").style.display === "block") {
+                await iniciarSesionAdmin();
+            } else if (document.getElementById("driverPanel").style.display === "block") {
+                await iniciarSesionChofer(currentDriverPin);
+            }
+        } catch(e) {
+            alert("Error al agregar cliente: " + e.message);
+        }
         document.getElementById("newClienteName").value = "";
     });
+    
     document.getElementById("exportConfigBtn")?.addEventListener("click", () => {
         const config = { clientesList: CLIENTES_LIST, precios: preciosClientes, costos: costosClientes, productos: productos };
         const dataStr = JSON.stringify(config, null, 2);
@@ -1120,6 +1181,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                     if(config.costos) costosClientes = config.costos;
                     if(config.productos) productos = config.productos;
                     await guardarConfiguracionRemota();
+                    // También actualizar la hoja clientes principal
+                    for (let c of CLIENTES_LIST) {
+                        await apiCall('agregarCliente', { nombre: c }).catch(()=>{});
+                    }
                     alert("Configuración importada correctamente.");
                     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
                     if(document.getElementById("driverPanel").style.display === "block") renderDriver();
