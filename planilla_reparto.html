@@ -119,7 +119,7 @@
             <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
         </div>
         
-        <!-- ========== SECCIÓN CLIENTES CORREGIDA (Tabla ordenada) ========== -->
+        <!-- ========== SECCIÓN CLIENTES CORREGIDA ========== -->
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3>Gestión de clientes (precios de venta y costos de fábrica)</h3>
             <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
@@ -157,37 +157,17 @@
             <button id="saveAllPricesBtn" style="margin-top:20px;">💾 Guardar todos los cambios</button>
         </div>
         
-        <!-- ========== SECCIÓN PRODUCTOS ========== -->
         <div id="tabProductos" class="panel-content" style="display:none;">
             <h3>📸 Tipos de Bolsas / Productos</h3>
-            <div class="form-row">
-                <div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div>
-                <div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div>
-                <div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div>
-                <div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div>
-            </div>
-            <div style="overflow-x:auto">
-                <table id="productsTable">
-                    <thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead>
-                    <tbody id="productsTbody"></tbody>
-                </table>
-            </div>
-            <button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
+            <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div></div>
+            <div style="overflow-x:auto"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div><button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         
-        <!-- ========== SECCIÓN STOCK ========== -->
         <div id="tabStock" class="panel-content" style="display:none;">
             <h3>📦 Carga de fábrica (stock inicial del día)</h3>
-            <div class="form-row">
-                <div class="form-group"><label>🥤 1,7 KG</label><input type="number" id="fab_17" value="0" step="1"></div>
-                <div class="form-group"><label>🥤 3,5 KG</label><input type="number" id="fab_35" value="0" step="1"></div>
-                <div class="form-group"><label>🧊 14 KG</label><input type="number" id="fab_14" value="0" step="1"></div>
-                <div class="form-group"><label>🧊 ESC.20KG</label><input type="number" id="fab_20" value="0" step="1"></div>
-                <div class="form-group"><label>🧊 ESC.32KG</label><input type="number" id="fab_32" value="0" step="1"></div>
-                <div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div>
-            </div>
+            <div class="form-row"><div class="form-group"><label>🥤 1,7 KG</label><input type="number" id="fab_17" value="0" step="1"></div><div class="form-group"><label>🥤 3,5 KG</label><input type="number" id="fab_35" value="0" step="1"></div><div class="form-group"><label>🧊 14 KG</label><input type="number" id="fab_14" value="0" step="1"></div><div class="form-group"><label>🧊 ESC.20KG</label><input type="number" id="fab_20" value="0" step="1"></div><div class="form-group"><label>🧊 ESC.32KG</label><input type="number" id="fab_32" value="0" step="1"></div><div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div></div>
             <h3>📊 Resumen vendido / restante</h3>
-            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></table></thead><tbody></tbody></table>
+            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table>
         </div>
     </div>
 
@@ -231,7 +211,7 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// ==================== CÓDIGO COMPLETO DE LA PLANILLA (CON TABLA DE CLIENTES CORREGIDA) ====================
+// ==================== CÓDIGO COMPLETO CORREGIDO ====================
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
 let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
@@ -376,7 +356,7 @@ async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "$
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const numeroFormateado = String(numero).padStart(6,'0');
-    let html = `<div class="info-fecha-premium"><div><strong>📅 Emisión:</strong> ${fechaStr}</div><div><strong>🧾 Período:</strong> ${tipo === 'dia' ? 'Jornada actual' : 'Últimos 7 días'}</div><div><strong>🔢 N°:</strong> X-${numeroFormateado}</div></div><table class="tabla-productos-premium"><thead><tr><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead><tbody>`;
+    let html = `<div class="info-fecha-premium"><div><strong>📅 Emisión:</strong> ${fechaStr}</div><div><strong>🧾 Período:</strong> ${tipo === 'dia' ? 'Jornada actual' : 'Últimos 7 días'}</div><div><strong>🔢 N°:</strong> X-${numeroFormateado}</div></div><table class="tabla-productos-premium"><thead><tr><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></td></thead><tbody>`;
     let totalGeneral = 0;
     for (let venta of datos.ventas) {
         const pre = preciosClientes[venta.cliente] || getPreciosCliente(venta.cliente);
@@ -399,7 +379,7 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
         html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong></div><div><strong>$${totalVenta.toFixed(0)}</strong></div><div>`;
         totalGeneral += totalVenta;
     }
-    html += `</tbody><table><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
+    html += `</tbody></table><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
     return html;
 }
 function generarComprobanteTextoPlanoPremium(tipo, datos, numero, fechaISO) {
@@ -484,7 +464,7 @@ function renderComprobantesHistorial() {
                 <button class="btn-small" onclick="descargarComprobanteTxt()">💾</button>
                 <button class="btn-small" style="background:#b91c1c;" onclick="eliminarComprobante(${c.numero})">🗑️</button>
             </div><div>
-        </tr>`).join('');
+         </tr>`).join('');
 }
 
 // ========== RENDERIZADO PRINCIPAL ==========
@@ -505,7 +485,7 @@ function renderAdmin() {
     document.getElementById("adminStats").innerHTML = `<div class="card"><h4>Venta Bruta</h4><div class="value">$${totalVentas.toFixed(0)}</div></div><div class="card"><h4>Efectivo</h4><div class="value">$${totalEfectivo.toFixed(0)}</div></div><div class="card"><h4>Transferencia</h4><div class="value">$${totalTransferencia.toFixed(0)}</div></div><div class="card"><h4>Cta.Cte</h4><div class="value">$${totalCtaCte.toFixed(0)}</div></div><div class="card"><h4>Gastos</h4><div class="value">$${gastos}</div><small>Nafta:${gastosDetalle.nafta} Choferes:${gastosDetalle.choferes} Otros:${gastosDetalle.otros}</small></div><div class="card cobro-card"><h4>Cobros Deuda</h4><div class="value">$${cobrosCC}</div></div><div class="card"><h4>Ganancia Neta</h4><div class="value">$${gananciaNeta.toFixed(0)}</div></div>`;
     document.getElementById("salesDetailBody").innerHTML = ventasHoy.map(v => `<tr>
             <td>${v.cliente}</div><div>${v.cantidades?.["1,7 KG"]||0}</div><div>${v.cantidades?.["3,5 KG"]||0}</div><div>${v.cantidades?.["14 KG"]||0}</div><div>${v.cantidades?.["ESC.20KG"]||0}</div><div>${v.cantidades?.["ESC.32KG"]||0}</div><div>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
-        </tr>`).join('');
+         </tr>`).join('');
     actualizarGraficoClientes();
     renderVentasPorProducto();
     renderEvolucionDiaria();
@@ -542,7 +522,7 @@ function renderDriver() {
     tbody.innerHTML = ventasHoy.map(v => `<tr>
             <td>${v.cliente}</div><div>${v.cantidades?.["1,7 KG"]||0}</div><div>${v.cantidades?.["3,5 KG"]||0}</div><div>${v.cantidades?.["14 KG"]||0}</div><div>${v.cantidades?.["ESC.20KG"]||0}</div><div>${v.cantidades?.["ESC.32KG"]||0}</div><div>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
             <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></div><div>
-        </tr>`).join('');
+         </tr>`).join('');
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.dataset.id)); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
     renderComprobantesHistorial();
 }
@@ -570,7 +550,7 @@ function renderClientesTab() {
                 <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="6" style="width:70px; text-align:center;"></div><div>
                 <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="6" style="width:70px; text-align:center;"></div><div>
                 <td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c; border:none; padding:5px 10px; border-radius:20px; color:white; cursor:pointer;">🗑️</button></div><div>
-            </tr>
+             </tr>
         `;
     }
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => {
@@ -587,14 +567,12 @@ function renderProductosTab() {
     if(!tbody) return;
     tbody.innerHTML = "";
     for(let p of productos) {
-        tbody.innerHTML += `
-            <tr>
-                <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></div><div>
+        tbody.innerHTML += `<tr>
+                <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></div><div>
                 <td>${p.clave}</div><div>
                 <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="6"></div><div>
                 <td><button class="delProdBtn" data-clave="${p.clave}" style="background:#b91c1c;">Eliminar</button></div><div>
-            </tr>
-        `;
+             </tr>`;
     }
     document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", (e) => { const clave = btn.getAttribute("data-clave"); if(confirm(`Eliminar producto ${clave}?`)) { productos = productos.filter(p => p.clave !== clave); saveCommonProducts(); renderProductosTab(); } }));
 }
@@ -616,11 +594,20 @@ function renderStockTab() {
     document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
     const tbody = document.querySelector("#stockTable tbody");
     if(tbody) tbody.innerHTML = `<tr>
-        <tr><td>1,7 KG</div><div>${stockFabrica["1,7 KG"]}</div><div>${vendido["1,7 KG"]}</div><div>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</div><div></tr>
-        <tr><td>3,5 KG</div><div>${stockFabrica["3,5 KG"]}</div><div>${vendido["3,5 KG"]}</div><div>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</div><div></tr>
-        <tr><td>14 KG</div><div>${stockFabrica["14 KG"]}</div><div>${vendido["14 KG"]}</div><div>${stockFabrica["14 KG"] - vendido["14 KG"]}</div><div></tr>
-        <tr><td>ESC.20KG</div><div>${stockFabrica["ESC.20KG"]}</div><div>${vendido["ESC.20KG"]}</div><div>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</div><div></tr>
-        <tr><td>ESC.32KG</div><div>${stockFabrica["ESC.32KG"]}</div><div>${vendido["ESC.32KG"]}</div><div>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</div><div></tr>`;
+            <td>1,7 KG</div><div>${stockFabrica["1,7 KG"]}</div><div>${vendido["1,7 KG"]}</div><div>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</div><div>
+         </tr>
+         <tr>
+            <td>3,5 KG</div><div>${stockFabrica["3,5 KG"]}</div><div>${vendido["3,5 KG"]}</div><div>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</div><div>
+         </tr>
+         <tr>
+            <td>14 KG</div><div>${stockFabrica["14 KG"]}</div><div>${vendido["14 KG"]}</div><div>${stockFabrica["14 KG"] - vendido["14 KG"]}</div><div>
+         </tr>
+         <tr>
+            <td>ESC.20KG</div><div>${stockFabrica["ESC.20KG"]}</div><div>${vendido["ESC.20KG"]}</div><div>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</div><div>
+         </tr>
+         <tr>
+            <td>ESC.32KG</div><div>${stockFabrica["ESC.32KG"]}</div><div>${vendido["ESC.32KG"]}</div><div>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</div><div>
+         </tr>`;
 }
 
 function renderWeeklyReport() {
@@ -660,7 +647,7 @@ function renderWeeklyReport() {
     const tbody = document.getElementById("weeklySalesBody");
     if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
             <td>${new Date(v.fecha).toLocaleDateString()}</div><div>${v.cliente}</div><div>$${v.total.toFixed(0)}</div><div>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</div><div>$${v.cobroDeuda||0}</div>
-        </tr>`).join('');
+         </tr>`).join('');
 }
 
 function actualizarGraficoClientes() {
@@ -727,15 +714,19 @@ function actualizarGastosDesdeDetalle() {
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
 }
 
-function agregarTransaccion() {
+// ========== FUNCIÓN CORREGIDA: agregarTransaccion ==========
+async function agregarTransaccion() {
     const cliente = document.getElementById("clienteSelect").value;
     const pago = document.getElementById("paymentType").value;
     let cantidades = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     let cobroMonto = parseFloat(document.getElementById("cobroDeudaInput").value) || 0;
     
     if(pago === "cobrocc") {
-        if(cobroMonto <= 0) { alert("Para Cobro de Cta Cte debe ingresar un monto mayor a 0"); return; }
-        guardarVenta(cliente, cantidades, pago, cobroMonto);
+        if(cobroMonto <= 0) { 
+            toast("Para Cobro de Cta Cte debe ingresar un monto mayor a 0"); 
+            return; 
+        }
+        await guardarVenta(cliente, cantidades, pago, cobroMonto);
     } else {
         cantidades = { 
             "1,7 KG": parseInt(document.getElementById("qty_17").value)||0, 
@@ -745,15 +736,21 @@ function agregarTransaccion() {
             "ESC.32KG": parseInt(document.getElementById("qty_32").value)||0 
         };
         const hayProductos = Object.values(cantidades).some(v => v > 0);
-        if(!hayProductos && cobroMonto === 0) { alert("Debe ingresar al menos una cantidad de producto o un cobro"); return; }
-        guardarVenta(cliente, cantidades, pago, cobroMonto);
+        if(!hayProductos && cobroMonto === 0) { 
+            toast("Debe ingresar al menos una cantidad de producto"); 
+            return; 
+        }
+        await guardarVenta(cliente, cantidades, pago, cobroMonto);
     }
     
+    // Limpiar campos
     document.querySelectorAll("#driverPanel input[type=number]").forEach(i => i.value = 0);
     document.getElementById("cobroDeudaInput").value = 0;
     
+    // ACTUALIZAR LA TABLA (esto es lo que estaba fallando)
     renderDriver();
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
+    
     toast("✅ Venta registrada");
 }
 
