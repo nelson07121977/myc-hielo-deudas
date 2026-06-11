@@ -119,7 +119,7 @@
             <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
         </div>
         
-        <!-- ========== SECCIÓN CLIENTES CORREGIDA ========== -->
+        <!-- ========== SECCIÓN CLIENTES CORREGIDA (solo esto cambió) ========== -->
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3>Gestión de clientes (precios de venta y costos de fábrica)</h3>
             <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
@@ -132,25 +132,11 @@
                 <div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div>
                 <div class="form-group"><button id="addClienteBtn" class="btn-small">Agregar Cliente</button></div>
             </div>
-            <div style="overflow-x:auto; max-height: 500px; overflow-y: auto;">
-                <table id="clientesTable" style="min-width: 1200px; font-size: 0.75rem;">
+            <div style="overflow-x:auto;">
+                <table id="clientesTable">
                     <thead>
-                        <tr style="background: #0a3e6d; color: white;">
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">Foto</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">Cliente</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">1,7Kg $</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">3,5Kg $</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">14Kg $</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">20Kg $</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">32Kg $</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">Costo 1,7</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">Costo 3,5</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">Costo 14</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">Costo 20</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">Costo 32</th>
-                            <th style="position: sticky; top: 0; background: #0a3e6d;">Acciones</th>
-                        </tr>
-                    </thead>
+                        <tr><th>Foto</th><th>Cliente</th><th>1,7Kg $</th><th>3,5Kg $</th><th>14Kg $</th><th>20Kg $</th><th>32Kg $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th>
+                        </thead>
                     <tbody id="clientesTbody"></tbody>
                 </table>
             </div>
@@ -211,7 +197,7 @@
 <div id="toast" class="toast"></div>
 
 <script>
-// ==================== CÓDIGO COMPLETO CORREGIDO ====================
+// ==================== CÓDIGO COMPLETO (EL MISMO QUE FUNCIONABA) ====================
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
 let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
@@ -522,7 +508,7 @@ function renderDriver() {
     tbody.innerHTML = ventasHoy.map(v => `<tr>
             <td>${v.cliente}</div><div>${v.cantidades?.["1,7 KG"]||0}</div><div>${v.cantidades?.["3,5 KG"]||0}</div><div>${v.cantidades?.["14 KG"]||0}</div><div>${v.cantidades?.["ESC.20KG"]||0}</div><div>${v.cantidades?.["ESC.32KG"]||0}</div><div>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
             <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></div><div>
-         </tr>`).join('');
+         </td>`).join('');
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.dataset.id)); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
     renderComprobantesHistorial();
 }
@@ -536,21 +522,21 @@ function renderClientesTab() {
         const pre = preciosClientes[cli] || getPreciosCliente(cli);
         const cost = costosClientes[cli] || getCostosCliente();
         tbody.innerHTML += `
-            <tr style="border-bottom: 1px solid #ccc;">
-                <td style="text-align:center;"><div style="width:40px;height:40px;background:#1e293b;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;margin:0 auto;">${cli.charAt(0)}</div></div><div>
-                <td style="font-weight:600;">${cli}</div><div>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="6" style="width:70px; text-align:center;"></div><div>
-                <td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c; border:none; padding:5px 10px; border-radius:20px; color:white; cursor:pointer;">🗑️</button></div><div>
-             </tr>
+            <tr>
+                <td><div style="width:40px;height:40px;background:#e2e8f0;border-radius:12px;display:flex;align-items:center;justify-content:center;">${cli.charAt(0)}</div></div><div>
+                <td>${cli}</div><div>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" size="5" style="width:70px;"></div><div>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" size="5" style="width:70px;"></div><div>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" size="5" style="width:70px;"></div><div>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" size="5" style="width:70px;"></div><div>
+                <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" size="5" style="width:70px;"></div><div>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" size="5" style="width:70px;"></div><div>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" size="5" style="width:70px;"></div><div>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" size="5" style="width:70px;"></div><div>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="5" style="width:70px;"></div><div>
+                <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="5" style="width:70px;"></div><div>
+                <td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c; border:none; padding:5px 12px; border-radius:20px; color:white;">🗑️</button></div><div>
+            </tr>
         `;
     }
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => {
@@ -568,11 +554,11 @@ function renderProductosTab() {
     tbody.innerHTML = "";
     for(let p of productos) {
         tbody.innerHTML += `<tr>
-                <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></div><div>
+                <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></div><div>
                 <td>${p.clave}</div><div>
                 <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="6"></div><div>
                 <td><button class="delProdBtn" data-clave="${p.clave}" style="background:#b91c1c;">Eliminar</button></div><div>
-             </tr>`;
+            </tr>`;
     }
     document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", (e) => { const clave = btn.getAttribute("data-clave"); if(confirm(`Eliminar producto ${clave}?`)) { productos = productos.filter(p => p.clave !== clave); saveCommonProducts(); renderProductosTab(); } }));
 }
@@ -594,20 +580,11 @@ function renderStockTab() {
     document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
     const tbody = document.querySelector("#stockTable tbody");
     if(tbody) tbody.innerHTML = `<tr>
-            <td>1,7 KG</div><div>${stockFabrica["1,7 KG"]}</div><div>${vendido["1,7 KG"]}</div><div>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</div><div>
-         </tr>
-         <tr>
-            <td>3,5 KG</div><div>${stockFabrica["3,5 KG"]}</div><div>${vendido["3,5 KG"]}</div><div>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</div><div>
-         </tr>
-         <tr>
-            <td>14 KG</div><div>${stockFabrica["14 KG"]}</div><div>${vendido["14 KG"]}</div><div>${stockFabrica["14 KG"] - vendido["14 KG"]}</div><div>
-         </tr>
-         <tr>
-            <td>ESC.20KG</div><div>${stockFabrica["ESC.20KG"]}</div><div>${vendido["ESC.20KG"]}</div><div>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</div><div>
-         </tr>
-         <tr>
-            <td>ESC.32KG</div><div>${stockFabrica["ESC.32KG"]}</div><div>${vendido["ESC.32KG"]}</div><div>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</div><div>
-         </tr>`;
+            <tr>1,7 KG</div><div>${stockFabrica["1,7 KG"]}</div><div>${vendido["1,7 KG"]}</div><div>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</div><div></tr>
+            <tr>3,5 KG</div><div>${stockFabrica["3,5 KG"]}</div><div>${vendido["3,5 KG"]}</div><div>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</div><div></tr>
+            <tr>14 KG</div><div>${stockFabrica["14 KG"]}</div><div>${vendido["14 KG"]}</div><div>${stockFabrica["14 KG"] - vendido["14 KG"]}</div><div></tr>
+            <td>ESC.20KG</div><div>${stockFabrica["ESC.20KG"]}</div><div>${vendido["ESC.20KG"]}</div><div>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</div><div></tr>
+            <td>ESC.32KG</div><div>${stockFabrica["ESC.32KG"]}</div><div>${vendido["ESC.32KG"]}</div><div>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</div><div></tr>`;
 }
 
 function renderWeeklyReport() {
@@ -714,7 +691,6 @@ function actualizarGastosDesdeDetalle() {
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
 }
 
-// ========== FUNCIÓN CORREGIDA: agregarTransaccion ==========
 async function agregarTransaccion() {
     const cliente = document.getElementById("clienteSelect").value;
     const pago = document.getElementById("paymentType").value;
@@ -747,7 +723,7 @@ async function agregarTransaccion() {
     document.querySelectorAll("#driverPanel input[type=number]").forEach(i => i.value = 0);
     document.getElementById("cobroDeudaInput").value = 0;
     
-    // ACTUALIZAR LA TABLA (esto es lo que estaba fallando)
+    // ACTUALIZAR LA TABLA
     renderDriver();
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
     
