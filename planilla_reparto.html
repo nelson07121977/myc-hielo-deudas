@@ -145,7 +145,7 @@
         <div id="tabProductos" class="panel-content" style="display:none;">
             <h3>📸 Tipos de Bolsas / Productos</h3>
             <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div></div>
-            <div style="overflow-x:auto"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div><button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
+            <div style="overflow-x:auto"><table id="productsTable"><thead></td><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div><button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         
         <div id="tabStock" class="panel-content" style="display:none;">
@@ -185,7 +185,7 @@
             <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             <div class="card" style="margin-top:20px;">
                 <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">📄 Comprobantes X (No fiscales)<div style="display:flex; gap:8px;"><button id="genComprobanteDiaBtn" class="btn-small" style="background:#16a34a;">📅 Comprobante del día</button><button id="genComprobanteSemanaBtn" class="btn-small" style="background:#2563eb;">📆 Comprobante de la semana</button></div></div>
-                <div style="overflow-x:auto; margin-top:12px;"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th><tr></thead><tbody id="comprobantesBody"></tbody></table></div>
+                <div style="overflow-x:auto; margin-top:12px;"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div>
             </div>
             <button id="resetDayBtn" style="background:#b91c1c; margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
         </div>
@@ -354,14 +354,14 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
         let primerItem = true;
         for(let item of items) {
             let subtotal = item.cant * item.precio;
-            html += `<td>`;
+            html += `<tr>`;
             if (primerItem) html += `<td rowspan="${items.length}"><strong>${venta.cliente}</strong></td>`;
             html += `<td>${item.nombre}</td><td>${item.cant}</td><td>$${item.precio.toFixed(0)}</div><div>$${subtotal.toFixed(0)}</div><div>`;
             primerItem = false;
         }
-        if (venta.cobroDeuda && venta.cobroDeuda > 0) html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></td><td><strong>$${venta.cobroDeuda.toFixed(0)}</strong></td>`,
+        if (venta.cobroDeuda && venta.cobroDeuda > 0) html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></td><td><strong>$${venta.cobroDeuda.toFixed(0)}</strong>NonNullable`;
         let totalVenta = venta.total + (venta.cobroDeuda || 0);
-        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong></td><td><strong>$${totalVenta.toFixed(0)}</strong>NonNullable`;
+        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong>NonNullable<strong>$${totalVenta.toFixed(0)}</strong>NonNullable`;
         totalGeneral += totalVenta;
     }
     html += `</tbody></table><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
@@ -441,7 +441,7 @@ function descargarComprobanteTxt() { if(window.currentComprobanteTexto) { let bl
 function renderComprobantesHistorial() {
     let tbody = document.getElementById("comprobantesBody");
     if(!tbody) return;
-    tbody.innerHTML = comprobantesHistorial.map(c => `<td>
+    tbody.innerHTML = comprobantesHistorial.map(c => `<tr>
             <td>X-${String(c.numero).padStart(6,'0')}</div><div>${new Date(c.fecha).toLocaleString()}</div><div>${c.resumen}</div><div>$${c.total.toLocaleString()}</div><div>
                 <button class="btn-small" onclick="verComprobante(${c.numero})">👁️ Ver</button>
                 <button class="btn-small" onclick="reimprimirComprobante(${c.numero})">🖨️</button>
@@ -484,7 +484,7 @@ function renderAdmin() {
             <td>${v.cantidades?.["14 KG"]||0}</td>
             <td>${v.cantidades?.["ESC.20KG"]||0}</td>
             <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>
+            <td style="font-weight:bold;">${v.pago==="cobrocc" ? "$0" : "$"+v.total.toFixed(0)}</div><div>
             <td>${v.pago}</div><div>
             <td>$${v.cobroDeuda||0}</div><div>
         </tr>
@@ -530,7 +530,7 @@ function renderDriver() {
             <td>${v.cantidades?.["14 KG"]||0}</td>
             <td>${v.cantidades?.["ESC.20KG"]||0}</td>
             <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>
+            <td style="font-weight:bold;">${v.pago==="cobrocc" ? "$0" : "$"+v.total.toFixed(0)}</div><div>
             <td>${v.pago}</div><div>
             <td>$${v.cobroDeuda||0}</div><div>
             <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c; border:none; padding:5px 10px; border-radius:20px; color:white;">🗑️</button></div><div>
