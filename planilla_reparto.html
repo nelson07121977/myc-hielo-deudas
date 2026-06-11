@@ -155,7 +155,6 @@
             text-align: left; font-weight: 600; font-size: 0.72rem;
             text-transform: uppercase; letter-spacing: 0.5px;
         }
-        th:first-child { border-radius: 0; }
         td { border-bottom: 1px solid #f1f5f9; padding: 10px 10px; vertical-align: middle; color: #1e293b; }
         tr:last-child td { border-bottom: none; }
         tr:hover td { background: #f8fafc; }
@@ -352,7 +351,7 @@
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">💸 Detalle ventas semana</h3>
             <div class="tabla-wrapper">
                 <table id="weeklySalesTable">
-                    <thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead>
+                    <thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th><tr></thead>
                     <tbody id="weeklySalesBody"></tbody>
                 </table>
             </div>
@@ -491,7 +490,7 @@
                     <table id="comprobantesTable" style="font-size:0.75rem;">
                         <thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead>
                         <tbody id="comprobantesBody"></tbody>
-                    <table>
+                    </table>
                 </div>
             </div>
 
@@ -714,8 +713,7 @@ function eliminarVenta(id) {
     if(v && v.cobroDeuda>0) cobrosCC -= v.cobroDeuda;
     ventas = ventas.filter(v=>v.id!==id);
     saveDataByPin(currentDriverPin);
-    // También se debería eliminar de Sheets, pero por simplicidad no se implementa.
-    toast("Venta eliminada localmente. Para eliminar definitivamente de la nube, usa el panel de administración.");
+    toast("Venta eliminada localmente. Para eliminarla de la nube usa el panel de administración.");
 }
 
 function resetJornada() {
@@ -723,7 +721,6 @@ function resetJornada() {
     ventas = ventas.filter(v => v.fecha !== hoy);
     gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0;
     saveDataByPin(currentDriverPin);
-    // No borramos de Sheets para mantener historial.
 }
 
 // ==================== PRECIOS / COSTOS ====================
@@ -779,18 +776,20 @@ function renderAdmin() {
         <div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(gananciaNeta)}</div></div>`;
 
     document.getElementById("salesDetailBody").innerHTML = ventasHoy.length === 0
-        ? `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>`
-        : ventasHoy.map(v => `<tr>
-            <td><strong>${v.cliente}</strong></td>
-            <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</div><div>
-            <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></div><div>
-            <td>${badgePago(v.pago)}</div><div>
-            <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-        </tr>`).join('');
+        ? `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>`
+        : ventasHoy.map(v => `
+            <tr>
+                <td><strong>${v.cliente}</strong></td>
+                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
+                <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
+                <td>${badgePago(v.pago)}</td>
+                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+            </tr>
+        `).join('');
 
     actualizarGraficoClientes();
     renderVentasPorProducto();
@@ -828,19 +827,21 @@ function renderDriver() {
 
     const tbody = document.getElementById("driverSalesBody");
     tbody.innerHTML = ventasHoy.length === 0
-        ? `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>`
-        : ventasHoy.map(v => `<tr>
-            <td><strong>${v.cliente}</strong></td>
-            <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</div><div>
-            <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</div><div>
-            <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</div><div>
-            <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></div><div>
-            <td>${badgePago(v.pago)}</div><div>
-            <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-            <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></div><div>
-        </tr>`).join('');
+        ? `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>`
+        : ventasHoy.map(v => `
+            <tr>
+                <td><strong>${v.cliente}</strong></td>
+                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
+                <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
+                <td>${badgePago(v.pago)}</td>
+                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+                <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></td>
+            </tr>
+        `).join('');
 
     document.querySelectorAll(".delVentaBtn").forEach(btn =>
         btn.addEventListener("click", () => {
@@ -864,17 +865,17 @@ function renderClientesTab() {
         row.innerHTML = `
             <td><div style="width:36px;height:36px;background:var(--azul-claro);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--azul);font-size:0.85rem;">${cli.charAt(0)}</div></td>
             <td><strong>${cli}</strong></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></div><div>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>
         `;
         tbody.appendChild(row);
     }
@@ -882,9 +883,7 @@ function renderClientesTab() {
         btn.addEventListener("click", async () => {
             const cli = btn.getAttribute("data-cli");
             if(confirm(`¿Eliminar cliente "${cli}"?`)) {
-                // Eliminar de la hoja 'clientes' de Sheets
                 await apiCall('eliminarCliente', { nombre: cli });
-                // Recargar lista
                 await cargarClientesDesdeSheets();
                 delete preciosClientes[cli];
                 delete costosClientes[cli];
@@ -905,10 +904,10 @@ function renderProductosTab() {
     for(let p of productos) {
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></div><div>
-            <td><strong>${p.clave}</strong></div><div>
-            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></div><div>
-            <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></div><div>
+            <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></td>
+            <td><strong>${p.clave}</strong></td>
+            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></td>
+            <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></td>
         `;
         tbody.appendChild(row);
     }
@@ -947,12 +946,14 @@ function renderStockTab() {
         const prods = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
         tbody.innerHTML = prods.map(prod => {
             const restante = stockFabrica[prod] - vendido[prod];
-            return `<tr>
-                <td><strong>${prod}</strong></div><div>
-                <td style="text-align:center;">${stockFabrica[prod]}</div><div>
-                <td style="text-align:center;">${vendido[prod]}</div><div>
-                <td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</div><div>
-            </tr>`;
+            return `
+                <tr>
+                    <td><strong>${prod}</strong></td>
+                    <td style="text-align:center;">${stockFabrica[prod]}</td>
+                    <td style="text-align:center;">${vendido[prod]}</td>
+                    <td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</td>
+                </tr>
+            `;
         }).join('');
     }
 }
@@ -1008,10 +1009,16 @@ function renderWeeklyReport() {
     const tbody = document.getElementById("weeklySalesBody");
     if(tbody) {
         tbody.innerHTML = weeklyVentas.length===0
-            ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</div><div>`
-            : weeklyVentas.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v => `<tr>
-                <td>${v.fecha}</div><div><strong>${v.cliente}</strong></div><div>${fmtMoney(v.total)}</div><div>${badgePago(v.pago)}</div><div>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-            </tr>`).join('');
+            ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</td></tr>`
+            : weeklyVentas.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v => `
+                <tr>
+                    <td>${v.fecha}</td>
+                    <td><strong>${v.cliente}</strong></td>
+                    <td>${fmtMoney(v.total)}</td>
+                    <td>${badgePago(v.pago)}</td>
+                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+                </tr>
+            `).join('');
     }
 }
 
@@ -1081,7 +1088,7 @@ async function actualizarGastosDesdeDetalle() {
     if(document.getElementById("adminPanel").style.display==="block") renderAdmin();
 }
 
-// ==================== COMPROBANTES (sin cambios, solo se muestran los guardados en localStorage) ====================
+// ==================== COMPROBANTES ====================
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const numeroFormateado = String(numero).padStart(6,'0');
@@ -1107,15 +1114,15 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
         for(let item of items) {
             let subtotal = item.cant * item.precio;
             html += `<tr>`;
-            if(primerItem) html += `<td rowspan="${items.length}" style="font-weight:700;">${venta.cliente}</div><div>`;
-            html += `<td>${item.nombre}</div><div><td style="text-align:center;">${item.cant}</div><div><td>${fmtMoney(item.precio)}</div><div><td><strong>${fmtMoney(subtotal)}</strong></div><div>`;
+            if(primerItem) html += `<td rowspan="${items.length}" style="font-weight:700;">${venta.cliente}</td>`;
+            html += `<td>${item.nombre}</td><td style="text-align:center;">${item.cant}</td><td>${fmtMoney(item.precio)}</td><td><strong>${fmtMoney(subtotal)}</strong></td>`;
             primerItem = false;
         }
         if(venta.cobroDeuda && venta.cobroDeuda>0 && venta.pago!=="cobrocc") {
-            html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></div><div><td><strong>${fmtMoney(venta.cobroDeuda)}</strong></div><div>`;
+            html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></td><td><strong>${fmtMoney(venta.cobroDeuda)}</strong></td></tr>`;
         }
         let totalVenta = venta.total + (venta.cobroDeuda||0);
-        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;font-weight:700;">Total ${venta.cliente}</div><div><td style="font-weight:800;color:#0a3e6d;">${fmtMoney(totalVenta)}</div><div>`;
+        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;font-weight:700;">Total ${venta.cliente}</td><td style="font-weight:800;color:#0a3e6d;">${fmtMoney(totalVenta)}</td></tr>`;
         totalGeneral += totalVenta;
     }
     html += `</tbody></table>
@@ -1238,20 +1245,22 @@ function renderComprobantesHistorial() {
     let tbody = document.getElementById("comprobantesBody");
     if(!tbody) return;
     if(comprobantesHistorial.length===0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin comprobantes generados</div><div>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin comprobantes generados</td></tr>`;
         return;
     }
-    tbody.innerHTML = comprobantesHistorial.map(c => `<tr>
-        <td><strong>X-${String(c.numero).padStart(6,'0')}</strong></div><div>
-        <td>${new Date(c.fecha).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div><div>
-        <td>${c.resumen}</div><div>
-        <td><strong>${fmtMoney(c.total)}</strong></div><div>
-        <td style="white-space:nowrap;">
-            <button class="btn-small" style="background:#1259a0;" onclick="verComprobante(${c.numero})">👁️</button>
-            <button class="btn-small" onclick="reimprimirComprobante(${c.numero})">🖨️</button>
-            <button class="btn-small btn-rojo" onclick="eliminarComprobante(${c.numero})">🗑️</button>
-         </div><div>
-    </tr>`).join('');
+    tbody.innerHTML = comprobantesHistorial.map(c => `
+        <tr>
+            <td><strong>X-${String(c.numero).padStart(6,'0')}</strong></td>
+            <td>${new Date(c.fecha).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+            <td>${c.resumen}</td>
+            <td><strong>${fmtMoney(c.total)}</strong></td>
+            <td style="white-space:nowrap;">
+                <button class="btn-small" style="background:#1259a0;" onclick="verComprobante(${c.numero})">👁️</button>
+                <button class="btn-small" onclick="reimprimirComprobante(${c.numero})">🖨️</button>
+                <button class="btn-small btn-rojo" onclick="eliminarComprobante(${c.numero})">🗑️</button>
+             </td>
+        </tr>
+    `).join('');
 }
 
 // ==================== EXPORTAR PDF ====================
