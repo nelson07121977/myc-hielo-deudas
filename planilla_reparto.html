@@ -203,6 +203,22 @@
             .comprobante-modal { position: absolute; top: 0; left: 0; width: 100%; background: white; }
             .modal-buttons-premium { display: none; }
         }
+        /* Ajuste para que el botón eliminar producto se vea bien en móviles */
+        .delProdBtn {
+            background: #b91c1c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            width: auto;
+            display: inline-block;
+            margin: 0;
+        }
+        .delProdBtn:hover {
+            background: #991b1b;
+        }
     </style>
 </head>
 <body>
@@ -253,7 +269,7 @@
             <div class="summary-cards" id="weeklyStats"></div>
             <div class="chart-container"><h3>🏆 Top 10 clientes por volumen</h3><canvas id="topClientesChart"></canvas></div>
             <div class="chart-container"><h3>📈 Evolución diaria (semana)</h3><canvas id="weeklySalesChart"></canvas></div>
-            <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
+            <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></td></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
         </div>
         
         <!-- ========== SECCIÓN CLIENTES CORREGIDA ========== -->
@@ -291,7 +307,7 @@
             </div>
             <div style="overflow-x:auto">
                 <table id="productsTable">
-                    <thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></table></thead>
+                    <thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead>
                     <tbody id="productsTbody"></tbody>
                 </table>
             </div>
@@ -315,6 +331,7 @@
     </div>
 
     <div id="driverPanel" class="driver-panel" style="display:none;">
+        <!-- Panel de chofer (igual que antes, con comprobantes X) -->
         <div style="background:#1e5a3a; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; color:white; flex-wrap:wrap;">
             <span>🚚 CHOFER <span id="driverIdLabel"></span> - Registrar entregas y cobros</span>
             <button id="logoutDriver" style="background:#ef4444; width:auto; padding:6px 16px;">Salir</button>
@@ -342,6 +359,7 @@
             </div>
             <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             
+            <!-- SECCIÓN COMPROBANTES X -->
             <div class="card" style="margin-top: 20px;">
                 <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
                     📄 Comprobantes X (No fiscales)
@@ -363,6 +381,7 @@
 </div>
 <footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Datos por chofer. Cerrar día archiva jornada y limpia actual.</footer>
 
+<!-- Modal para comprobante X -->
 <div id="comprobanteModal" class="comprobante-modal">
     <div class="comprobante-modal-content">
         <div class="comprobante-header-premium">
@@ -450,19 +469,8 @@ function saveDataByPin(pin) {
 }
 function saveAll() { if (currentDriverPin) saveDataByPin(currentDriverPin); else { let sel = document.getElementById("adminChoferSelect")?.value; if(sel) saveDataByPin(sel); } saveGlobalPrices(); }
 
-// ========== CORRECCIÓN: comparar fechas como strings (YYYY-MM-DD) ==========
-function getVentasHoy() { 
-    const hoy = new Date().toISOString().slice(0,10);
-    return ventas.filter(v => v.fecha === hoy);
-}
-function getVentasUltimos7Dias() { 
-    const hoy = new Date();
-    const unaSemana = new Date();
-    unaSemana.setDate(hoy.getDate() - 6);
-    unaSemana.setHours(0,0,0,0);
-    const fechaLimite = unaSemana.toISOString().slice(0,10);
-    return ventas.filter(v => v.fecha >= fechaLimite);
-}
+function getVentasHoy() { const hoy = new Date().toISOString().slice(0,10); return ventas.filter(v => v.fecha === hoy); }
+function getVentasUltimos7Dias() { const hoy = new Date(); const unaSemana = new Date(); unaSemana.setDate(hoy.getDate() - 6); unaSemana.setHours(0,0,0,0); const fechaLimite = unaSemana.toISOString().slice(0,10); return ventas.filter(v => v.fecha >= fechaLimite); }
 function calcularTotalVenta(cliente, cant) { const p = preciosClientes[cliente]; return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32; }
 
 async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
@@ -511,11 +519,7 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
 }
 
 function eliminarVenta(id) { const v = ventas.find(v=>v.id===id); if(v && v.cobroDeuda>0) cobrosCC -= v.cobroDeuda; ventas = ventas.filter(v=>v.id!==id); saveAll(); }
-function resetJornada() { 
-    const hoy = new Date().toISOString().slice(0,10);
-    ventas = ventas.filter(v => v.fecha !== hoy);
-    gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); 
-}
+function resetJornada() { const hoy = new Date().toISOString().slice(0,10); ventas = ventas.filter(v => v.fecha !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
 
 function cerrarDiaAdmin() {
     let selectedPin = document.getElementById("adminChoferSelect")?.value;
@@ -536,7 +540,7 @@ function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON
 async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre] = getPreciosCliente(nombre); costosClientes[nombre] = getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); return true; } return false; }
 async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c => c !== nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; ventas = ventas.filter(v => v.cliente !== nombre); guardarClientesLocal(); saveAll(); return true; } return false; }
 
-// ========== COMPROBANTES X (sin cambios, solo se incluye por completitud) ==========
+// ========== FUNCIONES PARA COMPROBANTE PROFESIONAL ==========
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const numeroFormateado = String(numero).padStart(6,'0');
@@ -563,7 +567,7 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
         html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong>NonNullable<strong>$${totalVenta.toFixed(0)}</strong>NonNullable`;
         totalGeneral += totalVenta;
     }
-    html += `</tbody></table><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
+    html += `</tbody><td><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
     return html;
 }
 function generarComprobanteTextoPlanoPremium(tipo, datos, numero, fechaISO) {
@@ -657,7 +661,7 @@ function renderComprobantesHistorial() {
     `).join('');
 }
 
-// ========== RENDERIZADO PRINCIPAL CON TABLAS CORREGIDAS ==========
+// ========== RENDERIZADO PRINCIPAL ==========
 function renderAdmin() {
     const ventasHoy = getVentasHoy();
     let totalVentas=0, totalEfectivo=0, totalTransferencia=0, totalCtaCte=0, gananciaTotal=0;
@@ -689,7 +693,7 @@ function renderAdmin() {
             <td>${v.cantidades?.["14 KG"]||0}</td>
             <td>${v.cantidades?.["ESC.20KG"]||0}</td>
             <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
+            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
         </tr>
     `).join('');
     actualizarGraficoClientes();
@@ -733,14 +737,13 @@ function renderDriver() {
             <td>${v.cantidades?.["14 KG"]||0}</td>
             <td>${v.cantidades?.["ESC.20KG"]||0}</td>
             <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
+            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
             <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td>
         </tr>
     `).join('');
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.dataset.id)); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
     renderComprobantesHistorial();
 }
-
 function actualizarGraficoClientes() {
     const ventasHoy = getVentasHoy();
     const ventasPorCliente = {};
@@ -812,7 +815,7 @@ function renderClientesTab() {
                 <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="5"></td>
                 <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="5"></td>
                 <td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c;">🗑️</button></td>
-            </tr>
+            <tr>
         `;
     }
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => {
@@ -830,14 +833,21 @@ function renderProductosTab() {
     for(let p of productos) {
         tbody.innerHTML += `
             <tr>
-                <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></td>
+                <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:80px;"></td>
                 <td>${p.clave}</td>
                 <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" size="6"></td>
-                <td><button class="delProdBtn" data-clave="${p.clave}" style="background:#b91c1c;">Eliminar</button></td>
+                <td><button class="delProdBtn" data-clave="${p.clave}">🗑️ Eliminar</button></div><div>
             </tr>
         `;
     }
-    document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", (e) => { const clave = btn.getAttribute("data-clave"); if(confirm(`Eliminar producto ${clave}?`)) { productos = productos.filter(p => p.clave !== clave); saveCommonProducts(); renderProductosTab(); } }));
+    document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", (e) => {
+        const clave = btn.getAttribute("data-clave");
+        if(confirm(`¿Eliminar producto ${clave}?`)) {
+            productos = productos.filter(p => p.clave !== clave);
+            saveCommonProducts();
+            renderProductosTab();
+        }
+    }));
 }
 function renderStockTab() {
     const ventasHoy = getVentasHoy();
@@ -1055,14 +1065,111 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelectorAll(".costInput").forEach(inp => { const cli = inp.dataset.cli, prod = inp.dataset.prod; if (!costosClientes[cli]) costosClientes[cli] = getCostosCliente(); costosClientes[cli][prod] = parseInt(inp.value); });
         saveGlobalPrices(); alert("Precios y costos guardados correctamente."); renderAdmin();
     });
-    document.getElementById("addClienteBtn")?.addEventListener("click", async () => { const nuevo = document.getElementById("newClienteName").value.trim().toUpperCase(); if(!nuevo) return; if(await agregarClienteGlobal(nuevo)) { document.getElementById("newClienteName").value = ""; alert(`Cliente ${nuevo} agregado.`); if (document.getElementById("adminPanel").style.display === "block") renderAdmin(); if (document.getElementById("driverPanel").style.display === "block") renderDriver(); } else alert("El cliente ya existe"); });
-    document.getElementById("exportConfigBtn")?.addEventListener("click", () => { const config = { clientesList: CLIENTES_LIST, precios: preciosClientes, costos: costosClientes, productos: productos }; const dataStr = JSON.stringify(config, null, 2); const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `myc_config_${new Date().toISOString().slice(0,19)}.json`; a.click(); URL.revokeObjectURL(url); });
-    document.getElementById("importConfigInput")?.addEventListener("change", (e) => { if(e.target.files.length) { const reader = new FileReader(); reader.onload = function(ev) { try { const config = JSON.parse(ev.target.result); if(config.clientesList) { CLIENTES_LIST.length = 0; CLIENTES_LIST.push(...config.clientesList); } if(config.precios) preciosClientes = config.precios; if(config.costos) costosClientes = config.costos; if(config.productos) productos = config.productos; CLIENTES_LIST.forEach(c => { if(!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c] = getCostosCliente(); }); saveAll(); saveCommonProducts(); saveGlobalPrices(); alert("Configuración importada correctamente."); if(document.getElementById("adminPanel").style.display === "block") renderAdmin(); if(document.getElementById("driverPanel").style.display === "block") renderDriver(); } catch(err) { alert("Error al leer el archivo."); } }; reader.readAsText(e.target.files[0]); e.target.value = ''; } });
-    document.getElementById("addProductBtn")?.addEventListener("click", () => { const nuevoProd = document.getElementById("newProductName").value.trim(); if(!nuevoProd) return; const precio = parseInt(document.getElementById("newProductPrice").value) || 0; const img = document.getElementById("newProductImg").value || "https://placehold.co/100x100"; productos.push({ clave: nuevoProd, precioBase: precio, imagen: img }); saveCommonProducts(); renderProductosTab(); document.getElementById("newProductName").value = ""; document.getElementById("newProductPrice").value = ""; document.getElementById("newProductImg").value = ""; });
-    document.getElementById("saveProductsBtn")?.addEventListener("click", () => { document.querySelectorAll(".prodImg").forEach(img => { const clave = img.getAttribute("data-clave"); const prod = productos.find(p => p.clave === clave); if(prod) prod.imagen = img.value; }); document.querySelectorAll(".prodPriceBase").forEach(inp => { const clave = inp.getAttribute("data-clave"); const prod = productos.find(p => p.clave === clave); if(prod) prod.precioBase = parseInt(inp.value) || 0; }); saveCommonProducts(); alert("Productos guardados"); renderProductosTab(); });
-    document.getElementById("updateStockBtn")?.addEventListener("click", () => { stockFabrica = { "1,7 KG": parseInt(document.getElementById("fab_17").value) || 0, "3,5 KG": parseInt(document.getElementById("fab_35").value) || 0, "14 KG": parseInt(document.getElementById("fab_14").value) || 0, "ESC.20KG": parseInt(document.getElementById("fab_20").value) || 0, "ESC.32KG": parseInt(document.getElementById("fab_32").value) || 0 }; saveAll(); renderStockTab(); renderAdmin(); });
-    document.getElementById("adminChoferSelect")?.addEventListener("change", () => { if (document.getElementById("adminPanel").style.display === "block") { const selected = document.getElementById("adminChoferSelect").value; loadDataByPin(selected); renderAdmin(); } });
-    document.querySelectorAll(".tab-btn").forEach(btn => { btn.addEventListener("click", () => { document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); const tab = btn.getAttribute("data-tab"); document.getElementById("tabDashboard").style.display = tab === "dashboard" ? "block" : "none"; document.getElementById("tabReportes").style.display = tab === "reportes" ? "block" : "none"; document.getElementById("tabClientes").style.display = tab === "clientes" ? "block" : "none"; document.getElementById("tabProductos").style.display = tab === "productos" ? "block" : "none"; document.getElementById("tabStock").style.display = tab === "stock" ? "block" : "none"; if(tab === "dashboard") { actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); } if(tab === "reportes") renderWeeklyReport(); if(tab === "productos") renderProductosTab(); if(tab === "stock") renderStockTab(); }); });
+    document.getElementById("addClienteBtn")?.addEventListener("click", async () => {
+        const nuevo = document.getElementById("newClienteName").value.trim().toUpperCase();
+        if(!nuevo) return;
+        if(await agregarClienteGlobal(nuevo)) {
+            document.getElementById("newClienteName").value = "";
+            alert(`Cliente ${nuevo} agregado.`);
+            // Forzar actualización del select del chofer si está visible
+            if (document.getElementById("driverPanel").style.display === "block") {
+                renderDriver();
+            }
+            if (document.getElementById("adminPanel").style.display === "block") {
+                renderAdmin();
+            }
+        } else {
+            alert("El cliente ya existe");
+        }
+    });
+    document.getElementById("exportConfigBtn")?.addEventListener("click", () => {
+        const config = { clientesList: CLIENTES_LIST, precios: preciosClientes, costos: costosClientes, productos: productos };
+        const dataStr = JSON.stringify(config, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `myc_config_${new Date().toISOString().slice(0,19)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+    document.getElementById("importConfigInput")?.addEventListener("change", (e) => {
+        if(e.target.files.length) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const config = JSON.parse(ev.target.result);
+                    if(config.clientesList) { CLIENTES_LIST.length = 0; CLIENTES_LIST.push(...config.clientesList); }
+                    if(config.precios) preciosClientes = config.precios;
+                    if(config.costos) costosClientes = config.costos;
+                    if(config.productos) productos = config.productos;
+                    CLIENTES_LIST.forEach(c => { if(!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c] = getCostosCliente(); });
+                    saveAll();
+                    saveCommonProducts();
+                    saveGlobalPrices();
+                    alert("Configuración importada correctamente.");
+                    if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
+                    if(document.getElementById("driverPanel").style.display === "block") renderDriver();
+                } catch(err) { alert("Error al leer el archivo."); }
+            };
+            reader.readAsText(e.target.files[0]);
+            e.target.value = '';
+        }
+    });
+    document.getElementById("addProductBtn")?.addEventListener("click", () => {
+        const nuevoProd = document.getElementById("newProductName").value.trim();
+        if(!nuevoProd) return;
+        const precio = parseInt(document.getElementById("newProductPrice").value) || 0;
+        const img = document.getElementById("newProductImg").value || "https://placehold.co/100x100";
+        productos.push({ clave: nuevoProd, precioBase: precio, imagen: img });
+        saveCommonProducts();
+        renderProductosTab();
+        document.getElementById("newProductName").value = "";
+        document.getElementById("newProductPrice").value = "";
+        document.getElementById("newProductImg").value = "";
+    });
+    document.getElementById("saveProductsBtn")?.addEventListener("click", () => {
+        document.querySelectorAll(".prodImg").forEach(img => { const clave = img.getAttribute("data-clave"); const prod = productos.find(p => p.clave === clave); if(prod) prod.imagen = img.value; });
+        document.querySelectorAll(".prodPriceBase").forEach(inp => { const clave = inp.getAttribute("data-clave"); const prod = productos.find(p => p.clave === clave); if(prod) prod.precioBase = parseInt(inp.value) || 0; });
+        saveCommonProducts();
+        alert("Productos guardados");
+        renderProductosTab();
+    });
+    document.getElementById("updateStockBtn")?.addEventListener("click", () => {
+        stockFabrica = {
+            "1,7 KG": parseInt(document.getElementById("fab_17").value) || 0,
+            "3,5 KG": parseInt(document.getElementById("fab_35").value) || 0,
+            "14 KG": parseInt(document.getElementById("fab_14").value) || 0,
+            "ESC.20KG": parseInt(document.getElementById("fab_20").value) || 0,
+            "ESC.32KG": parseInt(document.getElementById("fab_32").value) || 0
+        };
+        saveAll();
+        renderStockTab();
+        renderAdmin();
+    });
+    document.getElementById("adminChoferSelect")?.addEventListener("change", () => {
+        if (document.getElementById("adminPanel").style.display === "block") {
+            const selected = document.getElementById("adminChoferSelect").value;
+            loadDataByPin(selected);
+            renderAdmin();
+        }
+    });
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+            btn.classList.add("active");
+            const tab = btn.getAttribute("data-tab");
+            document.getElementById("tabDashboard").style.display = tab === "dashboard" ? "block" : "none";
+            document.getElementById("tabReportes").style.display = tab === "reportes" ? "block" : "none";
+            document.getElementById("tabClientes").style.display = tab === "clientes" ? "block" : "none";
+            document.getElementById("tabProductos").style.display = tab === "productos" ? "block" : "none";
+            document.getElementById("tabStock").style.display = tab === "stock" ? "block" : "none";
+            if(tab === "dashboard") { actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); }
+            if(tab === "reportes") renderWeeklyReport();
+            if(tab === "productos") renderProductosTab();
+            if(tab === "stock") renderStockTab();
+        });
+    });
     document.getElementById("genComprobanteDiaBtn")?.addEventListener("click", generarComprobanteDia);
     document.getElementById("genComprobanteSemanaBtn")?.addEventListener("click", generarComprobanteSemana);
     document.getElementById("printComprobanteBtn")?.addEventListener("click", () => window.print());
