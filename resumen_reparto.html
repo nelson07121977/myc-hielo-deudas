@@ -8,195 +8,109 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
-        :root {
-            --bg-body: #f0f4f8;
-            --card-bg: white;
-            --text-primary: #0a3e6d;
-            --border: #e4e9f0;
-            --btn-primary: #0a3e6d;
-            --btn-red: #b91c1c;
-            --btn-green: #16a34a;
-            --btn-yellow: #d97706;
-            --color-deuda: #dc2626;
-            --color-pago: #10b981;
-            --color-efectivo: #3b82f6;
-            --color-transferencia: #f59e0b;
-        }
-        body { background: var(--bg-body); margin: 0; padding: 20px; }
+        body { background: #f0f4f8; margin: 0; padding: 20px; }
         .container { max-width: 1600px; margin: 0 auto; }
-        .card {
-            background: var(--card-bg);
-            border-radius: 28px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .card-title {
-            font-weight: 800;
-            font-size: 1.3rem;
-            color: var(--text-primary);
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            border-left: 4px solid var(--btn-primary);
-            padding-left: 14px;
-        }
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px,1fr)); gap: 20px; }
-        .stat-card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 18px;
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-        .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
-        .stat-label { font-size: 0.75rem; color: #475569; text-transform: uppercase; margin-top: 6px; }
+        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 24px; border: 1px solid #e4e9f0; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .card-title { font-weight: 800; font-size: 1.25rem; color: #0a3e6d; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-left: 4px solid #0a3e6d; padding-left: 12px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px,1fr)); gap: 20px; }
+        .stat-card { background: #f8fafc; border-radius: 20px; padding: 16px; text-align: center; border: 1px solid #e4e9f0; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: #0a3e6d; }
+        .stat-label { font-size: 0.7rem; color: #475569; text-transform: uppercase; margin-top: 6px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        th, td { padding: 10px 6px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-        th { background: #eef2ff; font-weight: 700; color: var(--text-primary); position: sticky; top: 0; }
-        .badge-deuda { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
-        .badge-pago { background: #d1fae5; color: #0a7c4a; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
-        .badge-efectivo { background: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; display: inline-block; }
-        .badge-transferencia { background: #fed7aa; color: #92400e; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; display: inline-block; }
-        .badge-credito { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; display: inline-block; }
-        .saldo-positivo { color: #dc2626; font-weight: 800; }
-        .btn {
-            padding: 6px 14px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            font-weight: 500;
-            transition: all 0.2s;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-primary { background: var(--btn-primary); color: white; }
-        .btn-primary:hover { background: #1e4a8a; }
-        .btn-green { background: var(--btn-green); color: white; }
-        .btn-red { background: var(--btn-red); color: white; }
-        .btn-yellow { background: var(--btn-yellow); color: white; }
-        .btn-sm { padding: 4px 10px; font-size: 0.7rem; }
-        .filtro { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-        .filtro input, .filtro select { padding: 8px 14px; border-radius: 28px; border: 1px solid var(--border); background: white; font-size: 0.85rem; }
-        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--btn-primary); color: white; padding: 10px 22px; border-radius: 40px; font-size: 0.85rem; z-index: 1000; display: none; }
+        th, td { padding: 10px 6px; text-align: left; border-bottom: 1px solid #e4e9f0; vertical-align: top; }
+        th { background: #eef2ff; font-weight: 700; color: #0a3e6d; position: sticky; top: 0; }
+        .badge-deuda { background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; display: inline-block; }
+        .badge-pago { background: #d1fae5; color: #0a7c4a; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; display: inline-block; }
+        .badge-efectivo { background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; display: inline-block; }
+        .badge-transferencia { background: #fed7aa; color: #92400e; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; display: inline-block; }
+        .btn { padding: 6px 12px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; border: none; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-primary { background: #0a3e6d; color: white; }
+        .btn-red { background: #b91c1c; color: white; }
+        .btn-green { background: #16a34a; color: white; }
+        .btn-yellow { background: #d97706; color: white; }
+        .btn-sm { padding: 4px 8px; font-size: 0.65rem; }
+        .filtro { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        .filtro input, .filtro select { padding: 6px 12px; border-radius: 24px; border: 1px solid #e4e9f0; font-size: 0.8rem; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 8px 16px; border-radius: 40px; font-size: 0.8rem; z-index: 1000; display: none; }
         .toast.show { display: block; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: white; max-width: 500px; width: 90%; border-radius: 28px; padding: 24px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
-        .form-group input, .form-group select { width: 100%; padding: 8px; border-radius: 20px; border: 1px solid var(--border); }
-        .productos-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-        .producto-item {
-            background: #f8fafc;
-            border-radius: 10px;
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .producto-item.kg17 { background: #dbeafe; color: #1e40af; }
-        .producto-item.kg35 { background: #dbeafe; color: #1e40af; }
-        .producto-item.kg14 { background: #c7d2fe; color: #3730a3; }
-        .producto-item.kg20 { background: #c7d2fe; color: #3730a3; }
-        .producto-item.kg32 { background: #c7d2fe; color: #3730a3; }
-        .scroll-table { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+        .modal-content { background: white; max-width: 500px; width: 90%; border-radius: 24px; padding: 20px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.8rem; }
+        .form-group input, .form-group select { width: 100%; padding: 6px; border-radius: 16px; border: 1px solid #e4e9f0; }
+        .scroll-table { overflow-x: auto; max-height: 400px; overflow-y: auto; }
+        .productos-texto { font-size: 0.7rem; color: #475569; }
+        hr { margin: 12px 0; }
         @media print { .no-print { display: none !important; } body { background: white; } }
-        hr { margin: 16px 0; }
     </style>
 </head>
 <body>
 <div class="container">
     <!-- Header -->
-    <div class="card" style="background: linear-gradient(135deg, #0a3e6d 0%, #1e4a8a 100%); color: white; border: none;">
+    <div class="card" style="background: linear-gradient(135deg, #0a3e6d, #1e4a8a); color: white; border: none;">
         <h1 style="margin: 0;">🧊 MYC HIELO</h1>
-        <p style="margin: 8px 0 0; opacity: 0.9;">Resumen de Reparto · Control Total</p>
-        <div class="no-print" style="margin-top: 16px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <p>Resumen de Reparto · Control Total</p>
+        <div class="no-print" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="refreshBtn" class="btn" style="background: rgba(255,255,255,0.2);"><i class="fas fa-sync-alt"></i> Actualizar</button>
-            <button id="exportExcelBtn" class="btn btn-green"><i class="fas fa-file-excel"></i> Exportar Excel</button>
+            <button id="exportExcelBtn" class="btn btn-green"><i class="fas fa-file-excel"></i> Exportar todo</button>
             <button onclick="window.print()" class="btn" style="background: rgba(255,255,255,0.2);"><i class="fas fa-print"></i> Imprimir todo</button>
         </div>
     </div>
 
+    <!-- Tarjetas resumen -->
+    <div class="grid-2">
+        <div class="stat-card"><div class="stat-value" id="totalDeudas">$0</div><div class="stat-label">💰 Total Deuda</div></div>
+        <div class="stat-card"><div class="stat-value" id="totalCobros">$0</div><div class="stat-label">✅ Cobros de deuda</div></div>
+        <div class="stat-card"><div class="stat-value" id="totalGastos">$0</div><div class="stat-label">💸 Gastos (hoy)</div></div>
+        <div class="stat-card"><div class="stat-value" id="netoTotal">$0</div><div class="stat-label">💰 Neto General</div></div>
+    </div>
+
     <!-- Buscador de clientes -->
     <div class="card">
-        <div class="card-title">🔍 Buscar Cliente
-            <button id="limpiarBusquedaBtn" class="btn btn-sm btn-yellow no-print"><i class="fas fa-times"></i> Limpiar</button>
-        </div>
-        <div class="filtro">
-            <input type="text" id="buscarClienteInput" placeholder="Nombre del cliente..." style="flex:1;">
-            <button id="buscarClienteBtn" class="btn btn-primary"><i class="fas fa-search"></i> Buscar</button>
-        </div>
+        <div class="card-title">🔍 Buscar Cliente <button id="limpiarBusquedaBtn" class="btn btn-sm btn-yellow no-print"><i class="fas fa-times"></i> Limpiar</button></div>
+        <div class="filtro"><input type="text" id="buscarClienteInput" placeholder="Nombre del cliente..." style="flex:1;"><button id="buscarClienteBtn" class="btn btn-primary"><i class="fas fa-search"></i> Buscar</button></div>
         <div id="clienteResultado"></div>
     </div>
 
-    <!-- Rendición por Chofer -->
+    <!-- Rendición por chofer -->
     <div class="grid-2">
         <div class="card">
-            <div class="card-title">👨‍✈️ Chofer 1234
-                <div class="no-print"><input type="date" id="fechaChofer1234" style="padding: 4px 8px;"><button id="verChofer1234Btn" class="btn btn-sm btn-primary">Agregar fecha</button><button id="cargarTodo1234Btn" class="btn btn-sm btn-green">Cargar todo</button><button onclick="copiarTabla('rendicion1234Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i></button></div>
-            </div>
-            <div class="scroll-table" style="max-height: 400px;">
-                <table id="rendicion1234Tabla"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros</th><th>Gastos</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="rendicion1234Body"></tbody></table>
-            </div>
+            <div class="card-title">👨‍✈️ Chofer 1234 <div class="no-print"><input type="date" id="fecha1234" style="width:120px;"><button id="addFecha1234Btn" class="btn btn-sm btn-primary">Agregar</button><button id="cargarTodo1234Btn" class="btn btn-sm btn-green">Todo</button><button onclick="copiarTabla('tabla1234')" class="btn btn-sm"><i class="fas fa-copy"></i></button></div></div>
+            <div class="scroll-table"><table id="tabla1234"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros</th><th>Gastos</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="body1234"></tbody></table></div>
         </div>
         <div class="card">
-            <div class="card-title">👨‍✈️ Chofer 5678
-                <div class="no-print"><input type="date" id="fechaChofer5678" style="padding: 4px 8px;"><button id="verChofer5678Btn" class="btn btn-sm btn-primary">Agregar fecha</button><button id="cargarTodo5678Btn" class="btn btn-sm btn-green">Cargar todo</button><button onclick="copiarTabla('rendicion5678Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i></button></div>
-            </div>
-            <div class="scroll-table" style="max-height: 400px;">
-                <table id="rendicion5678Tabla"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros</th><th>Gastos</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="rendicion5678Body"></tbody></table>
-            </div>
+            <div class="card-title">👨‍✈️ Chofer 5678 <div class="no-print"><input type="date" id="fecha5678" style="width:120px;"><button id="addFecha5678Btn" class="btn btn-sm btn-primary">Agregar</button><button id="cargarTodo5678Btn" class="btn btn-sm btn-green">Todo</button><button onclick="copiarTabla('tabla5678')" class="btn btn-sm"><i class="fas fa-copy"></i></button></div></div>
+            <div class="scroll-table"><table id="tabla5678"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros</th><th>Gastos</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="body5678"></tbody></table></div>
         </div>
     </div>
 
     <!-- Movimientos -->
     <div class="card">
-        <div class="card-title">📅 Movimientos (con productos)
-            <div class="no-print"><input type="date" id="fechaGeneral"><button id="verFechaGeneralBtn" class="btn btn-sm btn-primary">Ver</button><button id="cargarTodosMovimientosBtn" class="btn btn-sm btn-green">Cargar todos</button><button onclick="copiarTabla('movimientosTabla')" class="btn btn-sm"><i class="fas fa-copy"></i></button><button id="exportarFechaExcelBtn" class="btn btn-sm btn-green"><i class="fas fa-file-excel"></i> Excel</button></div>
-        </div>
-        <div class="scroll-table" style="max-height: 500px;">
-            <table id="movimientosTabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody id="movimientosBody"></tbody></table>
-        </div>
+        <div class="card-title">📜 Movimientos <div class="no-print"><input type="date" id="fechaMovimientos"><button id="verFechaMovBtn" class="btn btn-sm btn-primary">Ver fecha</button><button id="verTodosMovBtn" class="btn btn-sm btn-green">Todos</button><button onclick="copiarTabla('tablaMovimientos')" class="btn btn-sm"><i class="fas fa-copy"></i></button><button id="exportMovExcelBtn" class="btn btn-sm btn-green"><i class="fas fa-file-excel"></i> Excel</button></div></div>
+        <div class="scroll-table"><table id="tablaMovimientos"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody id="bodyMovimientos"></tbody></table></div>
     </div>
 
     <!-- Clientes con deuda -->
     <div class="card">
-        <div class="card-title">📋 Clientes con Deuda
-            <div class="no-print"><button onclick="copiarTabla('deudoresTabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
-        </div>
-        <div class="scroll-table"><table id="deudoresTabla"><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Estado</th><th class="no-print">Acciones</th></tr></thead><tbody id="deudoresBody"></tbody></table></div>
+        <div class="card-title">📋 Clientes con Deuda <div class="no-print"><button onclick="copiarTabla('tablaDeudores')" class="btn btn-sm"><i class="fas fa-copy"></i></button><button onclick="exportarDeudoresExcel()" class="btn btn-sm btn-green"><i class="fas fa-file-excel"></i> Excel</button></div></div>
+        <div class="scroll-table"><table id="tablaDeudores"><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Estado</th><th class="no-print">Acción</th></tr></thead><tbody id="bodyDeudores"></tbody></table></div>
     </div>
 
-    <!-- Gastos por chofer -->
+    <!-- Gastos -->
     <div class="grid-2">
         <div class="card">
-            <div class="card-title">💸 Gastos Chofer 1234
-                <div class="no-print"><input type="date" id="gastosFecha1234"><button id="verGastos1234Btn" class="btn btn-sm btn-primary">Ver</button><button id="cargarTodosGastos1234Btn" class="btn btn-sm btn-green">Cargar todos</button><button onclick="copiarTabla('gastos1234Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i></button></div>
-            </div>
-            <div class="scroll-table" style="max-height: 300px;">
-                <table id="gastos1234Tabla"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead><tbody id="gastos1234Body"></tbody></table>
-            </div>
+            <div class="card-title">💸 Gastos Chofer 1234 <div class="no-print"><input type="date" id="gastosFecha1234" style="width:120px;"><button id="verGastos1234Btn" class="btn btn-sm btn-primary">Ver</button><button id="todosGastos1234Btn" class="btn btn-sm btn-green">Todos</button><button onclick="copiarTabla('tablaGastos1234')" class="btn btn-sm"><i class="fas fa-copy"></i></button></div></div>
+            <div class="scroll-table"><table id="tablaGastos1234"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print"></th></tr></thead><tbody id="bodyGastos1234"></tbody></table></div>
         </div>
         <div class="card">
-            <div class="card-title">💸 Gastos Chofer 5678
-                <div class="no-print"><input type="date" id="gastosFecha5678"><button id="verGastos5678Btn" class="btn btn-sm btn-primary">Ver</button><button id="cargarTodosGastos5678Btn" class="btn btn-sm btn-green">Cargar todos</button><button onclick="copiarTabla('gastos5678Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i></button></div>
-            </div>
-            <div class="scroll-table" style="max-height: 300px;">
-                <table id="gastos5678Tabla"><thead></tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead><tbody id="gastos5678Body"></tbody></table>
-            </div>
+            <div class="card-title">💸 Gastos Chofer 5678 <div class="no-print"><input type="date" id="gastosFecha5678" style="width:120px;"><button id="verGastos5678Btn" class="btn btn-sm btn-primary">Ver</button><button id="todosGastos5678Btn" class="btn btn-sm btn-green">Todos</button><button onclick="copiarTabla('tablaGastos5678')" class="btn btn-sm"><i class="fas fa-copy"></i></button></div></div>
+            <div class="scroll-table"><table id="tablaGastos5678"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print"></th></tr></thead><tbody id="bodyGastos5678"></tbody></table></div>
         </div>
     </div>
 </div>
 
 <div id="toast" class="toast"></div>
+<div id="modal" class="modal"><div class="modal-content"><h3 id="modalTitulo">Editar</h3><div id="modalBody"></div><div style="display:flex; gap:10px; margin-top:20px;"><button id="modalGuardar" class="btn btn-primary">Guardar</button><button id="modalCancelar" class="btn btn-red">Cancelar</button></div></div></div>
 
 <script>
 // ==================== CONFIGURACIÓN ====================
@@ -204,443 +118,468 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6
 
 let clientes = [];
 let movimientos = [];
-let gastosDetallados = [];
-let ventasLocales = [];
+let gastos = [];
+let ventasLocal = [];
 
-function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
+function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2000); }
 
-function normalizarFecha(fecha) {
+function normalizarNumero(val) {
+    if (val === undefined || val === null) return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    let str = String(val).replace(/[$]/g, '').replace(/[.]/g, '').replace(/[,]/g, '');
+    let n = parseFloat(str);
+    return isNaN(n) ? 0 : n;
+}
+
+function formatearFechaYMD(fecha) {
     if (!fecha) return '';
     let str = String(fecha);
     if (str.includes('T')) str = str.split('T')[0];
+    if (str.match(/^\d{4}-\d{2}-\d{2}/)) return str;
     if (str.match(/^\d{2}\/\d{2}\/\d{4}/)) {
-        let partes = str.split('/');
-        return `${partes[2]}-${partes[1]}-${partes[0]}`;
+        let p = str.split('/');
+        return `${p[2]}-${p[1]}-${p[0]}`;
     }
     return str;
 }
 
-function normalizarMonto(valor) {
-    if (valor === undefined || valor === null || valor === '') return 0;
-    if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
-    let str = String(valor).trim().replace(/[$]/g, '').replace(/[.]/g, '').replace(/[,]/g, '');
-    let num = parseFloat(str);
-    return isNaN(num) ? 0 : num;
+function formatearFechaDMY(fecha) {
+    if (!fecha) return '';
+    let ymd = formatearFechaYMD(fecha);
+    let p = ymd.split('-');
+    if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return ymd;
 }
 
-function getHoyISO() { return new Date().toISOString().slice(0,10); }
-
-function formatearProductos(cantidades) {
-    if (!cantidades) return '<span style="color:#94a3b8;">-</span>';
-    const items = [
-        { key: "1,7 KG", label: "🥤 1,7kg", class: "kg17" },
-        { key: "3,5 KG", label: "🥤 3,5kg", class: "kg35" },
-        { key: "14 KG", label: "🧊 14kg", class: "kg14" },
-        { key: "ESC.20KG", label: "🧊 20kg", class: "kg20" },
-        { key: "ESC.32KG", label: "🧊 32kg", class: "kg32" }
-    ];
-    let html = '<div class="productos-grid">';
-    let hay = false;
-    for (const item of items) {
-        let cantidad = cantidades[item.key] || 0;
-        if (cantidad > 0) {
-            hay = true;
-            html += `<div class="producto-item ${item.class}">${item.label}<strong>✖️ ${cantidad}</strong></div>`;
-        }
-    }
-    if (!hay) html += '<span style="color:#94a3b8;">-</span>';
-    html += '</div>';
-    return html;
+function formatearProductos(cant) {
+    if (!cant) return '-';
+    let items = [];
+    if (cant["1,7 KG"] > 0) items.push(`1,7kg: ${cant["1,7 KG"]}`);
+    if (cant["3,5 KG"] > 0) items.push(`3,5kg: ${cant["3,5 KG"]}`);
+    if (cant["14 KG"] > 0) items.push(`14kg: ${cant["14 KG"]}`);
+    if (cant["ESC.20KG"] > 0) items.push(`20kg: ${cant["ESC.20KG"]}`);
+    if (cant["ESC.32KG"] > 0) items.push(`32kg: ${cant["ESC.32KG"]}`);
+    return items.length ? items.join(', ') : '-';
 }
 
-function getTipoHtml(tipo, pago) {
-    if (tipo === "deuda") return '<span class="badge-deuda">➕ DEUDA</span>';
-    if (tipo === "pago") return '<span class="badge-pago">💸 PAGO</span>';
-    if (pago === "efectivo") return '<span class="badge-efectivo">💵 EFECTIVO</span>';
-    if (pago === "transferencia") return '<span class="badge-transferencia">💳 TRANSFERENCIA</span>';
-    if (pago === "ctacte") return '<span class="badge-credito">📘 CRÉDITO</span>';
-    if (pago === "cobrocc") return '<span class="badge-pago">🔄 COBRO DEUDA</span>';
-    return '<span class="badge-pago">-</span>';
+function getTipoHtml(item) {
+    if (item.tipo === "deuda") return '<span class="badge-deuda">➕ DEUDA</span>';
+    if (item.tipo === "pago") return '<span class="badge-pago">💸 PAGO</span>';
+    if (item.pago === "efectivo") return '<span class="badge-efectivo">💵 EFECTIVO</span>';
+    if (item.pago === "transferencia") return '<span class="badge-transferencia">💳 TRANSFERENCIA</span>';
+    if (item.pago === "ctacte") return '<span class="badge-deuda">📘 CRÉDITO</span>';
+    if (item.pago === "cobrocc") return '<span class="badge-pago">🔄 COBRO</span>';
+    return '-';
 }
 
-// Cargar datos
-function cargarGastosDeChoferes() {
-    gastosDetallados = [];
-    for (const pin of ["1234", "5678"]) {
-        const prefix = `myc_${pin}_`;
-        const gastosRaw = localStorage.getItem(prefix + "gastosDetallados");
-        if (gastosRaw) {
-            const gastos = JSON.parse(gastosRaw);
-            for (const g of gastos) gastosDetallados.push({ ...g, chofer: pin, fecha: normalizarFecha(g.fecha) });
-        }
-        const gastosDetRaw = localStorage.getItem(prefix + "gastosDetalle");
-        if (gastosDetRaw) {
-            const gd = JSON.parse(gastosDetRaw);
-            if (gd.nafta > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Nafta", monto: gd.nafta, nota: "", chofer: pin });
-            if (gd.choferes > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Chofer", monto: gd.choferes, nota: "", chofer: pin });
-            if (gd.otros > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Otros", monto: gd.otros, nota: "", chofer: pin });
-        }
-    }
-}
-
-function cargarVentasLocales() {
-    ventasLocales = [];
-    for (const pin of ["1234", "5678"]) {
-        const prefix = `myc_${pin}_`;
-        const ventasRaw = localStorage.getItem(prefix + "ventas");
-        if (ventasRaw) {
-            const ventas = JSON.parse(ventasRaw);
-            for (const v of ventas) {
-                ventasLocales.push({ 
-                    ...v, 
-                    chofer: pin, 
-                    fecha: normalizarFecha(v.fecha),
-                    cantidades: v.cantidades || {}
-                });
-            }
-        }
-    }
-}
-
-async function cargarDatosDesdeSheets() {
+// ========== CARGAR DATOS ==========
+async function cargarSheets() {
     try {
-        const [clientesRes, movimientosRes] = await Promise.all([
+        let [r1, r2] = await Promise.all([
             fetch(`${API_URL}?ruta=clientes&_=${Date.now()}`),
             fetch(`${API_URL}?ruta=movimientos&_=${Date.now()}`)
         ]);
-        clientes = await clientesRes.json();
-        const movRaw = await movimientosRes.json();
-        movimientos = (movRaw || []).map(m => ({
+        clientes = await r1.json();
+        let raw = await r2.json();
+        movimientos = (raw || []).map(m => ({
             id: m.id,
-            fecha: normalizarFecha(m.fecha),
+            fecha: formatearFechaYMD(m.fecha),
             cliente: m.cliente_nombre || m.cliente,
             tipo: m.tipo,
-            monto: normalizarMonto(m.monto),
-            forma_pago: m.forma_pago,
+            monto: normalizarNumero(m.monto),
             detalle: m.detalle || ''
         }));
-    } catch(e) { console.error(e); toast("Error de conexión"); }
+    } catch(e) { console.error(e); toast("Error Sheets"); }
 }
 
-// Renderizado
-function renderRendicionChofer(pin, tablaId, fecha) {
-    if (!fecha) return;
-    const tbody = document.getElementById(tablaId);
-    if (!tbody) return;
-    for (let row of tbody.rows) {
-        if (row.cells[0] && row.cells[0].innerText === fecha) {
-            toast(`La fecha ${fecha} ya existe`);
-            return;
+function cargarLocalStorage() {
+    gastos = [];
+    ventasLocal = [];
+    for (let pin of ["1234", "5678"]) {
+        let pref = `myc_${pin}_`;
+        let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
+        for (let v of ventas) {
+            ventasLocal.push({
+                id: v.id,
+                fecha: formatearFechaYMD(v.fecha),
+                cliente: v.cliente,
+                pago: v.pago,
+                total: normalizarNumero(v.total),
+                cobroDeuda: normalizarNumero(v.cobroDeuda),
+                cantidades: v.cantidades || {},
+                detalle: v.detalle || '',
+                chofer: pin
+            });
+        }
+        let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
+        for (let g of gastosDet) {
+            gastos.push({ ...g, fecha: formatearFechaYMD(g.fecha), chofer: pin });
+        }
+        let gastosSimp = JSON.parse(localStorage.getItem(pref + "gastosDetalle") || "{}");
+        if (gastosSimp.nafta) gastos.push({ fecha: getHoy(), categoria: "Nafta", monto: gastosSimp.nafta, nota: "", chofer: pin });
+        if (gastosSimp.choferes) gastos.push({ fecha: getHoy(), categoria: "Chofer", monto: gastosSimp.choferes, nota: "", chofer: pin });
+        if (gastosSimp.otros) gastos.push({ fecha: getHoy(), categoria: "Otros", monto: gastosSimp.otros, nota: "", chofer: pin });
+    }
+}
+
+function getHoy() { return new Date().toISOString().slice(0,10); }
+
+// ========== RENDERIZADO ==========
+function renderResumen() {
+    let totalDeuda = 0, totalCobros = 0, totalGastosHoy = 0;
+    for (let m of movimientos) {
+        if (m.tipo === "deuda") totalDeuda += m.monto;
+        if (m.tipo === "pago") totalCobros += m.monto;
+    }
+    let hoy = getHoy();
+    for (let g of gastos) if (g.fecha === hoy) totalGastosHoy += g.monto;
+    let efectivoHoy = 0, transferHoy = 0, cobrosHoy = 0;
+    for (let v of ventasLocal) {
+        if (v.fecha === hoy) {
+            if (v.pago === "efectivo") efectivoHoy += v.total;
+            if (v.pago === "transferencia") transferHoy += v.total;
+            if (v.pago === "cobrocc") cobrosHoy += v.total;
+            if (v.cobroDeuda > 0) cobrosHoy += v.cobroDeuda;
         }
     }
-    let ventas = ventasLocales.filter(v => v.chofer === pin && v.fecha === fecha);
-    let efectivo = 0, transferencias = 0, cobros = 0;
-    for (const v of ventas) {
-        if (v.pago === "efectivo") efectivo += v.total || 0;
-        if (v.pago === "transferencia") transferencias += v.total || 0;
-        if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
-        else if (v.pago === "cobrocc") cobros += v.total || 0;
-    }
-    for (const m of movimientos) {
-        if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
-    }
-    let gastosChofer = gastosDetallados.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a,g) => a + g.monto, 0);
-    let neto = efectivo + transferencias + cobros - gastosChofer;
-    const row = tbody.insertRow();
-    row.insertCell(0).innerHTML = fecha;
-    row.insertCell(1).innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
-    row.insertCell(2).innerHTML = `$${transferencias.toLocaleString('es-AR')}`;
-    row.insertCell(3).innerHTML = `$${cobros.toLocaleString('es-AR')}`;
-    row.insertCell(4).innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
-    row.insertCell(5).innerHTML = `<strong style="color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
-    const acc = row.insertCell(6); acc.className = "no-print";
-    acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarRegistroDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i></button>`;
+    for (let m of movimientos) if (m.fecha === hoy && m.tipo === "pago") cobrosHoy += m.monto;
+    let neto = efectivoHoy + transferHoy + cobrosHoy - totalGastosHoy;
+    document.getElementById("totalDeudas").innerHTML = `$${totalDeuda.toLocaleString('es-AR')}`;
+    document.getElementById("totalCobros").innerHTML = `$${totalCobros.toLocaleString('es-AR')}`;
+    document.getElementById("totalGastos").innerHTML = `$${totalGastosHoy.toLocaleString('es-AR')}`;
+    document.getElementById("netoTotal").innerHTML = `$${neto.toLocaleString('es-AR')}`;
 }
 
-function renderTodasLasFechasChofer(pin, tablaId) {
-    const fechasSet = new Set();
-    for (const v of ventasLocales.filter(v => v.chofer === pin)) if (v.fecha) fechasSet.add(v.fecha);
-    for (const g of gastosDetallados.filter(g => g.chofer === pin)) if (g.fecha) fechasSet.add(g.fecha);
-    const fechas = Array.from(fechasSet).sort().reverse();
-    const tbody = document.getElementById(tablaId);
+function renderRendicionChofer(pin, tablaBodyId) {
+    let fechas = new Set();
+    for (let v of ventasLocal.filter(v => v.chofer === pin)) if (v.fecha) fechas.add(v.fecha);
+    for (let g of gastos.filter(g => g.chofer === pin)) if (g.fecha) fechas.add(g.fecha);
+    let fechasArr = Array.from(fechas).sort().reverse();
+    let tbody = document.getElementById(tablaBodyId);
     if (!tbody) return;
     tbody.innerHTML = '';
-    for (const fecha of fechas) {
-        let ventas = ventasLocales.filter(v => v.chofer === pin && v.fecha === fecha);
-        let efectivo = 0, transferencias = 0, cobros = 0;
-        for (const v of ventas) {
-            if (v.pago === "efectivo") efectivo += v.total || 0;
-            if (v.pago === "transferencia") transferencias += v.total || 0;
+    for (let fecha of fechasArr) {
+        let ventas = ventasLocal.filter(v => v.chofer === pin && v.fecha === fecha);
+        let efectivo = 0, transfer = 0, cobros = 0;
+        for (let v of ventas) {
+            if (v.pago === "efectivo") efectivo += v.total;
+            if (v.pago === "transferencia") transfer += v.total;
             if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
-            else if (v.pago === "cobrocc") cobros += v.total || 0;
+            else if (v.pago === "cobrocc") cobros += v.total;
         }
-        for (const m of movimientos) {
-            if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
-        }
-        let gastosChofer = gastosDetallados.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a,g) => a + g.monto, 0);
-        let neto = efectivo + transferencias + cobros - gastosChofer;
-        const row = tbody.insertRow();
-        row.insertCell(0).innerHTML = fecha;
+        for (let m of movimientos) if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
+        let gastosChofer = gastos.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a,g) => a + g.monto, 0);
+        let neto = efectivo + transfer + cobros - gastosChofer;
+        let row = tbody.insertRow();
+        row.insertCell(0).innerHTML = formatearFechaDMY(fecha);
         row.insertCell(1).innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
-        row.insertCell(2).innerHTML = `$${transferencias.toLocaleString('es-AR')}`;
+        row.insertCell(2).innerHTML = `$${transfer.toLocaleString('es-AR')}`;
         row.insertCell(3).innerHTML = `$${cobros.toLocaleString('es-AR')}`;
         row.insertCell(4).innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
-        row.insertCell(5).innerHTML = `<strong style="color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
-        const acc = row.insertCell(6); acc.className = "no-print";
-        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarRegistroDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i></button>`;
+        row.insertCell(5).innerHTML = `<strong style="color:${neto>=0?'#16a34a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
+        let acc = row.insertCell(6); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button>`;
     }
-    if (tbody.rows.length === 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No hay registros</div><div></tr>';
 }
 
-function eliminarRegistroDia(pin, fecha) {
+function eliminarDia(pin, fecha) {
     if (!confirm(`¿Eliminar TODOS los registros del ${fecha} para chofer ${pin}?`)) return;
-    const prefix = `myc_${pin}_`;
-    let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
-    ventas = ventas.filter(v => normalizarFecha(v.fecha) !== fecha);
-    localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
-    let gastosDet = JSON.parse(localStorage.getItem(prefix + "gastosDetallados") || "[]");
-    gastosDet = gastosDet.filter(g => normalizarFecha(g.fecha) !== fecha);
-    localStorage.setItem(prefix + "gastosDetallados", JSON.stringify(gastosDet));
-    toast(`Registros del ${fecha} eliminados`);
-    actualizarTodo();
+    let pref = `myc_${pin}_`;
+    let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
+    ventas = ventas.filter(v => formatearFechaYMD(v.fecha) !== fecha);
+    localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
+    let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
+    gastosDet = gastosDet.filter(g => formatearFechaYMD(g.fecha) !== fecha);
+    localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
+    toast(`Día ${fecha} eliminado`);
+    cargarLocalStorage();
+    renderTodo();
 }
 
 function renderMovimientos(fecha = null) {
-    let movs = [...movimientos];
-    let ventas = [...ventasLocales];
-    if (fecha) {
-        movs = movs.filter(m => m.fecha === fecha);
-        ventas = ventas.filter(v => v.fecha === fecha);
+    let todos = [];
+    for (let m of movimientos) todos.push({ ...m, tipoMov: 'sheets' });
+    for (let v of ventasLocal) {
+        todos.push({
+            id: v.id,
+            fecha: v.fecha,
+            cliente: v.cliente,
+            tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null),
+            pago: v.pago,
+            monto: v.pago === "cobrocc" ? (v.cobroDeuda || v.total) : v.total,
+            detalle: v.detalle,
+            cantidades: v.cantidades,
+            chofer: v.chofer,
+            tipoMov: 'local'
+        });
     }
-    const tbody = document.getElementById("movimientosBody");
+    if (fecha) todos = todos.filter(t => t.fecha === fecha);
+    todos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    let tbody = document.getElementById("bodyMovimientos");
     if (!tbody) return;
     tbody.innerHTML = '';
-    for (const m of movs) {
-        const row = tbody.insertRow();
-        row.insertCell(0).innerHTML = m.fecha;
-        row.insertCell(1).innerHTML = m.cliente;
-        row.insertCell(2).innerHTML = getTipoHtml(m.tipo, null);
-        row.insertCell(3).innerHTML = `<strong>$${m.monto.toLocaleString('es-AR')}</strong>`;
-        row.insertCell(4).innerHTML = formatearProductos({});
-        row.insertCell(5).innerHTML = m.detalle || '';
-        const acc = row.insertCell(6); acc.className = "no-print";
-        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarMovimiento(${m.id})"><i class="fas fa-trash-alt"></i></button>`;
+    for (let t of todos) {
+        let row = tbody.insertRow();
+        row.insertCell(0).innerHTML = formatearFechaDMY(t.fecha);
+        row.insertCell(1).innerHTML = t.cliente;
+        row.insertCell(2).innerHTML = getTipoHtml(t);
+        row.insertCell(3).innerHTML = `<strong>$${t.monto.toLocaleString('es-AR')}</strong>`;
+        row.insertCell(4).innerHTML = formatearProductos(t.cantidades);
+        row.insertCell(5).innerHTML = t.detalle || '';
+        let acc = row.insertCell(6); acc.className = "no-print";
+        if (t.tipoMov === 'sheets') {
+            acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarMovimientoSheet(${t.id})"><i class="fas fa-trash-alt"></i> Eliminar</button>`;
+        } else {
+            acc.innerHTML = `<button class="btn btn-sm btn-yellow" onclick="editarVentaLocal(${t.id}, '${t.chofer}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-red" onclick="eliminarVentaLocal(${t.id}, '${t.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
+        }
     }
-    for (const v of ventas) {
-        const row = tbody.insertRow();
-        row.insertCell(0).innerHTML = v.fecha;
-        row.insertCell(1).innerHTML = v.cliente;
-        row.insertCell(2).innerHTML = getTipoHtml(null, v.pago);
-        row.insertCell(3).innerHTML = `<strong>$${(v.total || 0).toLocaleString('es-AR')}</strong>`;
-        row.insertCell(4).innerHTML = formatearProductos(v.cantidades);
-        row.insertCell(5).innerHTML = v.detalle || '';
-        const acc = row.insertCell(6); acc.className = "no-print";
-        acc.innerHTML = `<button class="btn btn-sm btn-yellow" onclick="editarVentaLocal(${v.id}, '${v.chofer}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-red" onclick="eliminarVentaLocal(${v.id}, '${v.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
-    }
-    if (tbody.rows.length === 0) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No hay movimientos</div><div></tr>';
 }
 
-function eliminarMovimiento(id) {
-    if (!confirm("¿Eliminar este movimiento de Google Sheets?")) return;
+function eliminarMovimientoSheet(id) {
+    if (!confirm("¿Eliminar movimiento de Google Sheets?")) return;
     fetch(API_URL, { method: 'POST', body: new URLSearchParams({ ruta: 'eliminarMovimiento', id: id }) })
-        .then(() => { toast("Movimiento eliminado"); actualizarTodo(); })
+        .then(() => { toast("Eliminado"); cargarSheets().then(() => renderTodo()); })
         .catch(e => toast("Error"));
 }
 
 function eliminarVentaLocal(id, chofer) {
     if (!confirm("¿Eliminar esta venta?")) return;
-    const prefix = `myc_${chofer}_`;
-    let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
+    let pref = `myc_${chofer}_`;
+    let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
     ventas = ventas.filter(v => v.id !== id);
-    localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
+    localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
     toast("Venta eliminada");
-    actualizarTodo();
+    cargarLocalStorage();
+    renderTodo();
 }
 
 function editarVentaLocal(id, chofer) {
-    toast("Edición: seleccione el registro en la planilla de reparto");
+    toast("Edición: use la Planilla de Reparto");
 }
 
-function renderGastosChofer(pin, fecha = null, todos = false) {
-    const tbodyId = pin === "1234" ? "gastos1234Body" : "gastos5678Body";
-    const tbody = document.getElementById(tbodyId);
-    if (!tbody) return;
-    let gastos = gastosDetallados.filter(g => g.chofer === pin);
-    if (!todos && fecha) gastos = gastos.filter(g => g.fecha === fecha);
-    gastos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
-    tbody.innerHTML = '';
-    if (gastos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Sin gastos</div><div></tr>';
-        return;
+function renderDeudores() {
+    let saldos = {};
+    for (let c of clientes) saldos[c] = 0;
+    for (let m of movimientos) {
+        if (m.tipo === "deuda") saldos[m.cliente] = (saldos[m.cliente] || 0) + m.monto;
+        if (m.tipo === "pago") saldos[m.cliente] = (saldos[m.cliente] || 0) - m.monto;
     }
-    for (let i = 0; i < gastos.length; i++) {
-        const g = gastos[i];
-        const row = tbody.insertRow();
-        row.insertCell(0).innerHTML = g.fecha;
+    let deudores = Object.entries(saldos).filter(([,s]) => s > 0).sort((a,b) => b[1] - a[1]);
+    let tbody = document.getElementById("bodyDeudores");
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    for (let [cliente, saldo] of deudores) {
+        let row = tbody.insertRow();
+        row.insertCell(0).innerHTML = cliente;
+        row.insertCell(1).innerHTML = `<strong style="color:#dc2626;">$${saldo.toLocaleString('es-AR')}</strong>`;
+        row.insertCell(2).innerHTML = '<span class="badge-deuda">🔴 DEBE</span>';
+        let acc = row.insertCell(3); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-primary" onclick="verHistorialCliente('${cliente}')"><i class="fas fa-search"></i> Ver historial</button>`;
+    }
+}
+
+function verHistorialCliente(cliente) {
+    let todos = [];
+    for (let m of movimientos) if (m.cliente === cliente) todos.push({ ...m, tipoMov: 'sheets' });
+    for (let v of ventasLocal) if (v.cliente === cliente) todos.push({ ...v, tipoMov: 'local' });
+    todos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    let html = `<div class="scroll-table" style="max-height: 400px;"><table style="width:100%"><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></tr></thead><tbody>`;
+    for (let t of todos) {
+        let tipo = t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago === "efectivo" ? "Efectivo" : (t.pago === "transferencia" ? "Transferencia" : "Crédito")));
+        html += `<tr><td>${formatearFechaDMY(t.fecha)}</td><td>${tipo}</td><td><strong>$${(t.monto || t.total || 0).toLocaleString('es-AR')}</strong></td><td>${formatearProductos(t.cantidades)}</td><td>${t.detalle || ''}</td></tr>`;
+    }
+    html += `</tbody></table></div><div class="no-print" style="margin-top:10px;"><button class="btn btn-sm btn-primary" onclick="copiarTexto('${cliente}')">Copiar</button> <button class="btn btn-sm btn-green" onclick="exportarClienteExcel('${cliente}')">Excel</button></div>`;
+    document.getElementById("clienteResultado").innerHTML = html;
+}
+
+function renderGastos(pin, fecha = null, todos = false) {
+    let tbodyId = pin === "1234" ? "bodyGastos1234" : "bodyGastos5678";
+    let tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    let filtrados = gastos.filter(g => g.chofer === pin);
+    if (!todos && fecha) filtrados = filtrados.filter(g => g.fecha === fecha);
+    filtrados.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    tbody.innerHTML = '';
+    if (filtrados.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Sin gastos</td></tr>'; return; }
+    for (let i = 0; i < filtrados.length; i++) {
+        let g = filtrados[i];
+        let row = tbody.insertRow();
+        row.insertCell(0).innerHTML = formatearFechaDMY(g.fecha);
         row.insertCell(1).innerHTML = g.categoria;
         row.insertCell(2).innerHTML = `<strong>$${g.monto.toLocaleString('es-AR')}</strong>`;
         row.insertCell(3).innerHTML = g.nota || '';
-        const acc = row.insertCell(4); acc.className = "no-print";
-        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarGasto('${pin}', '${g.fecha}', '${g.categoria}', ${g.monto})"><i class="fas fa-trash-alt"></i></button>`;
+        let acc = row.insertCell(4); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarGasto('${pin}','${g.fecha}','${g.categoria}',${g.monto})"><i class="fas fa-trash-alt"></i></button>`;
     }
 }
 
 function eliminarGasto(pin, fecha, categoria, monto) {
     if (!confirm(`¿Eliminar gasto: ${categoria} $${monto}?`)) return;
-    const prefix = `myc_${pin}_`;
-    let gastosDet = JSON.parse(localStorage.getItem(prefix + "gastosDetallados") || "[]");
+    let pref = `myc_${pin}_`;
+    let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
     gastosDet = gastosDet.filter(g => !(g.fecha === fecha && g.categoria === categoria && g.monto === monto));
-    localStorage.setItem(prefix + "gastosDetallados", JSON.stringify(gastosDet));
+    localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
     toast("Gasto eliminado");
-    actualizarTodo();
+    cargarLocalStorage();
+    renderTodo();
 }
 
-function renderDeudores() {
-    let saldos = {};
-    for (const c of clientes) saldos[c] = 0;
-    for (const m of movimientos) {
-        if (!m.cliente || !saldos.hasOwnProperty(m.cliente)) continue;
-        if (m.tipo === "deuda") saldos[m.cliente] += m.monto;
-        else if (m.tipo === "pago") saldos[m.cliente] -= m.monto;
+function addRendicionFecha(pin, tablaBodyId, fecha) {
+    if (!fecha) { toast("Seleccione fecha"); return; }
+    let tbody = document.getElementById(tablaBodyId);
+    for (let row of tbody.rows) if (row.cells[0] && row.cells[0].innerText === formatearFechaDMY(fecha)) { toast("Fecha ya existe"); return; }
+    let ventas = ventasLocal.filter(v => v.chofer === pin && v.fecha === fecha);
+    let efectivo = 0, transfer = 0, cobros = 0;
+    for (let v of ventas) {
+        if (v.pago === "efectivo") efectivo += v.total;
+        if (v.pago === "transferencia") transfer += v.total;
+        if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
+        else if (v.pago === "cobrocc") cobros += v.total;
     }
-    const deudores = Object.entries(saldos).filter(([, s]) => s > 0).sort((a,b) => b[1] - a[1]);
-    const tbody = document.getElementById("deudoresBody");
-    tbody.innerHTML = '';
-    for (const [cliente, saldo] of deudores) {
-        const row = tbody.insertRow();
-        row.insertCell(0).innerHTML = cliente;
-        row.insertCell(1).innerHTML = `<span class="saldo-positivo">$${saldo.toLocaleString('es-AR')}</span>`;
-        row.insertCell(2).innerHTML = '<span class="badge-deuda">🔴 DEBE</span>';
-        const acc = row.insertCell(3); acc.className = "no-print";
-        acc.innerHTML = `<button class="btn btn-sm btn-primary" onclick="verHistorialCliente('${cliente}')"><i class="fas fa-search"></i> Ver</button>`;
-    }
-    if (deudores.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">No hay clientes con deuda</div><div></tr>';
+    for (let m of movimientos) if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
+    let gastosChofer = gastos.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a,g) => a + g.monto, 0);
+    let neto = efectivo + transfer + cobros - gastosChofer;
+    let row = tbody.insertRow();
+    row.insertCell(0).innerHTML = formatearFechaDMY(fecha);
+    row.insertCell(1).innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
+    row.insertCell(2).innerHTML = `$${transfer.toLocaleString('es-AR')}`;
+    row.insertCell(3).innerHTML = `$${cobros.toLocaleString('es-AR')}`;
+    row.insertCell(4).innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
+    row.insertCell(5).innerHTML = `<strong style="color:${neto>=0?'#16a34a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
+    let acc = row.insertCell(6); acc.className = "no-print";
+    acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button>`;
 }
 
-function verHistorialCliente(cliente) {
-    const movsCliente = movimientos.filter(m => m.cliente === cliente);
-    const ventasCliente = ventasLocales.filter(v => v.cliente === cliente);
-    let html = `<div class="scroll-table" style="max-height: 400px;"><table style="width:100%"><thead><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></thead><tbody>`;
-    for (const m of movsCliente) {
-        html += `<tr><td>${m.fecha}</td><td>${m.tipo === "deuda" ? 'Deuda' : 'Pago'}</td><td><strong>$${m.monto.toLocaleString('es-AR')}</strong></td><td>-</td><td>${m.detalle || ''}</td></tr>`;
-    }
-    for (const v of ventasCliente) {
-        const prodHtml = formatearProductos(v.cantidades);
-        let tipo = v.pago === "efectivo" ? "Efectivo" : (v.pago === "transferencia" ? "Transferencia" : (v.pago === "ctacte" ? "Crédito" : "Cobro"));
-        html += `<tr><td>${v.fecha}</td><td>${tipo}</td><td><strong>$${(v.total || 0).toLocaleString('es-AR')}</strong></td><td>${prodHtml}</td><td>${v.detalle || ''}</td></tr>`;
-    }
-    html += `</tbody></table></div><div class="no-print" style="margin-top:12px;"><button class="btn btn-sm btn-primary" onclick="copiarTexto('${cliente}')">Copiar</button> <button class="btn btn-sm btn-green" onclick="window.print()">Imprimir</button></div>`;
-    document.getElementById("clienteResultado").innerHTML = html;
-}
-
-function buscarCliente() {
-    const nombre = document.getElementById("buscarClienteInput").value.trim();
-    if (!nombre) { toast("Ingrese un nombre"); return; }
-    verHistorialCliente(nombre);
-}
-
-function limpiarBusqueda() {
-    document.getElementById("buscarClienteInput").value = "";
-    document.getElementById("clienteResultado").innerHTML = "";
-}
-
+// ========== EXCEL Y COPIAR ==========
 function copiarTabla(tablaId) {
-    const tabla = document.getElementById(tablaId);
+    let tabla = document.getElementById(tablaId);
     if (!tabla) return;
     let texto = Array.from(tabla.querySelectorAll("tr")).map(tr => Array.from(tr.children).map(td => td.innerText).join("\t")).join("\n");
-    navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada")).catch(() => toast("Error"));
+    navigator.clipboard.writeText(texto).then(() => toast("Copiado"));
 }
 
 function copiarTexto(texto) { navigator.clipboard.writeText(texto).then(() => toast("Copiado")); }
 
-function exportarExcel() {
-    const wsData = [["Resumen MYC HIELO", getHoyISO()], []];
-    wsData.push(["CLIENTES CON DEUDA"], ["Cliente", "Saldo Deudor"]);
+function exportarExcelCompleto() {
+    let wsData = [["Resumen MYC HIELO", new Date().toLocaleString()], []];
+    wsData.push(["TOTAL DEUDA", document.getElementById("totalDeudas").innerText]);
+    wsData.push(["TOTAL COBROS", document.getElementById("totalCobros").innerText]);
+    wsData.push(["TOTAL GASTOS HOY", document.getElementById("totalGastos").innerText]);
+    wsData.push(["NETO GENERAL", document.getElementById("netoTotal").innerText]);
+    wsData.push([]);
+    wsData.push(["CLIENTES CON DEUDA"], ["Cliente", "Saldo"]);
     let saldos = {};
-    for (const c of clientes) saldos[c] = 0;
-    for (const m of movimientos) {
+    for (let c of clientes) saldos[c] = 0;
+    for (let m of movimientos) {
         if (m.tipo === "deuda") saldos[m.cliente] = (saldos[m.cliente] || 0) + m.monto;
-        else if (m.tipo === "pago") saldos[m.cliente] = (saldos[m.cliente] || 0) - m.monto;
+        if (m.tipo === "pago") saldos[m.cliente] = (saldos[m.cliente] || 0) - m.monto;
     }
-    for (const [c, s] of Object.entries(saldos)) if (s > 0) wsData.push([c, s]);
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
+    for (let [c, s] of Object.entries(saldos)) if (s > 0) wsData.push([c, s]);
+    let ws = XLSX.utils.aoa_to_sheet(wsData);
+    let wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Resumen");
-    XLSX.writeFile(wb, `myc_resumen_${getHoyISO()}.xlsx`);
+    XLSX.writeFile(wb, `myc_resumen_${getHoy()}.xlsx`);
     toast("Excel exportado");
 }
 
-function exportarFechaExcel() {
-    const fecha = document.getElementById("fechaGeneral").value;
-    if (!fecha) { toast("Seleccione una fecha"); return; }
-    const movs = movimientos.filter(m => m.fecha === fecha);
-    const ventasDia = ventasLocales.filter(v => v.fecha === fecha);
-    const wsData = [["Movimientos del", fecha], ["Fecha", "Cliente", "Tipo", "Monto", "Productos", "Detalle"]];
-    for (const m of movs) wsData.push([m.fecha, m.cliente, m.tipo, m.monto, "", m.detalle]);
-    for (const v of ventasDia) {
-        const prodStr = Object.entries(v.cantidades || {}).filter(([,c]) => c>0).map(([k,c]) => `${k}:${c}`).join(', ');
-        wsData.push([v.fecha, v.cliente, v.pago, v.total || 0, prodStr, v.detalle]);
+function exportarDeudoresExcel() {
+    let saldos = {};
+    for (let c of clientes) saldos[c] = 0;
+    for (let m of movimientos) {
+        if (m.tipo === "deuda") saldos[m.cliente] = (saldos[m.cliente] || 0) + m.monto;
+        if (m.tipo === "pago") saldos[m.cliente] = (saldos[m.cliente] || 0) - m.monto;
     }
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
-    XLSX.writeFile(wb, `movimientos_${fecha}.xlsx`);
+    let wsData = [["Deudores", new Date().toLocaleString()], ["Cliente", "Saldo"]];
+    for (let [c, s] of Object.entries(saldos)) if (s > 0) wsData.push([c, s]);
+    let ws = XLSX.utils.aoa_to_sheet(wsData);
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Deudores");
+    XLSX.writeFile(wb, `deudores_${getHoy()}.xlsx`);
     toast("Excel exportado");
 }
 
-async function actualizarTodo() {
-    toast("Cargando datos...");
-    await cargarDatosDesdeSheets();
-    cargarGastosDeChoferes();
-    cargarVentasLocales();
-    renderDeudores();
-    renderTodasLasFechasChofer("1234", "rendicion1234Body");
-    renderTodasLasFechasChofer("5678", "rendicion5678Body");
-    renderMovimientos();
-    renderGastosChofer("1234", null, true);
-    renderGastosChofer("5678", null, true);
-    toast("Datos actualizados");
+function exportarClienteExcel(cliente) {
+    let todos = [];
+    for (let m of movimientos) if (m.cliente === cliente) todos.push(m);
+    for (let v of ventasLocal) if (v.cliente === cliente) todos.push(v);
+    todos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    let wsData = [["Historial", cliente], ["Fecha", "Tipo", "Monto", "Productos", "Detalle"]];
+    for (let t of todos) {
+        let tipo = t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : t.pago);
+        let monto = t.monto || t.total || 0;
+        wsData.push([formatearFechaDMY(t.fecha), tipo, monto, formatearProductos(t.cantidades), t.detalle || '']);
+    }
+    let ws = XLSX.utils.aoa_to_sheet(wsData);
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, cliente);
+    XLSX.writeFile(wb, `${cliente}_historial.xlsx`);
+    toast("Excel exportado");
 }
 
-// Eventos
-document.getElementById("refreshBtn").addEventListener("click", actualizarTodo);
-document.getElementById("exportExcelBtn").addEventListener("click", exportarExcel);
-document.getElementById("verFechaGeneralBtn").addEventListener("click", () => {
-    const fecha = document.getElementById("fechaGeneral").value;
-    if (fecha) renderMovimientos(fecha);
-    else toast("Seleccione una fecha");
-});
-document.getElementById("cargarTodosMovimientosBtn").addEventListener("click", () => renderMovimientos());
-document.getElementById("exportarFechaExcelBtn").addEventListener("click", exportarFechaExcel);
-document.getElementById("verChofer1234Btn").addEventListener("click", () => {
-    const fecha = document.getElementById("fechaChofer1234").value;
-    if (fecha) renderRendicionChofer("1234", "rendicion1234Body", fecha);
-    else toast("Seleccione fecha");
-});
-document.getElementById("cargarTodo1234Btn").addEventListener("click", () => renderTodasLasFechasChofer("1234", "rendicion1234Body"));
-document.getElementById("verChofer5678Btn").addEventListener("click", () => {
-    const fecha = document.getElementById("fechaChofer5678").value;
-    if (fecha) renderRendicionChofer("5678", "rendicion5678Body", fecha);
-    else toast("Seleccione fecha");
-});
-document.getElementById("cargarTodo5678Btn").addEventListener("click", () => renderTodasLasFechasChofer("5678", "rendicion5678Body"));
-document.getElementById("verGastos1234Btn").addEventListener("click", () => {
-    const fecha = document.getElementById("gastosFecha1234").value;
-    if (fecha) renderGastosChofer("1234", fecha, false);
-    else toast("Seleccione fecha");
-});
-document.getElementById("cargarTodosGastos1234Btn").addEventListener("click", () => renderGastosChofer("1234", null, true));
-document.getElementById("verGastos5678Btn").addEventListener("click", () => {
-    const fecha = document.getElementById("gastosFecha5678").value;
-    if (fecha) renderGastosChofer("5678", fecha, false);
-    else toast("Seleccione fecha");
-});
-document.getElementById("cargarTodosGastos5678Btn").addEventListener("click", () => renderGastosChofer("5678", null, true));
-document.getElementById("buscarClienteBtn").addEventListener("click", buscarCliente);
-document.getElementById("limpiarBusquedaBtn").addEventListener("click", limpiarBusqueda);
+function exportarMovimientosExcel() {
+    let fecha = document.getElementById("fechaMovimientos").value;
+    let todos = [];
+    for (let m of movimientos) todos.push(m);
+    for (let v of ventasLocal) todos.push(v);
+    if (fecha) todos = todos.filter(t => t.fecha === fecha);
+    todos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    let wsData = [["Movimientos", fecha || "Todos"], ["Fecha", "Cliente", "Tipo", "Monto", "Productos", "Detalle"]];
+    for (let t of todos) {
+        let tipo = t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : t.pago);
+        let monto = t.monto || t.total || 0;
+        wsData.push([formatearFechaDMY(t.fecha), t.cliente, tipo, monto, formatearProductos(t.cantidades), t.detalle || '']);
+    }
+    let ws = XLSX.utils.aoa_to_sheet(wsData);
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
+    XLSX.writeFile(wb, `movimientos_${fecha || "todos"}.xlsx`);
+    toast("Excel exportado");
+}
 
-actualizarTodo();
-setInterval(actualizarTodo, 60000);
+// ========== RENDER TODO ==========
+async function renderTodo() {
+    toast("Cargando...");
+    await cargarSheets();
+    cargarLocalStorage();
+    renderResumen();
+    renderRendicionChofer("1234", "body1234");
+    renderRendicionChofer("5678", "body5678");
+    renderMovimientos();
+    renderDeudores();
+    renderGastos("1234", null, true);
+    renderGastos("5678", null, true);
+    toast("Actualizado");
+}
+
+// ========== EVENTOS ==========
+document.getElementById("refreshBtn").addEventListener("click", renderTodo);
+document.getElementById("exportExcelBtn").addEventListener("click", exportarExcelCompleto);
+document.getElementById("verFechaMovBtn").addEventListener("click", () => {
+    let f = document.getElementById("fechaMovimientos").value;
+    if (f) renderMovimientos(f);
+    else toast("Seleccione fecha");
+});
+document.getElementById("verTodosMovBtn").addEventListener("click", () => renderMovimientos());
+document.getElementById("exportMovExcelBtn").addEventListener("click", exportarMovimientosExcel);
+document.getElementById("addFecha1234Btn").addEventListener("click", () => addRendicionFecha("1234", "body1234", document.getElementById("fecha1234").value));
+document.getElementById("cargarTodo1234Btn").addEventListener("click", () => renderRendicionChofer("1234", "body1234"));
+document.getElementById("addFecha5678Btn").addEventListener("click", () => addRendicionFecha("5678", "body5678", document.getElementById("fecha5678").value));
+document.getElementById("cargarTodo5678Btn").addEventListener("click", () => renderRendicionChofer("5678", "body5678"));
+document.getElementById("verGastos1234Btn").addEventListener("click", () => renderGastos("1234", document.getElementById("gastosFecha1234").value, false));
+document.getElementById("todosGastos1234Btn").addEventListener("click", () => renderGastos("1234", null, true));
+document.getElementById("verGastos5678Btn").addEventListener("click", () => renderGastos("5678", document.getElementById("gastosFecha5678").value, false));
+document.getElementById("todosGastos5678Btn").addEventListener("click", () => renderGastos("5678", null, true));
+document.getElementById("buscarClienteBtn").addEventListener("click", () => {
+    let nom = document.getElementById("buscarClienteInput").value.trim();
+    if (nom) verHistorialCliente(nom);
+    else toast("Ingrese nombre");
+});
+document.getElementById("limpiarBusquedaBtn").addEventListener("click", () => {
+    document.getElementById("buscarClienteInput").value = "";
+    document.getElementById("clienteResultado").innerHTML = "";
+});
+
+renderTodo();
 </script>
 </body>
 </html>
