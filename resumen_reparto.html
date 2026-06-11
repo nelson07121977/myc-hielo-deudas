@@ -2,13 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>MYC HIELO – Resumen de Reparto</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
-        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif; }
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         :root {
             --bg-body: #f0f4f8;
             --card-bg: white;
@@ -19,19 +19,16 @@
             --btn-primary-hover: #1e4a8a;
             --btn-red: #b91c1c;
             --btn-green: #16a34a;
-            --stat-bg: #ffffff;
-            --deuda-color: #dc2626;
-            --credito-color: #f59e0b;
-            --pagado-color: #10b981;
+            --btn-yellow: #d97706;
         }
         body { background: var(--bg-body); margin: 0; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1600px; margin: 0 auto; }
         .card {
             background: var(--card-bg);
             border-radius: 28px;
             padding: 24px;
             margin-bottom: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border: 1px solid var(--border);
         }
         .card-title {
@@ -47,26 +44,25 @@
             border-left: 4px solid var(--btn-primary);
             padding-left: 14px;
         }
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 20px; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 16px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 16px; }
         .stat-card {
-            background: var(--stat-bg);
+            background: var(--card-bg);
             border-radius: 20px;
             padding: 18px;
             text-align: center;
             border: 1px solid var(--border);
         }
-        .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; }
-        .stat-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
+        .stat-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-top: 6px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { background: #eef2ff; font-weight: 700; color: var(--text-primary); }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+        th { background: #eef2ff; font-weight: 700; color: var(--text-primary); position: sticky; top: 0; }
         .badge-deuda { background: #fee2e2; color: #b91c1c; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
         .badge-pago { background: #d1fae5; color: #0a7c4a; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
-        .baddeuda { background: #dc2626; color: white; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; }
+        .baddeuda { background: #dc2626; color: white; padding: 4px 10px; border-radius: 40px; font-size: 0.7rem; }
         .saldo-positivo { color: #dc2626; font-weight: 800; }
         .saldo-negativo { color: #f59e0b; font-weight: 800; }
-        .saldo-cero { color: #10b981; font-weight: 800; }
         .btn {
             padding: 8px 16px;
             border-radius: 40px;
@@ -75,105 +71,113 @@
             font-weight: 500;
             transition: all 0.2s;
             border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .btn-primary { background: var(--btn-primary); color: white; }
         .btn-primary:hover { background: var(--btn-primary-hover); transform: translateY(-1px); }
         .btn-green { background: var(--btn-green); color: white; }
+        .btn-red { background: var(--btn-red); color: white; }
+        .btn-yellow { background: var(--btn-yellow); color: white; }
         .btn-sm { padding: 5px 12px; font-size: 0.7rem; }
         .filtro { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-        .filtro input, .filtro select { padding: 8px 14px; border-radius: 28px; border: 1px solid var(--border); background: white; font-size: 0.85rem; }
-        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--btn-primary); color: white; padding: 10px 22px; border-radius: 40px; font-size: 0.85rem; z-index: 1000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .filtro input, .filtro select { padding: 8px 14px; border-radius: 28px; border: 1px solid var(--border); background: white; font-size: 0.85rem; min-width: 180px; }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--btn-primary); color: white; padding: 10px 22px; border-radius: 40px; font-size: 0.85rem; z-index: 1000; display: none; }
         .toast.show { display: block; }
-        .total-box { background: var(--btn-primary); color: white; padding: 16px; border-radius: 20px; text-align: center; margin-top: 16px; }
-        hr { margin: 20px 0; border-color: var(--border); }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; max-width: 500px; width: 90%; border-radius: 28px; padding: 24px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border-radius: 20px; border: 1px solid var(--border); }
         @media print {
             body { background: white; padding: 0; }
             .no-print { display: none !important; }
             .card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
-            .stat-card { border: 1px solid #ccc; }
         }
+        .productos-detalle { font-size: 0.7rem; color: #475569; margin-top: 4px; }
+        .scroll-table { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+        .tabla-container { overflow-x: auto; }
     </style>
 </head>
 <body>
 <div class="container">
     <!-- Header -->
     <div class="card" style="text-align: center; background: linear-gradient(135deg, #0a3e6d 0%, #1e4a8a 100%); color: white; border: none;">
-        <h1 style="margin: 0; font-size: 1.8rem;">🧊 MYC HIELO</h1>
+        <h1 style="margin: 0;">🧊 MYC HIELO</h1>
         <p style="margin: 8px 0 0; opacity: 0.9;">Resumen de Reparto · Control Total</p>
         <div class="no-print" style="margin-top: 16px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button id="refreshBtn" class="btn btn-primary" style="background: rgba(255,255,255,0.2);"><i class="fas fa-sync-alt"></i> Actualizar</button>
+            <button id="refreshBtn" class="btn" style="background: rgba(255,255,255,0.2);"><i class="fas fa-sync-alt"></i> Actualizar</button>
             <button id="exportExcelBtn" class="btn btn-green"><i class="fas fa-file-excel"></i> Exportar Excel</button>
-            <button onclick="window.print()" class="btn btn-primary" style="background: rgba(255,255,255,0.2);"><i class="fas fa-print"></i> Imprimir</button>
+            <button onclick="window.print()" class="btn" style="background: rgba(255,255,255,0.2);"><i class="fas fa-print"></i> Imprimir todo</button>
         </div>
     </div>
 
-    <!-- Tarjetas de resumen rápido -->
+    <!-- Buscador de clientes -->
+    <div class="card">
+        <div class="card-title">🔍 Buscar Cliente
+            <div><button id="limpiarBusquedaBtn" class="btn btn-sm btn-yellow"><i class="fas fa-times"></i> Limpiar</button></div>
+        </div>
+        <div class="filtro">
+            <input type="text" id="buscarClienteInput" placeholder="Nombre del cliente..." style="flex:1;">
+            <button id="buscarClienteBtn" class="btn btn-primary"><i class="fas fa-search"></i> Buscar</button>
+        </div>
+        <div id="clienteResultado"></div>
+    </div>
+
+    <!-- Rendición por Chofer con calendario -->
     <div class="grid-2">
-        <div class="stat-card"><div class="stat-value" id="totalDeudas">$0</div><div class="stat-label">💰 Total Deuda Actual</div></div>
-        <div class="stat-card"><div class="stat-value" id="totalCobrosPeriodo">$0</div><div class="stat-label">✅ Cobros (últimos 7 días)</div></div>
-        <div class="stat-card"><div class="stat-value" id="totalGastosHoy">$0</div><div class="stat-label">💸 Gastos de Hoy</div></div>
-        <div class="stat-card"><div class="stat-value" id="netoGeneral">$0</div><div class="stat-label">💰 Neto (Efectivo + Cobros - Gastos)</div></div>
-    </div>
-
-    <!-- Rendición por chofer -->
-    <div class="card">
-        <div class="card-title">👥 Rendición por Chofer (hoy)
-            <span class="no-print"><button class="btn btn-sm btn-primary" onclick="copiarTabla('rendicionChoferesTabla')"><i class="fas fa-copy"></i> Copiar</button></span>
+        <div class="card">
+            <div class="card-title">👨‍✈️ Chofer 1234
+                <div><input type="date" id="fechaChofer1234" class="btn-sm" style="padding: 5px;"><button id="verChofer1234Btn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Ver</button><button onclick="copiarTabla('rendicion1234Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
+            </div>
+            <div class="tabla-container"><table id="rendicion1234Tabla"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto</th><th class="no-print">Acciones</th></tr></thead><tbody id="rendicion1234Body"></tbody></table></div>
         </div>
-        <div style="overflow-x: auto;">
-            <table id="rendicionChoferesTabla">
-                <thead><tr><th>Chofer</th><th>Efectivo</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto a Entregar</th></tr></thead>
-                <tbody id="rendicionChoferesBody"></tbody>
-            </table>
+        <div class="card">
+            <div class="card-title">👨‍✈️ Chofer 5678
+                <div><input type="date" id="fechaChofer5678" class="btn-sm" style="padding: 5px;"><button id="verChofer5678Btn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Ver</button><button onclick="copiarTabla('rendicion5678Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
+            </div>
+            <div class="tabla-container"><table id="rendicion5678Tabla"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transferencias</th><th>Cobros Deuda</th><th>Gastos</th><th>Neto</th><th class="no-print">Acciones</th></tr></thead><tbody id="rendicion5678Body"></tbody></table></div>
         </div>
     </div>
 
-    <!-- Transferencias del día -->
+    <!-- Calendario general de movimientos -->
     <div class="card">
-        <div class="card-title">💳 Transferencias del Día</div>
-        <div id="transferenciasLista"></div>
-    </div>
-
-    <!-- Ventas a crédito del día (deudas nuevas) -->
-    <div class="card">
-        <div class="card-title">📝 Ventas a Crédito de Hoy</div>
-        <div id="ventasCreditoHoyLista"></div>
-    </div>
-
-    <!-- Cobros de deuda del día -->
-    <div class="card">
-        <div class="card-title">🔄 Cobros de Deuda de Hoy</div>
-        <div id="cobrosHoyLista"></div>
-    </div>
-
-    <!-- Gastos del día -->
-    <div class="card">
-        <div class="card-title">💸 Gastos Registrados Hoy</div>
-        <div id="gastosHoyLista"></div>
+        <div class="card-title">📅 Movimientos por Fecha
+            <div><input type="date" id="fechaGeneral"><button id="verFechaGeneralBtn" class="btn btn-sm btn-primary"><i class="fas fa-calendar-day"></i> Ver</button><button onclick="copiarTabla('movimientosFechaTabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button><button id="exportarFechaExcelBtn" class="btn btn-sm btn-green"><i class="fas fa-file-excel"></i> Excel</button></div>
+        </div>
+        <div class="tabla-container" style="max-height: 400px; overflow-y: auto;">
+            <table id="movimientosFechaTabla"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody id="movimientosFechaBody"></tbody></table>
+        </div>
     </div>
 
     <!-- Clientes con deuda -->
     <div class="card">
-        <div class="card-title">📋 Clientes con Deuda</div>
-        <div style="overflow-x: auto;">
-            <table id="deudoresTabla">
-                <thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Estado</th></tr></thead>
-                <tbody id="deudoresBody"></tbody>
-            </table>
+        <div class="card-title">📋 Clientes con Deuda
+            <div><button onclick="copiarTabla('deudoresTabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button><button onclick="imprimirSeccion('deudores')" class="btn btn-sm"><i class="fas fa-print"></i> Imprimir</button></div>
         </div>
+        <div class="tabla-container"><table id="deudoresTabla"><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Estado</th><th class="no-print">Acciones</th></tr></thead><tbody id="deudoresBody"></tbody></table></div>
     </div>
 
-    <!-- Calendario: movimientos por fecha -->
-    <div class="card">
-        <div class="card-title">📅 Consultar por Fecha</div>
-        <div class="filtro">
-            <input type="date" id="fechaCalendario">
-            <button id="verFechaBtn" class="btn btn-primary btn-sm"><i class="fas fa-calendar-day"></i> Ver movimientos</button>
-            <button id="limpiarFechaBtn" class="btn btn-sm" style="background:#e2e8f0;">Limpiar</button>
+    <!-- Gastos por chofer con calendario -->
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-title">💸 Gastos Chofer 1234
+                <div><input type="date" id="gastosFecha1234"><button id="verGastos1234Btn" class="btn btn-sm btn-primary">Ver</button><button onclick="copiarTabla('gastos1234Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
+            </div>
+            <div class="tabla-container"><table id="gastos1234Tabla"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead><tbody id="gastos1234Body"></tbody></table></div>
         </div>
-        <div id="movimientosFechaResultado"></div>
+        <div class="card">
+            <div class="card-title">💸 Gastos Chofer 5678
+                <div><input type="date" id="gastosFecha5678"><button id="verGastos5678Btn" class="btn btn-sm btn-primary">Ver</button><button onclick="copiarTabla('gastos5678Tabla')" class="btn btn-sm"><i class="fas fa-copy"></i> Copiar</button></div>
+            </div>
+            <div class="tabla-container"><table id="gastos5678Tabla"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead><tbody id="gastos5678Body"></tbody></table></div>
+        </div>
     </div>
 </div>
+
+<!-- Modales para editar/eliminar -->
+<div id="modal" class="modal"><div class="modal-content"><h3 id="modalTitulo">Editar</h3><div id="modalBody"></div><div style="display:flex; gap:12px; margin-top:20px;"><button id="modalConfirmar" class="btn btn-primary">Guardar</button><button id="modalCancelar" class="btn btn-red">Cancelar</button></div></div></div>
 
 <div id="toast" class="toast"></div>
 
@@ -181,30 +185,30 @@
 // ==================== CONFIGURACIÓN ====================
 const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 
-// ========== FUNCIONES AUXILIARES ==========
-function toast(msg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 2500);
-}
+let clientes = [];
+let movimientos = [];
+let gastosDetallados = []; // { fecha, categoria, monto, nota, chofer }
+let ventasLocales = []; // ventas de localStorage con cantidades de productos
+
+function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 
 function normalizarMonto(valor) {
     if (valor === undefined || valor === null || valor === '') return 0;
     if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
-    let str = String(valor).trim();
-    str = str.replace(/[$]/g, '').replace(/[.]/g, '').replace(/[,]/g, '');
-    let num = parseFloat(str);
-    return isNaN(num) ? 0 : num;
+    let str = String(valor).trim().replace(/[$]/g, '').replace(/[.]/g, '').replace(/[,]/g, '');
+    return isNaN(parseFloat(str)) ? 0 : parseFloat(str);
 }
 
 function getHoyISO() { return new Date().toISOString().slice(0,10); }
 
-// ========== CARGAR DATOS ==========
-let clientes = [];
-let movimientos = [];
-let gastosDetallados = []; // { fecha, categoria, monto, nota, chofer }
+function formatearFechaLocal(fechaISO) {
+    if (!fechaISO) return '';
+    const partes = fechaISO.split('-');
+    if (partes.length !== 3) return fechaISO;
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
 
+// ========== CARGAR DATOS ==========
 function cargarGastosDeChoferes() {
     gastosDetallados = [];
     const choferes = ["1234", "5678"];
@@ -213,17 +217,27 @@ function cargarGastosDeChoferes() {
         const gastosRaw = localStorage.getItem(prefix + "gastosDetallados");
         if (gastosRaw) {
             const gastos = JSON.parse(gastosRaw);
-            for (const g of gastos) {
-                gastosDetallados.push({ ...g, chofer: pin });
-            }
+            for (const g of gastos) gastosDetallados.push({ ...g, chofer: pin });
         }
-        // También buscar gastos en formato anterior (gastosDetalle)
         const gastosDetRaw = localStorage.getItem(prefix + "gastosDetalle");
         if (gastosDetRaw) {
-            const gastosDet = JSON.parse(gastosDetRaw);
-            if (gastosDet.nafta > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Nafta", monto: gastosDet.nafta, nota: "", chofer: pin });
-            if (gastosDet.choferes > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Chofer", monto: gastosDet.choferes, nota: "", chofer: pin });
-            if (gastosDet.otros > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Otros", monto: gastosDet.otros, nota: "", chofer: pin });
+            const gd = JSON.parse(gastosDetRaw);
+            if (gd.nafta > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Nafta", monto: gd.nafta, nota: "", chofer: pin });
+            if (gd.choferes > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Chofer", monto: gd.choferes, nota: "", chofer: pin });
+            if (gd.otros > 0) gastosDetallados.push({ fecha: getHoyISO(), categoria: "Otros", monto: gd.otros, nota: "", chofer: pin });
+        }
+    }
+}
+
+function cargarVentasLocales() {
+    ventasLocales = [];
+    const choferes = ["1234", "5678"];
+    for (const pin of choferes) {
+        const prefix = `myc_${pin}_`;
+        const ventasRaw = localStorage.getItem(prefix + "ventas");
+        if (ventasRaw) {
+            const ventas = JSON.parse(ventasRaw);
+            for (const v of ventas) ventasLocales.push({ ...v, chofer: pin });
         }
     }
 }
@@ -245,14 +259,115 @@ async function cargarDatosDesdeSheets() {
             forma_pago: m.forma_pago,
             detalle: m.detalle || ''
         }));
-    } catch(e) {
-        console.error("Error cargando datos:", e);
-        toast("Error de conexión con Google Sheets");
+    } catch(e) { console.error(e); toast("Error de conexión"); }
+}
+
+// ========== RENDERIZADO ==========
+function renderRendicionChofer(pin, tablaId, fechaSeleccionada = null) {
+    const fecha = fechaSeleccionada || getHoyISO();
+    let ventas = ventasLocales.filter(v => v.chofer === pin && v.fecha === fecha);
+    let efectivo = 0, transferencias = 0, cobros = 0;
+    for (const v of ventas) {
+        if (v.pago === "efectivo") efectivo += v.total || 0;
+        if (v.pago === "transferencia") transferencias += v.total || 0;
+        if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
+        else if (v.pago === "cobrocc") cobros += v.total || 0;
+    }
+    for (const m of movimientos) {
+        if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
+    }
+    let gastosChofer = gastosDetallados.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a,g) => a + g.monto, 0);
+    let neto = efectivo + transferencias + cobros - gastosChofer;
+    const tbody = document.getElementById(tablaId);
+    if (!tbody) return;
+    // Buscar si ya existe una fila para esta fecha
+    const existingRows = tbody.querySelectorAll('tr');
+    let found = false;
+    for (const row of existingRows) {
+        if (row.cells && row.cells[0] && row.cells[0].innerText === fecha) {
+            row.cells[1].innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
+            row.cells[2].innerHTML = `$${transferencias.toLocaleString('es-AR')}`;
+            row.cells[3].innerHTML = `$${cobros.toLocaleString('es-AR')}`;
+            row.cells[4].innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
+            row.cells[5].innerHTML = `<strong style="color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        const row = tbody.insertRow();
+        row.insertCell(0).innerHTML = fecha;
+        row.insertCell(1).innerHTML = `$${efectivo.toLocaleString('es-AR')}`;
+        row.insertCell(2).innerHTML = `$${transferencias.toLocaleString('es-AR')}`;
+        row.insertCell(3).innerHTML = `$${cobros.toLocaleString('es-AR')}`;
+        row.insertCell(4).innerHTML = `$${gastosChofer.toLocaleString('es-AR')}`;
+        row.insertCell(5).innerHTML = `<strong style="color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</strong>`;
+        const acc = row.insertCell(6); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarRegistroDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i></button>`;
     }
 }
 
-// ========== CÁLCULOS ==========
-function calcularSaldoPorCliente() {
+function renderMovimientosPorFecha(fecha) {
+    const movs = movimientos.filter(m => m.fecha === fecha);
+    const ventasDia = ventasLocales.filter(v => v.fecha === fecha && (v.pago === "efectivo" || v.pago === "transferencia"));
+    const tbody = document.getElementById("movimientosFechaBody");
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    for (const m of movs) {
+        const row = tbody.insertRow();
+        row.insertCell(0).innerHTML = m.fecha;
+        row.insertCell(1).innerHTML = m.cliente;
+        row.insertCell(2).innerHTML = m.tipo === "deuda" ? '<span class="badge-deuda">➕ Deuda</span>' : '<span class="badge-pago">💸 Pago</span>';
+        row.insertCell(3).innerHTML = `$${m.monto.toLocaleString('es-AR')}`;
+        row.insertCell(4).innerHTML = '-';
+        row.insertCell(5).innerHTML = m.detalle || '';
+        const acc = row.insertCell(6); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-yellow" onclick="editarMovimiento(${m.id})"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-red" onclick="eliminarMovimiento(${m.id})"><i class="fas fa-trash-alt"></i></button>`;
+    }
+    for (const v of ventasDia) {
+        const cant = v.cantidades || {};
+        let prodTexto = '';
+        if (cant["1,7 KG"] || cant["3,5 KG"] || cant["14 KG"] || cant["ESC.20KG"] || cant["ESC.32KG"]) {
+            prodTexto = `1,7:${cant["1,7 KG"]||0} 3,5:${cant["3,5 KG"]||0} 14:${cant["14 KG"]||0} 20:${cant["ESC.20KG"]||0} 32:${cant["ESC.32KG"]||0}`;
+        }
+        const row = tbody.insertRow();
+        row.insertCell(0).innerHTML = v.fecha;
+        row.insertCell(1).innerHTML = v.cliente;
+        row.insertCell(2).innerHTML = v.pago === "efectivo" ? '<span class="badge-pago">💵 Efectivo</span>' : '<span class="badge-pago">💳 Transferencia</span>';
+        row.insertCell(3).innerHTML = `$${(v.total || 0).toLocaleString('es-AR')}`;
+        row.insertCell(4).innerHTML = prodTexto;
+        row.insertCell(5).innerHTML = v.detalle || '';
+        const acc = row.insertCell(6); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-yellow" onclick="editarVentaLocal(${v.id}, '${v.chofer}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-red" onclick="eliminarVentaLocal(${v.id}, '${v.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
+    }
+    if (tbody.rows.length === 0) {
+        tbody.innerHTML = '<td><td colspan="7" style="text-align:center">No hay movimientos en esta fecha</div><div></tr>';
+    }
+}
+
+function renderGastosChofer(pin, fecha) {
+    const tbodyId = pin === "1234" ? "gastos1234Body" : "gastos5678Body";
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    const gastos = gastosDetallados.filter(g => g.chofer === pin && g.fecha === fecha);
+    tbody.innerHTML = '';
+    if (gastos.length === 0) {
+        tbody.innerHTML = '<td><td colspan="5" style="text-align:center">Sin gastos en esta fecha</div><div></tr>';
+        return;
+    }
+    for (let i = 0; i < gastos.length; i++) {
+        const g = gastos[i];
+        const row = tbody.insertRow();
+        row.insertCell(0).innerHTML = g.fecha;
+        row.insertCell(1).innerHTML = g.categoria;
+        row.insertCell(2).innerHTML = `$${g.monto.toLocaleString('es-AR')}`;
+        row.insertCell(3).innerHTML = g.nota || '';
+        const acc = row.insertCell(4); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-red" onclick="eliminarGasto('${pin}', ${i}, '${g.fecha}', '${g.categoria}', ${g.monto})"><i class="fas fa-trash-alt"></i></button>`;
+    }
+}
+
+function renderDeudores() {
     let saldos = {};
     for (const c of clientes) saldos[c] = 0;
     for (const m of movimientos) {
@@ -260,235 +375,97 @@ function calcularSaldoPorCliente() {
         if (m.tipo === "deuda") saldos[m.cliente] += m.monto;
         else if (m.tipo === "pago") saldos[m.cliente] -= m.monto;
     }
-    return saldos;
-}
-
-// ========== RENDERIZADO ==========
-function renderRendicionChoferes() {
-    const hoy = getHoyISO();
-    const choferes = ["1234", "5678"];
-    let html = '';
-    let totalNetoGeneral = 0;
-    
-    for (const pin of choferes) {
-        const prefix = `myc_${pin}_`;
-        let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
-        let efectivo = 0, transferencias = 0, cobros = 0;
-        let gastosChofer = gastosDetallados.filter(g => g.chofer === pin && g.fecha === hoy).reduce((a,g) => a + g.monto, 0);
-        
-        for (const v of ventas) {
-            if (v.fecha === hoy) {
-                if (v.pago === "efectivo") efectivo += v.total || 0;
-                if (v.pago === "transferencia") transferencias += v.total || 0;
-                if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
-                else if (v.pago === "cobrocc") cobros += v.total || 0;
-            }
-        }
-        // También sumar cobros desde movimientos de Sheets del día de hoy (tipo pago)
-        for (const m of movimientos) {
-            if (m.fecha === hoy && m.tipo === "pago" && m.cliente) {
-                cobros += m.monto;
-            }
-        }
-        
-        const neto = efectivo + cobros - gastosChofer;
-        totalNetoGeneral += neto;
-        html += `<tr>
-            <td><strong>Chofer ${pin}</strong></div><div>
-            <td>$${efectivo.toLocaleString('es-AR')}</div><div>
-            <td>$${cobros.toLocaleString('es-AR')}</div><div>
-            <td>$${gastosChofer.toLocaleString('es-AR')}</div><div>
-            <td style="font-weight:800;color:${neto>=0?'#0a7c4a':'#b91c1c'};">$${neto.toLocaleString('es-AR')}</div><div>
-        </td>`;
-    }
-    document.getElementById("rendicionChoferesBody").innerHTML = html;
-    document.getElementById("netoGeneral").innerHTML = `$${totalNetoGeneral.toLocaleString('es-AR')}`;
-}
-
-function renderTransferenciasHoy() {
-    const hoy = getHoyISO();
-    const choferes = ["1234", "5678"];
-    let transferencias = [];
-    for (const pin of choferes) {
-        const prefix = `myc_${pin}_`;
-        let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
-        for (const v of ventas) {
-            if (v.fecha === hoy && v.pago === "transferencia") {
-                transferencias.push({ cliente: v.cliente, monto: v.total, detalle: v.detalle });
-            }
-        }
-    }
-    if (transferencias.length === 0) {
-        document.getElementById("transferenciasLista").innerHTML = '<div class="stat-card" style="text-align:center;">No hay transferencias hoy</div>';
-        return;
-    }
-    let html = `<table><thead><th>Cliente</th><th>Monto</th><th>Detalle</th></thead><tbody>`;
+    const deudores = Object.entries(saldos).filter(([, s]) => s > 0).sort((a,b) => b[1] - a[1]);
+    const tbody = document.getElementById("deudoresBody");
+    tbody.innerHTML = '';
     let total = 0;
-    for (const t of transferencias) {
-        total += t.monto;
-        html += `<tr><td>${t.cliente}</td><td>$${t.monto.toLocaleString('es-AR')}</td><td>${t.detalle || ''}</td></tr>`;
-    }
-    html += `<tr style="background:#eef2ff;"><td><strong>TOTAL</strong></td><td><strong>$${total.toLocaleString('es-AR')}</strong></td><td></td></tr>`;
-    html += `</tbody></table>`;
-    document.getElementById("transferenciasLista").innerHTML = html;
-}
-
-function renderVentasCreditoHoy() {
-    const hoy = getHoyISO();
-    let ventasCredito = movimientos.filter(m => m.fecha === hoy && m.tipo === "deuda");
-    if (ventasCredito.length === 0) {
-        document.getElementById("ventasCreditoHoyLista").innerHTML = '<div class="stat-card" style="text-align:center;">No hay ventas a crédito hoy</div>';
-        return;
-    }
-    let html = `<table><thead><th>Cliente</th><th>Monto</th><th>Detalle</th></thead><tbody>`;
-    let total = 0;
-    for (const v of ventasCredito) {
-        total += v.monto;
-        html += `<tr><td>${v.cliente}</td><td>$${v.monto.toLocaleString('es-AR')}</td><td>${v.detalle || ''}</td></tr>`;
-    }
-    html += `<tr style="background:#eef2ff;"><td><strong>TOTAL</strong></td><td><strong>$${total.toLocaleString('es-AR')}</strong></td><td></td></tr>`;
-    html += `</tbody></table>`;
-    document.getElementById("ventasCreditoHoyLista").innerHTML = html;
-}
-
-function renderCobrosHoy() {
-    const hoy = getHoyISO();
-    let cobros = movimientos.filter(m => m.fecha === hoy && m.tipo === "pago");
-    // También agregar cobros desde localStorage
-    const choferes = ["1234", "5678"];
-    for (const pin of choferes) {
-        const prefix = `myc_${pin}_`;
-        let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
-        for (const v of ventas) {
-            if (v.fecha === hoy && v.pago === "cobrocc") {
-                cobros.push({ cliente: v.cliente, monto: v.total || v.cobroDeuda, detalle: v.detalle, tipo: "pago" });
-            }
-        }
-    }
-    if (cobros.length === 0) {
-        document.getElementById("cobrosHoyLista").innerHTML = '<div class="stat-card" style="text-align:center;">No hay cobros de deuda hoy</div>';
-        return;
-    }
-    let html = `<table><thead><th>Cliente</th><th>Monto</th><th>Detalle</th></thead><tbody>`;
-    let total = 0;
-    for (const c of cobros) {
-        total += c.monto;
-        html += `<tr><td>${c.cliente}</td><td>$${c.monto.toLocaleString('es-AR')}</td><td>${c.detalle || ''}</td></tr>`;
-    }
-    html += `<tr style="background:#eef2ff;"><td><strong>TOTAL</strong></td><td><strong>$${total.toLocaleString('es-AR')}</strong></td><td></td></tr>`;
-    html += `</tbody></table>`;
-    document.getElementById("cobrosHoyLista").innerHTML = html;
-    document.getElementById("totalCobrosPeriodo").innerHTML = `$${total.toLocaleString('es-AR')}`;
-}
-
-function renderGastosHoy() {
-    const hoy = getHoyISO();
-    let gastosHoy = gastosDetallados.filter(g => g.fecha === hoy);
-    if (gastosHoy.length === 0) {
-        document.getElementById("gastosHoyLista").innerHTML = '<div class="stat-card" style="text-align:center;">No hay gastos registrados hoy</div>';
-        document.getElementById("totalGastosHoy").innerHTML = '$0';
-        return;
-    }
-    let html = `<table><thead><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th>Chofer</th></thead><tbody>`;
-    let total = 0;
-    for (const g of gastosHoy) {
-        total += g.monto;
-        html += `<tr><td>${g.fecha}</td><td>${g.categoria}</td><td>$${g.monto.toLocaleString('es-AR')}</td><td>${g.nota || ''}</td><td>Chofer ${g.chofer}</td></tr>`;
-    }
-    html += `<tr style="background:#eef2ff;"><td colspan="2"><strong>TOTAL</strong></td><td><strong>$${total.toLocaleString('es-AR')}</strong></td><td></td><td></td></tr>`;
-    html += `</tbody></table>`;
-    document.getElementById("gastosHoyLista").innerHTML = html;
-    document.getElementById("totalGastosHoy").innerHTML = `$${total.toLocaleString('es-AR')}`;
-}
-
-function renderDeudores() {
-    const saldos = calcularSaldoPorCliente();
-    const deudores = Object.entries(saldos).filter(([, saldo]) => saldo > 0);
-    deudores.sort((a,b) => b[1] - a[1]);
-    let total = 0;
-    let html = '';
     for (const [cliente, saldo] of deudores) {
         total += saldo;
-        html += `<tr><td>${cliente}</td><td class="saldo-positivo">$${saldo.toLocaleString('es-AR')}</td><td><span class="badge-deuda">🔴 DEBE</span></td></tr>`;
+        const row = tbody.insertRow();
+        row.insertCell(0).innerHTML = cliente;
+        row.insertCell(1).innerHTML = `<span class="saldo-positivo">$${saldo.toLocaleString('es-AR')}</span>`;
+        row.insertCell(2).innerHTML = '<span class="badge-deuda">🔴 DEBE</span>';
+        const acc = row.insertCell(3); acc.className = "no-print";
+        acc.innerHTML = `<button class="btn btn-sm btn-primary" onclick="verHistorialCliente('${cliente}')"><i class="fas fa-search"></i> Ver</button>`;
     }
-    if (deudores.length === 0) {
-        html = '<tr><td colspan="3" style="text-align:center;">No hay clientes con deuda</td></tr>';
-    }
-    document.getElementById("deudoresBody").innerHTML = html;
-    document.getElementById("totalDeudas").innerHTML = `$${total.toLocaleString('es-AR')}`;
+    if (deudores.length === 0) tbody.innerHTML = '<td><td colspan="4" style="text-align:center">No hay clientes con deuda</div><div></tr>';
 }
 
-function renderMovimientosPorFecha(fecha) {
-    if (!fecha) return;
-    const movimientosFecha = movimientos.filter(m => m.fecha === fecha);
-    if (movimientosFecha.length === 0) {
-        document.getElementById("movimientosFechaResultado").innerHTML = '<div class="stat-card" style="text-align:center;">No hay movimientos en esta fecha</div>';
+function verHistorialCliente(cliente) {
+    const movsCliente = movimientos.filter(m => m.cliente === cliente);
+    const ventasCliente = ventasLocales.filter(v => v.cliente === cliente);
+    if (movsCliente.length === 0 && ventasCliente.length === 0) {
+        toast(`No hay movimientos para ${cliente}`);
         return;
     }
-    let html = `<div style="overflow-x:auto;"><table><thead><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Detalle</th></thead><tbody>`;
-    for (const m of movimientosFecha) {
-        let tipoHtml = m.tipo === "deuda" ? '<span class="badge-deuda">➕ Deuda</span>' : '<span class="badge-pago">💸 Pago</span>';
-        html += `<tr><td>${m.fecha}</td><td>${m.cliente}</td><td>${tipoHtml}</td><td>$${m.monto.toLocaleString('es-AR')}</td><td>${m.detalle || ''}</td></tr>`;
+    let html = `<h4>Historial de ${cliente}</h4><div class="tabla-container"><table style="width:100%"><thead><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th><th>Productos</th></thead><tbody>`;
+    for (const m of movsCliente) {
+        html += `<tr><td>${m.fecha}</div><div>${m.tipo === "deuda" ? 'Deuda' : 'Pago'}</div><div>$${m.monto.toLocaleString('es-AR')}</div><div>${m.detalle || ''}</div><div>-</div><div><tr>`;
     }
-    html += `</tbody></table></div>`;
-    document.getElementById("movimientosFechaResultado").innerHTML = html;
+    for (const v of ventasCliente) {
+        const cant = v.cantidades || {};
+        let prodTexto = `1,7:${cant["1,7 KG"]||0} 3,5:${cant["3,5 KG"]||0} 14:${cant["14 KG"]||0} 20:${cant["ESC.20KG"]||0} 32:${cant["ESC.32KG"]||0}`;
+        html += `<tr><td>${v.fecha}</div><div>${v.pago === "efectivo" ? 'Efectivo' : (v.pago === "transferencia" ? 'Transferencia' : 'Crédito')}</div><div>$${(v.total || 0).toLocaleString('es-AR')}</div><div>${v.detalle || ''}</div><div>${prodTexto}</div><div></tr>`;
+    }
+    html += `</tbody></table></div><button class="btn btn-sm btn-primary" onclick="copiarTexto('${cliente}')">Copiar</button> <button class="btn btn-sm btn-green" onclick="imprimirSeccion('historial')">Imprimir</button>`;
+    document.getElementById("clienteResultado").innerHTML = html;
 }
 
-function renderUltimosMovimientos() {
-    const ultimos = [...movimientos].sort((a,b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 30);
-    const tbody = document.querySelector("#movimientosTabla tbody");
-    if (!tbody) return;
-    if (ultimos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Sin movimientos</td></tr>';
-        return;
-    }
-    tbody.innerHTML = ultimos.map(m => `
-        <tr>
-            <td>${m.fecha || ''}</td>
-            <td>${m.cliente || ''}</td>
-            <td>${m.tipo === "deuda" ? '<span class="badge-deuda">Deuda</span>' : '<span class="badge-pago">Pago</span>'}</td>
-            <td>$${(m.monto || 0).toLocaleString('es-AR')}</td>
-            <td>${m.detalle || ''}</td>
-        </tr>
-    `).join('');
+function buscarCliente() {
+    const nombre = document.getElementById("buscarClienteInput").value.trim();
+    if (!nombre) { toast("Ingrese un nombre"); return; }
+    verHistorialCliente(nombre);
 }
 
-// ========== EXPORTAR EXCEL ==========
-function exportarExcel() {
-    const wsData = [["Resumen de Reparto MYC HIELO", "", "", "", ""]];
-    wsData.push(["Fecha", getHoyISO(), "", "", ""]);
-    wsData.push([]);
-    wsData.push(["RENDICIÓN POR CHOFER", "", "", "", ""]);
-    wsData.push(["Chofer", "Efectivo", "Cobros Deuda", "Gastos", "Neto"]);
-    const choferes = ["1234", "5678"];
-    for (const pin of choferes) {
-        const prefix = `myc_${pin}_`;
-        let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
-        let efectivo = 0, cobros = 0;
-        let gastosChofer = gastosDetallados.filter(g => g.chofer === pin && g.fecha === getHoyISO()).reduce((a,g) => a + g.monto, 0);
-        for (const v of ventas) {
-            if (v.fecha === getHoyISO()) {
-                if (v.pago === "efectivo") efectivo += v.total || 0;
-                if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
-                else if (v.pago === "cobrocc") cobros += v.total || 0;
-            }
-        }
-        wsData.push([`Chofer ${pin}`, efectivo, cobros, gastosChofer, efectivo + cobros - gastosChofer]);
-    }
-    wsData.push([]);
-    wsData.push(["CLIENTES CON DEUDA", "", "", "", ""]);
-    wsData.push(["Cliente", "Saldo Deudor", "", "", ""]);
-    const saldos = calcularSaldoPorCliente();
-    for (const [cliente, saldo] of Object.entries(saldos)) {
-        if (saldo > 0) wsData.push([cliente, saldo, "", "", ""]);
-    }
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Resumen");
-    XLSX.writeFile(wb, `myc_resumen_${getHoyISO()}.xlsx`);
-    toast("Excel exportado");
+function limpiarBusqueda() {
+    document.getElementById("buscarClienteInput").value = "";
+    document.getElementById("clienteResultado").innerHTML = "";
 }
 
+// ========== ELIMINAR Y EDITAR FUNCIONES ==========
+function eliminarRegistroDia(pin, fecha) {
+    if (!confirm(`¿Eliminar todos los registros del ${fecha} para chofer ${pin}?`)) return;
+    const prefix = `myc_${pin}_`;
+    let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
+    ventas = ventas.filter(v => v.fecha !== fecha);
+    localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
+    let gastosDet = JSON.parse(localStorage.getItem(prefix + "gastosDetallados") || "[]");
+    gastosDet = gastosDet.filter(g => g.fecha !== fecha);
+    localStorage.setItem(prefix + "gastosDetallados", JSON.stringify(gastosDet));
+    toast(`Registros del ${fecha} eliminados`);
+    actualizarTodo();
+}
+
+function eliminarGasto(pin, idx, fecha, categoria, monto) {
+    if (!confirm(`¿Eliminar gasto: ${categoria} $${monto}?`)) return;
+    const prefix = `myc_${pin}_`;
+    let gastosDet = JSON.parse(localStorage.getItem(prefix + "gastosDetallados") || "[]");
+    gastosDet = gastosDet.filter(g => !(g.fecha === fecha && g.categoria === categoria && g.monto === monto));
+    localStorage.setItem(prefix + "gastosDetallados", JSON.stringify(gastosDet));
+    toast("Gasto eliminado");
+    actualizarTodo();
+}
+
+function eliminarMovimiento(id) {
+    if (!confirm("¿Eliminar este movimiento de Google Sheets?")) return;
+    fetch(API_URL, {
+        method: 'POST',
+        body: new URLSearchParams({ ruta: 'eliminarMovimiento', id: id })
+    }).then(() => { toast("Movimiento eliminado"); actualizarTodo(); })
+      .catch(e => toast("Error al eliminar"));
+}
+
+function eliminarVentaLocal(id, chofer) {
+    if (!confirm("¿Eliminar esta venta?")) return;
+    const prefix = `myc_${chofer}_`;
+    let ventas = JSON.parse(localStorage.getItem(prefix + "ventas") || "[]");
+    ventas = ventas.filter(v => v.id !== id);
+    localStorage.setItem(prefix + "ventas", JSON.stringify(ventas));
+    toast("Venta eliminada");
+    actualizarTodo();
+}
+
+// ========== COPIAR E IMPRIMIR ==========
 function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) return;
@@ -496,36 +473,99 @@ function copiarTabla(tablaId) {
     navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada")).catch(() => toast("Error"));
 }
 
-// ========== INICIALIZACIÓN ==========
+function copiarTexto(texto) {
+    navigator.clipboard.writeText(texto).then(() => toast("Copiado")).catch(() => toast("Error"));
+}
+
+function imprimirSeccion(seccion) {
+    const el = document.getElementById(seccion + "Seccion") || document.querySelector(".card");
+    if (el) { const win = window.open(); win.document.write(`<html><head><title>${seccion}</title><style>body{margin:20px;}</style></head><body>${el.cloneNode(true).outerHTML}</body></html>`); win.print(); }
+    else window.print();
+}
+
+// ========== EXPORTAR EXCEL ==========
+function exportarExcel() {
+    const wsData = [["Resumen MYC HIELO", getHoyISO()]];
+    wsData.push([]);
+    wsData.push(["CLIENTES CON DEUDA"]);
+    wsData.push(["Cliente", "Saldo Deudor"]);
+    let saldos = {};
+    for (const c of clientes) saldos[c] = 0;
+    for (const m of movimientos) {
+        if (m.tipo === "deuda") saldos[m.cliente] = (saldos[m.cliente] || 0) + m.monto;
+        else if (m.tipo === "pago") saldos[m.cliente] = (saldos[m.cliente] || 0) - m.monto;
+    }
+    for (const [c, s] of Object.entries(saldos)) if (s > 0) wsData.push([c, s]);
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Resumen");
+    XLSX.writeFile(wb, `myc_resumen_${getHoyISO()}.xlsx`);
+    toast("Excel exportado");
+}
+
+function exportarFechaExcel() {
+    const fecha = document.getElementById("fechaGeneral").value || getHoyISO();
+    const movs = movimientos.filter(m => m.fecha === fecha);
+    const wsData = [["Movimientos del", fecha], ["Fecha", "Cliente", "Tipo", "Monto", "Detalle"]];
+    for (const m of movs) wsData.push([m.fecha, m.cliente, m.tipo, m.monto, m.detalle]);
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
+    XLSX.writeFile(wb, `movimientos_${fecha}.xlsx`);
+    toast("Excel exportado");
+}
+
+// ========== ACTUALIZAR TODO ==========
 async function actualizarTodo() {
     toast("Cargando datos...");
     await cargarDatosDesdeSheets();
     cargarGastosDeChoferes();
-    renderRendicionChoferes();
-    renderTransferenciasHoy();
-    renderVentasCreditoHoy();
-    renderCobrosHoy();
-    renderGastosHoy();
+    cargarVentasLocales();
     renderDeudores();
-    renderUltimosMovimientos();
+    const fechaGeneral = document.getElementById("fechaGeneral").value;
+    if (fechaGeneral) renderMovimientosPorFecha(fechaGeneral);
+    renderRendicionChofer("1234", "rendicion1234Body", document.getElementById("fechaChofer1234").value || getHoyISO());
+    renderRendicionChofer("5678", "rendicion5678Body", document.getElementById("fechaChofer5678").value || getHoyISO());
+    renderGastosChofer("1234", document.getElementById("gastosFecha1234").value || getHoyISO());
+    renderGastosChofer("5678", document.getElementById("gastosFecha5678").value || getHoyISO());
     toast("Datos actualizados");
 }
 
-// Eventos
+// ========== EVENTOS E INICIALIZACIÓN ==========
 document.getElementById("refreshBtn").addEventListener("click", actualizarTodo);
 document.getElementById("exportExcelBtn").addEventListener("click", exportarExcel);
-document.getElementById("verFechaBtn").addEventListener("click", () => {
-    const fecha = document.getElementById("fechaCalendario").value;
+document.getElementById("verFechaGeneralBtn").addEventListener("click", () => {
+    const fecha = document.getElementById("fechaGeneral").value;
     if (fecha) renderMovimientosPorFecha(fecha);
     else toast("Seleccione una fecha");
 });
-document.getElementById("limpiarFechaBtn").addEventListener("click", () => {
-    document.getElementById("fechaCalendario").value = "";
-    document.getElementById("movimientosFechaResultado").innerHTML = "";
+document.getElementById("exportarFechaExcelBtn").addEventListener("click", exportarFechaExcel);
+document.getElementById("verChofer1234Btn").addEventListener("click", () => {
+    const fecha = document.getElementById("fechaChofer1234").value;
+    if (fecha) renderRendicionChofer("1234", "rendicion1234Body", fecha);
+    else toast("Seleccione fecha");
 });
+document.getElementById("verChofer5678Btn").addEventListener("click", () => {
+    const fecha = document.getElementById("fechaChofer5678").value;
+    if (fecha) renderRendicionChofer("5678", "rendicion5678Body", fecha);
+    else toast("Seleccione fecha");
+});
+document.getElementById("verGastos1234Btn").addEventListener("click", () => {
+    const fecha = document.getElementById("gastosFecha1234").value;
+    if (fecha) renderGastosChofer("1234", fecha);
+    else toast("Seleccione fecha");
+});
+document.getElementById("verGastos5678Btn").addEventListener("click", () => {
+    const fecha = document.getElementById("gastosFecha5678").value;
+    if (fecha) renderGastosChofer("5678", fecha);
+    else toast("Seleccione fecha");
+});
+document.getElementById("buscarClienteBtn").addEventListener("click", buscarCliente);
+document.getElementById("limpiarBusquedaBtn").addEventListener("click", limpiarBusqueda);
+document.getElementById("modalCancelar").addEventListener("click", () => document.getElementById("modal").style.display = "none");
 
-// Iniciar
 actualizarTodo();
+setInterval(actualizarTodo, 60000);
 </script>
 </body>
 </html>
