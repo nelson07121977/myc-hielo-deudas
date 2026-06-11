@@ -203,7 +203,14 @@
             .comprobante-modal { position: absolute; top: 0; left: 0; width: 100%; background: white; }
             .modal-buttons-premium { display: none; }
         }
-        /* Ajuste para que el botón eliminar producto se vea bien en móviles */
+        /* Ajustes móviles */
+        @media (max-width: 640px) {
+            .form-row { flex-direction: column; }
+            .form-group { width: 100%; }
+            .btn-small { padding: 8px 12px; }
+            .card { padding: 12px; }
+        }
+        /* Botón eliminar producto visible */
         .delProdBtn {
             background: #b91c1c;
             color: white;
@@ -269,10 +276,10 @@
             <div class="summary-cards" id="weeklyStats"></div>
             <div class="chart-container"><h3>🏆 Top 10 clientes por volumen</h3><canvas id="topClientesChart"></canvas></div>
             <div class="chart-container"><h3>📈 Evolución diaria (semana)</h3><canvas id="weeklySalesChart"></canvas></div>
-            <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></td></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
+            <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
         </div>
         
-        <!-- ========== SECCIÓN CLIENTES CORREGIDA ========== -->
+        <!-- ========== SECCIÓN CLIENTES ========== -->
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3>Gestión de clientes (precios de venta y costos de fábrica)</h3>
             <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
@@ -296,7 +303,7 @@
             <button id="saveAllPricesBtn" style="margin-top:20px;">💾 Guardar todos los cambios</button>
         </div>
         
-        <!-- ========== SECCIÓN PRODUCTOS CORREGIDA ========== -->
+        <!-- ========== SECCIÓN PRODUCTOS ========== -->
         <div id="tabProductos" class="panel-content" style="display:none;">
             <h3>📸 Tipos de Bolsas / Productos</h3>
             <div class="form-row">
@@ -314,7 +321,7 @@
             <button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         
-        <!-- ========== SECCIÓN STOCK CORREGIDA ========== -->
+        <!-- ========== SECCIÓN STOCK ========== -->
         <div id="tabStock" class="panel-content" style="display:none;">
             <h3>📦 Carga de fábrica (stock inicial del día)</h3>
             <div class="form-row">
@@ -326,12 +333,18 @@
                 <div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div>
             </div>
             <h3>📊 Resumen vendido / restante</h3>
-            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table>
+            <div style="overflow-x:auto">
+                <table id="stockTable">
+                    <thead>
+                        <tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido Hoy</th><th>Restante</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div id="driverPanel" class="driver-panel" style="display:none;">
-        <!-- Panel de chofer (igual que antes, con comprobantes X) -->
         <div style="background:#1e5a3a; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; color:white; flex-wrap:wrap;">
             <span>🚚 CHOFER <span id="driverIdLabel"></span> - Registrar entregas y cobros</span>
             <button id="logoutDriver" style="background:#ef4444; width:auto; padding:6px 16px;">Salir</button>
@@ -359,7 +372,6 @@
             </div>
             <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             
-            <!-- SECCIÓN COMPROBANTES X -->
             <div class="card" style="margin-top: 20px;">
                 <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
                     📄 Comprobantes X (No fiscales)
@@ -381,7 +393,6 @@
 </div>
 <footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Datos por chofer. Cerrar día archiva jornada y limpia actual.</footer>
 
-<!-- Modal para comprobante X -->
 <div id="comprobanteModal" class="comprobante-modal">
     <div class="comprobante-modal-content">
         <div class="comprobante-header-premium">
@@ -540,7 +551,7 @@ function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON
 async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre] = getPreciosCliente(nombre); costosClientes[nombre] = getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); return true; } return false; }
 async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c => c !== nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; ventas = ventas.filter(v => v.cliente !== nombre); guardarClientesLocal(); saveAll(); return true; } return false; }
 
-// ========== FUNCIONES PARA COMPROBANTE PROFESIONAL ==========
+// ========== COMPROBANTES X ==========
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const numeroFormateado = String(numero).padStart(6,'0');
@@ -567,7 +578,7 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
         html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong>NonNullable<strong>$${totalVenta.toFixed(0)}</strong>NonNullable`;
         totalGeneral += totalVenta;
     }
-    html += `</tbody><td><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
+    html += `</tbody></table><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
     return html;
 }
 function generarComprobanteTextoPlanoPremium(tipo, datos, numero, fechaISO) {
@@ -701,7 +712,7 @@ function renderAdmin() {
     renderEvolucionDiaria();
     renderClientesTab();
     renderProductosTab();
-    renderStockTab();
+    renderStockTab();  // <-- asegura que la tabla de stock se actualice siempre
     renderWeeklyReport();
 }
 
@@ -815,7 +826,7 @@ function renderClientesTab() {
                 <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" size="5"></td>
                 <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" size="5"></td>
                 <td><button class="deleteClienteBtn" data-cli="${cli}" style="background:#b91c1c;">🗑️</button></td>
-            <tr>
+            </tr>
         `;
     }
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => {
@@ -849,40 +860,36 @@ function renderProductosTab() {
         }
     }));
 }
+
+// ========== FUNCIÓN CORREGIDA: renderStockTab (limpia y sin errores) ==========
 function renderStockTab() {
     const ventasHoy = getVentasHoy();
     const vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     ventasHoy.forEach(v => {
-        vendido["1,7 KG"] += v.cantidades["1,7 KG"] || 0;
-        vendido["3,5 KG"] += v.cantidades["3,5 KG"] || 0;
-        vendido["14 KG"] += v.cantidades["14 KG"] || 0;
-        vendido["ESC.20KG"] += v.cantidades["ESC.20KG"] || 0;
-        vendido["ESC.32KG"] += v.cantidades["ESC.32KG"] || 0;
+        if(v.cantidades) {
+            vendido["1,7 KG"] += v.cantidades["1,7 KG"] || 0;
+            vendido["3,5 KG"] += v.cantidades["3,5 KG"] || 0;
+            vendido["14 KG"] += v.cantidades["14 KG"] || 0;
+            vendido["ESC.20KG"] += v.cantidades["ESC.20KG"] || 0;
+            vendido["ESC.32KG"] += v.cantidades["ESC.32KG"] || 0;
+        }
     });
-    document.getElementById("fab_17").value = stockFabrica["1,7 KG"];
-    document.getElementById("fab_35").value = stockFabrica["3,5 KG"];
-    document.getElementById("fab_14").value = stockFabrica["14 KG"];
-    document.getElementById("fab_20").value = stockFabrica["ESC.20KG"];
-    document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
     const tbody = document.querySelector("#stockTable tbody");
-    if(tbody) tbody.innerHTML = `
-        <tr>
-            <td>1,7 KG</div><div>${stockFabrica["1,7 KG"]}</div><div>${vendido["1,7 KG"]}</div><div>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</div><div>
-        </tr>
-        <tr>
-            <td>3,5 KG</div><div>${stockFabrica["3,5 KG"]}</div><div>${vendido["3,5 KG"]}</div><div>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</div><div>
-        </tr>
-        <tr>
-            <td>14 KG</div><div>${stockFabrica["14 KG"]}</div><div>${vendido["14 KG"]}</div><div>${stockFabrica["14 KG"] - vendido["14 KG"]}</div><div>
-        </tr>
-        <tr>
-            <td>ESC.20KG</div><div>${stockFabrica["ESC.20KG"]}</div><div>${vendido["ESC.20KG"]}</div><div>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</div><div>
-        </tr>
-        <tr>
-            <td>ESC.32KG</div><div>${stockFabrica["ESC.32KG"]}</div><div>${vendido["ESC.32KG"]}</div><div>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</div><div>
-        </tr>
-    `;
+    if(!tbody) return;
+    tbody.innerHTML = "";
+    const productosStock = ["1,7 KG", "3,5 KG", "14 KG", "ESC.20KG", "ESC.32KG"];
+    for(let prod of productosStock) {
+        const carga = stockFabrica[prod] || 0;
+        const vend = vendido[prod] || 0;
+        const rest = carga - vend;
+        const row = tbody.insertRow();
+        row.insertCell(0).innerHTML = prod;
+        row.insertCell(1).innerHTML = carga;
+        row.insertCell(2).innerHTML = vend;
+        row.insertCell(3).innerHTML = rest;
+    }
 }
+
 function renderWeeklyReport() {
     const weeklyVentas = getVentasUltimos7Dias();
     let totalVentasSemana = 0, totalEfectivoSemana = 0, totalTransferenciaSemana = 0, totalCtaCteSemana = 0, totalCobrosDeudaSemana = 0, totalGananciaReal = 0;
@@ -1071,13 +1078,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if(await agregarClienteGlobal(nuevo)) {
             document.getElementById("newClienteName").value = "";
             alert(`Cliente ${nuevo} agregado.`);
-            // Forzar actualización del select del chofer si está visible
-            if (document.getElementById("driverPanel").style.display === "block") {
-                renderDriver();
-            }
-            if (document.getElementById("adminPanel").style.display === "block") {
-                renderAdmin();
-            }
+            // Forzar actualización en ambos paneles
+            if (document.getElementById("driverPanel").style.display === "block") renderDriver();
+            if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
         } else {
             alert("El cliente ya existe");
         }
@@ -1144,8 +1147,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             "ESC.32KG": parseInt(document.getElementById("fab_32").value) || 0
         };
         saveAll();
-        renderStockTab();
-        renderAdmin();
+        renderStockTab();    // actualiza la tabla de stock inmediatamente
+        renderAdmin();       // actualiza el resto (por si afecta a la vista)
+        toast("Stock actualizado");
     });
     document.getElementById("adminChoferSelect")?.addEventListener("change", () => {
         if (document.getElementById("adminPanel").style.display === "block") {
