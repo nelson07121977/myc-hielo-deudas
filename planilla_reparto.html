@@ -8,7 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* (EL MISMO CSS QUE USTED ME PASÓ, SIN NINGÚN CAMBIO) */
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         body { background: #e9f0f5; margin: 0; padding: 20px; }
         .login-container, .admin-panel, .driver-panel { max-width: 1400px; margin: 0 auto; background: white; border-radius: 32px; box-shadow: 0 12px 30px rgba(0,0,0,0.1); overflow: hidden; }
@@ -45,7 +44,6 @@
         .force-scale-checkbox label { font-size: 0.85rem; margin: 0; }
         .force-scale-checkbox input { width: auto; margin: 0; }
 
-        /* ESTILOS PROFESIONALES PARA EL COMPROBANTE X */
         .comprobante-modal {
             display: none;
             position: fixed;
@@ -195,9 +193,6 @@
             border: none;
             color: white;
         }
-        .btn-primary-premium:hover {
-            background: #0f5a8a;
-        }
         @media print {
             body * { visibility: hidden; }
             .comprobante-modal, .comprobante-modal * { visibility: visible; }
@@ -221,10 +216,10 @@
         <div style="background:#0a3e6d; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; color:white; flex-wrap:wrap;">
             <span>🧊 ADMIN - MYC HIELO</span>
             <div>
-                <div class="force-scale-checkbox" style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 30px;">
+                <div class="force-scale-checkbox" style="background: rgba(255,255,255,0.2); padding:5px 10px; border-radius:30px;">
                     <input type="checkbox" id="forceOnePageCheckbox"> <label>📄 Forzar todo en una sola página</label>
                 </div>
-                <select id="adminChoferSelect" style="width: auto; background: white; color: black; margin: 0 8px;">
+                <select id="adminChoferSelect" style="width:auto; background:white; color:black; margin:0 8px;">
                     <option value="1234">Chofer 1234</option>
                     <option value="5678">Chofer 5678</option>
                 </select>
@@ -247,17 +242,16 @@
             <div class="chart-container"><h3>📦 Ventas por producto (día actual)</h3><div id="productosReport" class="productos-vendidos"></div></div>
             <div class="chart-container no-print"><h3>📈 Evolución diaria (ventas totales últimos 7 días)</h3><canvas id="evolucionChart" width="400" height="200"></canvas></div>
             <h3>📋 Ventas y Cobros del día</h3>
-            <div style="overflow-x:auto"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></td></thead><tbody id="salesDetailBody"></tbody></table></div>
+            <div style="overflow-x:auto"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></tr></thead><tbody id="salesDetailBody"></tbody></table></div>
         </div>
         <div id="tabReportes" class="panel-content" style="display:none;">
             <h2>📅 Resumen última semana (últimos 7 días)</h2>
             <div class="summary-cards" id="weeklyStats"></div>
             <div class="chart-container"><h3>🏆 Top 10 clientes por volumen</h3><canvas id="topClientesChart"></canvas></div>
             <div class="chart-container"><h3>📈 Evolución diaria (semana)</h3><canvas id="weeklySalesChart"></canvas></div>
-            <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></td></thead><tbody id="weeklySalesBody"></tbody></tr></div></div>
+            <div class="report-container"><h3>💸 Detalle ventas semana</h3><div style="overflow-x:auto"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div></div>
         </div>
         
-        <!-- ========== SECCIÓN CLIENTES CORREGIDA ========== -->
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3>Gestión de clientes (precios de venta y costos de fábrica)</h3>
             <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
@@ -281,7 +275,6 @@
             <button id="saveAllPricesBtn" style="margin-top:20px;">💾 Guardar todos los cambios</button>
         </div>
         
-        <!-- ========== SECCIÓN PRODUCTOS CORREGIDA ========== -->
         <div id="tabProductos" class="panel-content" style="display:none;">
             <h3>📸 Tipos de Bolsas / Productos</h3>
             <div class="form-row">
@@ -299,7 +292,6 @@
             <button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         
-        <!-- ========== SECCIÓN STOCK CORREGIDA ========== -->
         <div id="tabStock" class="panel-content" style="display:none;">
             <h3>📦 Carga de fábrica (stock inicial del día)</h3>
             <div class="form-row">
@@ -311,12 +303,11 @@
                 <div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div>
             </div>
             <h3>📊 Resumen vendido / restante</h3>
-            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table>
+            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></td></thead><tbody></tbody></table>
         </div>
     </div>
 
     <div id="driverPanel" class="driver-panel" style="display:none;">
-        <!-- Panel de chofer (igual que antes, con comprobantes X) -->
         <div style="background:#1e5a3a; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; color:white; flex-wrap:wrap;">
             <span>🚚 CHOFER <span id="driverIdLabel"></span> - Registrar entregas y cobros</span>
             <button id="logoutDriver" style="background:#ef4444; width:auto; padding:6px 16px;">Salir</button>
@@ -342,23 +333,10 @@
                 <div class="card"><h4>💸 Gastos</h4><div class="gastos-detalle"><label>⛽ Nafta $</label><input type="number" id="gastoNafta" value="0" step="100"><label>👨‍✈️ Pago choferes $</label><input type="number" id="gastoChoferes" value="0" step="100"><label>📦 Otros $</label><input type="number" id="gastoOtros" value="0" step="100"><button id="setGastosDetalleBtn">Aplicar Gastos</button><div style="margin-top:8px; font-weight:bold;">Total Gastos: $<span id="totalGastos">0</span></div></div></div>
                 <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small>(Efectivo + Transferencia + Cobros - Gastos)</small></div>
             </div>
-            <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
-            
-            <!-- SECCIÓN COMPROBANTES X -->
-            <div class="card" style="margin-top: 20px;">
-                <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-                    📄 Comprobantes X (No fiscales)
-                    <div style="display: flex; gap: 8px;">
-                        <button id="genComprobanteDiaBtn" class="btn-small" style="background:#16a34a;">📅 Comprobante del día</button>
-                        <button id="genComprobanteSemanaBtn" class="btn-small" style="background:#2563eb;">📆 Comprobante de la semana</button>
-                    </div>
-                </div>
-                <div style="overflow-x:auto; margin-top: 12px;">
-                    <table id="comprobantesTable" style="font-size:0.75rem;">
-                        <thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead>
-                        <tbody id="comprobantesBody"></tbody>
-                    <table>
-                </div>
+            <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></table></thead><tbody id="driverSalesBody"></tbody></table></div>
+            <div class="card" style="margin-top:20px;">
+                <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">📄 Comprobantes X (No fiscales)<div style="display:flex; gap:8px;"><button id="genComprobanteDiaBtn" class="btn-small" style="background:#16a34a;">📅 Comprobante del día</button><button id="genComprobanteSemanaBtn" class="btn-small" style="background:#2563eb;">📆 Comprobante de la semana</button></div></div>
+                <div style="overflow-x:auto; margin-top:12px;"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div>
             </div>
             <button id="resetDayBtn" style="background:#b91c1c; margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
         </div>
@@ -366,7 +344,6 @@
 </div>
 <footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Datos por chofer. Cerrar día archiva jornada y limpia actual.</footer>
 
-<!-- Modal para comprobante X -->
 <div id="comprobanteModal" class="comprobante-modal">
     <div class="comprobante-modal-content">
         <div class="comprobante-header-premium">
@@ -396,8 +373,19 @@ let comprobantesHistorial = [];
 
 const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON"];
 
-// ========== NUEVO: URL para sincronizar con Google Sheets ==========
+// ========== URL de Google Sheets para sincronizar ==========
 const API_URL_DEUDAS = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
+
+function toast(msg) {
+    const t = document.getElementById("toast");
+    if (t) {
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2500);
+    } else {
+        alert(msg);
+    }
+}
 
 function getPreciosCliente(cliente) {
     let p17=1500, p35=2500, p14=7000, p20=8000, p32=12000;
@@ -462,7 +450,7 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
     if(cobroDeuda>0) cobrosCC += cobroDeuda;
     saveAll();
 
-    // ========== ENVIAR A GOOGLE SHEETS (solo créditos y cobros) ==========
+    // Enviar a Google Sheets si es crédito o cobro
     try {
         if (pago === "ctacte" && total > 0) {
             await fetch(API_URL_DEUDAS, {
@@ -495,10 +483,7 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
                 })
             });
         }
-    } catch(e) {
-        console.error("Error al sincronizar con Google Sheets", e);
-    }
-    // ================================================================
+    } catch(e) { console.error("Error al sincronizar con Google Sheets", e); }
 
     return nueva;
 }
@@ -525,20 +510,11 @@ function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON
 async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre] = getPreciosCliente(nombre); costosClientes[nombre] = getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); return true; } return false; }
 async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c => c !== nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; ventas = ventas.filter(v => v.cliente !== nombre); guardarClientesLocal(); saveAll(); return true; } return false; }
 
-// ========== FUNCIONES PARA COMPROBANTE PROFESIONAL ==========
+// ========== COMPROBANTES X ==========
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const numeroFormateado = String(numero).padStart(6,'0');
-    let html = `
-        <div class="info-fecha-premium">
-            <div><strong>📅 Emisión:</strong> ${fechaStr}</div>
-            <div><strong>🧾 Período:</strong> ${tipo === 'dia' ? 'Jornada actual' : 'Últimos 7 días'}</div>
-            <div><strong>🔢 N°:</strong> X-${numeroFormateado}</div>
-        </div>
-        <table class="tabla-productos-premium">
-            <thead><tr><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead>
-            <tbody>
-    `;
+    let html = `<div class="info-fecha-premium"><div><strong>📅 Emisión:</strong> ${fechaStr}</div><div><strong>🧾 Período:</strong> ${tipo === 'dia' ? 'Jornada actual' : 'Últimos 7 días'}</div><div><strong>🔢 N°:</strong> X-${numeroFormateado}</div></div><table class="tabla-productos-premium"><thead><tr><th>Cliente</th><th>Producto</th><th>Cantidad</th><th>Precio Unit.</th><th>Subtotal</th></tr></thead><tbody>`;
     let totalGeneral = 0;
     for (let venta of datos.ventas) {
         const pre = preciosClientes[venta.cliente] || getPreciosCliente(venta.cliente);
@@ -557,24 +533,13 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
             primerItem = false;
         }
         if (venta.cobroDeuda && venta.cobroDeuda > 0) {
-            html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong>NonNullable<strong>$${venta.cobroDeuda.toFixed(0)}</strong>NonNullable`;
+            html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></td><td><strong>$${venta.cobroDeuda.toFixed(0)}</strong></td></tr>`;
         }
         let totalVenta = venta.total + (venta.cobroDeuda || 0);
         html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong>NonNullable<strong>$${totalVenta.toFixed(0)}</strong>NonNullable`;
         totalGeneral += totalVenta;
     }
-    html += `
-            </tbody>
-        </table>
-        <div class="totales-premium">
-            <p><strong>MONTO TOTAL GENERAL</strong></p>
-            <div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div>
-        </div>
-        <div class="footer-premium">
-            <p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p>
-            <p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p>
-        </div>
-    `;
+    html += `</tbody></table><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
     return html;
 }
 
@@ -611,28 +576,16 @@ function generarComprobanteTextoPlanoPremium(tipo, datos, numero, fechaISO) {
 
 function getNextComprobanteNum() { let next = localStorage.getItem(`myc_${currentDriverPin}_nextComprobante`); if (!next) { next = 1; localStorage.setItem(`myc_${currentDriverPin}_nextComprobante`, next); } return parseInt(next); }
 function incrementComprobanteNum() { let next = getNextComprobanteNum(); localStorage.setItem(`myc_${currentDriverPin}_nextComprobante`, next + 1); }
-
 function guardarComprobante(tipo, datos, htmlContent, textContent) {
     const numero = getNextComprobanteNum();
     const fecha = new Date().toISOString();
-    const comprobante = {
-        numero, fecha, tipo,
-        resumen: tipo === 'dia' ? `Día (${datos.ventas.length} ventas)` : `Semana (${datos.ventas.length} ventas)`,
-        total: datos.ventas.reduce((s,v)=>s + v.total + (v.cobroDeuda||0), 0),
-        html: htmlContent,
-        texto: textContent
-    };
+    const comprobante = { numero, fecha, tipo, resumen: tipo === 'dia' ? `Día (${datos.ventas.length} ventas)` : `Semana (${datos.ventas.length} ventas)`, total: datos.ventas.reduce((s,v)=>s + v.total + (v.cobroDeuda||0), 0), html: htmlContent, texto: textContent };
     comprobantesHistorial.unshift(comprobante);
     localStorage.setItem(`myc_${currentDriverPin}_comprobantes`, JSON.stringify(comprobantesHistorial));
     incrementComprobanteNum();
     return comprobante;
 }
-
-function mostrarComprobante(htmlContent) {
-    document.getElementById("comprobanteCuerpo").innerHTML = htmlContent;
-    document.getElementById("comprobanteModal").style.display = "flex";
-}
-
+function mostrarComprobante(htmlContent) { document.getElementById("comprobanteCuerpo").innerHTML = htmlContent; document.getElementById("comprobanteModal").style.display = "flex"; }
 function generarComprobanteDia() {
     let ventasHoy = getVentasHoy();
     if(ventasHoy.length===0){ alert("No hay ventas hoy"); return; }
@@ -645,7 +598,6 @@ function generarComprobanteDia() {
     window.currentComprobanteTexto = comp.texto;
     renderComprobantesHistorial();
 }
-
 function generarComprobanteSemana() {
     let ventasSemana = getVentasUltimos7Dias();
     if(ventasSemana.length===0){ alert("No hay ventas en la última semana"); return; }
@@ -658,33 +610,11 @@ function generarComprobanteSemana() {
     window.currentComprobanteTexto = comp.texto;
     renderComprobantesHistorial();
 }
-
-function verComprobante(numero) {
-    let comp = comprobantesHistorial.find(c => c.numero === numero);
-    if (comp) { mostrarComprobante(comp.html); window.currentComprobanteTexto = comp.texto; }
-    else alert("Comprobante no encontrado");
-}
+function verComprobante(numero) { let comp = comprobantesHistorial.find(c => c.numero === numero); if (comp) { mostrarComprobante(comp.html); window.currentComprobanteTexto = comp.texto; } else alert("Comprobante no encontrado"); }
 function reimprimirComprobante(numero) { verComprobante(numero); }
-function eliminarComprobante(numero) {
-    if(confirm("Eliminar comprobante?")) {
-        comprobantesHistorial = comprobantesHistorial.filter(c=>c.numero!==numero);
-        localStorage.setItem(`myc_${currentDriverPin}_comprobantes`, JSON.stringify(comprobantesHistorial));
-        renderComprobantesHistorial();
-    }
-}
-function copiarComprobanteTexto() {
-    if(window.currentComprobanteTexto) { navigator.clipboard.writeText(window.currentComprobanteTexto); alert("Texto copiado"); }
-    else alert("No hay texto");
-}
-function descargarComprobanteTxt() {
-    if(window.currentComprobanteTexto) {
-        let blob = new Blob([window.currentComprobanteTexto], {type:"text/plain"});
-        let a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `comprobante_X_${Date.now()}.txt`;
-        a.click();
-    } else alert("No hay datos");
-}
+function eliminarComprobante(numero) { if(confirm("Eliminar comprobante?")) { comprobantesHistorial = comprobantesHistorial.filter(c=>c.numero!==numero); localStorage.setItem(`myc_${currentDriverPin}_comprobantes`, JSON.stringify(comprobantesHistorial)); renderComprobantesHistorial(); } }
+function copiarComprobanteTexto() { if(window.currentComprobanteTexto) { navigator.clipboard.writeText(window.currentComprobanteTexto); alert("Texto copiado"); } else alert("No hay texto"); }
+function descargarComprobanteTxt() { if(window.currentComprobanteTexto) { let blob = new Blob([window.currentComprobanteTexto], {type:"text/plain"}); let a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `comprobante_X_${Date.now()}.txt`; a.click(); } else alert("No hay datos"); }
 function renderComprobantesHistorial() {
     let tbody = document.getElementById("comprobantesBody");
     if(!tbody) return;
@@ -737,7 +667,9 @@ function renderAdmin() {
             <td>${v.cantidades?.["14 KG"]||0}</td>
             <td>${v.cantidades?.["ESC.20KG"]||0}</td>
             <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
+            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>
+            <td>${v.pago}</div><div>
+            <td>$${v.cobroDeuda||0}</div><div>
         </tr>
     `).join('');
     actualizarGraficoClientes();
@@ -748,6 +680,7 @@ function renderAdmin() {
     renderStockTab();
     renderWeeklyReport();
 }
+
 function renderDriver() {
     let select = document.getElementById("clienteSelect");
     if(select) select.innerHTML = CLIENTES_LIST.map(c => `<option value="${c}">${c}</option>`).join("");
@@ -780,13 +713,16 @@ function renderDriver() {
             <td>${v.cantidades?.["14 KG"]||0}</td>
             <td>${v.cantidades?.["ESC.20KG"]||0}</td>
             <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td>${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>${v.pago}</div><div>$${v.cobroDeuda||0}</div>
-            <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td>
-        </tr>
+            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>
+            <td>${v.pago}</div><div>
+            <td>$${v.cobroDeuda||0}</div><div>
+            <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></div><div>
+        </table>
     `).join('');
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.dataset.id)); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
     renderComprobantesHistorial();
 }
+
 function actualizarGraficoClientes() {
     const ventasHoy = getVentasHoy();
     const ventasPorCliente = {};
@@ -800,6 +736,7 @@ function actualizarGraficoClientes() {
         chartClientes = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Ventas $', data: datos, backgroundColor: '#0a3e6d', borderRadius: 8 }] }, options: { responsive: true } });
     }
 }
+
 function renderVentasPorProducto() {
     const ventasHoy = getVentasHoy();
     const resumen = { "1,7 KG":{cant:0,total:0}, "3,5 KG":{cant:0,total:0}, "14 KG":{cant:0,total:0}, "ESC.20KG":{cant:0,total:0}, "ESC.32KG":{cant:0,total:0} };
@@ -823,6 +760,7 @@ function renderVentasPorProducto() {
         }
     }
 }
+
 function renderEvolucionDiaria() {
     const fechas = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d; }).reverse();
     const ventasPorDia = {};
@@ -836,6 +774,7 @@ function renderEvolucionDiaria() {
         chartEvolucion = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Ventas totales $', data: datos, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3 }] }, options: { responsive: true } });
     }
 }
+
 function renderClientesTab() {
     let tbody = document.getElementById("clientesTbody");
     if(!tbody) return;
@@ -869,6 +808,7 @@ function renderClientesTab() {
         }
     }));
 }
+
 function renderProductosTab() {
     let tbody = document.getElementById("productsTbody");
     if(!tbody) return;
@@ -885,6 +825,7 @@ function renderProductosTab() {
     }
     document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", (e) => { const clave = btn.getAttribute("data-clave"); if(confirm(`Eliminar producto ${clave}?`)) { productos = productos.filter(p => p.clave !== clave); saveCommonProducts(); renderProductosTab(); } }));
 }
+
 function renderStockTab() {
     const ventasHoy = getVentasHoy();
     const vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
@@ -919,6 +860,7 @@ function renderStockTab() {
         </tr>
     `;
 }
+
 function renderWeeklyReport() {
     const weeklyVentas = getVentasUltimos7Dias();
     let totalVentasSemana = 0, totalEfectivoSemana = 0, totalTransferenciaSemana = 0, totalCtaCteSemana = 0, totalCobrosDeudaSemana = 0, totalGananciaReal = 0;
@@ -967,6 +909,7 @@ function renderWeeklyReport() {
         </tr>
     `).join('');
 }
+
 function actualizarGastosDesdeDetalle() {
     const nafta = parseFloat(document.getElementById("gastoNafta")?.value) || 0;
     const choferes = parseFloat(document.getElementById("gastoChoferes")?.value) || 0;
@@ -979,7 +922,6 @@ function actualizarGastosDesdeDetalle() {
     if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
 }
 
-// ========== FUNCIÓN MODIFICADA: agregarTransaccion ahora async ==========
 async function agregarTransaccion() {
     const cliente = document.getElementById("clienteSelect").value;
     const pago = document.getElementById("paymentType").value;
@@ -1057,16 +999,10 @@ async function exportarPDF(elementId, fileName) {
             }
             pdf.save(`${fileName}_${new Date().toISOString().slice(0,19)}.pdf`);
         }
-    } catch (error) {
-        console.error(error);
-        alert("Error al generar PDF: " + error.message);
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
-    }
+    } catch (error) { console.error(error); alert("Error al generar PDF: " + error.message); }
+    finally { btn.innerText = originalText; btn.disabled = false; }
 }
 
-// Exponer globales
 window.verComprobante = verComprobante;
 window.reimprimirComprobante = reimprimirComprobante;
 window.copiarComprobanteTexto = copiarComprobanteTexto;
@@ -1228,7 +1164,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if(tab === "stock") renderStockTab();
         });
     });
-    // Eventos de comprobantes
     document.getElementById("genComprobanteDiaBtn")?.addEventListener("click", generarComprobanteDia);
     document.getElementById("genComprobanteSemanaBtn")?.addEventListener("click", generarComprobanteSemana);
     document.getElementById("printComprobanteBtn")?.addEventListener("click", () => window.print());
