@@ -303,7 +303,7 @@
                 <div class="form-group"><button id="updateStockBtn" class="btn-small">Actualizar stock</button></div>
             </div>
             <h3>📊 Resumen vendido / restante</h3>
-            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></td></thead><tbody></tbody></table>
+            <table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Total Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table>
         </div>
     </div>
 
@@ -333,7 +333,7 @@
                 <div class="card"><h4>💸 Gastos</h4><div class="gastos-detalle"><label>⛽ Nafta $</label><input type="number" id="gastoNafta" value="0" step="100"><label>👨‍✈️ Pago choferes $</label><input type="number" id="gastoChoferes" value="0" step="100"><label>📦 Otros $</label><input type="number" id="gastoOtros" value="0" step="100"><button id="setGastosDetalleBtn">Aplicar Gastos</button><div style="margin-top:8px; font-weight:bold;">Total Gastos: $<span id="totalGastos">0</span></div></div></div>
                 <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small>(Efectivo + Transferencia + Cobros - Gastos)</small></div>
             </div>
-            <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></table></thead><tbody id="driverSalesBody"></tbody></table></div>
+            <div style="overflow-x:auto"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             <div class="card" style="margin-top:20px;">
                 <div class="card-title" style="font-weight:800; font-size:1.2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">📄 Comprobantes X (No fiscales)<div style="display:flex; gap:8px;"><button id="genComprobanteDiaBtn" class="btn-small" style="background:#16a34a;">📅 Comprobante del día</button><button id="genComprobanteSemanaBtn" class="btn-small" style="background:#2563eb;">📆 Comprobante de la semana</button></div></div>
                 <div style="overflow-x:auto; margin-top:12px;"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div>
@@ -437,20 +437,38 @@ function saveDataByPin(pin) {
 }
 function saveAll() { if (currentDriverPin) saveDataByPin(currentDriverPin); else { let sel = document.getElementById("adminChoferSelect")?.value; if(sel) saveDataByPin(sel); } saveGlobalPrices(); }
 
-function getVentasHoy() { const hoy = new Date().toDateString(); return ventas.filter(v => new Date(v.fecha).toDateString() === hoy); }
-function getVentasUltimos7Dias() { const hoy = new Date(), unaSemana = new Date(); unaSemana.setDate(hoy.getDate() - 6); unaSemana.setHours(0,0,0,0); return ventas.filter(v => new Date(v.fecha) >= unaSemana); }
-function calcularTotalVenta(cliente, cant) { const p = preciosClientes[cliente]; return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32; }
+// *** CORRECCIÓN PRINCIPAL: FUNCIONES DE FECHA SIN ZONA HORARIA ***
+function getTodayUTC() {
+    return new Date().toISOString().slice(0,10);
+}
+function getVentasHoy() {
+    const hoy = getTodayUTC();
+    return ventas.filter(v => v.fecha === hoy);
+}
+function getVentasUltimos7Dias() {
+    const hoy = new Date();
+    const unaSemanaAtras = new Date(hoy);
+    unaSemanaAtras.setDate(hoy.getDate() - 6);
+    unaSemanaAtras.setHours(0,0,0,0);
+    const fechaLimite = unaSemanaAtras.toISOString().slice(0,10);
+    return ventas.filter(v => v.fecha >= fechaLimite);
+}
+// ***********************************************
 
-// ========== FUNCIÓN MODIFICADA: guardarVenta con sincronización a Sheets ==========
+function calcularTotalVenta(cliente, cant) {
+    const p = preciosClientes[cliente] || getPreciosCliente(cliente);
+    return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32;
+}
+
 async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
-    let total = 0; if(pago !== "cobrocc") total = calcularTotalVenta(cliente, cantidades);
-    const fechaStr = new Date().toISOString().slice(0,10);
+    let total = 0;
+    if(pago !== "cobrocc") total = calcularTotalVenta(cliente, cantidades);
+    const fechaStr = getTodayUTC(); // ISO YYYY-MM-DD
     const nueva = { id: Date.now()+Math.random(), cliente, cantidades, pago, total, cobroDeuda, fecha: fechaStr };
     ventas.push(nueva);
     if(cobroDeuda>0) cobrosCC += cobroDeuda;
     saveAll();
 
-    // Enviar a Google Sheets si es crédito o cobro
     try {
         if (pago === "ctacte" && total > 0) {
             await fetch(API_URL_DEUDAS, {
@@ -488,16 +506,28 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
     return nueva;
 }
 
-function eliminarVenta(id) { const v = ventas.find(v=>v.id===id); if(v && v.cobroDeuda>0) cobrosCC -= v.cobroDeuda; ventas = ventas.filter(v=>v.id!==id); saveAll(); }
-function resetJornada() { const hoy = new Date().toDateString(); ventas = ventas.filter(v => new Date(v.fecha).toDateString() !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
+function eliminarVenta(id) {
+    const v = ventas.find(v=>v.id===id);
+    if(v && v.cobroDeuda>0) cobrosCC -= v.cobroDeuda;
+    ventas = ventas.filter(v=>v.id!==id);
+    saveAll();
+}
+function resetJornada() {
+    const hoy = getTodayUTC();
+    ventas = ventas.filter(v => v.fecha !== hoy);
+    gastos = 0;
+    gastosDetalle = { nafta:0, choferes:0, otros:0 };
+    cobrosCC = 0;
+    saveAll();
+}
 
 function cerrarDiaAdmin() {
     let selectedPin = document.getElementById("adminChoferSelect")?.value;
     if(!selectedPin) { alert("Selecciona un chofer."); return; }
     if (!confirm(`⚠️ Cerrar el día para chofer ${selectedPin} archivará todas las ventas, gastos y cobros de hoy y limpiará la jornada actual. ¿Continuar?`)) return;
-    const today = new Date().toISOString().slice(0,10);
+    const today = getTodayUTC();
     const historicoKey = `myc_${selectedPin}_historico_${today}`;
-    const dataBackup = { fecha: today, ventas: ventas.filter(v => new Date(v.fecha).toDateString() === new Date().toDateString()), gastosDetalle: {...gastosDetalle}, cobrosCC, stock: {...stockFabrica} };
+    const dataBackup = { fecha: today, ventas: ventas.filter(v => v.fecha === today), gastosDetalle: {...gastosDetalle}, cobrosCC, stock: {...stockFabrica} };
     localStorage.setItem(historicoKey, JSON.stringify(dataBackup));
     resetJornada();
     loadDataByPin(selectedPin);
@@ -510,7 +540,7 @@ function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON
 async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre] = getPreciosCliente(nombre); costosClientes[nombre] = getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); return true; } return false; }
 async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c => c !== nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; ventas = ventas.filter(v => v.cliente !== nombre); guardarClientesLocal(); saveAll(); return true; } return false; }
 
-// ========== COMPROBANTES X ==========
+// ========== COMPROBANTES X (sin cambios) ==========
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const numeroFormateado = String(numero).padStart(6,'0');
@@ -529,14 +559,14 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
             let subtotal = item.cant * item.precio;
             html += `<tr>`;
             if (primerItem) html += `<td rowspan="${items.length}"><strong>${venta.cliente}</strong></td>`;
-            html += `<td>${item.nombre}</td><td>${item.cant}</td><td>$${item.precio.toFixed(0)}</div><div>$${subtotal.toFixed(0)}</div><div>`;
+            html += `<td>${item.nombre}</td><td>${item.cant}</td><td>$${item.precio.toFixed(0)}</td><td>$${subtotal.toFixed(0)}</td></tr>`;
             primerItem = false;
         }
         if (venta.cobroDeuda && venta.cobroDeuda > 0) {
             html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></td><td><strong>$${venta.cobroDeuda.toFixed(0)}</strong></td></tr>`;
         }
         let totalVenta = venta.total + (venta.cobroDeuda || 0);
-        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong>NonNullable<strong>$${totalVenta.toFixed(0)}</strong>NonNullable`;
+        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong></td><td><strong>$${totalVenta.toFixed(0)}</strong></td></tr>`;
         totalGeneral += totalVenta;
     }
     html += `</tbody></table><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
@@ -644,7 +674,7 @@ function renderAdmin() {
         if(v.pago === "efectivo") totalEfectivo += v.total;
         if(v.pago === "transferencia") totalTransferencia += v.total;
         if(v.pago === "ctacte") totalCtaCte += v.total;
-        const cost = costosClientes[v.cliente];
+        const cost = costosClientes[v.cliente] || getCostosCliente();
         let costo = 0;
         if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32;
         gananciaTotal += (v.total - costo);
@@ -667,9 +697,9 @@ function renderAdmin() {
             <td>${v.cantidades?.["14 KG"]||0}</td>
             <td>${v.cantidades?.["ESC.20KG"]||0}</td>
             <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>
-            <td>${v.pago}</div><div>
-            <td>$${v.cobroDeuda||0}</div><div>
+            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td>
+            <td>${v.pago}</td>
+            <td>$${v.cobroDeuda||0}</td>
         </tr>
     `).join('');
     actualizarGraficoClientes();
@@ -713,11 +743,11 @@ function renderDriver() {
             <td>${v.cantidades?.["14 KG"]||0}</td>
             <td>${v.cantidades?.["ESC.20KG"]||0}</td>
             <td>${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</div><div>
-            <td>${v.pago}</div><div>
-            <td>$${v.cobroDeuda||0}</div><div>
-            <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></div><div>
-        </table>
+            <td style="font-weight:bold;">${v.pago==="cobrocc"?"$0":"$"+v.total.toFixed(0)}</td>
+            <td>${v.pago}</td>
+            <td>$${v.cobroDeuda||0}</td>
+            <td><button class="delVentaBtn" data-id="${v.id}" style="background:#b91c1c;">🗑️</button></td>
+        </tr>
     `).join('');
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", (e) => { eliminarVenta(Number(btn.dataset.id)); renderDriver(); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); }));
     renderComprobantesHistorial();
@@ -764,10 +794,10 @@ function renderVentasPorProducto() {
 function renderEvolucionDiaria() {
     const fechas = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d; }).reverse();
     const ventasPorDia = {};
-    fechas.forEach(f => ventasPorDia[f.toDateString()] = 0);
-    ventas.forEach(v => { if(v.pago !== "cobrocc") { const fechaVenta = new Date(v.fecha).toDateString(); if(ventasPorDia.hasOwnProperty(fechaVenta)) ventasPorDia[fechaVenta] += v.total; } });
+    fechas.forEach(f => ventasPorDia[f.toISOString().slice(0,10)] = 0);
+    ventas.forEach(v => { if(v.pago !== "cobrocc") ventasPorDia[v.fecha] = (ventasPorDia[v.fecha] || 0) + v.total; });
     const labels = fechas.map(f => f.toISOString().slice(0,10));
-    const datos = fechas.map(f => ventasPorDia[f.toDateString()]);
+    const datos = fechas.map(f => ventasPorDia[f.toISOString().slice(0,10)]);
     const ctx = document.getElementById('evolucionChart')?.getContext('2d');
     if(ctx) {
         if(chartEvolucion) chartEvolucion.destroy();
@@ -843,21 +873,11 @@ function renderStockTab() {
     document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
     const tbody = document.querySelector("#stockTable tbody");
     if(tbody) tbody.innerHTML = `
-        <tr>
-            <td>1,7 KG</div><div>${stockFabrica["1,7 KG"]}</div><div>${vendido["1,7 KG"]}</div><div>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</div><div>
-        </tr>
-        <tr>
-            <td>3,5 KG</div><div>${stockFabrica["3,5 KG"]}</div><div>${vendido["3,5 KG"]}</div><div>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</div><div>
-        </tr>
-        <tr>
-            <td>14 KG</div><div>${stockFabrica["14 KG"]}</div><div>${vendido["14 KG"]}</div><div>${stockFabrica["14 KG"] - vendido["14 KG"]}</div><div>
-        </tr>
-        <tr>
-            <td>ESC.20KG</div><div>${stockFabrica["ESC.20KG"]}</div><div>${vendido["ESC.20KG"]}</div><div>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</div><div>
-        </tr>
-        <tr>
-            <td>ESC.32KG</div><div>${stockFabrica["ESC.32KG"]}</div><div>${vendido["ESC.32KG"]}</div><div>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</div><div>
-        </tr>
+        <tr><td>1,7 KG</td><td>${stockFabrica["1,7 KG"]}</td><td>${vendido["1,7 KG"]}</td><td>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</td></tr>
+        <tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr>
+        <tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr>
+        <tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr>
+        <tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>
     `;
 }
 
@@ -873,13 +893,12 @@ function renderWeeklyReport() {
             if(v.pago === "ctacte") totalCtaCteSemana += v.total;
         }
         totalCobrosDeudaSemana += v.cobroDeuda || 0;
-        const cost = costosClientes[v.cliente];
+        const cost = costosClientes[v.cliente] || getCostosCliente();
         let costo = 0;
         if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32;
         totalGananciaReal += (v.total - costo) + (v.cobroDeuda||0);
         if(v.pago !== "cobrocc") ventasPorCliente[v.cliente] = (ventasPorCliente[v.cliente] || 0) + v.total;
-        const fechaKey = new Date(v.fecha).toDateString();
-        ventasPorDia[fechaKey] = (ventasPorDia[fechaKey] || 0) + v.total;
+        ventasPorDia[v.fecha] = (ventasPorDia[v.fecha] || 0) + v.total;
     });
     document.getElementById("weeklyStats").innerHTML = `
         <div class="card"><h4>💰 Venta Bruta Semana</h4><div class="value">$${totalVentasSemana.toFixed(0)}</div></div>
@@ -895,17 +914,26 @@ function renderWeeklyReport() {
         if(topClientesChart) topClientesChart.destroy();
         topClientesChart = new Chart(ctxTop, { type: 'bar', data: { labels: topClientes.map(c=>c[0]), datasets: [{ label: 'Ventas $', data: topClientes.map(c=>c[1]), backgroundColor: '#f59e0b' }] }, options: { responsive: true } });
     }
-    const diasSemana = [...Array(7).keys()].map(i => { let d = new Date(); d.setDate(d.getDate() - i); return d.toDateString(); }).reverse();
-    const ventasPorDiaOrdenado = diasSemana.map(d => ventasPorDia[d] || 0);
+    const hoy = new Date();
+    const fechasSemana = [...Array(7).keys()].map(i => {
+        let d = new Date(hoy);
+        d.setDate(hoy.getDate() - (6 - i));
+        return d.toISOString().slice(0,10);
+    });
+    const ventasPorDiaOrdenado = fechasSemana.map(f => ventasPorDia[f] || 0);
     const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d');
     if(ctxLine) {
         if(weeklySalesChart) weeklySalesChart.destroy();
-        weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: diasSemana.map(d=>d.slice(0,10)), datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } });
+        weeklySalesChart = new Chart(ctxLine, { type: 'line', data: { labels: fechasSemana, datasets: [{ label: 'Ventas diarias $', data: ventasPorDiaOrdenado, borderColor: '#0a3e6d', fill: false }] } });
     }
     const tbody = document.getElementById("weeklySalesBody");
-    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `
+    if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v => `
         <tr>
-            <td>${new Date(v.fecha).toLocaleDateString()} </div><div>${v.cliente}</div><div>$${v.total.toFixed(0)}</div><div>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</div><div>$${v.cobroDeuda||0}</div>
+            <td>${v.fecha}</td>
+            <td>${v.cliente}</td>
+            <td>$${v.total.toFixed(0)}</td>
+            <td>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</td>
+            <td>$${v.cobroDeuda||0}</td>
         </tr>
     `).join('');
 }
