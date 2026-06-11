@@ -367,7 +367,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbx1eFN6l_ecXxqzbSxuq3UppG7Y_7icMU8jVMPJn6cYGqUf9GcRgCXD6wx0K-OlqSaV/exec";
 
 let currentDriverPin = null;
-let CLIENTES_LIST = [];       // Lista cacheada de clientes
+let CLIENTES_LIST = [];
 let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
 let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
 let productos = [];
@@ -381,14 +381,25 @@ function getTodayUTC() {
 }
 
 // ========== LLAMADAS A LA API ==========
-async function apiCall(ruta, params = {}) {
-    const url = new URL(API_URL);
-    url.searchParams.append('ruta', ruta);
-    for (const [k, v] of Object.entries(params)) {
-        url.searchParams.append(k, v);
+async function apiCall(ruta, params = {}, usePost = false) {
+    if (usePost) {
+        // Para POST con JSON en body
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ruta, ...params })
+        });
+        return response.json();
+    } else {
+        // GET normal
+        const url = new URL(API_URL);
+        url.searchParams.append('ruta', ruta);
+        for (const [k, v] of Object.entries(params)) {
+            url.searchParams.append(k, v);
+        }
+        const res = await fetch(url.toString());
+        return res.json();
     }
-    const res = await fetch(url.toString());
-    return res.json();
 }
 
 // ========== CARGA DE CLIENTES DESDE LA HOJA "clientes" (fuente única) ==========
@@ -397,23 +408,20 @@ async function cargarClientesDesdeSheets() {
         const data = await apiCall('clientes');
         if (data && Array.isArray(data)) {
             CLIENTES_LIST = data.map(c => c.toUpperCase().trim()).filter(c => c);
-            // Guardar en localStorage como caché
             localStorage.setItem('myc_clientes_cache', JSON.stringify({ lista: CLIENTES_LIST, timestamp: Date.now() }));
             console.log('Clientes cargados desde Sheets:', CLIENTES_LIST.length);
             return CLIENTES_LIST;
         }
     } catch(e) { console.error('Error cargando clientes:', e); }
-    // Si falla, intentar cargar desde caché
     const cache = localStorage.getItem('myc_clientes_cache');
     if (cache) {
         const { lista, timestamp } = JSON.parse(cache);
-        if (Date.now() - timestamp < 600000) { // 10 minutos de validez
+        if (Date.now() - timestamp < 600000) {
             CLIENTES_LIST = lista;
             console.log('Clientes cargados desde caché');
             return CLIENTES_LIST;
         }
     }
-    // Si no hay nada, usar default
     CLIENTES_LIST = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON"];
     localStorage.setItem('myc_clientes_cache', JSON.stringify({ lista: CLIENTES_LIST, timestamp: Date.now() }));
     return CLIENTES_LIST;
@@ -434,7 +442,6 @@ async function cargarConfiguracion() {
             { clave: "ESC.32KG", precioBase: 12000, imagen: "https://placehold.co/100x100?text=32KG" }
         ];
     }
-    // Asegurar que todos los clientes tengan precios por defecto
     for (let c of CLIENTES_LIST) {
         if (!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c);
         if (!costosClientes[c]) costosClientes[c] = getCostosCliente();
@@ -442,12 +449,12 @@ async function cargarConfiguracion() {
 }
 
 async function guardarConfiguracionRemota() {
+    // Solo guardar precios, costos y productos. La lista de clientes se guarda aparte en la hoja 'clientes'.
     await apiCall('guardarConfiguracion', {
-        clientesList: JSON.stringify(CLIENTES_LIST),
-        precios: JSON.stringify(preciosClientes),
-        costos: JSON.stringify(costosClientes),
-        productos: JSON.stringify(productos)
-    });
+        precios: preciosClientes,
+        costos: costosClientes,
+        productos: productos
+    }, true); // Usar POST para evitar límite de longitud
 }
 
 async function cargarVentas(chofer) {
@@ -508,7 +515,7 @@ function getVentasUltimos7Dias() {
     return ventas.filter(v => v.fecha >= fechaLimite);
 }
 
-// ========== RENDERIZADO ==========
+// ========== RENDERIZADO (igual que antes) ==========
 function renderAdmin() {
     const ventasHoy = getVentasHoy();
     let totalVentas=0, totalEfectivo=0, totalTransferencia=0, totalCtaCte=0, gananciaTotal=0;
@@ -683,11 +690,8 @@ function renderClientesTab() {
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async (e) => {
         const cli = btn.getAttribute("data-cli");
         if(confirm(`¿Eliminar cliente ${cli}?`)) {
-            // Eliminar de la hoja clientes
             await apiCall('eliminarCliente', { nombre: cli });
-            // Recargar lista
             await cargarClientesDesdeSheets();
-            // También eliminar de precios y costos
             delete preciosClientes[cli];
             delete costosClientes[cli];
             await guardarConfiguracionRemota();
@@ -731,16 +735,11 @@ function renderStockTab() {
     document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
     const tbody = document.querySelector("#stockTable tbody");
     if(tbody) tbody.innerHTML = `
-        <tr><td>1,7 KG</div><div>${stockFabrica["1,7 KG"]}</div><div>${vendido["1,7 KG"]}</div><div>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</div><div>
-        </tr>
-        <tr><td>3,5 KG</div><div>${stockFabrica["3,5 KG"]}</div><div>${vendido["3,5 KG"]}</div><div>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</div><div>
-        </tr>
-        <tr><td>14 KG</div><div>${stockFabrica["14 KG"]}</div><div>${vendido["14 KG"]}</div><div>${stockFabrica["14 KG"] - vendido["14 KG"]}</div><div>
-        </tr>
-        <tr><td>ESC.20KG</div><div>${stockFabrica["ESC.20KG"]}</div><div>${vendido["ESC.20KG"]}</div><div>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</div><div>
-        </tr>
-        <tr><td>ESC.32KG</div><div>${stockFabrica["ESC.32KG"]}</div><div>${vendido["ESC.32KG"]}</div><div>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</div><div>
-        </tr>
+        <tr><td>1,7 KG</td><td>${stockFabrica["1,7 KG"]}</td><td>${vendido["1,7 KG"]}</td><td>${stockFabrica["1,7 KG"] - vendido["1,7 KG"]}</td></tr>
+        <tr><td>3,5 KG</td><td>${stockFabrica["3,5 KG"]}</td><td>${vendido["3,5 KG"]}</td><td>${stockFabrica["3,5 KG"] - vendido["3,5 KG"]}</td></tr>
+        <tr><td>14 KG</td><td>${stockFabrica["14 KG"]}</td><td>${vendido["14 KG"]}</td><td>${stockFabrica["14 KG"] - vendido["14 KG"]}</td></tr>
+        <tr><td>ESC.20KG</td><td>${stockFabrica["ESC.20KG"]}</td><td>${vendido["ESC.20KG"]}</td><td>${stockFabrica["ESC.20KG"] - vendido["ESC.20KG"]}</td></tr>
+        <tr><td>ESC.32KG</td><td>${stockFabrica["ESC.32KG"]}</td><td>${vendido["ESC.32KG"]}</td><td>${stockFabrica["ESC.32KG"] - vendido["ESC.32KG"]}</td></tr>
     `;
 }
 
@@ -792,7 +791,9 @@ function renderWeeklyReport() {
     const tbody = document.getElementById("weeklySalesBody");
     if(tbody) tbody.innerHTML = weeklyVentas.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v => `
         <tr>
-            <td>${v.fecha}</div><div>${v.cliente}</div><div>$${v.total.toFixed(0)}</div><div>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</div><div>$${v.cobroDeuda||0}</div><div>
+            <td>${v.fecha}</td>
+            <td>${v.cliente}</td>
+            <td>$${v.total.toFixed(0)}</div><div>${v.pago==="cobrocc"?"Cobro Deuda":v.pago}</div><div>$${v.cobroDeuda||0}</div><div>
         </tr>
     `).join('');
 }
@@ -879,7 +880,7 @@ async function cerrarDiaAdmin() {
     location.reload();
 }
 
-// ========== COMPROBANTES (similares a antes) ==========
+// ========== COMPROBANTES (simplificados) ==========
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     const numeroFormateado = String(numero).padStart(6,'0');
@@ -905,7 +906,7 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
             html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></td><td><strong>$${venta.cobroDeuda.toFixed(0)}</strong></td></tr>`;
         }
         let totalVenta = venta.total + (venta.cobroDeuda || 0);
-        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong></td><td><strong>$${totalVenta.toFixed(0)}</strong></td></tr>`;
+        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;"><strong>Total ${venta.cliente}</strong>NonNullable<strong>$${totalVenta.toFixed(0)}</strong>NonNullable`;
         totalGeneral += totalVenta;
     }
     html += `</tbody></table><div class="totales-premium"><p><strong>MONTO TOTAL GENERAL</strong></p><div class="monto-final-premium">$${totalGeneral.toFixed(0)}</div></div><div class="footer-premium"><p>Este comprobante no es válido como factura fiscal. Solo para uso interno de M&C HIELO.</p><p>✅ Gracias por confiar en nosotros — Hielo de la mejor calidad.</p></div>`;
@@ -1067,9 +1068,7 @@ async function exportarPDF(elementId, fileName) {
 // ========== INICIALIZACIÓN ==========
 async function iniciarSesionChofer(pin) {
     currentDriverPin = pin;
-    // Cargar clientes primero (para que el selector aparezca rápido)
     await cargarClientesDesdeSheets();
-    // Paralelizar el resto
     await Promise.all([
         cargarConfiguracion(),
         cargarVentas(pin),
@@ -1124,30 +1123,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("exportReportPdfBtn")?.addEventListener("click", () => exportarPDF("tabReportes", "reporte_semanal_myc"));
     document.getElementById("saveAllPricesBtn")?.addEventListener("click", guardarTodoAdmin);
     
-    // NUEVO MANEJO DE AGREGAR CLIENTE: corrige el problema "ya existe"
+    // Agregar cliente mejorado
     document.getElementById("addClienteBtn")?.addEventListener("click", async () => {
         const nuevo = document.getElementById("newClienteName").value.trim().toUpperCase();
         if(!nuevo) { alert("Escribí un nombre"); return; }
-        // Recargar lista actualizada desde la nube
         await cargarClientesDesdeSheets();
         if(CLIENTES_LIST.includes(nuevo)) {
-            alert(`El cliente "${nuevo}" ya existe en la lista actual.`);
+            alert(`El cliente "${nuevo}" ya existe.`);
             return;
         }
-        // Agregar usando la ruta existente de Apps Script
         try {
             const res = await apiCall('agregarCliente', { nombre: nuevo });
             if (res.error) throw new Error(res.error);
-            // Actualizar lista local
             CLIENTES_LIST.push(nuevo);
-            // Guardar caché
             localStorage.setItem('myc_clientes_cache', JSON.stringify({ lista: CLIENTES_LIST, timestamp: Date.now() }));
-            // También agregar a la configuración de precios por defecto
             preciosClientes[nuevo] = getPreciosCliente(nuevo);
             costosClientes[nuevo] = getCostosCliente();
             await guardarConfiguracionRemota();
             alert(`Cliente ${nuevo} agregado correctamente.`);
-            // Refrescar toda la interfaz
             if (document.getElementById("adminPanel").style.display === "block") {
                 await iniciarSesionAdmin();
             } else if (document.getElementById("driverPanel").style.display === "block") {
@@ -1181,7 +1174,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     if(config.costos) costosClientes = config.costos;
                     if(config.productos) productos = config.productos;
                     await guardarConfiguracionRemota();
-                    // También actualizar la hoja clientes principal
                     for (let c of CLIENTES_LIST) {
                         await apiCall('agregarCliente', { nombre: c }).catch(()=>{});
                     }
