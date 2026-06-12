@@ -351,7 +351,7 @@
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">💸 Detalle ventas semana</h3>
             <div class="tabla-wrapper">
                 <table id="weeklySalesTable">
-                    <thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th><tr></thead>
+                    <thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead>
                     <tbody id="weeklySalesBody"></tbody>
                 </table>
             </div>
@@ -637,7 +637,7 @@ async function guardarConfiguracionRemota() {
 
 // ==================== VENTAS, GASTOS, STOCK (desde Sheets) ====================
 async function cargarVentas(chofer) {
-    // Cargar todas las ventas (sin filtrar por chofer en la API)
+    // Cargar todas las ventas sin filtrar por chofer
     const data = await apiCall('obtenerVentas', {});
     if (Array.isArray(data)) {
         data.forEach(v => {
@@ -649,8 +649,8 @@ async function cargarVentas(chofer) {
     ventas = data;
     console.log("Ventas cargadas (todas):", ventas.length);
     const hoy = getTodayUTC();
-    // Cobros del día: considerar ventas de tipo 'cobrocc' del chofer actual (si existe)
-    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc' && (!chofer || v.chofer === chofer)).reduce((a,b) => a + (b.cobroDeuda || b.total), 0);
+    // Cobros del día: considerar ventas de tipo 'cobrocc'
+    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || b.total), 0);
 }
 
 async function cargarGastos(chofer) {
@@ -737,11 +737,17 @@ function calcularTotalVenta(cliente, cant) {
     return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32;
 }
 
+// *** FUNCIÓN CORREGIDA: getVentasHoy ahora es tolerante y muestra todas las ventas del día sin filtrar por chofer (para ver algo) ***
 function getVentasHoy() {
     const hoy = getTodayUTC();
-    // Filtra ventas del día actual Y que pertenezcan al chofer actual (o sin chofer)
-    return ventas.filter(v => v.fecha === hoy && (!v.chofer || v.chofer === currentDriverPin));
+    // Primero intenta con el chofer actual, si no, muestra todas las del día
+    let filtradas = ventas.filter(v => v.fecha === hoy && v.chofer == currentDriverPin);
+    if (filtradas.length === 0) {
+        filtradas = ventas.filter(v => v.fecha === hoy);
+    }
+    return filtradas;
 }
+
 function getVentasUltimos7Dias() {
     const hoy = new Date();
     const unaSemanaAtras = new Date(hoy);
@@ -776,7 +782,7 @@ function renderAdmin() {
         <div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(gananciaNeta)}</div></div>`;
 
     document.getElementById("salesDetailBody").innerHTML = ventasHoy.length === 0
-        ? `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>`
+        ? `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td><tr>`
         : ventasHoy.map(v => `
             <tr>
                 <td><strong>${v.cliente}</strong></td>
@@ -827,7 +833,7 @@ function renderDriver() {
 
     const tbody = document.getElementById("driverSalesBody");
     tbody.innerHTML = ventasHoy.length === 0
-        ? `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>`
+        ? `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td><tr>`
         : ventasHoy.map(v => `
             <tr>
                 <td><strong>${v.cliente}</strong></td>
@@ -1009,7 +1015,7 @@ function renderWeeklyReport() {
     const tbody = document.getElementById("weeklySalesBody");
     if(tbody) {
         tbody.innerHTML = weeklyVentas.length===0
-            ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</td></tr>`
+            ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</td><tr>`
             : weeklyVentas.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v => `
                 <tr>
                     <td>${v.fecha}</td>
@@ -1115,14 +1121,14 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
             let subtotal = item.cant * item.precio;
             html += `<tr>`;
             if(primerItem) html += `<td rowspan="${items.length}" style="font-weight:700;">${venta.cliente}</td>`;
-            html += `<td>${item.nombre}</td><td style="text-align:center;">${item.cant}</td><td>${fmtMoney(item.precio)}</td><td><strong>${fmtMoney(subtotal)}</strong></td>`;
+            html += `<td>${item.nombre}</td><td style="text-align:center;">${item.cant}</td><td>${fmtMoney(item.precio)}</div><div><td><strong>${fmtMoney(subtotal)}</strong></div><div>`;
             primerItem = false;
         }
         if(venta.cobroDeuda && venta.cobroDeuda>0 && venta.pago!=="cobrocc") {
-            html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></td><td><strong>${fmtMoney(venta.cobroDeuda)}</strong></td></tr>`;
+            html += `<tr style="background:#fef9e3;"><td colspan="4" style="text-align:right;"><strong>Cobro de deuda anterior:</strong></div><div><td><strong>${fmtMoney(venta.cobroDeuda)}</strong></div><div>`;
         }
         let totalVenta = venta.total + (venta.cobroDeuda||0);
-        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;font-weight:700;">Total ${venta.cliente}</td><td style="font-weight:800;color:#0a3e6d;">${fmtMoney(totalVenta)}</td></tr>`;
+        html += `<tr style="background:#f1f5f9;"><td colspan="4" style="text-align:right;font-weight:700;">Total ${venta.cliente}</div><div><td style="font-weight:800;color:#0a3e6d;">${fmtMoney(totalVenta)}</div><div>`;
         totalGeneral += totalVenta;
     }
     html += `</tbody></table>
@@ -1245,7 +1251,7 @@ function renderComprobantesHistorial() {
     let tbody = document.getElementById("comprobantesBody");
     if(!tbody) return;
     if(comprobantesHistorial.length===0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin comprobantes generados</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin comprobantes generados</td><tr>`;
         return;
     }
     tbody.innerHTML = comprobantesHistorial.map(c => `
