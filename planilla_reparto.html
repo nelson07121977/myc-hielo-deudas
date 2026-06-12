@@ -353,7 +353,16 @@
                 <div class="card"><h4>💳 Transf.</h4><div class="value" id="driverTotalTransferencia">0</div></div>
                 <div class="card"><h4>📘 Cta Cte</h4><div class="value" id="driverTotalCtaCte">0</div></div>
                 <div class="card cobro-card"><h4>🔄 Cobrado hoy</h4><div class="value" id="totalCobrosCC">0</div><small style="color:#92400e; font-size:0.68rem;">deudas anteriores</small></div>
-                <div class="card"><h4>💸 Gastos</h4><div class="gastos-detalle"><label>⛽ Nafta $</label><input type="number" id="gastoNafta" value="0" step="100"><label>👨‍✈️ Choferes $</label><input type="number" id="gastoChoferes" value="0" step="100"><label>📦 Otros $</label><input type="number" id="gastoOtros" value="0" step="100"><button id="setGastosDetalleBtn">Aplicar gastos</button><div style="margin-top:6px; font-weight:700; font-size:0.82rem; color:var(--azul);">Total: $<span id="totalGastos">0</span></div></div></div>
+                <div class="card">
+                    <h4>💸 Gastos</h4>
+                    <div class="gastos-detalle">
+                        <label>⛽ Nafta $</label><input type="number" id="gastoNafta" value="0" step="100">
+                        <label>👨‍✈️ Choferes $</label><input type="number" id="gastoChoferes" value="0" step="100">
+                        <label>📦 Otros $</label><input type="number" id="gastoOtros" value="0" step="100">
+                        <button id="setGastosDetalleBtn">Aplicar gastos</button>
+                        <div style="margin-top:6px; font-weight:700; font-size:0.82rem; color:var(--azul);">Total: $<span id="totalGastos">0</span></div>
+                    </div>
+                </div>
                 <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small style="font-size:0.65rem; color:var(--gris-texto);">Ef + Transf + Cobros - Gastos</small></div>
             </div>
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">📋 Ventas del día</h3>
@@ -370,7 +379,9 @@
 
 <script>
 // ==================== CONFIGURACIÓN GLOBAL ====================
-const API_URL = "https://script.google.com/macros/s/AKfycbx1eFN6l_ecXxqzbSxuq3UppG7Y_7icMU8jVMPJn6cYGqUf9GcRgCXD6wx0K-OlqSaV/exec";
+// *** URL CORRECTA DE GOOGLE APPS SCRIPT (con ruta eliminarVenta) ***
+const API_URL = "https://script.google.com/macros/s/AKfycbxc4kUR5W2SozDU9FSS2LfPoMBVXn2ZQD0p2meaa9j3wszzPvkAdYxI6x7GXT5Hlo2b/exec";
+
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
 let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
@@ -392,7 +403,7 @@ function calcularTotalVenta(cliente, cant) { const p = preciosClientes[cliente] 
 
 // ==================== FUNCIÓN GETVENTASHOY CORREGIDA (UTC, sin filtro chofer) ====================
 function getVentasHoy() {
-    const hoy = new Date().toISOString().slice(0,10); // "2026-06-12"
+    const hoy = new Date().toISOString().slice(0,10);
     return ventas.filter(v => v.fecha === hoy);
 }
 function getVentasUltimos7Dias() { const unaSemana = new Date(); unaSemana.setDate(unaSemana.getDate()-6); unaSemana.setHours(0,0,0,0); return ventas.filter(v => new Date(v.fecha) >= unaSemana); }
@@ -447,19 +458,27 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
     try { if(pago==="ctacte" && total>0) { await fetch(API_URL_DEUDAS, { method:'POST', mode:'no-cors', body: new URLSearchParams({ ruta:'agregarMovimiento', fecha:fechaStr, cliente, tipo:'deuda', monto:total, formaPago:'', detalle:`Venta de hielo: ${JSON.stringify(cantidades)}` }) }); } else if(pago==="cobrocc" && cobroDeuda>0) { await fetch(API_URL_DEUDAS, { method:'POST', mode:'no-cors', body: new URLSearchParams({ ruta:'agregarMovimiento', fecha:fechaStr, cliente, tipo:'pago', monto:cobroDeuda, formaPago:'Efectivo', detalle:'Cobro de deuda registrado desde Planilla de Reparto' }) }); } } catch(e) { console.error("Error al sincronizar deuda:", e); }
     return nueva;
 }
+// ***** FUNCIÓN ELIMINAR VENTA CORREGIDA *****
 async function eliminarVenta(id) {
     try {
-        const res = await apiCall('eliminarVenta', { id });
-        if (res && res.exito) {
+        const url = `${API_URL}?ruta=eliminarVenta&id=${id}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.exito === true) {
             toast("✅ Venta eliminada de la nube");
             await cargarVentas(currentDriverPin);
             const hoy = new Date().toISOString().slice(0,10);
             cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || 0), 0);
             saveAll();
             renderDriver();
-            if(document.getElementById("adminPanel").style.display === "block") renderAdmin();
-        } else { toast("❌ Error al eliminar de la nube, intenta de nuevo"); }
-    } catch(e) { console.error("Error en eliminarVenta:", e); toast("Error de conexión, no se pudo eliminar"); }
+            if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
+        } else {
+            toast("❌ Error al eliminar: " + (data.error || "No se pudo eliminar"));
+        }
+    } catch (error) {
+        console.error("Error en eliminarVenta:", error);
+        toast("❌ Error de red, no se pudo eliminar");
+    }
 }
 function resetJornada() { const hoy = new Date().toISOString().slice(0,10); ventas = ventas.filter(v => v.fecha !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
 async function cargarGastos(chofer) { try { const data = await apiCall('obtenerGastos', { chofer }); const hoy = new Date().toISOString().slice(0,10); const gastosHoy = data.filter(g => g.fecha === hoy); let nafta=0,choferes=0,otros=0; for(const g of gastosHoy){ if(g.categoria==='Nafta') nafta+=g.monto; else if(g.categoria==='Chofer') choferes+=g.monto; else if(g.categoria==='Otros') otros+=g.monto; } gastosDetalle={ nafta, choferes, otros }; gastos=nafta+choferes+otros; } catch(e){} }
@@ -476,7 +495,17 @@ function renderAdmin() {
     ventasHoy.forEach(v => { if(v.pago!=="cobrocc") totalVentas += v.total; if(v.pago==="efectivo") totalEfectivo += v.total; if(v.pago==="transferencia") totalTransferencia += v.total; if(v.pago==="ctacte") totalCtaCte += v.total; const cost = costosClientes[v.cliente] || getCostosCliente(); let costo = 0; if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32; gananciaTotal += (v.total-costo); });
     const gananciaNeta = gananciaTotal - gastos + cobrosCC;
     document.getElementById("adminStats").innerHTML = `<div class="card"><h4>Venta Bruta</h4><div class="value">${fmtMoney(totalVentas)}</div></div><div class="card"><h4>💵 Efectivo</h4><div class="value">${fmtMoney(totalEfectivo)}</div></div><div class="card"><h4>💳 Transf.</h4><div class="value">${fmtMoney(totalTransferencia)}</div></div><div class="card"><h4>📘 Cta.Cte</h4><div class="value">${fmtMoney(totalCtaCte)}</div></div><div class="card"><h4>💸 Gastos</h4><div class="value">${fmtMoney(gastos)}</div><small style="font-size:0.68rem; color:var(--gris-texto);">Nafta:${gastosDetalle.nafta} Ch:${gastosDetalle.choferes} Otros:${gastosDetalle.otros}</small></div><div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">${fmtMoney(cobrosCC)}</div></div><div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(gananciaNeta)}</div></div>`;
-    document.getElementById("salesDetailBody").innerHTML = ventasHoy.length === 0 ? `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>` : ventasHoy.map(v => `<tr><td><strong>${v.cliente}</strong></td><td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td><td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td><td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td><td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td><td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td><td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td><td>${badgePago(v.pago)}</td><td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td></tr>`).join('');
+    document.getElementById("salesDetailBody").innerHTML = ventasHoy.length === 0 ? `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>` : ventasHoy.map(v => `<tr>
+        <td><strong>${v.cliente}</strong></td>
+        <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</div><div>
+        <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</div><div>
+        <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</div><div>
+        <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</div><div>
+        <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</div><div>
+        <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></div><div>
+        <td>${badgePago(v.pago)}</div><div>
+        <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
+    </tr>`).join('');
     actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); renderClientesTab(); renderProductosTab(); renderStockTab(); renderWeeklyReport();
 }
 
@@ -499,7 +528,18 @@ function renderDriver() {
     document.getElementById("totalGastos").innerText = gastos;
     document.getElementById("driverNetoDia").innerText = (totalE + totalT + cobrosCC - gastos).toFixed(0);
     const tbody = document.getElementById("driverSalesBody");
-    tbody.innerHTML = ventasHoy.length === 0 ? `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>` : ventasHoy.map(v => `<tr><td><strong>${v.cliente}</strong></td><td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td><td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td><td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td><td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td><td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td><td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td><td>${badgePago(v.pago)}</td><td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td><td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></td></tr>`).join('');
+    tbody.innerHTML = ventasHoy.length === 0 ? `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>` : ventasHoy.map(v => `<tr>
+        <td><strong>${v.cliente}</strong></td>
+        <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</div><div>
+        <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</div><div>
+        <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</div><div>
+        <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</div><div>
+        <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</div><div>
+        <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></div><div>
+        <td>${badgePago(v.pago)}</div><div>
+        <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
+        <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></div><div>
+    </tr>`).join('');
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => { eliminarVenta(Number(btn.dataset.id)); }));
     renderComprobantesHistorial();
 }
@@ -532,7 +572,12 @@ function renderStockTab() {
     const vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     ventasHoy.forEach(v => { vendido["1,7 KG"] += v.cantidades["1,7 KG"] || 0; vendido["3,5 KG"] += v.cantidades["3,5 KG"] || 0; vendido["14 KG"] += v.cantidades["14 KG"] || 0; vendido["ESC.20KG"] += v.cantidades["ESC.20KG"] || 0; vendido["ESC.32KG"] += v.cantidades["ESC.32KG"] || 0; });
     document.getElementById("fab_17").value = stockFabrica["1,7 KG"]; document.getElementById("fab_35").value = stockFabrica["3,5 KG"]; document.getElementById("fab_14").value = stockFabrica["14 KG"]; document.getElementById("fab_20").value = stockFabrica["ESC.20KG"]; document.getElementById("fab_32").value = stockFabrica["ESC.32KG"];
-    const tbody = document.querySelector("#stockTable tbody"); if(tbody) { const prods = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"]; tbody.innerHTML = prods.map(prod => { const restante = stockFabrica[prod] - vendido[prod]; return `<tr><td><strong>${prod}</strong></td><td style="text-align:center;">${stockFabrica[prod]}</td><td style="text-align:center;">${vendido[prod]}</td><td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</td></tr>`; }).join(''); }
+    const tbody = document.querySelector("#stockTable tbody"); if(tbody) { const prods = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"]; tbody.innerHTML = prods.map(prod => { const restante = stockFabrica[prod] - vendido[prod]; return `<tr>
+        <td><strong>${prod}</strong></td>
+        <td style="text-align:center;">${stockFabrica[prod]}</div><div>
+        <td style="text-align:center;">${vendido[prod]}</div><div>
+        <td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</div><div>
+    </tr>`; }).join(''); }
 }
 
 function renderWeeklyReport() {
@@ -545,7 +590,13 @@ function renderWeeklyReport() {
     const ctxTop = document.getElementById('topClientesChart')?.getContext('2d'); if(ctxTop) { if(topClientesChart) topClientesChart.destroy(); topClientesChart = new Chart(ctxTop, { type:'bar', data:{ labels:topClientes.map(c=>c[0]), datasets:[{ label:'Ventas $', data:topClientes.map(c=>c[1]), backgroundColor:'#f59e0b' }] }, options:{ responsive:true } }); }
     const diasSemana = [...Array(7).keys()].map(i=>{ let d=new Date(); d.setDate(d.getDate()-i); return d; }).reverse();
     const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d'); if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type:'line', data:{ labels:diasSemana.map(d=>d.toISOString().slice(0,10)), datasets:[{ label:'Ventas diarias $', data:diasSemana.map(d=>ventasPorDia[d.toISOString().slice(0,10)]||0), borderColor:'#0a3e6d', fill:false }] } }); }
-    const tbody = document.getElementById("weeklySalesBody"); if(tbody) { tbody.innerHTML = weeklyVentas.length===0 ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</td></tr>` : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr><td>${v.fecha}</td><td><strong>${v.cliente}</strong></td><td>${fmtMoney(v.total)}</td><td>${badgePago(v.pago)}</td><td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td></tr>`).join(''); }
+    const tbody = document.getElementById("weeklySalesBody"); if(tbody) { tbody.innerHTML = weeklyVentas.length===0 ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</div><div>` : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
+        <td>${v.fecha}</div><div>
+        <td><strong>${v.cliente}</strong></div><div>
+        <td>${fmtMoney(v.total)}</div><div>
+        <td>${badgePago(v.pago)}</div><div>
+        <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
+    </tr>`).join(''); }
 }
 
 function actualizarGraficoClientes() {
@@ -597,7 +648,7 @@ function reimprimirComprobante(num) { }
 function eliminarComprobante(num) { }
 function copiarComprobanteTexto() { }
 function descargarComprobanteTxt() { }
-function renderComprobantesHistorial() { let tbody = document.getElementById("comprobantesBody"); if(tbody) tbody.innerHTML = `<tr><td colspan='5'>Comprobantes no implementados</td></tr>`; }
+function renderComprobantesHistorial() { let tbody = document.getElementById("comprobantesBody"); if(tbody) tbody.innerHTML = `<tr><td colspan='5'>Comprobantes no implementados</div><div>`; }
 async function exportarPDF(elementId, fileName) { alert("Función PDF disponible en la versión completa"); }
 
 // ==================== INICIALIZACIÓN ====================
