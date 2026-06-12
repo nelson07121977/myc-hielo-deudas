@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>MYC HIELO – Planilla de Reparto</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         body { background: #e9f0f5; margin: 0; padding: 20px; }
@@ -17,13 +14,6 @@
         button { background: #0a3e6d; color: white; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
         button:hover { background: #0c4e8a; }
         .error { color: #c7362b; background: #ffe6e5; padding: 10px; border-radius: 30px; font-size: 0.85rem; margin-top: 12px; }
-        .tabs { display: flex; background: #f1f5f9; border-bottom: 2px solid #cbd5e1; flex-wrap: wrap; }
-        .tab-btn { flex: 1; background: none; border: none; padding: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-        .tab-btn.active { background: white; color: #0a3e6d; border-bottom: 3px solid #0a3e6d; }
-        .panel-content { padding: 20px 24px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; background: white; border-radius: 20px; overflow-x: auto; display: block; }
-        th, td { border: 1px solid #d4d4d8; padding: 10px 6px; text-align: left; vertical-align: middle; }
-        th { background: #eef2ff; }
         .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: flex-end; }
         .form-group { flex: 1 1 160px; }
         label { font-size: 0.7rem; font-weight: 600; color: #334155; display: block; }
@@ -35,17 +25,11 @@
         .cobro-card { background: #fff3e0; border-left: 5px solid #f59e0b; }
         .gastos-detalle { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
         .gastos-detalle input { width: 100%; margin: 2px 0; }
-        .chart-container { background: white; padding: 20px; border-radius: 28px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        canvas { max-height: 400px; width: 100%; }
-        .productos-vendidos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-top: 15px; }
-        .prod-card { background: #f1f5f9; padding: 10px; border-radius: 20px; text-align: center; }
-        .product-img { width: 50px; height: 50px; object-fit: cover; border-radius: 12px; background: #f8fafc; border: 1px solid #ddd; }
-        .force-scale-checkbox { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
-        .force-scale-checkbox label { font-size: 0.85rem; margin: 0; }
-        .force-scale-checkbox input { width: auto; margin: 0; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 10px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 9999; display: none; }
         .toast.show { display: block; }
-        /* resto de estilos igual */
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; }
+        th, td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        th { background: #eef2ff; }
     </style>
 </head>
 <body>
@@ -59,30 +43,13 @@
         <div id="loginError" class="error" style="display:none;">PIN incorrecto</div>
     </div>
 
-    <div id="adminPanel" class="admin-panel" style="display:none;">
-        <!-- mismo contenido que antes, no lo cambio por brevedad pero se mantiene -->
-        <div style="background:#0a3e6d; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; color:white; flex-wrap:wrap;">
-            <span>🧊 ADMIN - MYC HIELO</span>
-            <div><button id="logoutAdmin" style="background:#ef4444; width:auto; padding:6px 16px;">Cerrar sesión</button></div>
-        </div>
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
-            <button class="tab-btn" data-tab="reportes">📈 Reporte Semanal</button>
-            <button class="tab-btn" data-tab="clientes">🏷️ Clientes / Precios / Costos</button>
-            <button class="tab-btn" data-tab="productos">📦 Productos</button>
-            <button class="tab-btn" data-tab="stock">🚚 Stock</button>
-        </div>
-        <div id="tabDashboard" class="panel-content"><div class="summary-cards" id="adminStats"></div><div id="adminVentasTabla"></div></div>
-        <div id="tabReportes" class="panel-content" style="display:none;"></div>
-        <div id="tabClientes" class="panel-content" style="display:none;"></div>
-        <div id="tabProductos" class="panel-content" style="display:none;"></div>
-        <div id="tabStock" class="panel-content" style="display:none;"></div>
-    </div>
-
     <div id="driverPanel" class="driver-panel" style="display:none;">
-        <div style="background:#1e5a3a; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; color:white;">
+        <div style="background:#1e5a3a; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; color:white; flex-wrap:wrap;">
             <span>🚚 CHOFER <span id="driverIdLabel"></span> - Registrar entregas y cobros</span>
-            <button id="logoutDriver" style="background:#ef4444; width:auto; padding:6px 16px;">Salir</button>
+            <div>
+                <button id="refreshBtn" class="btn-small" style="background:#0a3e6d;">🔄 Sincronizar</button>
+                <button id="logoutDriver" style="background:#ef4444; width:auto; padding:6px 16px;">Salir</button>
+            </div>
         </div>
         <div class="panel-content">
             <div class="form-row">
@@ -102,29 +69,27 @@
                 <div class="card"><h4>Transferencia</h4><div class="value" id="driverTotalTransferencia">0</div></div>
                 <div class="card"><h4>Cta Cte</h4><div class="value" id="driverTotalCtaCte">0</div></div>
                 <div class="card cobro-card"><h4>🔄 Total Cobrado Hoy</h4><div class="value" id="totalCobrosCC">0</div></div>
-                <div class="card"><h4>💸 Gastos</h4><div class="gastos-detalle"><label>⛽ Nafta $</label><input type="number" id="gastoNafta" value="0" step="100"><label>👨‍✈️ Pago choferes $</label><input type="number" id="gastoChoferes" value="0" step="100"><label>📦 Otros $</label><input type="number" id="gastoOtros" value="0" step="100"><button id="setGastosDetalleBtn">Aplicar Gastos</button><div>Total Gastos: $<span id="totalGastos">0</span></div></div></div>
+                <div class="card"><h4>💸 Gastos</h4><div class="gastos-detalle"><label>⛽ Nafta $</label><input type="number" id="gastoNafta" value="0" step="100"><label>👨‍✈️ Pago choferes $</label><input type="number" id="gastoChoferes" value="0" step="100"><label>📦 Otros $</label><input type="number" id="gastoOtros" value="0" step="100"><button id="setGastosDetalleBtn">Aplicar Gastos</button><div style="margin-top:8px; font-weight:bold;">Total Gastos: $<span id="totalGastos">0</span></div></div></div>
                 <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div></div>
             </div>
             <div style="overflow-x:auto">
-                <table id="driverSalesTable">
+                <table>
                     <thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead>
                     <tbody id="driverSalesBody"></tbody>
                 </table>
             </div>
-            <button id="resetDayBtn" style="background:#b91c1c; margin-top:20px;">🔄 Reiniciar Jornada</button>
         </div>
     </div>
 </div>
 <div id="toast" class="toast"></div>
+
 <script>
 // ==================== CONFIGURACIÓN ====================
 const API_URL = "https://script.google.com/macros/s/AKfycbx1eFN6l_ecXxqzbSxuq3UppG7Y_7icMU8jVMPJn6cYGqUf9GcRgCXD6wx0K-OlqSaV/exec";
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
 let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
-let stockFabrica = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-let productos = [];
-let preciosClientes = {}, costosClientes = {};
+let preciosClientes = {};
 
 const API_URL_DEUDAS = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
@@ -136,11 +101,12 @@ function toast(msg) {
     setTimeout(() => t.classList.remove("show"), 2500);
 }
 
-function getTodayLocal() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+// Fecha UTC (para guardar y filtrar de forma consistente)
+function getTodayUTC() {
+    return new Date().toISOString().slice(0,10);
 }
 
+// ==================== API ====================
 async function apiCall(ruta, params = {}, usePost = false) {
     if (usePost) {
         const res = await fetch(API_URL, {
@@ -152,62 +118,40 @@ async function apiCall(ruta, params = {}, usePost = false) {
     } else {
         const url = new URL(API_URL);
         url.searchParams.append('ruta', ruta);
-        for (const [k, v] of Object.entries(params)) url.searchParams.append(k, v);
+        for (const [k,v] of Object.entries(params)) url.searchParams.append(k, v);
         const res = await fetch(url);
         return res.json();
     }
 }
 
 async function cargarClientes() {
-    const cache = localStorage.getItem('myc_clientes_cache');
-    if (cache) {
-        const { lista, timestamp } = JSON.parse(cache);
-        if (Date.now() - timestamp < 3600000) {
-            CLIENTES_LIST = lista;
-            return;
-        }
-    }
     try {
         const data = await apiCall('clientes');
-        if (data && Array.isArray(data)) {
-            CLIENTES_LIST = data.map(c => c.toUpperCase().trim()).filter(c => c);
-            localStorage.setItem('myc_clientes_cache', JSON.stringify({ lista: CLIENTES_LIST, timestamp: Date.now() }));
-        }
-    } catch(e) { console.error(e); }
+        if (data && Array.isArray(data)) CLIENTES_LIST = data.map(c => c.toUpperCase().trim()).filter(c => c);
+    } catch(e) {}
     if (!CLIENTES_LIST.length) CLIENTES_LIST = [...DEFAULT_CLIENTES];
 }
 
-async function cargarConfiguracion() {
-    const config = await apiCall('obtenerConfiguracion');
-    if (config.precios) preciosClientes = config.precios;
-    if (config.costos) costosClientes = config.costos;
-    if (config.productos && config.productos.length) productos = config.productos;
-    else productos = [{ clave:"1,7 KG", precioBase:1500, imagen:"" },{ clave:"3,5 KG", precioBase:2500, imagen:"" },{ clave:"14 KG", precioBase:7000, imagen:"" },{ clave:"ESC.20KG", precioBase:8000, imagen:"" },{ clave:"ESC.32KG", precioBase:12000, imagen:"" }];
-    for (let c of CLIENTES_LIST) {
-        if (!preciosClientes[c]) preciosClientes[c] = getPreciosCliente(c);
-        if (!costosClientes[c]) costosClientes[c] = getCostosCliente();
-    }
-}
-
-async function cargarVentas(chofer) {
+async function cargarVentas() {
     const data = await apiCall('obtenerVentas', {});
     ventas = (data || []).map(v => {
         if (v.fecha) v.fecha = v.fecha.split('T')[0];
         return v;
     });
     console.log("Ventas cargadas:", ventas.length);
-    const hoy = getTodayLocal();
-    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc' && String(v.chofer) === String(chofer)).reduce((a,b) => a + (b.cobroDeuda || 0), 0);
+    const hoy = getTodayUTC();
+    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || 0), 0);
 }
 
 async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
     let total = 0;
-    if (pago !== "cobrocc") total = calcularTotalVenta(cliente, cantidades);
-    const fecha = getTodayLocal();
+    if (pago !== "cobrocc") total = calcularTotal(cliente, cantidades);
+    const fecha = getTodayUTC();
     const nueva = { id: Date.now()+Math.random(), cliente, cantidades, pago, total, cobroDeuda, fecha, chofer: currentDriverPin };
     ventas.push(nueva);
     if (cobroDeuda>0) cobrosCC += cobroDeuda;
     await apiCall('guardarVenta', { fecha, cliente, cantidades: JSON.stringify(cantidades), pago, total, cobroDeuda, chofer: currentDriverPin });
+    // Sincronizar deuda (opcional)
     try {
         if (pago === "ctacte" && total>0) {
             await fetch(API_URL_DEUDAS, { method:'POST', mode:'no-cors', body: new URLSearchParams({ ruta:'agregarMovimiento', fecha, cliente, tipo:'deuda', monto:total, formaPago:'', detalle:`Venta hielo: ${JSON.stringify(cantidades)}` }) });
@@ -219,42 +163,32 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
 }
 
 async function eliminarVenta(id) {
-    const v = ventas.find(v => v.id == id);
-    if (!v) return;
-    if (v.cobroDeuda > 0) cobrosCC -= v.cobroDeuda;
-    ventas = ventas.filter(v => v.id != id);
-    try {
-        await apiCall('eliminarVenta', { id });
-        toast("Venta eliminada de la nube");
-    } catch(e) { toast("Error al eliminar de la nube, solo local"); }
-    await cargarVentas(currentDriverPin);
+    await apiCall('eliminarVenta', { id });
+    await cargarVentas(); // Recargar desde la nube
     renderDriver();
+    toast("Venta eliminada");
 }
 
-function getVentasHoy() {
-    const hoy = getTodayLocal();
-    // MOSTRAMOS TODAS LAS VENTAS DEL DÍA, SIN FILTRAR POR CHOFER (así ve lo que cargó)
-    return ventas.filter(v => v.fecha === hoy);
-}
-
+// ==================== PRECIOS ====================
 function getPreciosCliente(cliente) {
     let p17=1500, p35=2500, p14=7000, p20=8000, p32=12000;
     const specials = {"AFRICA":{p14:5000},"LETS GO":{p14:6000},"GUTIERREZ":{p14:5500},"TERRANO":{p14:7500},"PADDEL TURCO":{p14:5500},"ROSADITA":{p14:7000},"ICONOS":{p14:7000},"WILLIAMS":{p14:8000},"ERIC SALON":{p14:6000},"GABRIEL BARRIO DORREGO":{p35:3500,p14:7000},"KIOSCO VAMPIRO":{p35:3500,p14:7000}};
     if(specials[cliente]) { if(specials[cliente].p14) p14=specials[cliente].p14; if(specials[cliente].p35) p35=specials[cliente].p35; }
     return { p17, p35, p14, p20, p32 };
 }
-function getCostosCliente() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
-function calcularTotalVenta(cliente, cant) {
-    const p = preciosClientes[cliente] || getPreciosCliente(cliente);
+function calcularTotal(cliente, cant) {
+    const p = getPreciosCliente(cliente);
     return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32;
 }
 
+// ==================== RENDER ====================
 function renderDriver() {
     let select = document.getElementById("clienteSelect");
     if (select) select.innerHTML = CLIENTES_LIST.map(c => `<option value="${c}">${c}</option>`).join("");
     document.getElementById("driverIdLabel").innerText = `(PIN ${currentDriverPin})`;
 
-    const ventasHoy = getVentasHoy();
+    const hoy = getTodayUTC();
+    const ventasHoy = ventas.filter(v => v.fecha === hoy); // Muestra todas las del día UTC
     let totalV=0, totalE=0, totalT=0, totalC=0;
     ventasHoy.forEach(v => {
         if (v.pago !== "cobrocc") totalV += v.total;
@@ -294,6 +228,7 @@ function renderDriver() {
     }));
 }
 
+// ==================== AGREGAR VENTA ====================
 async function agregarTransaccion() {
     const cliente = document.getElementById("clienteSelect").value;
     const pago = document.getElementById("paymentType").value;
@@ -314,64 +249,54 @@ async function agregarTransaccion() {
         if (!hayProductos && cobroMonto === 0) { toast("Ingrese cantidad"); return; }
         await guardarVenta(cliente, cantidades, pago, cobroMonto);
     }
+    // Limpiar campos
     document.querySelectorAll("#driverPanel input[type=number]").forEach(i => i.value = 0);
     document.getElementById("cobroDeudaInput").value = 0;
-    await cargarVentas(currentDriverPin);
+    // Recargar ventas desde la nube y refrescar
+    await cargarVentas();
     renderDriver();
     toast("Venta registrada");
 }
 
+// ==================== INICIALIZACIÓN ====================
 async function iniciarSesionChofer(pin) {
     currentDriverPin = pin;
     await cargarClientes();
-    await cargarConfiguracion();
-    await cargarVentas(pin);
+    await cargarVentas();
     renderDriver();
-}
-
-async function iniciarSesionAdmin() {
-    currentDriverPin = null;
-    await cargarClientes();
-    await cargarConfiguracion();
-    await cargarVentas("1234"); // ejemplo
-    // renderAdmin simplificado
-    document.getElementById("adminStats").innerHTML = "<div>Admin panel</div>";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("loginBtn").addEventListener("click", async () => {
         const pin = document.getElementById("pinInput").value;
-        if (pin === "9999") {
-            document.getElementById("loginScreen").style.display = "none";
-            document.getElementById("adminPanel").style.display = "block";
-            await iniciarSesionAdmin();
-        } else if (pin === "1234" || pin === "5678") {
+        if (pin === "1234" || pin === "5678") {
             document.getElementById("loginScreen").style.display = "none";
             document.getElementById("driverPanel").style.display = "block";
             await iniciarSesionChofer(pin);
+        } else if (pin === "9999") {
+            alert("Admin panel no implementado en esta versión simplificada");
         } else {
             document.getElementById("loginError").style.display = "block";
         }
     });
-    document.getElementById("logoutAdmin")?.addEventListener("click", () => location.reload());
     document.getElementById("logoutDriver")?.addEventListener("click", () => location.reload());
     document.getElementById("addSaleBtn")?.addEventListener("click", agregarTransaccion);
+    document.getElementById("refreshBtn")?.addEventListener("click", async () => {
+        await cargarVentas();
+        renderDriver();
+        toast("Datos sincronizados");
+    });
     document.getElementById("setGastosDetalleBtn")?.addEventListener("click", async () => {
         const nafta = parseFloat(document.getElementById("gastoNafta").value)||0;
         const choferes = parseFloat(document.getElementById("gastoChoferes").value)||0;
         const otros = parseFloat(document.getElementById("gastoOtros").value)||0;
         gastosDetalle = { nafta, choferes, otros };
-        gastos = nafta + choferes + otros;
-        await apiCall('guardarGasto', { fecha: getTodayLocal(), chofer: currentDriverPin, categoria: 'Nafta', monto: nafta });
-        await apiCall('guardarGasto', { fecha: getTodayLocal(), chofer: currentDriverPin, categoria: 'Chofer', monto: choferes });
-        await apiCall('guardarGasto', { fecha: getTodayLocal(), chofer: currentDriverPin, categoria: 'Otros', monto: otros });
+        gastos = nafta+choferes+otros;
+        await apiCall('guardarGasto', { fecha: getTodayUTC(), chofer: currentDriverPin, categoria: 'Nafta', monto: nafta });
+        await apiCall('guardarGasto', { fecha: getTodayUTC(), chofer: currentDriverPin, categoria: 'Chofer', monto: choferes });
+        await apiCall('guardarGasto', { fecha: getTodayUTC(), chofer: currentDriverPin, categoria: 'Otros', monto: otros });
         renderDriver();
-    });
-    document.getElementById("resetDayBtn")?.addEventListener("click", () => {
-        if (confirm("¿Reiniciar jornada? Se borrarán las ventas de hoy.")) {
-            resetJornada();
-            location.reload();
-        }
+        toast("Gastos aplicados");
     });
 });
 </script>
