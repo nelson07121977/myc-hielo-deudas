@@ -272,7 +272,7 @@
             <div class="tabla-wrapper"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             <div class="comprobantes-section">
                 <div class="sec-title">📄 Comprobantes X (No fiscales)<div style="display:flex; gap:8px;"><button id="genComprobanteDiaBtn" class="btn-small btn-verde">📅 Día</button><button id="genComprobanteSemanaBtn" class="btn-small btn-azul-medio">📆 Semana</button></div></div>
-                <div class="tabla-wrapper"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th><tr></thead><tbody id="comprobantesBody"></tbody></table></div>
+                <div class="tabla-wrapper"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div>
             </div>
             <button id="resetDayBtn" style="background:linear-gradient(135deg,#dc2626,#b91c1c); margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
         </div>
@@ -300,7 +300,7 @@
 
 <script>
 // ==================== CONFIGURACIÓN GLOBAL ====================
-const API_URL = "https://script.google.com/macros/s/AKfycbzwlbrwQPvhOhHRGPtCsXtr2aisD87vjGJa4XD9Hm8OH4Y6v8bNnDyj8xdOlYyzE8AZ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
 let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
@@ -821,7 +821,7 @@ function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
         const prods = Object.entries(v.cantidades||{}).filter(([,c])=>c>0).map(([k,c])=>`${k}: ${c}`).join(' / ') || '—';
         return `<tr><td>${v.cliente}</td><td>${prods}</td><td>${badgePago(v.pago)}</td><td style="text-align:right;font-weight:700;">${fmtMoney(v.total)}</td></tr>`;
     }).join('');
-    const cobroFilas = cobros.map(v=>`<tr><td>${v.cliente}</td><td>Cobro de deuda</td><td>${badgePago(v.pago)}</td><td style="text-align:right;font-weight:700;">${fmtMoney(v.cobroDeuda||0)}</td></tr>`).join('');
+    const cobroFilas = cobros.map(v=>`<tr><td>${v.cliente}</td><td>Cobro de deuda</div><div>${badgePago(v.pago)}</div><td style="text-align:right;font-weight:700;">${fmtMoney(v.cobroDeuda||0)}</div><div>`).join('');
     return `
     <div class="info-fecha-premium">
         <span><strong>Tipo:</strong> Comprobante ${tipo==='dia'?'del Día':'Semanal'}</span>
@@ -868,7 +868,7 @@ function copiarComprobanteTexto() { if(window.currentComprobanteTexto){ navigato
 function descargarComprobanteTxt() { if(window.currentComprobanteTexto) { let blob = new Blob([window.currentComprobanteTexto], {type:"text/plain"}); let a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`comprobante_X_${Date.now()}.txt`; a.click(); } }
 function renderComprobantesHistorial() {
     let tbody = document.getElementById("comprobantesBody"); if(!tbody) return;
-    if(comprobantesHistorial.length===0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin comprobantes generados</td></tr>'; return; }
+    if(comprobantesHistorial.length===0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin comprobantes generados</div><div>'; return; }
     tbody.innerHTML = comprobantesHistorial.map(c => `<tr>
           <td><strong>X-${String(c.numero).padStart(6,'0')}</strong></td>
           <td>${new Date(c.fecha).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
@@ -878,7 +878,7 @@ function renderComprobantesHistorial() {
             <button class="btn-small" style="background:#1259a0;" onclick="verComprobante(${c.numero})">👁️</button>
             <button class="btn-small" onclick="reimprimirComprobante(${c.numero})">🖨️</button>
             <button class="btn-small btn-rojo" onclick="eliminarComprobante(${c.numero})">🗑️</button>
-          </td>
+          </div><div>
       </tr>`).join('');
 }
 
