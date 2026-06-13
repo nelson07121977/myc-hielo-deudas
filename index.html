@@ -326,20 +326,20 @@ function renderMovimientos() {
   const tbody = document.querySelector('#tablaMovimientos tbody');
   if (!tbody) return;
   if (filtrados.length === 0) {
-    tbody.innerHTML = '<td><td colspan="7" style="text-align:center">Sin movimientos</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</div><div>';
     return;
   }
   tbody.innerHTML = filtrados.map(m => {
     const montoSeguro = m.monto;
     return `
     <tr>
-      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</td>
-      <td>${m.cliente_nombre || '?'}</td>
-      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></td>
-      <td>$${montoSeguro.toLocaleString('es-AR')}</td>
-      <td>${m.forma_pago || '—'}</td>
-      <td>${m.detalle || ''}</td>
-      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></td>
+      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</div><div>
+      <td>${m.cliente_nombre || '?'}</div><div>
+      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></div><div>
+      <td>$${montoSeguro.toLocaleString('es-AR')}</div><div>
+      <td>${m.forma_pago || '—'}</div><div>
+      <td>${m.detalle || ''}</div><div>
+      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></div><div>
     </tr>`;
   }).join('');
 }
