@@ -3,162 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (DEFINITIVA)</title>
+    <title>MYC HIELO – Planilla de Reparto (FINAL CORREGIDA)</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, 'Segoe UI', sans-serif;
-        }
-        body {
-            background: #f0f4f8;
-            margin: 0;
-            padding: 16px;
-        }
-        .login-container, .panel {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .login-header, .panel-header {
-            background: #0a3e6d;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        .login-body, .panel-body {
-            padding: 24px;
-        }
-        input, select, button {
-            padding: 10px 16px;
-            margin: 8px 0;
-            border-radius: 50px;
-            border: 1px solid #ccc;
-            font-size: 1rem;
-            width: 100%;
-        }
-        button {
-            background: #0a3e6d;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-        }
-        button:hover {
-            background: #1259a0;
-        }
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: flex-end;
-        }
-        .form-group {
-            flex: 1;
-            min-width: 120px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background: #e8f0fb;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        body { background: #f0f4f8; margin: 0; padding: 16px; }
+        .login-container, .panel { max-width: 1200px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+        .login-header, .panel-header { background: #0a3e6d; color: white; padding: 20px; text-align: center; }
+        .login-body, .panel-body { padding: 24px; }
+        input, select, button { padding: 10px 16px; margin: 8px 0; border-radius: 50px; border: 1px solid #ccc; font-size: 1rem; width: 100%; }
+        button { background: #0a3e6d; color: white; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #1259a0; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 120px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #e8f0fb; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
         .badge-efectivo { background: #dcfce7; color: #15803d; }
         .badge-transf { background: #dbeafe; color: #1d4ed8; }
         .badge-ctacte { background: #fef9c3; color: #92400e; }
         .badge-cobrocc { background: #fce7f3; color: #9d174d; }
-        .error {
-            color: #b91c1c;
-            background: #fee2e2;
-            padding: 8px;
-            border-radius: 50px;
-            margin-top: 8px;
-            display: none;
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #0a3e6d;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 50px;
-            display: none;
-            z-index: 1000;
-        }
-        .card {
-            background: #e8f0fb;
-            padding: 12px;
-            border-radius: 16px;
-            flex: 1;
-            text-align: center;
-        }
-        .flex-cards {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin: 16px 0;
-        }
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 8px;
-        }
-        .tab {
-            padding: 8px 16px;
-            background: #e2e8f0;
-            border-radius: 50px;
-            cursor: pointer;
-        }
-        .tab.active {
-            background: #0a3e6d;
-            color: white;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .precio-input, .producto-precio {
-            width: 80px;
-            padding: 4px;
-            margin: 0;
-        }
-        .producto-img {
-            width: 40px;
-            height: 40px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
+        .error { color: #b91c1c; background: #fee2e2; padding: 8px; border-radius: 50px; margin-top: 8px; display: none; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 8px 20px; border-radius: 50px; display: none; z-index: 1000; }
+        .card { background: #e8f0fb; padding: 12px; border-radius: 16px; flex: 1; text-align: center; }
+        .flex-cards { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #ccc; padding-bottom: 8px; flex-wrap: wrap; }
+        .tab { padding: 8px 16px; background: #e2e8f0; border-radius: 50px; cursor: pointer; }
+        .tab.active { background: #0a3e6d; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .precio-input, .producto-precio { width: 80px; padding: 4px; margin: 0; }
+        .producto-img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div id="loginScreen" class="login-container">
-    <div class="login-header">
-        <h2>🧊 MYC HIELO</h2>
-        <p>Planilla de Reparto</p>
-    </div>
+    <div class="login-header"><h2>🧊 MYC HIELO</h2><p>Planilla de Reparto</p></div>
     <div class="login-body">
         <label>Ingresá tu PIN</label>
         <input type="password" id="pinInput" placeholder="●●●●">
@@ -221,25 +102,24 @@
             <div class="tab" data-tab="datos">⚙️ Datos</div>
         </div>
         
-        <!-- Tab Ventas -->
         <div id="tabVentas" class="tab-content active">
             <div class="form-row">
                 <div class="form-group"><label>Ver chofer</label><select id="adminChoferSelect"><option value="1234">Chofer 1234</option><option value="5678">Chofer 5678</option></select></div>
                 <div class="form-group"><button id="cerrarDiaAdmin" style="background:#dc2626;">📦 Cerrar día</button></div>
+                <div class="form-group"><button id="forzarDeudasBtn" style="background:#f59e0b;">🔁 Forzar envío de deudas</button></div>
             </div>
             <div id="adminStats" class="flex-cards"></div>
             <h3>Ventas del día</h3>
             <div style="overflow-x: auto;"><table id="adminSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th></tr></thead><tbody id="adminSalesBody"></tbody></table></div>
         </div>
 
-        <!-- Tab Clientes -->
         <div id="tabClientes" class="tab-content">
             <div class="form-row">
                 <div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="nuevoCliente" placeholder="Nombre"></div>
                 <div class="form-group"><button id="agregarClienteBtn">Agregar</button></div>
             </div>
             <div style="overflow-x: auto;">
-                <table id="clientesTable" class="clientes-table">
+                <table id="clientesTable">
                     <thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Acciones</th></tr></thead>
                     <tbody id="clientesTbody"></tbody>
                 </table>
@@ -247,7 +127,6 @@
             <button id="guardarPreciosBtn" style="margin-top:8px;">💾 Guardar precios</button>
         </div>
 
-        <!-- Tab Productos -->
         <div id="tabProductos" class="tab-content">
             <div class="form-row">
                 <div class="form-group"><label>Nuevo producto</label><input type="text" id="nuevoProducto" placeholder="Ej: Bolsa 25KG"></div>
@@ -264,12 +143,11 @@
             <button id="guardarProductosBtn" style="margin-top:8px;">💾 Guardar productos</button>
         </div>
 
-        <!-- Tab Datos -->
         <div id="tabDatos" class="tab-content">
             <button id="limpiarLocalStorageBtn" style="background:#dc2626;">🧹 Limpiar todos los datos locales</button>
-            <p style="margin-top:12px;">Esto eliminará todas las ventas, clientes, precios y productos guardados en este navegador. Úselo si las ventas borradas vuelven a aparecer.</p>
+            <p style="margin-top:12px;">Esto eliminará todas las ventas, clientes, precios y productos guardados en este navegador.</p>
             <button id="sincronizarTodoBtn" style="background:#16a34a; margin-top:12px;">☁️ Sincronizar todo con la nube</button>
-            <p style="margin-top:12px;">Envía las ventas, clientes y precios actuales a Google Sheets. Úselo para respaldar o para que las deudas aparezcan en el Control de Deudas.</p>
+            <p style="margin-top:12px;">Envía las ventas, clientes y precios a Google Sheets.</p>
         </div>
     </div>
 </div>
@@ -279,13 +157,13 @@
 <script>
 // ==================== CONFIGURACIÓN GLOBAL ====================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-let currentUser = null; // '1234', '5678' o '9999'
+let currentUser = null;
 let clientes = [];
-let precios = {}; // { cliente: { "1,7 KG":1500, ... } }
-let productos = []; // { clave, precioBase, imagen }
-let ventas = [];    // todas las ventas del usuario actual
+let precios = {};
+let productos = [];
+let ventas = [];
 
-// Productos por defecto
+// ==================== DATOS POR DEFECTO ====================
 const DEFAULT_PRODUCTOS = [
     { clave: "1,7 KG", precioBase: 1500, imagen: "https://placehold.co/100x100?text=1.7KG" },
     { clave: "3,5 KG", precioBase: 2500, imagen: "https://placehold.co/100x100?text=3.5KG" },
@@ -293,8 +171,6 @@ const DEFAULT_PRODUCTOS = [
     { clave: "ESC.20KG", precioBase: 8000, imagen: "https://placehold.co/100x100?text=20KG" },
     { clave: "ESC.32KG", precioBase: 12000, imagen: "https://placehold.co/100x100?text=32KG" }
 ];
-
-// Clientes por defecto (los que usted tenía)
 const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
 
 // ==================== UTILIDADES ====================
@@ -304,77 +180,45 @@ function toast(msg) {
     t.style.display = "block";
     setTimeout(() => t.style.display = "none", 2500);
 }
-
 function formatMoney(n) { return '$' + Number(n).toLocaleString('es-AR'); }
-
+function getToday() { return new Date().toISOString().slice(0,10); }
 function badgePago(pago) {
     const map = { efectivo: 'badge-efectivo', transferencia: 'badge-transf', ctacte: 'badge-ctacte', cobrocc: 'badge-cobrocc' };
     const labels = { efectivo: 'Efectivo', transferencia: 'Transf.', ctacte: 'Cta Cte', cobrocc: 'Cobro CC' };
     return `<span class="badge ${map[pago]}">${labels[pago]}</span>`;
 }
 
-function getToday() { return new Date().toISOString().slice(0,10); }
-
-// ==================== PERSISTENCIA LOCAL (TODO EN localStorage) ====================
+// ==================== PERSISTENCIA LOCAL ====================
 function cargarClientes() {
     let stored = localStorage.getItem("myc_clientes");
-    if (stored) {
-        clientes = JSON.parse(stored);
-    } else {
-        clientes = [...DEFAULT_CLIENTES];
-    }
+    if (stored) clientes = JSON.parse(stored);
+    else clientes = [...DEFAULT_CLIENTES];
     let storedPrecios = localStorage.getItem("myc_precios");
-    if (storedPrecios) {
-        precios = JSON.parse(storedPrecios);
-    } else {
+    if (storedPrecios) precios = JSON.parse(storedPrecios);
+    else {
         precios = {};
         clientes.forEach(c => {
-            precios[c] = {
-                "1,7 KG": 1500,
-                "3,5 KG": 2500,
-                "14 KG": 7000,
-                "ESC.20KG": 8000,
-                "ESC.32KG": 12000
-            };
+            precios[c] = { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
         });
     }
-    // Asegurar que todos los clientes tengan precios
-    clientes.forEach(c => {
-        if (!precios[c]) {
-            precios[c] = {
-                "1,7 KG": 1500,
-                "3,5 KG": 2500,
-                "14 KG": 7000,
-                "ESC.20KG": 8000,
-                "ESC.32KG": 12000
-            };
-        }
-    });
+    clientes.forEach(c => { if (!precios[c]) precios[c] = { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 }; });
     guardarClientesLocal();
 }
 function guardarClientesLocal() {
     localStorage.setItem("myc_clientes", JSON.stringify(clientes));
     localStorage.setItem("myc_precios", JSON.stringify(precios));
 }
-
 function cargarProductos() {
     let stored = localStorage.getItem("myc_productos");
-    if (stored) {
-        productos = JSON.parse(stored);
-    } else {
-        productos = [...DEFAULT_PRODUCTOS];
-    }
+    if (stored) productos = JSON.parse(stored);
+    else productos = [...DEFAULT_PRODUCTOS];
     guardarProductosLocal();
 }
-function guardarProductosLocal() {
-    localStorage.setItem("myc_productos", JSON.stringify(productos));
-}
-
+function guardarProductosLocal() { localStorage.setItem("myc_productos", JSON.stringify(productos)); }
 function cargarVentasLocal() {
     let key = `ventas_${currentUser}`;
     let data = localStorage.getItem(key);
-    if (data) ventas = JSON.parse(data);
-    else ventas = [];
+    ventas = data ? JSON.parse(data) : [];
 }
 function guardarVentasLocal() {
     let key = `ventas_${currentUser}`;
@@ -384,14 +228,39 @@ function guardarVentasLocal() {
 // ==================== LÓGICA DE VENTAS ====================
 function calcularTotal(cliente, cantidades) {
     let p = precios[cliente] || precios[clientes[0]];
-    let total = (cantidades["1,7 KG"]||0) * p["1,7 KG"] +
-                (cantidades["3,5 KG"]||0) * p["3,5 KG"] +
-                (cantidades["14 KG"]||0) * p["14 KG"] +
-                (cantidades["ESC.20KG"]||0) * p["ESC.20KG"] +
-                (cantidades["ESC.32KG"]||0) * p["ESC.32KG"];
-    return total;
+    return (cantidades["1,7 KG"]||0)*p["1,7 KG"] + (cantidades["3,5 KG"]||0)*p["3,5 KG"] +
+           (cantidades["14 KG"]||0)*p["14 KG"] + (cantidades["ESC.20KG"]||0)*p["ESC.20KG"] +
+           (cantidades["ESC.32KG"]||0)*p["ESC.32KG"];
 }
-
+async function enviarMovimientoDeuda(venta, tipo) {
+    try {
+        let form = new URLSearchParams();
+        form.append('ruta', 'agregarMovimiento');
+        form.append('fecha', venta.fecha);
+        form.append('cliente', venta.cliente);
+        form.append('tipo', tipo);
+        form.append('monto', tipo === 'deuda' ? venta.total : venta.cobroDeuda);
+        form.append('formaPago', tipo === 'deuda' ? '' : 'Efectivo');
+        form.append('detalle', tipo === 'deuda' ? `Venta de hielo: ${JSON.stringify(venta.cantidades)}` : 'Cobro de deuda desde planilla');
+        await fetch(API_URL, { method: 'POST', body: form });
+        console.log(`Movimiento ${tipo} enviado para ${venta.cliente}`);
+        return true;
+    } catch(e) { console.error("Error enviando deuda:", e); return false; }
+}
+async function guardarVentaEnNube(venta) {
+    try {
+        let form = new URLSearchParams();
+        form.append('ruta', 'guardarVenta');
+        form.append('fecha', venta.fecha);
+        form.append('cliente', venta.cliente);
+        form.append('cantidades', JSON.stringify(venta.cantidades));
+        form.append('pago', venta.pago);
+        form.append('total', venta.total);
+        form.append('cobroDeuda', venta.cobroDeuda);
+        form.append('chofer', currentUser);
+        await fetch(API_URL, { method: 'POST', body: form });
+    } catch(e) { console.error(e); }
+}
 function agregarVenta(cliente, cantidades, pago, cobroMonto) {
     let total = (pago === "cobrocc") ? 0 : calcularTotal(cliente, cantidades);
     let nueva = {
@@ -405,48 +274,61 @@ function agregarVenta(cliente, cantidades, pago, cobroMonto) {
     };
     ventas.push(nueva);
     guardarVentasLocal();
+    // Enviar a la nube inmediatamente (venta + movimiento de deuda si corresponde)
+    guardarVentaEnNube(nueva);
+    if (pago === "ctacte" && total > 0) {
+        enviarMovimientoDeuda(nueva, 'deuda');
+    } else if (pago === "cobrocc" && cobroMonto > 0) {
+        enviarMovimientoDeuda(nueva, 'pago');
+    }
     return nueva;
 }
-
 function eliminarVenta(id) {
     ventas = ventas.filter(v => v.id != id);
     guardarVentasLocal();
 }
-
 function resetJornada() {
     let hoy = getToday();
     ventas = ventas.filter(v => v.fecha !== hoy);
     guardarVentasLocal();
 }
+async function forzarEnvioDeudas() {
+    let hoy = getToday();
+    let deudasPendientes = ventas.filter(v => v.fecha === hoy && (v.pago === "ctacte" || v.pago === "cobrocc"));
+    if (deudasPendientes.length === 0) { toast("No hay deudas o cobros pendientes hoy"); return; }
+    toast(`Reenviando ${deudasPendientes.length} movimientos...`);
+    for (let v of deudasPendientes) {
+        if (v.pago === "ctacte") await enviarMovimientoDeuda(v, 'deuda');
+        if (v.pago === "cobrocc") await enviarMovimientoDeuda(v, 'pago');
+    }
+    toast("Deudas reenviadas");
+}
 
-// ==================== RENDER CHOFER ====================
+// ==================== RENDER ====================
 function renderDriver() {
     document.getElementById("driverId").innerText = `(PIN ${currentUser})`;
     let select = document.getElementById("clienteSelect");
     select.innerHTML = clientes.map(c => `<option value="${c}">${c}</option>`).join("");
-    
     let hoy = getToday();
     let ventasHoy = ventas.filter(v => v.fecha === hoy);
-    let totalV=0, totalE=0, totalT=0, totalC=0, totalCob=0;
-    for (let v of ventasHoy) {
+    let totalV=0,totalE=0,totalT=0,totalC=0,totalCob=0;
+    ventasHoy.forEach(v => {
         if (v.pago !== "cobrocc") totalV += v.total;
         if (v.pago === "efectivo") totalE += v.total;
         if (v.pago === "transferencia") totalT += v.total;
         if (v.pago === "ctacte") totalC += v.total;
         if (v.pago === "cobrocc") totalCob += v.cobroDeuda;
-    }
+    });
     document.getElementById("totalVentas").innerText = formatMoney(totalV);
     document.getElementById("totalEfectivo").innerText = formatMoney(totalE);
     document.getElementById("totalTransf").innerText = formatMoney(totalT);
     document.getElementById("totalCtaCte").innerText = formatMoney(totalC);
     document.getElementById("totalCobros").innerText = formatMoney(totalCob);
-    
     let tbody = document.getElementById("salesTableBody");
-    if (ventasHoy.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center">Sin ventas registradas hoy</td></tr>';
-    } else {
+    if (ventasHoy.length === 0) tbody.innerHTML = '<tr><td colspan="10">Sin ventas registradas hoy</div><div>';
+    else {
         let html = '';
-        for (let v of ventasHoy) {
+        ventasHoy.forEach(v => {
             html += `<tr>
                 <td><strong>${v.cliente}</strong></td>
                 <td style="text-align:center;">${v.cantidades["1,7 KG"]||0}</td>
@@ -455,36 +337,30 @@ function renderDriver() {
                 <td style="text-align:center;">${v.cantidades["ESC.20KG"]||0}</td>
                 <td style="text-align:center;">${v.cantidades["ESC.32KG"]||0}</td>
                 <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
-                <td>${badgePago(v.pago)}</td>
-                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</td>
-                <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
+                <td>${badgePago(v.pago)}</div><div>
+                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
+                <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></div><div>
             </tr>`;
-        }
+        });
         tbody.innerHTML = html;
     }
 }
+window.eliminarVentaHandler = function(id) { eliminarVenta(id); renderDriver(); toast("Venta eliminada"); };
 
-window.eliminarVentaHandler = function(id) {
-    eliminarVenta(id);
-    renderDriver();
-    toast("Venta eliminada");
-};
-
-// ==================== RENDER ADMIN ====================
 function renderAdmin() {
     let chofer = document.getElementById("adminChoferSelect").value;
     let key = `ventas_${chofer}`;
     let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
     let hoy = getToday();
     let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
-    let totalV=0, totalE=0, totalT=0, totalC=0, totalCob=0;
-    for (let v of ventasHoy) {
+    let totalV=0,totalE=0,totalT=0,totalC=0,totalCob=0;
+    ventasHoy.forEach(v => {
         if (v.pago !== "cobrocc") totalV += v.total;
         if (v.pago === "efectivo") totalE += v.total;
         if (v.pago === "transferencia") totalT += v.total;
         if (v.pago === "ctacte") totalC += v.total;
         if (v.pago === "cobrocc") totalCob += v.cobroDeuda;
-    }
+    });
     document.getElementById("adminStats").innerHTML = `
         <div class="card">💰 Venta Bruta: ${formatMoney(totalV)}</div>
         <div class="card">💵 Efectivo: ${formatMoney(totalE)}</div>
@@ -493,11 +369,10 @@ function renderAdmin() {
         <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
     `;
     let tbody = document.getElementById("adminSalesBody");
-    if (ventasHoy.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9">Sin ventas</td></tr>';
-    } else {
+    if (ventasHoy.length === 0) tbody.innerHTML = '<tr><td colspan="9">Sin ventas</div><div>';
+    else {
         let html = '';
-        for (let v of ventasHoy) {
+        ventasHoy.forEach(v => {
             html += `<tr>
                 <td><strong>${v.cliente}</strong></td>
                 <td>${v.cantidades["1,7 KG"]||0}</td>
@@ -506,20 +381,19 @@ function renderAdmin() {
                 <td>${v.cantidades["ESC.20KG"]||0}</td>
                 <td>${v.cantidades["ESC.32KG"]||0}</td>
                 <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
-                <td>${badgePago(v.pago)}</td>
-                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</td>
+                <td>${badgePago(v.pago)}</div><div>
+                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
             </tr>`;
-        }
+        });
         tbody.innerHTML = html;
     }
     renderClientesAdmin();
     renderProductosAdmin();
 }
-
 function renderClientesAdmin() {
     let tbody = document.getElementById("clientesTbody");
     tbody.innerHTML = "";
-    for (let c of clientes) {
+    clientes.forEach(c => {
         let p = precios[c];
         tbody.innerHTML += `
             <tr>
@@ -532,73 +406,57 @@ function renderClientesAdmin() {
                 <td><button onclick="eliminarClienteAdmin('${c}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
             </tr>
         `;
-    }
+    });
 }
-
 function renderProductosAdmin() {
     let tbody = document.getElementById("productosTbody");
     tbody.innerHTML = "";
-    for (let p of productos) {
+    productos.forEach(p => {
         tbody.innerHTML += `
             <tr>
-                <td><img src="${p.imagen}" class="producto-img" onerror="this.src='https://placehold.co/100x100'"><br><input type="text" class="producto-img-url" data-clave="${p.clave}" value="${p.imagen}" style="width:100px; font-size:0.7rem;"></td>
+                <td><img src="${p.imagen}" style="width:40px; height:40px; object-fit:cover;" onerror="this.src='https://placehold.co/100x100'"><br><input type="text" class="producto-img-url" data-clave="${p.clave}" value="${p.imagen}" style="width:100px; font-size:0.7rem;"></td>
                 <td><strong>${p.clave}</strong></td>
                 <td><input class="producto-precio" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px"></td>
                 <td><button onclick="eliminarProductoAdmin('${p.clave}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
             </tr>
         `;
-    }
+    });
 }
-
 function guardarPrecios() {
-    let inputs = document.querySelectorAll(".precio-input");
-    for (let inp of inputs) {
+    document.querySelectorAll(".precio-input").forEach(inp => {
         let cliente = inp.dataset.cliente;
         let producto = inp.dataset.prod;
         let valor = parseInt(inp.value) || 0;
         if (!precios[cliente]) precios[cliente] = {};
         precios[cliente][producto] = valor;
-    }
+    });
     guardarClientesLocal();
-    toast("Precios guardados localmente");
+    toast("Precios guardados");
     if (currentUser !== '9999') renderDriver();
 }
-
 function guardarProductos() {
-    let inputsPrecio = document.querySelectorAll(".producto-precio");
-    for (let inp of inputsPrecio) {
-        let clave = inp.dataset.clave;
-        let prod = productos.find(p => p.clave === clave);
+    document.querySelectorAll(".producto-precio").forEach(inp => {
+        let prod = productos.find(p => p.clave === inp.dataset.clave);
         if (prod) prod.precioBase = parseInt(inp.value) || 0;
-    }
-    let inputsImg = document.querySelectorAll(".producto-img-url");
-    for (let inp of inputsImg) {
-        let clave = inp.dataset.clave;
-        let prod = productos.find(p => p.clave === clave);
+    });
+    document.querySelectorAll(".producto-img-url").forEach(inp => {
+        let prod = productos.find(p => p.clave === inp.dataset.clave);
         if (prod) prod.imagen = inp.value;
-    }
+    });
     guardarProductosLocal();
-    toast("Productos guardados localmente");
+    toast("Productos guardados");
 }
-
 function agregarClienteAdmin() {
     let nombre = document.getElementById("nuevoCliente").value.trim().toUpperCase();
     if (!nombre) { toast("Escriba un nombre"); return; }
     if (clientes.includes(nombre)) { toast("Ya existe"); return; }
     clientes.push(nombre);
-    precios[nombre] = {
-        "1,7 KG": 1500,
-        "3,5 KG": 2500,
-        "14 KG": 7000,
-        "ESC.20KG": 8000,
-        "ESC.32KG": 12000
-    };
+    precios[nombre] = { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
     guardarClientesLocal();
     renderClientesAdmin();
     document.getElementById("nuevoCliente").value = "";
     toast(`Cliente ${nombre} agregado`);
 }
-
 window.eliminarClienteAdmin = function(nombre) {
     if (!confirm(`¿Eliminar cliente ${nombre}?`)) return;
     clientes = clientes.filter(c => c !== nombre);
@@ -608,7 +466,6 @@ window.eliminarClienteAdmin = function(nombre) {
     if (currentUser !== '9999') renderDriver();
     toast(`Cliente ${nombre} eliminado`);
 };
-
 function agregarProductoAdmin() {
     let nombre = document.getElementById("nuevoProducto").value.trim();
     if (!nombre) { toast("Escriba un nombre"); return; }
@@ -623,7 +480,6 @@ function agregarProductoAdmin() {
     document.getElementById("nuevoProductoImg").value = "";
     toast(`Producto ${nombre} agregado`);
 }
-
 window.eliminarProductoAdmin = function(clave) {
     if (!confirm(`¿Eliminar producto ${clave}?`)) return;
     productos = productos.filter(p => p.clave !== clave);
@@ -631,15 +487,35 @@ window.eliminarProductoAdmin = function(clave) {
     renderProductosAdmin();
     toast(`Producto ${clave} eliminado`);
 };
-
 function limpiarLocalStorage() {
-    if (!confirm("⚠️ Esto ELIMINARÁ TODOS los datos (ventas, clientes, precios, productos) de este navegador. ¿Seguro?")) return;
+    if (!confirm("⚠️ Esto ELIMINARÁ TODOS los datos locales. ¿Seguro?")) return;
     localStorage.clear();
-    toast("Datos locales eliminados. La página se recargará.");
+    toast("Datos eliminados. Recargando...");
     setTimeout(() => location.reload(), 1500);
 }
-
-// ==================== SINCRONIZACIÓN CON LA NUBE (OPCIONAL) ====================
+async function sincronizarTodoConNube() {
+    toast("Sincronizando... Puede tomar unos segundos.");
+    for (let c of clientes) await apiCall('agregarCliente', { nombre: c }, true).catch(e=>console.log);
+    await apiCall('guardarConfiguracion', { precios: JSON.stringify(precios), costos: JSON.stringify({}), productos: JSON.stringify(productos) }, true).catch(e=>console.log);
+    if (currentUser !== '9999') {
+        for (let v of ventas) {
+            await apiCall('guardarVenta', { fecha: v.fecha, cliente: v.cliente, cantidades: JSON.stringify(v.cantidades), pago: v.pago, total: v.total, cobroDeuda: v.cobroDeuda, chofer: currentUser }, true).catch(e=>console.log);
+            if (v.pago === "ctacte" && v.total > 0) await apiCall('agregarMovimiento', { fecha: v.fecha, cliente: v.cliente, tipo: 'deuda', monto: v.total, formaPago: '', detalle: `Venta de hielo: ${JSON.stringify(v.cantidades)}` }, true).catch(e=>console.log);
+            if (v.pago === "cobrocc" && v.cobroDeuda > 0) await apiCall('agregarMovimiento', { fecha: v.fecha, cliente: v.cliente, tipo: 'pago', monto: v.cobroDeuda, formaPago: 'Efectivo', detalle: 'Cobro de deuda' }, true).catch(e=>console.log);
+        }
+    } else {
+        for (let pin of ["1234","5678"]) {
+            let key = `ventas_${pin}`;
+            let ventasPin = JSON.parse(localStorage.getItem(key) || "[]");
+            for (let v of ventasPin) {
+                await apiCall('guardarVenta', { fecha: v.fecha, cliente: v.cliente, cantidades: JSON.stringify(v.cantidades), pago: v.pago, total: v.total, cobroDeuda: v.cobroDeuda, chofer: pin }, true).catch(e=>console.log);
+                if (v.pago === "ctacte" && v.total > 0) await apiCall('agregarMovimiento', { fecha: v.fecha, cliente: v.cliente, tipo: 'deuda', monto: v.total, formaPago: '', detalle: `Venta de hielo: ${JSON.stringify(v.cantidades)}` }, true).catch(e=>console.log);
+                if (v.pago === "cobrocc" && v.cobroDeuda > 0) await apiCall('agregarMovimiento', { fecha: v.fecha, cliente: v.cliente, tipo: 'pago', monto: v.cobroDeuda, formaPago: 'Efectivo', detalle: 'Cobro de deuda' }, true).catch(e=>console.log);
+            }
+        }
+    }
+    toast("Sincronización completa");
+}
 async function apiCall(ruta, params, usePost = false) {
     try {
         if (usePost) {
@@ -657,91 +533,6 @@ async function apiCall(ruta, params, usePost = false) {
     } catch(e) { console.error(e); return null; }
 }
 
-async function sincronizarTodoConNube() {
-    toast("Sincronizando... Puede tomar unos segundos.");
-    // Subir clientes
-    for (let c of clientes) {
-        await apiCall('agregarCliente', { nombre: c }, true).catch(e=>console.log);
-    }
-    // Subir configuración (precios y productos)
-    await apiCall('guardarConfiguracion', {
-        precios: JSON.stringify(precios),
-        costos: JSON.stringify({}),
-        productos: JSON.stringify(productos)
-    }, true).catch(e=>console.log);
-    // Subir ventas del usuario actual (si es chofer) o de ambos si es admin
-    if (currentUser !== '9999') {
-        for (let v of ventas) {
-            await apiCall('guardarVenta', {
-                fecha: v.fecha,
-                cliente: v.cliente,
-                cantidades: JSON.stringify(v.cantidades),
-                pago: v.pago,
-                total: v.total,
-                cobroDeuda: v.cobroDeuda,
-                chofer: currentUser
-            }, true).catch(e=>console.log);
-            // Enviar movimientos de deuda si corresponde
-            if (v.pago === "ctacte" && v.total > 0) {
-                await apiCall('agregarMovimiento', {
-                    fecha: v.fecha,
-                    cliente: v.cliente,
-                    tipo: 'deuda',
-                    monto: v.total,
-                    formaPago: '',
-                    detalle: `Venta de hielo: ${JSON.stringify(v.cantidades)}`
-                }, true).catch(e=>console.log);
-            } else if (v.pago === "cobrocc" && v.cobroDeuda > 0) {
-                await apiCall('agregarMovimiento', {
-                    fecha: v.fecha,
-                    cliente: v.cliente,
-                    tipo: 'pago',
-                    monto: v.cobroDeuda,
-                    formaPago: 'Efectivo',
-                    detalle: 'Cobro de deuda desde planilla'
-                }, true).catch(e=>console.log);
-            }
-        }
-    } else {
-        // Admin: sincronizar ventas de ambos choferes
-        for (let pin of ["1234", "5678"]) {
-            let key = `ventas_${pin}`;
-            let ventasPin = JSON.parse(localStorage.getItem(key) || "[]");
-            for (let v of ventasPin) {
-                await apiCall('guardarVenta', {
-                    fecha: v.fecha,
-                    cliente: v.cliente,
-                    cantidades: JSON.stringify(v.cantidades),
-                    pago: v.pago,
-                    total: v.total,
-                    cobroDeuda: v.cobroDeuda,
-                    chofer: pin
-                }, true).catch(e=>console.log);
-                if (v.pago === "ctacte" && v.total > 0) {
-                    await apiCall('agregarMovimiento', {
-                        fecha: v.fecha,
-                        cliente: v.cliente,
-                        tipo: 'deuda',
-                        monto: v.total,
-                        formaPago: '',
-                        detalle: `Venta de hielo: ${JSON.stringify(v.cantidades)}`
-                    }, true).catch(e=>console.log);
-                } else if (v.pago === "cobrocc" && v.cobroDeuda > 0) {
-                    await apiCall('agregarMovimiento', {
-                        fecha: v.fecha,
-                        cliente: v.cliente,
-                        tipo: 'pago',
-                        monto: v.cobroDeuda,
-                        formaPago: 'Efectivo',
-                        detalle: 'Cobro de deuda desde planilla'
-                    }, true).catch(e=>console.log);
-                }
-            }
-        }
-    }
-    toast("Sincronización completa. Los datos están en la nube.");
-}
-
 // ==================== INICIO DE SESIÓN ====================
 async function iniciarSesion(pin) {
     currentUser = pin;
@@ -749,28 +540,20 @@ async function iniciarSesion(pin) {
         document.getElementById("loginScreen").style.display = "none";
         document.getElementById("driverPanel").style.display = "none";
         document.getElementById("adminPanel").style.display = "block";
-        cargarClientes();
-        cargarProductos();
-        renderAdmin();
+        cargarClientes(); cargarProductos(); renderAdmin();
     } else {
         document.getElementById("loginScreen").style.display = "none";
         document.getElementById("driverPanel").style.display = "block";
         document.getElementById("adminPanel").style.display = "none";
-        cargarClientes();
-        cargarProductos();
-        cargarVentasLocal();
-        renderDriver();
+        cargarClientes(); cargarProductos(); cargarVentasLocal(); renderDriver();
     }
 }
 
 // ==================== EVENTOS ====================
 document.getElementById("loginBtn").addEventListener("click", () => {
     let pin = document.getElementById("pinInput").value.trim();
-    if (pin === "1234" || pin === "5678" || pin === "9999") {
-        iniciarSesion(pin);
-    } else {
-        document.getElementById("loginError").style.display = "block";
-    }
+    if (pin === "1234" || pin === "5678" || pin === "9999") iniciarSesion(pin);
+    else document.getElementById("loginError").style.display = "block";
 });
 document.getElementById("logoutDriver")?.addEventListener("click", () => location.reload());
 document.getElementById("logoutAdmin")?.addEventListener("click", () => location.reload());
@@ -785,28 +568,14 @@ document.getElementById("addSaleBtn")?.addEventListener("click", () => {
         "ESC.20KG": parseInt(document.getElementById("qty_20").value) || 0,
         "ESC.32KG": parseInt(document.getElementById("qty_32").value) || 0
     };
-    if (pago === "cobrocc") {
-        if (cobroMonto <= 0) { toast("Ingrese monto para cobro"); return; }
-    } else {
-        let hay = Object.values(cantidades).some(v => v > 0);
-        if (!hay) { toast("Ingrese al menos un producto"); return; }
-    }
+    if (pago === "cobrocc") { if (cobroMonto <= 0) { toast("Ingrese monto"); return; } }
+    else { if (Object.values(cantidades).every(v=>v===0)) { toast("Ingrese al menos un producto"); return; } }
     agregarVenta(cliente, cantidades, pago, cobroMonto);
-    document.getElementById("qty_17").value = 0;
-    document.getElementById("qty_35").value = 0;
-    document.getElementById("qty_14").value = 0;
-    document.getElementById("qty_20").value = 0;
-    document.getElementById("qty_32").value = 0;
-    document.getElementById("cobroDeudaInput").value = 0;
+    ["qty_17","qty_35","qty_14","qty_20","qty_32","cobroDeudaInput"].forEach(id => document.getElementById(id).value = 0);
     renderDriver();
-    toast("✅ Venta registrada");
+    toast("✅ Venta registrada y enviada a deudas");
 });
-document.getElementById("resetDayBtn")?.addEventListener("click", () => {
-    if (confirm("¿Reiniciar jornada? Se borrarán todas las ventas de hoy.")) {
-        resetJornada();
-        renderDriver();
-    }
-});
+document.getElementById("resetDayBtn")?.addEventListener("click", () => { if(confirm("¿Reiniciar jornada?")){ resetJornada(); renderDriver(); } });
 document.getElementById("cerrarDiaAdmin")?.addEventListener("click", () => {
     let chofer = document.getElementById("adminChoferSelect").value;
     let key = `ventas_${chofer}`;
@@ -818,10 +587,10 @@ document.getElementById("cerrarDiaAdmin")?.addEventListener("click", () => {
     let historico = JSON.parse(localStorage.getItem(historicoKey) || "[]");
     historico.push({ fecha: hoy, ventas: ventasHoy });
     localStorage.setItem(historicoKey, JSON.stringify(historico));
-    let nuevasVentas = ventasChofer.filter(v => v.fecha !== hoy);
-    localStorage.setItem(key, JSON.stringify(nuevasVentas));
+    let nuevas = ventasChofer.filter(v => v.fecha !== hoy);
+    localStorage.setItem(key, JSON.stringify(nuevas));
     renderAdmin();
-    toast("Día cerrado y archivado");
+    toast("Día cerrado");
 });
 document.getElementById("adminChoferSelect")?.addEventListener("change", () => renderAdmin());
 document.getElementById("agregarClienteBtn")?.addEventListener("click", agregarClienteAdmin);
@@ -831,21 +600,17 @@ document.getElementById("guardarProductosBtn")?.addEventListener("click", guarda
 document.getElementById("limpiarLocalStorageBtn")?.addEventListener("click", limpiarLocalStorage);
 document.getElementById("sincronizarTodoBtn")?.addEventListener("click", sincronizarTodoConNube);
 document.getElementById("syncBtn")?.addEventListener("click", sincronizarTodoConNube);
-
-// Tabs en admin
+document.getElementById("forzarDeudasBtn")?.addEventListener("click", forzarEnvioDeudas);
 document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
         tab.classList.add("active");
-        let tabId = tab.dataset.tab;
-        document.querySelectorAll(".tab-content").forEach(cont => cont.classList.remove("active"));
-        document.getElementById(`tab${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).classList.add("active");
+        let id = tab.dataset.tab;
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        document.getElementById(`tab${id.charAt(0).toUpperCase()+id.slice(1)}`).classList.add("active");
     });
 });
-
-// Inicialización global
-cargarClientes();
-cargarProductos();
+cargarClientes(); cargarProductos();
 </script>
 </body>
 </html>
