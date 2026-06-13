@@ -114,7 +114,7 @@ tbody td { padding: 9px 12px; vertical-align: middle; }
 <div id="modal" class="modal"><div class="modal-content"><div class="modal-title">Confirmar</div><div id="modalBody"></div><div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;"><button id="modalCancelar" class="btn btn-ghost">Cancelar</button><button id="modalConfirmar" class="btn btn-danger">Confirmar</button></div></div></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzicnzoTue4SiLP1Nn1vnjSYLqA2GM7q97IiQK_cMSk__TZ7R_ZqDNvNX3LmAV5Y4Mc/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxDj_1xJPc_ekfjQ_LYZ2B1pEnujc1wuTx3H_fjSShguND4LQ38QSlUYcEPjwmeCWe2/exec";
 
 let clientes = [], movimientos = [], ventas = [], gastos = [];
 
@@ -194,8 +194,8 @@ function renderDeudores() {
   const deudores = Object.entries(saldos).filter(([,s]) => s > 0).sort((a,b)=>b[1]-a[1]);
   const tbody = document.getElementById("bodyDeudores");
   if (!tbody) return;
-  if (deudores.length === 0) { tbody.innerHTML = '<tr><td colspan="3">Sin deudores</td></tr>'; return; }
-  tbody.innerHTML = deudores.map(([c, s]) => `<tr><td>${c}</td><td class="num-negative">${pesos(s)}</td><td><span class="badge badge-deuda">DEBE</span></td></tr>`).join('');
+  if (deudores.length === 0) { tbody.innerHTML = '<tr><td colspan="3">Sin deudores</div><div>'; return; }
+  tbody.innerHTML = deudores.map(([c, s]) => `<tr><td style="font-weight:bold">${c}</div><td class="num-negative">${pesos(s)}</div><td><span class="badge badge-deuda">DEBE</span></div><div>`).join('');
 }
 
 function renderMovimientos(fechaFiltro = null) {
@@ -204,15 +204,15 @@ function renderMovimientos(fechaFiltro = null) {
   filtrados.sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
   const tbody = document.getElementById("bodyMovimientos");
   if (!tbody) return;
-  if (filtrados.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Sin movimientos</td></tr>'; return; }
+  if (filtrados.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Sin movimientos</div><div>'; return; }
   tbody.innerHTML = filtrados.map(m => `
     <tr>
-      <td>${fechaDMY(m.fecha)}</td>
-      <td><strong>${m.cliente}</strong></td>
-      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'DEUDA':'PAGO'}</span></td>
-      <td class="num-positive">${pesos(m.monto)}</td>
-      <td>${m.detalle || ''}</td>
-      <td class="no-print"><button class="btn btn-danger btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></td>
+      <td>${fechaDMY(m.fecha)}</div><div>
+      <td><strong>${m.cliente}</strong></div><div>
+      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'DEUDA':'PAGO'}</span></div><div>
+      <td class="num-positive">${pesos(m.monto)}</div><div>
+      <td>${m.detalle || ''}</div><div>
+      <td class="no-print"><button class="btn btn-danger btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></div><div>
     </tr>
   `).join('');
 }
@@ -232,7 +232,7 @@ function verHistorialCliente(cliente) {
   for (const m of filtrados) { if (m.tipo === 'deuda') saldo += m.monto; else saldo -= m.monto; }
   const saldoHtml = `<div style="background:var(--surface2); padding:12px; border-radius:12px; margin-bottom:12px;">Saldo actual: <strong class="${saldo>0?'num-negative':'num-positive'}">${pesos(Math.abs(saldo))} ${saldo>0?'DEBE':'CRÉDITO'}</strong></div>`;
   if (filtrados.length === 0) { document.getElementById("clienteResultado").innerHTML = saldoHtml + '<p>Sin movimientos</p>'; return; }
-  const tabla = `<div class="scroll-table"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead><tbody>${filtrados.map(m => `<tr><td>${fechaDMY(m.fecha)}</td><td>${m.tipo==='deuda'?'DEUDA':'PAGO'}</td><td>${pesos(m.monto)}</td><td>${m.detalle||''}</td></tr>`).join('')}</tbody></table></div>`;
+  const tabla = `<div class="scroll-table"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead><tbody>${filtrados.map(m => `<tr><td>${fechaDMY(m.fecha)}</div><td>${m.tipo==='deuda'?'DEUDA':'PAGO'}</div><td>${pesos(m.monto)}</div><td>${m.detalle||''}</div><div>`).join('')}</tbody></table></div>`;
   document.getElementById("clienteResultado").innerHTML = saldoHtml + tabla;
 }
 
