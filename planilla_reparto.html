@@ -315,7 +315,7 @@
         <div id="tabProductos" class="panel-content" style="display:none;">
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 14px;">📸 Tipos de Bolsas / Productos</h3>
             <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group" style="flex:0 0 auto;"><button id="addProductBtn" class="btn-small" style="margin-top:18px;">➕ Agregar</button></div></div>
-            <div class="tabla-wrapper"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div>
+            <div class="tabla-wrapper"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></td></thead><tbody id="productsTbody"></tbody></table></div>
             <button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         <div id="tabStock" class="panel-content" style="display:none;">
@@ -379,7 +379,7 @@
 
 <script>
 // ==================== CONFIGURACIÓN UNIFICADA ====================
-const API_URL = "https://script.google.com/macros/s/AKfycbxysL4SBBgo3U-ddZzCRURTogRzAX-v8yd-OvUI5_mfmYVqBC4o5RfOataKY23Bg3Dd/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzicnzoTue4SiLP1Nn1vnjSYLqA2GM7q97IiQK_cMSk__TZ7R_ZqDNvNX3LmAV5Y4Mc/exec";
 
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
@@ -581,17 +581,17 @@ function renderAdmin() {
     `;
     const tbody = document.getElementById("salesDetailBody");
     if (tbody) {
-        tbody.innerHTML = ventasHoy.length === 0 ? '<tr><td colspan="9" style="text-align:center">Sin ventas hoy</td></tr>' : ventasHoy.map(v => `
+        tbody.innerHTML = ventasHoy.length === 0 ? '<tr><td colspan="9" style="text-align:center">Sin ventas hoy</div><div>' : ventasHoy.map(v => `
             <tr>
                 <td><strong>${v.cliente}</strong></td>
-                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</div><div>
                 <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-                <td>${badgePago(v.pago)}</td>
-                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+                <td>${badgePago(v.pago)}</div><div>
+                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
             </tr>
         `).join('');
     }
@@ -622,18 +622,18 @@ function renderDriver() {
     document.getElementById("driverNetoDia").innerText = (totalE + totalT + cobrosCC - gastos).toFixed(0);
     const tbody = document.getElementById("driverSalesBody");
     if (tbody) {
-        tbody.innerHTML = ventasHoy.length === 0 ? '<tr><td colspan="10">Sin ventas hoy</td></tr>' : ventasHoy.map(v => `
+        tbody.innerHTML = ventasHoy.length === 0 ? '<tr><td colspan="10">Sin ventas hoy</div><div>' : ventasHoy.map(v => `
             <tr>
                 <td><strong>${v.cliente}</strong></td>
-                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</div><div>
                 <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-                <td>${badgePago(v.pago)}</td>
-                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
-                <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></td>
+                <td>${badgePago(v.pago)}</div><div>
+                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
+                <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></div><div>
             </tr>
         `).join('');
     }
@@ -674,15 +674,15 @@ function renderClientesTab() {
             <td><div style="width:36px;height:36px;background:var(--azul-claro);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--azul);font-size:0.85rem;">${cli.charAt(0)}</div></td>
             <td><strong>${cli}</strong></td>
             <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
             <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>`;
         tbody.appendChild(row);
     }
@@ -693,9 +693,9 @@ function renderProductosTab() {
     for(let p of productos) {
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></td>
+            <td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></div><div>
             <td><strong>${p.clave}</strong></td>
-            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></td>
+            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></div><div>
             <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></td>`;
         tbody.appendChild(row);
     }
@@ -723,9 +723,9 @@ function renderStockTab() {
             const restante = stockFabrica[prod] - vendido[prod];
             return `<tr>
                 <td><strong>${prod}</strong></td>
-                <td style="text-align:center;">${stockFabrica[prod]}</td>
-                <td style="text-align:center;">${vendido[prod]}</td>
-                <td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</td>
+                <td style="text-align:center;">${stockFabrica[prod]}</div><div>
+                <td style="text-align:center;">${vendido[prod]}</div><div>
+                <td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</div><div>
             </tr>`;
         }).join('');
     }
@@ -737,15 +737,15 @@ function renderWeeklyReport() {
     weeklyVentas.forEach(v => { if(v.pago!=="cobrocc") { totalVentasSemana += v.total; if(v.pago==="efectivo") totalEfectivoSemana += v.total; if(v.pago==="transferencia") totalTransferenciaSemana += v.total; if(v.pago==="ctacte") totalCtaCteSemana += v.total; } totalCobrosDeudaSemana += v.cobroDeuda||0; const cost = costosClientes[v.cliente] || getCostosCliente(); let costo=0; if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17+(v.cantidades["3,5 KG"]||0)*cost.c35+(v.cantidades["14 KG"]||0)*cost.c14+(v.cantidades["ESC.20KG"]||0)*cost.c20+(v.cantidades["ESC.32KG"]||0)*cost.c32; totalGananciaReal += (v.total-costo)+(v.cobroDeuda||0); if(v.pago!=="cobrocc") ventasPorCliente[v.cliente] = (ventasPorCliente[v.cliente]||0)+v.total; ventasPorDia[v.fecha] = (ventasPorDia[v.fecha]||0)+v.total; });
     document.getElementById("weeklyStats").innerHTML = `<div class="card"><h4>💰 Venta Bruta</h4><div class="value">${fmtMoney(totalVentasSemana)}</div></div><div class="card"><h4>💵 Efectivo</h4><div class="value">${fmtMoney(totalEfectivoSemana)}</div></div><div class="card"><h4>💳 Transf.</h4><div class="value">${fmtMoney(totalTransferenciaSemana)}</div></div><div class="card"><h4>📘 Cta Cte</h4><div class="value">${fmtMoney(totalCtaCteSemana)}</div></div><div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">${fmtMoney(totalCobrosDeudaSemana)}</div></div><div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(totalGananciaReal)}</div><small>(Venta - Costo + Cobros)</small></div>`;
     const topClientes = Object.entries(ventasPorCliente).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    const ctxTop = document.getElementById('topClientesChart')?.getContext('2d'); if(ctxTop) { if(window.topClientesChart) window.topClientesChart.destroy(); window.topClientesChart = new Chart(ctxTop, { type:'bar', data:{ labels:topClientes.map(c=>c[0]), datasets:[{ label:'Ventas $', data:topClientes.map(c=>c[1]), backgroundColor:'#f59e0b' }] }, options:{ responsive:true } }); }
+    const ctxTop = document.getElementById('topClientesChart')?.getContext('2d'); if(ctxTop) { if(window.topClientesChart && typeof window.topClientesChart.destroy === 'function') window.topClientesChart.destroy(); window.topClientesChart = new Chart(ctxTop, { type:'bar', data:{ labels:topClientes.map(c=>c[0]), datasets:[{ label:'Ventas $', data:topClientes.map(c=>c[1]), backgroundColor:'#f59e0b' }] }, options:{ responsive:true } }); }
     const diasSemana = [...Array(7).keys()].map(i=>{ let d=new Date(); d.setDate(d.getDate()-i); return d; }).reverse();
-    const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d'); if(ctxLine) { if(window.weeklySalesChart) window.weeklySalesChart.destroy(); window.weeklySalesChart = new Chart(ctxLine, { type:'line', data:{ labels:diasSemana.map(d=>d.toISOString().slice(0,10)), datasets:[{ label:'Ventas diarias $', data:diasSemana.map(d=>ventasPorDia[d.toISOString().slice(0,10)]||0), borderColor:'#0a3e6d', fill:false }] } }); }
-    const tbody = document.getElementById("weeklySalesBody"); if(tbody) { tbody.innerHTML = weeklyVentas.length===0 ? '<tr><td colspan="5" style="text-align:center">Sin ventas en la última semana</td></tr>' : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr><td>${v.fecha}</td><td><strong>${v.cliente}</strong></td><td>${fmtMoney(v.total)}</td><td>${badgePago(v.pago)}</td><td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td></tr>`).join(''); }
+    const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d'); if(ctxLine) { if(window.weeklySalesChart && typeof window.weeklySalesChart.destroy === 'function') window.weeklySalesChart.destroy(); window.weeklySalesChart = new Chart(ctxLine, { type:'line', data:{ labels:diasSemana.map(d=>d.toISOString().slice(0,10)), datasets:[{ label:'Ventas diarias $', data:diasSemana.map(d=>ventasPorDia[d.toISOString().slice(0,10)]||0), borderColor:'#0a3e6d', fill:false }] } }); }
+    const tbody = document.getElementById("weeklySalesBody"); if(tbody) { tbody.innerHTML = weeklyVentas.length===0 ? '<tr><td colspan="5" style="text-align:center">Sin ventas en la última semana</div><div>' : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr><td>${v.fecha}</div><div><td><strong>${v.cliente}</strong></div><div><td>${fmtMoney(v.total)}</div><div><td>${badgePago(v.pago)}</div><div><td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>`).join(''); }
 }
 function renderComprobantesHistorial() {
     let tbody = document.getElementById("comprobantesBody"); if(!tbody) return;
-    if(comprobantesHistorial.length===0) { tbody.innerHTML = '<tr><td colspan="5">Sin comprobantes</td></tr>'; return; }
-    tbody.innerHTML = comprobantesHistorial.map(c => `<tr><td><strong>X-${String(c.numero).padStart(6,'0')}</strong></td><td>${new Date(c.fecha).toLocaleString()}</td><td>${c.resumen}</td><td><strong>${fmtMoney(c.total)}</strong></td><td><button class="btn-small" onclick="verComprobante(${c.numero})">👁️</button></td></tr>`).join('');
+    if(comprobantesHistorial.length===0) { tbody.innerHTML = '<tr><td colspan="5">Sin comprobantes</div><div>'; return; }
+    tbody.innerHTML = comprobantesHistorial.map(c => `<tr><td><strong>X-${String(c.numero).padStart(6,'0')}</strong></div><div><td>${new Date(c.fecha).toLocaleString()}</div><div><td>${c.resumen}</div><div><td><strong>${fmtMoney(c.total)}</strong></div><div><td><button class="btn-small" onclick="verComprobante(${c.numero})">👁️</button></div><div>`).join('');
 }
 
 // ==================== COMPROBANTES (localStorage) ====================
@@ -755,7 +755,7 @@ function guardarComprobante(tipo, datos, html, texto) { const numero = getNextCo
 function mostrarComprobante(html) { document.getElementById("comprobanteCuerpo").innerHTML = html; document.getElementById("comprobanteModal").style.display = "flex"; }
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
     const fechaStr = new Date(fechaISO).toLocaleString('es-AR');
-    const filas = datos.ventas.map(v => `<tr><td>${v.cliente}</td><td>${Object.entries(v.cantidades).filter(([,c])=>c>0).map(([prod,c])=>`${prod}:${c}`).join(', ') || '-'}</td><td>${fmtMoney(v.total)}</td><td>${badgePago(v.pago)}</td><td>${v.cobroDeuda>0?fmtMoney(v.cobroDeuda):'-'}</td></tr>`).join('');
+    const filas = datos.ventas.map(v => `<tr><td>${v.cliente}</div><div><td>${Object.entries(v.cantidades).filter(([,c])=>c>0).map(([prod,c])=>`${prod}:${c}`).join(', ') || '-'}</div><div><td>${fmtMoney(v.total)}</div><div><td>${badgePago(v.pago)}</div><div><td>${v.cobroDeuda>0?fmtMoney(v.cobroDeuda):'-'}</div><div>`).join('');
     const total = datos.ventas.reduce((s,v)=>s+v.total+(v.cobroDeuda||0),0);
     return `<div class="info-fecha-premium"><div><strong>Comprobante X Nº ${String(numero).padStart(6,'0')}</strong></div><div>${fechaStr}</div></div>
             <table class="tabla-productos-premium"><thead><tr><th>Cliente</th><th>Productos</th><th>Total</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody>${filas}</tbody></table>
@@ -849,7 +849,7 @@ document.addEventListener("DOMContentLoaded", () => {
         toast("Venta registrada");
     });
     document.getElementById("setGastosDetalleBtn")?.addEventListener("click", actualizarGastosDesdeDetalle);
-    document.getElementById("resetDayBtn")?.addEventListener("click", () => { if(confirm("¿Reiniciar jornada?")) { ventas = ventas.filter(v => v.fecha !== getTodayUTC()); gastosDetalle = { nafta:0, choferes:0, otros:0 }; gastos=0; cobrosCC=0; saveData(); renderDriver(); toast("Jornada reiniciada"); } });
+    document.getElementById("resetDayBtn")?.addEventListener("click", () => { if(confirm("¿Reiniciar jornada?")) { ventas = ventas.filter(v => v.fecha !== getTodayUTC()); gastosDetalle = { nafta:0, choferes:0, otros:0 }; gastos=0; cobrosCC=0; renderDriver(); toast("Jornada reiniciada"); } });
     document.getElementById("cerrarDiaBtn")?.addEventListener("click", () => toast("Función de cierre de día disponible en versión completa"));
     document.getElementById("saveAllPricesBtn")?.addEventListener("click", async () => {
         document.querySelectorAll(".priceInput").forEach(inp=>{ const cli=inp.dataset.cli,prod=inp.dataset.prod; if(!preciosClientes[cli]) preciosClientes[cli]=getPreciosCliente(cli); preciosClientes[cli][prod]=parseInt(inp.value); });
@@ -882,7 +882,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("printComprobanteBtn")?.addEventListener("click", ()=>window.print());
     document.getElementById("closeComprobanteModalBtn")?.addEventListener("click", ()=>document.getElementById("comprobanteModal").style.display="none");
     window.onclick = e=>{ if(e.target===document.getElementById("comprobanteModal")) document.getElementById("comprobanteModal").style.display="none"; };
-    function saveData() { if(currentDriverPin) { localStorage.setItem(`myc_${currentDriverPin}_ventas`, JSON.stringify(ventas)); localStorage.setItem(`myc_${currentDriverPin}_gastosDetalle`, JSON.stringify(gastosDetalle)); } }
 });
 </script>
 </body>
