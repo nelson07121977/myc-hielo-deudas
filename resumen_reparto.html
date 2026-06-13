@@ -36,6 +36,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
 .header-left h1 { font-size: 1.7rem; font-weight: 900; letter-spacing: -0.5px; color: #fff; display: flex; align-items: center; gap: 10px; }
 .header-left h1 span { color: var(--accent); }
 .header-left p { color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; }
+.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
 .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 .card-title { font-weight: 700; font-size: 0.95rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
@@ -50,30 +51,61 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
 .kpi-card.gastos  { --kpi-color: var(--warning); }
 .kpi-card.neto    { --kpi-color: var(--accent); }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 40px; font-size: 0.72rem; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s; white-space: nowrap; font-family: inherit; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 40px; font-size: 0.72rem; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s; font-family: inherit; }
 .btn:active { transform: scale(0.96); }
+.btn:hover { opacity: 0.88; }
 .btn-primary   { background: var(--accent);   color: #041020; }
 .btn-success   { background: var(--success);  color: #041020; }
 .btn-danger    { background: var(--danger);   color: #fff; }
 .btn-warning   { background: var(--warning);  color: #041020; }
 .btn-ghost     { background: rgba(255,255,255,0.08); color: var(--text); }
+.btn-sm        { padding: 4px 10px; font-size: 0.68rem; }
+.btn-xs        { padding: 3px 7px; font-size: 0.62rem; gap: 3px; }
+.filtro { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+input[type="text"], input[type="date"], select { padding: 7px 12px; border-radius: 40px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 0.8rem; font-family: inherit; outline: none; }
+input:focus, select:focus { border-color: var(--accent); }
 .scroll-table { overflow-x: auto; overflow-y: auto; max-height: 420px; border-radius: var(--radius-sm); }
 table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-thead th { background: var(--bg); color: var(--text-muted); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; position: sticky; top: 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
-tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+thead th { background: var(--bg); color: var(--text-muted); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.1s; }
+tbody tr:hover { background: rgba(255,255,255,0.03); }
 tbody td { padding: 9px 12px; vertical-align: middle; }
+.empty-row td { text-align: center; color: var(--text-muted); padding: 28px; }
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 20px; font-size: 0.65rem; font-weight: 600; white-space: nowrap; }
-.badge-deuda         { background: rgba(255,77,109,0.15);  color: #ff8099; }
-.badge-pago          { background: rgba(0,224,150,0.15);   color: #00e096; }
-.badge-efectivo      { background: rgba(0,196,255,0.15);   color: #00c4ff; }
-.badge-transferencia { background: rgba(255,181,71,0.15);  color: #ffb547; }
+.badge-deuda         { background: rgba(255,77,109,0.15); color: #ff8099; }
+.badge-pago          { background: rgba(0,224,150,0.15); color: #00e096; }
+.badge-efectivo      { background: rgba(0,196,255,0.15); color: #00c4ff; }
+.badge-transferencia { background: rgba(255,181,71,0.15); color: #ffb547; }
+.badge-credito       { background: rgba(180,120,255,0.15); color: #c484ff; }
 #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; backdrop-filter: blur(10px); }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 8000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .modal.open { display: flex; }
-.modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; width: 90%; max-width: 520px; }
+.modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+.modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 20px; }
+.modal-footer { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.productos-texto { font-size: 0.72rem; color: var(--text-muted); }
+@media print {
+  body { background: white; color: black; }
+  .no-print { display: none !important; }
+  .card { border: 1px solid #ccc; border-radius: 8px; }
+  .header { background: #0a3e6d; -webkit-print-color-adjust: exact; }
+  table { font-size: 11px; }
+  thead th { background: #eef2ff; color: #0a3e6d; }
+}
+@media (max-width: 600px) {
+  .header { padding: 16px; }
+  .header-left h1 { font-size: 1.3rem; }
+  .kpi-value { font-size: 1.4rem; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
 .num-positive { color: var(--success); font-weight: 700; }
-.num-negative { color: var(--danger);  font-weight: 700; }
+.num-negative { color: var(--danger); font-weight: 700; }
+.num-neutral  { color: var(--text); font-weight: 700; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -82,207 +114,442 @@ tbody td { padding: 9px 12px; vertical-align: middle; }
     <div class="header-left"><h1>🧊 MYC <span>HIELO</span></h1><p>Panel de Reparto · Control Total</p></div>
     <div class="header-actions no-print">
       <button id="refreshBtn" class="btn btn-ghost"><i class="fas fa-sync-alt"></i> Actualizar</button>
+      <button id="syncBtn" class="btn btn-primary"><i class="fas fa-cloud-sync-alt"></i> Sincronizar</button>
       <button id="exportExcelBtn" class="btn btn-success"><i class="fas fa-file-excel"></i> Exportar todo</button>
       <button onclick="window.print()" class="btn btn-ghost"><i class="fas fa-print"></i> Imprimir</button>
     </div>
   </header>
-
   <div class="kpi-grid">
     <div class="kpi-card deuda"><div class="kpi-label">🔴 Total Deuda Acumulada</div><div class="kpi-value" id="totalDeudas">$0</div></div>
     <div class="kpi-card cobros"><div class="kpi-label">✅ Cobros de Deuda</div><div class="kpi-value" id="totalCobros">$0</div></div>
     <div class="kpi-card gastos"><div class="kpi-label">💸 Gastos del Día</div><div class="kpi-value" id="totalGastos">$0</div></div>
     <div class="kpi-card neto"><div class="kpi-label">💰 Neto General Hoy</div><div class="kpi-value" id="netoTotal">$0</div></div>
   </div>
-
   <div class="card">
-    <div class="card-header"><div class="card-title"><span class="icon">🔍</span> Buscar Cliente</div><button id="limpiarBusquedaBtn" class="btn btn-warning btn-sm no-print">Limpiar</button></div>
-    <div style="display:flex; gap:8px;"><input type="text" id="buscarClienteInput" placeholder="Nombre del cliente..." style="flex:1"><button id="buscarClienteBtn" class="btn btn-primary">Buscar</button></div>
+    <div class="card-header"><div class="card-title"><span class="icon">🔍</span> Buscar Cliente</div><button id="limpiarBusquedaBtn" class="btn btn-warning btn-sm no-print"><i class="fas fa-times"></i> Limpiar</button></div>
+    <div class="filtro"><input type="text" id="buscarClienteInput" placeholder="Nombre del cliente..." style="flex:1; min-width:160px;"><button id="buscarClienteBtn" class="btn btn-primary"><i class="fas fa-search"></i> Buscar</button></div>
     <div id="clienteResultado"></div>
   </div>
-
-  <div class="card">
-    <div class="card-header"><div class="card-title"><span class="icon">📜</span> Movimientos</div><div class="no-print"><input type="date" id="fechaMovimientos"><button id="verFechaMovBtn" class="btn btn-primary btn-sm">Ver fecha</button><button id="verTodosMovBtn" class="btn btn-success btn-sm">Todos</button><button id="exportMovExcelBtn" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Excel</button></div></div>
-    <div class="scroll-table"><table id="tablaMovimientos"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Detalle</th><th class="no-print">Acción</th></tr></thead><tbody id="bodyMovimientos"></tbody></table></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><div class="card-title"><span class="icon">🚚</span> Chofer 1234</div><div class="no-print"><input type="date" id="fecha1234" style="width:130px;"><button id="addFecha1234Btn" class="btn btn-primary btn-sm">+ Agregar</button><button id="cargarTodo1234Btn" class="btn btn-success btn-sm">Todas las fechas</button><button onclick="copiarTabla('tabla1234')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button></div></div>
+      <div class="scroll-table"><table id="tabla1234"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transf.</th><th>Cobros</th><th>Gastos</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="body1234"></tbody></table></div>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title"><span class="icon">🚚</span> Chofer 5678</div><div class="no-print"><input type="date" id="fecha5678" style="width:130px;"><button id="addFecha5678Btn" class="btn btn-primary btn-sm">+ Agregar</button><button id="cargarTodo5678Btn" class="btn btn-success btn-sm">Todas las fechas</button><button onclick="copiarTabla('tabla5678')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button></div></div>
+      <div class="scroll-table"><table id="tabla5678"><thead><tr><th>Fecha</th><th>Efectivo</th><th>Transf.</th><th>Cobros</th><th>Gastos</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="body5678"></tbody></table></div>
+    </div>
   </div>
-
-  <div class="card">
-    <div class="card-header"><div class="card-title"><span class="icon">📋</span> Clientes con Deuda</div><div class="no-print"><button onclick="exportarDeudoresExcel()" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Excel</button></div></div>
-    <div class="scroll-table"><table id="tablaDeudores"><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Estado</th></tr></thead><tbody id="bodyDeudores"></tbody></table></div>
+  <div class="card"><div class="card-header"><div class="card-title"><span class="icon">📜</span> Movimientos</div><div class="no-print"><input type="date" id="fechaMovimientos" style="width:130px;"><button id="verFechaMovBtn" class="btn btn-primary btn-sm">Ver fecha</button><button id="verTodosMovBtn" class="btn btn-success btn-sm">Todos</button><button onclick="copiarTabla('tablaMovimientos')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button><button id="exportMovExcelBtn" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Excel</button></div></div>
+    <div class="scroll-table"><table id="tablaMovimientos"><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead><tbody id="bodyMovimientos"></tbody></table></div>
+  </div>
+  <div class="card"><div class="card-header"><div class="card-title"><span class="icon">📋</span> Clientes con Deuda</div><div class="no-print"><button onclick="copiarTabla('tablaDeudores')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button><button onclick="exportarDeudoresExcel()" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Excel</button></div></div>
+    <div class="scroll-table"><table id="tablaDeudores"><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Estado</th><th class="no-print">Acción</th></tr></thead><tbody id="bodyDeudores"></tbody></table></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><div class="card-title"><span class="icon">💸</span> Gastos Chofer 1234</div><div class="no-print"><input type="date" id="gastosFecha1234" style="width:130px;"><button id="verGastos1234Btn" class="btn btn-primary btn-sm">Ver</button><button id="todosGastos1234Btn" class="btn btn-success btn-sm">Todos</button><button onclick="copiarTabla('tablaGastos1234')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button></div></div>
+      <div class="scroll-table"><table id="tablaGastos1234"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print"></th></tr></thead><tbody id="bodyGastos1234"></tbody></table></div>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title"><span class="icon">💸</span> Gastos Chofer 5678</div><div class="no-print"><input type="date" id="gastosFecha5678" style="width:130px;"><button id="verGastos5678Btn" class="btn btn-primary btn-sm">Ver</button><button id="todosGastos5678Btn" class="btn btn-success btn-sm">Todos</button><button onclick="copiarTabla('tablaGastos5678')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button></div></div>
+      <div class="scroll-table"><table id="tablaGastos5678"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print"></th></tr></thead><tbody id="bodyGastos5678"></tbody></table></div>
+    </div>
   </div>
 </div>
 <div id="toast"></div>
-<div id="modal" class="modal"><div class="modal-content"><div class="modal-title">Confirmar</div><div id="modalBody"></div><div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;"><button id="modalCancelar" class="btn btn-ghost">Cancelar</button><button id="modalConfirmar" class="btn btn-danger">Confirmar</button></div></div></div>
+<div id="modal" class="modal"><div class="modal-content"><div class="modal-title" id="modalTitulo">Confirmar</div><div id="modalBody"></div><div class="modal-footer"><button id="modalCancelar" class="btn btn-ghost">Cancelar</button><button id="modalConfirmar" class="btn btn-danger">Confirmar</button></div></div></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxDj_1xJPc_ekfjQ_LYZ2B1pEnujc1wuTx3H_fjSShguND4LQ38QSlUYcEPjwmeCWe2/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzwlbrwQPvhOhHRGPtCsXtr2aisD87vjGJa4XD9Hm8OH4Y6v8bNnDyj8xdOlYyzE8AZ/exec";
 
-let clientes = [], movimientos = [], ventas = [], gastos = [];
+let clientes = [];
+let movimientos = [];
+let gastos = [];
+let ventasLocal = [];
 
-function toast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2500); }
-function pesos(n) { return '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 0 }); }
-function fechaYMD(fecha) { if (!fecha) return ''; let s = String(fecha).split('T')[0]; if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10); return s; }
-function fechaDMY(f) { const p = fechaYMD(f).split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : f; }
-function normalizarNumero(v) { let n = parseFloat(String(v).replace(/[$,]/g,'')); return isNaN(n) ? 0 : n; }
-
-async function apiCall(ruta, params = {}, usePost = false) {
-  if (usePost) {
-    const form = new URLSearchParams();
-    for (const [k,v] of Object.entries(params)) form.append(k, v);
-    const res = await fetch(API_URL, { method: 'POST', body: form });
-    return await res.json();
-  } else {
-    const url = new URL(API_URL);
-    url.searchParams.append('ruta', ruta);
-    for (const [k,v] of Object.entries(params)) url.searchParams.append(k, v);
-    const res = await fetch(url);
-    return await res.json();
-  }
+function getHoy() { return new Date().toISOString().slice(0,10); }
+function toast(msg, type = 'info') {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove("show"), 2500);
 }
+function confirmar(titulo, msg) {
+  return new Promise(resolve => {
+    document.getElementById("modalTitulo").textContent = titulo;
+    document.getElementById("modalBody").textContent = msg;
+    const modal = document.getElementById("modal");
+    modal.classList.add("open");
+    const btnOk = document.getElementById("modalConfirmar");
+    const btnNo = document.getElementById("modalCancelar");
+    const cleanup = () => { modal.classList.remove("open"); btnOk.removeEventListener('click', yes); btnNo.removeEventListener('click', no); };
+    const yes = () => { cleanup(); resolve(true); };
+    const no  = () => { cleanup(); resolve(false); };
+    btnOk.addEventListener('click', yes);
+    btnNo.addEventListener('click', no);
+  });
+}
+function normalizarNumero(val) {
+  if (val === undefined || val === null) return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  const str = String(val).replace(/[$. ]/g, '').replace(/,/g, '');
+  const n = parseFloat(str);
+  return isNaN(n) ? 0 : n;
+}
+function fechaYMD(fecha) {
+  if (!fecha) return '';
+  let s = String(fecha).split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) { const p = s.split('/'); return `${p[2]}-${p[1]}-${p[0]}`; }
+  return s;
+}
+function fechaDMY(fecha) { const ymd = fechaYMD(fecha); const p = ymd.split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : ymd; }
+function pesos(n) { return '$' + n.toLocaleString('es-AR', { minimumFractionDigits:0 }); }
+function formatProductos(cant) {
+  if (!cant) return '—';
+  const mapa = { "1,7 KG":"1.7kg","3,5 KG":"3.5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg" };
+  const items = Object.entries(mapa).filter(([k]) => cant[k] > 0).map(([k,v]) => `${v}:${cant[k]}`);
+  return items.length ? items.join(' · ') : '—';
+}
+function badgeTipo(item) {
+  if (item.tipo === "deuda")              return `<span class="badge badge-deuda">➕ DEUDA</span>`;
+  if (item.tipo === "pago")               return `<span class="badge badge-pago">✅ PAGO</span>`;
+  if (item.pago === "efectivo")           return `<span class="badge badge-efectivo">💵 EFECTIVO</span>`;
+  if (item.pago === "transferencia")      return `<span class="badge badge-transferencia">💳 TRANSF.</span>`;
+  if (item.pago === "ctacte")             return `<span class="badge badge-credito">📘 CRÉDITO</span>`;
+  if (item.pago === "cobrocc")            return `<span class="badge badge-pago">🔄 COBRO</span>`;
+  return '—';
+}
+function numClass(n) { return n >= 0 ? 'num-positive' : 'num-negative'; }
+function emptyRow(cols, msg) { return `<tr class="empty-row"><td colspan="${cols}">${msg}</td></tr>`; }
 
-async function cargarTodo() {
+async function cargarSheets() {
   try {
-    const [cli, mov, ven, gas] = await Promise.all([
-      apiCall('clientes'),
-      apiCall('movimientos'),
-      apiCall('obtenerVentas'),
-      apiCall('obtenerGastos')
+    const [r1, r2] = await Promise.all([
+      fetch(`${API_URL}?ruta=clientes&_=${Date.now()}`),
+      fetch(`${API_URL}?ruta=movimientos&_=${Date.now()}`)
     ]);
-    clientes = (cli || []).map(c => String(c).trim().toUpperCase());
-    movimientos = (mov || []).map(m => ({ ...m, monto: normalizarNumero(m.monto), cliente: (m.cliente_nombre || m.cliente || '').trim().toUpperCase() }));
-    ventas = (ven || []).map(v => ({ ...v, total: normalizarNumero(v.total), cobroDeuda: normalizarNumero(v.cobroDeuda), fecha: fechaYMD(v.fecha) }));
-    gastos = (gas || []).map(g => ({ ...g, monto: normalizarNumero(g.monto), fecha: fechaYMD(g.fecha) }));
-    renderTodo();
-    toast("Datos actualizados");
-  } catch(e) { console.error(e); toast("Error de conexión"); }
+    if (!r1.ok || !r2.ok) throw new Error('Error en la respuesta de Sheets');
+    clientes = await r1.json();
+    const raw = await r2.json();
+    movimientos = (raw || []).map(m => ({
+      id: m.id,
+      fecha: fechaYMD(m.fecha),
+      cliente: m.cliente_nombre || m.cliente,
+      tipo: m.tipo,
+      monto: normalizarNumero(m.monto),
+      detalle: m.detalle || ''
+    }));
+    toast("Datos de Sheets cargados", 'success');
+  } catch(e) { console.error(e); toast("Error al cargar Google Sheets", 'error'); clientes = []; movimientos = []; }
 }
 
-function renderTodo() {
-  renderResumen();
-  renderDeudores();
-  renderMovimientos();
+function cargarLocalStorage() {
+  gastos = [];
+  ventasLocal = [];
+  for (const pin of ["1234","5678"]) {
+    const pref = `myc_${pin}_`;
+    const ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
+    for (const v of ventas) {
+      ventasLocal.push({
+        id: v.id, fecha: fechaYMD(v.fecha), cliente: v.cliente, pago: v.pago,
+        total: normalizarNumero(v.total), cobroDeuda: normalizarNumero(v.cobroDeuda),
+        cantidades: v.cantidades || {}, detalle: v.detalle || '', chofer: pin
+      });
+    }
+    const gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
+    for (const g of gastosDet) gastos.push({ ...g, fecha: fechaYMD(g.fecha), chofer: pin });
+    const gastosSimp = JSON.parse(localStorage.getItem(pref + "gastosDetalle") || "{}");
+    const hoy = getHoy();
+    if (gastosSimp.nafta)    gastos.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gastosSimp.nafta), nota: "", chofer: pin });
+    if (gastosSimp.choferes) gastos.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gastosSimp.choferes), nota: "", chofer: pin });
+    if (gastosSimp.otros)    gastos.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gastosSimp.otros), nota: "", chofer: pin });
+  }
+  toast("Datos locales cargados", 'success');
 }
 
 function renderResumen() {
   let totalDeuda = 0, totalCobros = 0, totalGastosHoy = 0;
-  for (const m of movimientos) {
-    if (m.tipo === 'deuda') totalDeuda += m.monto;
-    if (m.tipo === 'pago') totalCobros += m.monto;
-  }
-  const hoy = new Date().toISOString().slice(0,10);
+  for (const m of movimientos) { if (m.tipo === "deuda") totalDeuda += m.monto; if (m.tipo === "pago") totalCobros += m.monto; }
+  const hoy = getHoy();
   for (const g of gastos) if (g.fecha === hoy) totalGastosHoy += g.monto;
-  let cobrosHoy = 0;
-  for (const v of ventas) if (v.fecha === hoy && v.cobroDeuda > 0) cobrosHoy += v.cobroDeuda;
-  for (const m of movimientos) if (m.fecha === hoy && m.tipo === 'pago') cobrosHoy += m.monto;
-  const efectivoTransferHoy = ventas.filter(v => v.fecha === hoy && (v.pago === 'efectivo' || v.pago === 'transferencia')).reduce((a,b)=> a + b.total, 0);
-  const neto = efectivoTransferHoy + cobrosHoy - totalGastosHoy;
+  let efectivoHoy = 0, transferHoy = 0, cobrosHoy = 0;
+  for (const v of ventasLocal) {
+    if (v.fecha !== hoy) continue;
+    if (v.pago === "efectivo") efectivoHoy += v.total;
+    if (v.pago === "transferencia") transferHoy += v.total;
+    if (v.pago === "cobrocc") cobrosHoy += v.total;
+    if (v.cobroDeuda > 0) cobrosHoy += v.cobroDeuda;
+  }
+  for (const m of movimientos) if (m.fecha === hoy && m.tipo === "pago") cobrosHoy += m.monto;
+  const neto = efectivoHoy + transferHoy + cobrosHoy - totalGastosHoy;
   document.getElementById("totalDeudas").textContent = pesos(totalDeuda);
   document.getElementById("totalCobros").textContent = pesos(totalCobros);
   document.getElementById("totalGastos").textContent = pesos(totalGastosHoy);
-  const netoEl = document.getElementById("netoTotal");
-  netoEl.textContent = pesos(neto);
-  netoEl.style.color = neto >=0 ? 'var(--success)' : 'var(--danger)';
+  const elNeto = document.getElementById("netoTotal");
+  elNeto.textContent = pesos(neto);
+  elNeto.style.color = neto >= 0 ? 'var(--success)' : 'var(--danger)';
+}
+
+function calcRendicionFecha(pin, fecha) {
+  let efectivo = 0, transfer = 0, cobros = 0;
+  for (const v of ventasLocal.filter(v => v.chofer === pin && v.fecha === fecha)) {
+    if (v.pago === "efectivo") efectivo += v.total;
+    if (v.pago === "transferencia") transfer += v.total;
+    if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
+    else if (v.pago === "cobrocc") cobros += v.total;
+  }
+  for (const m of movimientos) if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
+  const gastosChofer = gastos.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a, g) => a + g.monto, 0);
+  const neto = efectivo + transfer + cobros - gastosChofer;
+  return { efectivo, transfer, cobros, gastosChofer, neto };
+}
+
+function renderRendicionChofer(pin, tbodyId) {
+  const fechas = new Set();
+  ventasLocal.filter(v => v.chofer === pin).forEach(v => v.fecha && fechas.add(v.fecha));
+  gastos.filter(g => g.chofer === pin).forEach(g => g.fecha && fechas.add(g.fecha));
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const sorted = Array.from(fechas).sort().reverse();
+  if (sorted.length === 0) { tbody.innerHTML = emptyRow(7, 'Sin datos'); return; }
+  tbody.innerHTML = sorted.map(fecha => {
+    const r = calcRendicionFecha(pin, fecha);
+    return `<tr>
+      <td>${fechaDMY(fecha)}</td>
+      <td>${pesos(r.efectivo)}</td>
+      <td>${pesos(r.transfer)}</td>
+      <td>${pesos(r.cobros)}</td>
+      <td style="color:var(--warning)">${pesos(r.gastosChofer)}</td>
+      <td><span class="${numClass(r.neto)}">${pesos(r.neto)}</span></td>
+      <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function confirmarEliminarDia(pin, fecha) {
+  const ok = await confirmar('Eliminar día', `¿Eliminar TODOS los registros del ${fechaDMY(fecha)} para Chofer ${pin}?`);
+  if (!ok) return;
+  const pref = `myc_${pin}_`;
+  let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
+  ventas = ventas.filter(v => fechaYMD(v.fecha) !== fecha);
+  localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
+  let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
+  gastosDet = gastosDet.filter(g => fechaYMD(g.fecha) !== fecha);
+  localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
+  toast(`Día ${fechaDMY(fecha)} eliminado`, 'success');
+  cargarLocalStorage();
+  renderTodo();
+}
+
+function addRendicionFecha(pin, tbodyId, fecha) {
+  if (!fecha) { toast("Seleccioná una fecha"); return; }
+  const tbody = document.getElementById(tbodyId);
+  for (const row of tbody.rows) {
+    if (row.cells[0]?.textContent === fechaDMY(fecha)) { toast("Esa fecha ya está en la tabla"); return; }
+  }
+  const r = calcRendicionFecha(pin, fecha);
+  const tr = tbody.insertRow();
+  tr.innerHTML = `
+    <td>${fechaDMY(fecha)}</td>
+    <td>${pesos(r.efectivo)}</td>
+    <td>${pesos(r.transfer)}</td>
+    <td>${pesos(r.cobros)}</td>
+    <td style="color:var(--warning)">${pesos(r.gastosChofer)}</td>
+    <td><span class="${numClass(r.neto)}">${pesos(r.neto)}</span></td>
+    <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button></td>
+  `;
+}
+
+function renderMovimientos(fecha = null) {
+  let todos = [
+    ...movimientos.map(m => ({ ...m, tipoMov: 'sheets' })),
+    ...ventasLocal.map(v => ({
+      id: v.id, fecha: v.fecha, cliente: v.cliente,
+      tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null),
+      pago: v.pago, monto: v.pago === "cobrocc" ? (v.cobroDeuda || v.total) : v.total,
+      detalle: v.detalle, cantidades: v.cantidades, chofer: v.chofer, tipoMov: 'local'
+    }))
+  ];
+  if (fecha) todos = todos.filter(t => t.fecha === fecha);
+  todos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  const tbody = document.getElementById("bodyMovimientos");
+  if (!tbody) return;
+  if (todos.length === 0) { tbody.innerHTML = emptyRow(7, 'Sin movimientos'); return; }
+  tbody.innerHTML = todos.map(t => {
+    const acciones = t.tipoMov === 'sheets'
+      ? `<button class="btn btn-danger btn-xs" onclick="eliminarMovSheet(${t.id})"><i class="fas fa-trash-alt"></i> Eliminar</button>`
+      : `<button class="btn btn-xs" style="background:var(--surface2)" onclick="toast('Editar: use la Planilla de Reparto')"><i class="fas fa-edit"></i></button>
+         <button class="btn btn-danger btn-xs" onclick="confirmarEliminarVenta(${t.id},'${t.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
+    return `<tr>
+      <td style="white-space:nowrap">${fechaDMY(t.fecha)}</td>
+      <td style="font-weight:600">${t.cliente || '—'}</td>
+      <td class="productos-texto">${badgeTipo(t)}</td>
+      <td style="white-space:nowrap"><span class="num-neutral">${pesos(t.monto)}</span></td>
+      <td class="productos-texto">${formatProductos(t.cantidades)}</td>
+      <td style="color:var(--text-muted);font-size:0.72rem">${t.detalle || ''}</td>
+      <td class="no-print" style="white-space:nowrap">${acciones}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function eliminarMovSheet(id) {
+  const ok = await confirmar('Eliminar movimiento', '¿Eliminar este movimiento de Google Sheets?');
+  if (!ok) return;
+  try {
+    await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'eliminarMovimiento', id }) });
+    toast("Eliminado de Sheets", 'success');
+    await cargarSheets();
+    cargarLocalStorage();
+    renderTodo();
+  } catch { toast("Error al eliminar", 'error'); }
+}
+
+async function confirmarEliminarVenta(id, chofer) {
+  const ok = await confirmar('Eliminar venta', '¿Eliminar esta venta del almacenamiento local?');
+  if (!ok) return;
+  const pref = `myc_${chofer}_`;
+  let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
+  ventas = ventas.filter(v => v.id !== id);
+  localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
+  toast("Venta eliminada", 'success');
+  cargarLocalStorage();
+  renderTodo();
+}
+
+function calcSaldos() {
+  const saldos = {};
+  for (const c of clientes) saldos[c] = 0;
+  for (const m of movimientos) {
+    if (!saldos[m.cliente]) saldos[m.cliente] = 0;
+    if (m.tipo === "deuda") saldos[m.cliente] += m.monto;
+    if (m.tipo === "pago")  saldos[m.cliente] -= m.monto;
+  }
+  return saldos;
 }
 
 function renderDeudores() {
-  let saldos = {};
-  clientes.forEach(c => saldos[c] = 0);
-  for (const m of movimientos) {
-    if (!saldos[m.cliente]) saldos[m.cliente] = 0;
-    if (m.tipo === 'deuda') saldos[m.cliente] += m.monto;
-    else if (m.tipo === 'pago') saldos[m.cliente] -= m.monto;
-  }
-  const deudores = Object.entries(saldos).filter(([,s]) => s > 0).sort((a,b)=>b[1]-a[1]);
+  const saldos = calcSaldos();
+  const deudores = Object.entries(saldos).filter(([, s]) => s > 0).sort((a,b) => b[1] - a[1]);
   const tbody = document.getElementById("bodyDeudores");
   if (!tbody) return;
-  if (deudores.length === 0) { tbody.innerHTML = '<tr><td colspan="3">Sin deudores</div><div>'; return; }
-  tbody.innerHTML = deudores.map(([c, s]) => `<tr><td style="font-weight:bold">${c}</div><td class="num-negative">${pesos(s)}</div><td><span class="badge badge-deuda">DEBE</span></div><div>`).join('');
-}
-
-function renderMovimientos(fechaFiltro = null) {
-  let filtrados = movimientos.slice();
-  if (fechaFiltro) filtrados = filtrados.filter(m => m.fecha === fechaFiltro);
-  filtrados.sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
-  const tbody = document.getElementById("bodyMovimientos");
-  if (!tbody) return;
-  if (filtrados.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Sin movimientos</div><div>'; return; }
-  tbody.innerHTML = filtrados.map(m => `
-    <tr>
-      <td>${fechaDMY(m.fecha)}</div><div>
-      <td><strong>${m.cliente}</strong></div><div>
-      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'DEUDA':'PAGO'}</span></div><div>
-      <td class="num-positive">${pesos(m.monto)}</div><div>
-      <td>${m.detalle || ''}</div><div>
-      <td class="no-print"><button class="btn btn-danger btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></div><div>
-    </tr>
-  `).join('');
-}
-
-async function eliminarMovimiento(id) {
-  if (!confirm('¿Eliminar este movimiento?')) return;
-  try {
-    await apiCall('eliminarMovimiento', { id }, true);
-    toast("Movimiento eliminado");
-    await cargarTodo();
-  } catch(e) { toast("Error"); }
+  if (deudores.length === 0) { tbody.innerHTML = emptyRow(4, '🎉 Sin deudores pendientes'); return; }
+  tbody.innerHTML = deudores.map(([cliente, saldo]) => `<tr>
+    <td style="font-weight:600">${cliente}</td>
+    <td><span class="num-negative">${pesos(saldo)}</span></td>
+    <td><span class="badge badge-deuda">🔴 DEBE</span></td>
+    <td class="no-print"><button class="btn btn-primary btn-xs" onclick="verHistorialCliente('${cliente}')"><i class="fas fa-history"></i> Historial</button></td>
+  </tr>`).join('');
 }
 
 function verHistorialCliente(cliente) {
-  const filtrados = movimientos.filter(m => m.cliente === cliente).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-  let saldo = 0;
-  for (const m of filtrados) { if (m.tipo === 'deuda') saldo += m.monto; else saldo -= m.monto; }
-  const saldoHtml = `<div style="background:var(--surface2); padding:12px; border-radius:12px; margin-bottom:12px;">Saldo actual: <strong class="${saldo>0?'num-negative':'num-positive'}">${pesos(Math.abs(saldo))} ${saldo>0?'DEBE':'CRÉDITO'}</strong></div>`;
-  if (filtrados.length === 0) { document.getElementById("clienteResultado").innerHTML = saldoHtml + '<p>Sin movimientos</p>'; return; }
-  const tabla = `<div class="scroll-table"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead><tbody>${filtrados.map(m => `<tr><td>${fechaDMY(m.fecha)}</div><td>${m.tipo==='deuda'?'DEUDA':'PAGO'}</div><td>${pesos(m.monto)}</div><td>${m.detalle||''}</div><div>`).join('')}</tbody></table></div>`;
-  document.getElementById("clienteResultado").innerHTML = saldoHtml + tabla;
+  const todos = [
+    ...movimientos.filter(m => m.cliente === cliente).map(m => ({ ...m, tipoMov:'sheets' })),
+    ...ventasLocal.filter(v => v.cliente === cliente).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
+  ].sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  const saldos = calcSaldos();
+  const saldo = saldos[cliente] || 0;
+  const saldoHtml = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);"><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Saldo actual</span><span class="${numClass(saldo)}" style="font-size:1.1rem">${pesos(saldo)}</span></div>`;
+  if (todos.length === 0) { document.getElementById("clienteResultado").innerHTML = saldoHtml + `<p style="color:var(--text-muted);text-align:center;padding:20px">Sin movimientos registrados.</p>`; return; }
+  const filas = todos.map(t => `<tr><td>${fechaDMY(t.fecha)}</td><td class="productos-texto">${badgeTipo(t)}</td><td class="productos-texto"><span class="num-neutral">${pesos(t.monto)}</span></td><td class="productos-texto">${formatProductos(t.cantidades)}</td><td style="color:var(--text-muted)">${t.detalle || ''}</td></tr>`).join('');
+  document.getElementById("clienteResultado").innerHTML = `${saldoHtml}<div class="scroll-table" style="max-height:380px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></tr></thead><tbody>${filas}</tbody></table></div><div class="no-print" style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${cliente}').then(()=>toast('Copiado'))"><i class="fas fa-copy"></i> Copiar nombre</button><button class="btn btn-success btn-sm" onclick="exportarClienteExcel('${cliente}')"><i class="fas fa-file-excel"></i> Excel</button></div>`;
 }
 
+function renderGastos(pin, fecha = null, todos = false) {
+  const tbodyId = pin === "1234" ? "bodyGastos1234" : "bodyGastos5678";
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  let filtrados = gastos.filter(g => g.chofer === pin);
+  if (!todos && fecha) filtrados = filtrados.filter(g => g.fecha === fecha);
+  filtrados.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  if (filtrados.length === 0) { tbody.innerHTML = emptyRow(5, 'Sin gastos registrados'); return; }
+  tbody.innerHTML = filtrados.map(g => `<tr>
+    <td style="white-space:nowrap">${fechaDMY(g.fecha)}</td>
+    <td>${g.categoria}</td>
+    <td><span style="color:var(--warning);font-weight:600">${pesos(g.monto)}</span></td>
+    <td style="color:var(--text-muted)">${g.nota || ''}</td>
+    <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarGasto('${pin}','${g.fecha}','${g.categoria}',${g.monto})"><i class="fas fa-trash-alt"></i></button></td>
+  </tr>`).join('');
+}
+
+async function confirmarEliminarGasto(pin, fecha, categoria, monto) {
+  const ok = await confirmar('Eliminar gasto', `¿Eliminar ${categoria} — ${pesos(monto)} del ${fechaDMY(fecha)}?`);
+  if (!ok) return;
+  const pref = `myc_${pin}_`;
+  let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
+  gastosDet = gastosDet.filter(g => !(g.fecha === fecha && g.categoria === categoria && g.monto === monto));
+  localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
+  toast("Gasto eliminado", 'success');
+  cargarLocalStorage();
+  renderTodo();
+}
+
+function buildWorkbook(sheets) { const wb = XLSX.utils.book_new(); for (const [nombre, data] of sheets) { const ws = XLSX.utils.aoa_to_sheet(data); XLSX.utils.book_append_sheet(wb, ws, nombre); } return wb; }
 function exportarExcelCompleto() {
-  const wb = XLSX.utils.book_new();
-  const resumen = [["Resumen", new Date().toLocaleString()], [], ["Total Deuda", document.getElementById("totalDeudas").innerText], ["Total Cobros", document.getElementById("totalCobros").innerText], ["Gastos Hoy", document.getElementById("totalGastos").innerText], ["Neto", document.getElementById("netoTotal").innerText]];
-  const wsRes = XLSX.utils.aoa_to_sheet(resumen);
-  XLSX.utils.book_append_sheet(wb, wsRes, "Resumen");
-  const movs = movimientos.map(m => [fechaDMY(m.fecha), m.cliente, m.tipo, m.monto, m.detalle]);
-  movs.unshift(["Fecha","Cliente","Tipo","Monto","Detalle"]);
-  const wsMov = XLSX.utils.aoa_to_sheet(movs);
-  XLSX.utils.book_append_sheet(wb, wsMov, "Movimientos");
-  XLSX.writeFile(wb, `myc_resumen_${new Date().toISOString().slice(0,10)}.xlsx`);
-  toast("Excel exportado");
+  const saldos = calcSaldos();
+  const resumen = [["MYC HIELO – Resumen de Reparto", new Date().toLocaleString('es-AR')], [], ["INDICADOR", "VALOR"], ["Total Deuda", document.getElementById("totalDeudas").textContent], ["Total Cobros", document.getElementById("totalCobros").textContent], ["Gastos del Día", document.getElementById("totalGastos").textContent], ["Neto General", document.getElementById("netoTotal").textContent], [], ["CLIENTES CON DEUDA"], ["Cliente", "Saldo Deudor"], ...Object.entries(saldos).filter(([, s]) => s > 0).map(([c,s]) => [c,s])];
+  const movs = [["Fecha","Cliente","Tipo","Monto","Productos","Detalle"], ...[...movimientos, ...ventasLocal].map(t => [fechaDMY(t.fecha), t.cliente, t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')), t.monto || t.total || 0, formatProductos(t.cantidades), t.detalle || ''])];
+  const wb = buildWorkbook([["Resumen", resumen], ["Movimientos", movs]]);
+  XLSX.writeFile(wb, `myc_resumen_${getHoy()}.xlsx`);
+  toast("Excel exportado", 'success');
 }
 function exportarDeudoresExcel() {
-  let saldos = {};
-  clientes.forEach(c => saldos[c] = 0);
-  for (const m of movimientos) { if (m.tipo === 'deuda') saldos[m.cliente] += m.monto; else saldos[m.cliente] -= m.monto; }
-  const data = Object.entries(saldos).filter(([,s])=> s>0).map(([c,s]) => [c, s]);
-  data.unshift(["Cliente", "Saldo Deudor"]);
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Deudores");
-  XLSX.writeFile(wb, `deudores_${new Date().toISOString().slice(0,10)}.xlsx`);
+  const saldos = calcSaldos();
+  const data = [["Deudores MYC HIELO", new Date().toLocaleString('es-AR')], [], ["Cliente","Saldo Deudor"], ...Object.entries(saldos).filter(([, s]) => s > 0).map(([c,s]) => [c,s])];
+  const wb = buildWorkbook([["Deudores", data]]);
+  XLSX.writeFile(wb, `deudores_${getHoy()}.xlsx`);
+  toast("Excel exportado", 'success');
+}
+function exportarClienteExcel(cliente) {
+  const todos = [...movimientos.filter(m => m.cliente === cliente), ...ventasLocal.filter(v => v.cliente === cliente)].sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  const data = [["Historial", cliente, new Date().toLocaleString('es-AR')], [], ["Fecha","Tipo","Monto","Productos","Detalle"], ...todos.map(t => [fechaDMY(t.fecha), t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')), t.monto || t.total || 0, formatProductos(t.cantidades), t.detalle || ''])];
+  const wb = buildWorkbook([[cliente.slice(0,30), data]]);
+  XLSX.writeFile(wb, `${cliente}_historial_${getHoy()}.xlsx`);
+  toast("Excel exportado", 'success');
 }
 function exportarMovimientosExcel() {
   const fecha = document.getElementById("fechaMovimientos").value;
-  let filtrados = movimientos.slice();
-  if (fecha) filtrados = filtrados.filter(m => m.fecha === fecha);
-  const data = filtrados.map(m => [fechaDMY(m.fecha), m.cliente, m.tipo, m.monto, m.detalle]);
-  data.unshift(["Fecha","Cliente","Tipo","Monto","Detalle"]);
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
-  XLSX.writeFile(wb, `movimientos_${fecha||"todos"}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  let todos = [...movimientos.map(m => ({ ...m })), ...ventasLocal.map(v => ({ ...v, monto: v.total }))];
+  if (fecha) todos = todos.filter(t => t.fecha === fecha);
+  todos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  const data = [["Movimientos", fecha || "Todos", new Date().toLocaleString('es-AR')], [], ["Fecha","Cliente","Tipo","Monto","Productos","Detalle"], ...todos.map(t => [fechaDMY(t.fecha), t.cliente, t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')), t.monto || t.total || 0, formatProductos(t.cantidades), t.detalle || ''])];
+  const wb = buildWorkbook([["Movimientos", data]]);
+  XLSX.writeFile(wb, `movimientos_${fecha || "todos"}_${getHoy()}.xlsx`);
+  toast("Excel exportado", 'success');
+}
+function copiarTabla(tablaId) {
+  const tabla = document.getElementById(tablaId);
+  if (!tabla) return;
+  const texto = Array.from(tabla.querySelectorAll("tr")).map(tr => Array.from(tr.children).filter(td => !td.classList.contains('no-print')).map(td => td.innerText.trim()).join("\t")).join("\n");
+  navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada", 'success'));
+}
+function renderTodo() { renderResumen(); renderRendicionChofer("1234","body1234"); renderRendicionChofer("5678","body5678"); renderMovimientos(); renderDeudores(); renderGastos("1234", null, true); renderGastos("5678", null, true); }
+async function actualizarTodo() {
+  const btn = document.getElementById("refreshBtn");
+  btn.innerHTML = '<span class="spinner"></span> Actualizando…';
+  btn.disabled = true;
+  try { await cargarSheets(); cargarLocalStorage(); renderTodo(); toast("Datos actualizados", 'success'); } catch(e) { toast("Error", 'error'); }
+  finally { btn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar'; btn.disabled = false; }
 }
 
-document.getElementById("refreshBtn").addEventListener("click", cargarTodo);
+document.getElementById("refreshBtn").addEventListener("click", actualizarTodo);
+document.getElementById("syncBtn").addEventListener("click", actualizarTodo);
 document.getElementById("exportExcelBtn").addEventListener("click", exportarExcelCompleto);
-document.getElementById("verFechaMovBtn").addEventListener("click", () => { const f = document.getElementById("fechaMovimientos").value; if(f) renderMovimientos(f); else toast("Seleccione fecha"); });
+document.getElementById("verFechaMovBtn").addEventListener("click", () => { const f = document.getElementById("fechaMovimientos").value; f ? renderMovimientos(f) : toast("Seleccioná una fecha"); });
 document.getElementById("verTodosMovBtn").addEventListener("click", () => renderMovimientos());
 document.getElementById("exportMovExcelBtn").addEventListener("click", exportarMovimientosExcel);
-document.getElementById("buscarClienteBtn").addEventListener("click", () => { const nom = document.getElementById("buscarClienteInput").value.trim(); if(nom) verHistorialCliente(nom.toUpperCase()); else toast("Ingrese nombre"); });
+document.getElementById("addFecha1234Btn").addEventListener("click", () => addRendicionFecha("1234","body1234", document.getElementById("fecha1234").value));
+document.getElementById("cargarTodo1234Btn").addEventListener("click", () => renderRendicionChofer("1234","body1234"));
+document.getElementById("addFecha5678Btn").addEventListener("click", () => addRendicionFecha("5678","body5678", document.getElementById("fecha5678").value));
+document.getElementById("cargarTodo5678Btn").addEventListener("click", () => renderRendicionChofer("5678","body5678"));
+document.getElementById("verGastos1234Btn").addEventListener("click", () => renderGastos("1234", document.getElementById("gastosFecha1234").value, false));
+document.getElementById("todosGastos1234Btn").addEventListener("click", () => renderGastos("1234", null, true));
+document.getElementById("verGastos5678Btn").addEventListener("click", () => renderGastos("5678", document.getElementById("gastosFecha5678").value, false));
+document.getElementById("todosGastos5678Btn").addEventListener("click", () => renderGastos("5678", null, true));
+document.getElementById("buscarClienteBtn").addEventListener("click", () => { const nom = document.getElementById("buscarClienteInput").value.trim(); nom ? verHistorialCliente(nom) : toast("Ingresá un nombre"); });
+document.getElementById("buscarClienteInput").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("buscarClienteBtn").click(); });
 document.getElementById("limpiarBusquedaBtn").addEventListener("click", () => { document.getElementById("buscarClienteInput").value = ""; document.getElementById("clienteResultado").innerHTML = ""; });
-document.getElementById("modalCancelar").addEventListener("click", () => document.getElementById("modal").classList.remove("open"));
-document.getElementById("modalConfirmar").addEventListener("click", () => document.getElementById("modal").classList.remove("open"));
-
-cargarTodo();
-setInterval(cargarTodo, 60000);
+document.getElementById("modal").addEventListener("click", e => { if (e.target === document.getElementById("modal")) document.getElementById("modal").classList.remove("open"); });
+actualizarTodo();
+setInterval(() => actualizarTodo(), 60000);
 </script>
 </body>
 </html>
