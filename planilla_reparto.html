@@ -5,150 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>MYC HIELO – Planilla de Reparto (FINAL)</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, 'Segoe UI', sans-serif;
-        }
-        body {
-            background: #f0f4f8;
-            margin: 0;
-            padding: 16px;
-        }
-        .login-container, .panel {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .login-header, .panel-header {
-            background: #0a3e6d;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        .login-body, .panel-body {
-            padding: 24px;
-        }
-        input, select, button {
-            padding: 10px 16px;
-            margin: 8px 0;
-            border-radius: 50px;
-            border: 1px solid #ccc;
-            font-size: 1rem;
-            width: 100%;
-        }
-        button {
-            background: #0a3e6d;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-        }
-        button:hover {
-            background: #1259a0;
-        }
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: flex-end;
-        }
-        .form-group {
-            flex: 1;
-            min-width: 120px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background: #e8f0fb;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        body { background: #f0f4f8; margin: 0; padding: 16px; }
+        .login-container, .panel { max-width: 1200px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+        .login-header, .panel-header { background: #0a3e6d; color: white; padding: 20px; text-align: center; }
+        .login-body, .panel-body { padding: 24px; }
+        input, select, button { padding: 10px 16px; margin: 8px 0; border-radius: 50px; border: 1px solid #ccc; font-size: 1rem; width: 100%; }
+        button { background: #0a3e6d; color: white; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #1259a0; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 120px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #e8f0fb; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
         .badge-efectivo { background: #dcfce7; color: #15803d; }
         .badge-transf { background: #dbeafe; color: #1d4ed8; }
         .badge-ctacte { background: #fef9c3; color: #92400e; }
         .badge-cobrocc { background: #fce7f3; color: #9d174d; }
-        .error {
-            color: #b91c1c;
-            background: #fee2e2;
-            padding: 8px;
-            border-radius: 50px;
-            margin-top: 8px;
-            display: none;
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #0a3e6d;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 50px;
-            display: none;
-            z-index: 1000;
-        }
-        .card {
-            background: #e8f0fb;
-            padding: 12px;
-            border-radius: 16px;
-            flex: 1;
-            text-align: center;
-        }
-        .flex-cards {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin: 16px 0;
-        }
-        .tab {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #e2e8f0;
-            border-radius: 50px;
-            cursor: pointer;
-            margin-right: 8px;
-        }
-        .tab.active {
-            background: #0a3e6d;
-            color: white;
-        }
-        .tab-content {
-            display: none;
-            margin-top: 16px;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .clientes-table input, .productos-table input {
-            width: 70px;
-            padding: 4px;
-            margin: 0;
-        }
+        .error { color: #b91c1c; background: #fee2e2; padding: 8px; border-radius: 50px; margin-top: 8px; display: none; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0a3e6d; color: white; padding: 8px 20px; border-radius: 50px; display: none; z-index: 1000; }
+        .card { background: #e8f0fb; padding: 12px; border-radius: 16px; flex: 1; text-align: center; }
+        .flex-cards { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+        .tab { display: inline-block; padding: 8px 16px; background: #e2e8f0; border-radius: 50px; cursor: pointer; margin-right: 8px; }
+        .tab.active { background: #0a3e6d; color: white; }
+        .tab-content { display: none; margin-top: 16px; }
+        .tab-content.active { display: block; }
+        .clientes-table input, .productos-table input { width: 80px; padding: 4px; margin: 0; }
+        .btn-small { background: #dc2626; padding: 4px 8px; font-size: 0.75rem; width: auto; margin: 0; }
     </style>
 </head>
 <body>
 
 <div id="loginScreen" class="login-container">
-    <div class="login-header">
-        <h2>🧊 MYC HIELO</h2>
-        <p>Planilla de Reparto</p>
-    </div>
+    <div class="login-header"><h2>🧊 MYC HIELO</h2><p>Planilla de Reparto</p></div>
     <div class="login-body">
         <label>Ingresá tu PIN</label>
         <input type="password" id="pinInput" placeholder="●●●●">
@@ -172,19 +62,10 @@
             <div class="form-group"><label>14 Kg</label><input type="number" id="qty_14" value="0" min="0"></div>
             <div class="form-group"><label>20 Kg</label><input type="number" id="qty_20" value="0" min="0"></div>
             <div class="form-group"><label>32 Kg</label><input type="number" id="qty_32" value="0" min="0"></div>
-            <div class="form-group">
-                <label>Forma de pago</label>
-                <select id="paymentType">
-                    <option value="efectivo">💵 Efectivo</option>
-                    <option value="transferencia">💳 Transferencia</option>
-                    <option value="ctacte">📘 Cuenta Corriente</option>
-                    <option value="cobrocc">🔄 Cobro de deuda</option>
-                </select>
-            </div>
+            <div class="form-group"><label>Forma de pago</label><select id="paymentType"><option value="efectivo">💵 Efectivo</option><option value="transferencia">💳 Transferencia</option><option value="ctacte">📘 Cuenta Corriente</option><option value="cobrocc">🔄 Cobro de deuda</option></select></div>
             <div class="form-group"><label>Cobro deuda ($)</label><input type="number" id="cobroDeudaInput" value="0" min="0"></div>
             <div class="form-group"><button id="addSaleBtn" style="background:#16a34a;">➕ Agregar venta</button></div>
         </div>
-
         <div class="flex-cards">
             <div class="card"><strong>Total Ventas $</strong><br><span id="totalVentas">0</span></div>
             <div class="card"><strong>💵 Efectivo</strong><br><span id="totalEfectivo">0</span></div>
@@ -192,16 +73,8 @@
             <div class="card"><strong>📘 Cta Cte</strong><br><span id="totalCtaCte">0</span></div>
             <div class="card"><strong>🔄 Cobrado hoy</strong><br><span id="totalCobros">0</span></div>
         </div>
-
         <h3>📋 Ventas del día</h3>
-        <div style="overflow-x: auto;">
-            <table id="salesTable">
-                <thead>
-                    <tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th><th></th></tr>
-                </thead>
-                <tbody id="salesTableBody"></tbody>
-            </table>
-        </div>
+        <div style="overflow-x: auto;"><table id="salesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th><th></th></tr></thead><tbody id="salesTableBody"></tbody></table></div>
         <button id="resetDayBtn" style="background:#dc2626; margin-top:16px;">🔄 Reiniciar jornada</button>
     </div>
 </div>
@@ -216,44 +89,26 @@
         <div class="form-row">
             <div class="form-group"><label>Ver chofer</label><select id="adminChoferSelect"><option value="1234">Chofer 1234</option><option value="5678">Chofer 5678</option></select></div>
             <div class="form-group"><button id="cerrarDiaAdmin" style="background:#dc2626;">📦 Cerrar día</button></div>
+            <div class="form-group"><button id="exportBackupBtn" style="background:#16a34a;">💾 Exportar respaldo</button></div>
         </div>
         <div id="adminStats" class="flex-cards"></div>
         <h3>Ventas del día</h3>
         <div style="overflow-x: auto;"><table id="adminSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th></tr></thead><tbody id="adminSalesBody"></tbody></table></div>
         
-        <!-- Pestañas para Clientes y Productos -->
-        <div style="margin-top: 24px;">
+        <div style="margin-top:24px;">
             <div class="tab active" data-tab="clientes">🏷️ Clientes y precios</div>
-            <div class="tab" data-tab="productos">📦 Productos (tipos de bolsa)</div>
+            <div class="tab" data-tab="productos">📦 Productos</div>
         </div>
         
         <div id="tabClientes" class="tab-content active">
-            <div class="form-row">
-                <div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="nuevoCliente" placeholder="Nombre"></div>
-                <div class="form-group"><button id="agregarClienteBtn">Agregar</button></div>
-            </div>
-            <div style="overflow-x: auto;">
-                <table id="clientesTable" class="clientes-table">
-                    <thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Acciones</th></tr></thead>
-                    <tbody id="clientesTbody"></tbody>
-                </table>
-            </div>
-            <button id="guardarPreciosBtn" style="margin-top:8px;">💾 Guardar precios de clientes</button>
+            <div class="form-row"><div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="nuevoCliente" placeholder="Nombre"></div><div class="form-group"><button id="agregarClienteBtn">Agregar</button></div></div>
+            <div style="overflow-x: auto;"><table id="clientesTable" class="clientes-table"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></table></div>
+            <button id="guardarPreciosBtn">💾 Guardar precios de clientes</button>
         </div>
-        
         <div id="tabProductos" class="tab-content">
-            <div class="form-row">
-                <div class="form-group"><label>➕ Nuevo producto</label><input type="text" id="nuevoProducto" placeholder="Ej: Bolsa 25KG"></div>
-                <div class="form-group"><label>Precio base</label><input type="number" id="nuevoProductoPrecio" placeholder="0"></div>
-                <div class="form-group"><button id="agregarProductoBtn">Agregar</button></div>
-            </div>
-            <div style="overflow-x: auto;">
-                <table id="productosTable" class="productos-table">
-                    <thead><tr><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead>
-                    <tbody id="productosTbody"></tbody>
-                </table>
-            </div>
-            <button id="guardarProductosBtn" style="margin-top:8px;">💾 Guardar productos</button>
+            <div class="form-row"><div class="form-group"><label>➕ Nuevo producto</label><input type="text" id="nuevoProducto" placeholder="Nombre (ej: Bolsa 25KG)"></div><div class="form-group"><label>Precio base</label><input type="number" id="nuevoProductoPrecio" placeholder="0"></div><div class="form-group"><button id="agregarProductoBtn">Agregar</button></div></div>
+            <div style="overflow-x: auto;"><table id="productosTable" class="productos-table"><thead><td><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productosTbody"></tbody></table></div>
+            <button id="guardarProductosBtn">💾 Guardar productos</button>
         </div>
     </div>
 </div>
@@ -261,508 +116,533 @@
 <div id="toast" class="toast"></div>
 
 <script>
-    // ==================== CONFIGURACIÓN GLOBAL ====================
-    const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-    let currentUser = null; // '1234', '5678' o '9999'
-    let clientes = [];
-    let precios = {}; // { cliente: { "1,7 KG":1500, ... } }
-    let productos = []; // [{ nombre: "1,7 KG", precioBase: 1500 }]
-    let ventas = [];    // todas las ventas del usuario actual
-    let cobrosCC = 0;
+// ==================== CONFIGURACIÓN GLOBAL ====================
+const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
+let currentUser = null;
+let clientes = [];
+let precios = {};       // { cliente: { "1,7 KG":1500, ... } }
+let productos = [];     // [{ clave: "1,7 KG", precioBase: 1500, imagen: "" }]
+let ventas = [];
+let cobrosCC = 0;
 
-    // Productos por defecto
-    const DEFAULT_PRODUCTOS = [
-        { nombre: "1,7 KG", precioBase: 1500 },
-        { nombre: "3,5 KG", precioBase: 2500 },
-        { nombre: "14 KG", precioBase: 7000 },
-        { nombre: "ESC.20KG", precioBase: 8000 },
-        { nombre: "ESC.32KG", precioBase: 12000 }
-    ];
+// Clientes por defecto
+const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
 
-    // Clientes por defecto
-    const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
+// Productos por defecto
+const DEFAULT_PRODUCTOS = [
+    { clave: "1,7 KG", precioBase: 1500, imagen: "" },
+    { clave: "3,5 KG", precioBase: 2500, imagen: "" },
+    { clave: "14 KG", precioBase: 7000, imagen: "" },
+    { clave: "ESC.20KG", precioBase: 8000, imagen: "" },
+    { clave: "ESC.32KG", precioBase: 12000, imagen: "" }
+];
 
-    // Cargar datos desde localStorage
-    function cargarClientes() {
-        let stored = localStorage.getItem("myc_clientes");
-        if (stored) clientes = JSON.parse(stored);
-        else clientes = [...DEFAULT_CLIENTES];
-        let storedPrecios = localStorage.getItem("myc_precios");
-        if (storedPrecios) precios = JSON.parse(storedPrecios);
-        else {
-            precios = {};
-            clientes.forEach(c => { precios[c] = {}; });
-            actualizarPreciosPorDefecto();
+// Inicialización de datos
+function cargarDatosLocales() {
+    // Cargar clientes
+    let storedClientes = localStorage.getItem("myc_clientes");
+    if (storedClientes) clientes = JSON.parse(storedClientes);
+    else clientes = [...DEFAULT_CLIENTES];
+    // Cargar precios
+    let storedPrecios = localStorage.getItem("myc_precios");
+    if (storedPrecios) precios = JSON.parse(storedPrecios);
+    else {
+        precios = {};
+        clientes.forEach(c => { precios[c] = { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 }; });
+    }
+    // Asegurar que todos los clientes tengan precios
+    clientes.forEach(c => { if (!precios[c]) precios[c] = { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 }; });
+    // Cargar productos
+    let storedProductos = localStorage.getItem("myc_productos");
+    if (storedProductos) productos = JSON.parse(storedProductos);
+    else productos = [...DEFAULT_PRODUCTOS];
+}
+function guardarClientesLocal() {
+    localStorage.setItem("myc_clientes", JSON.stringify(clientes));
+    localStorage.setItem("myc_precios", JSON.stringify(precios));
+}
+function guardarProductosLocal() {
+    localStorage.setItem("myc_productos", JSON.stringify(productos));
+}
+
+// API helper
+async function apiCall(ruta, params, usePost = false) {
+    try {
+        if (usePost) {
+            let form = new URLSearchParams();
+            for (let [k, v] of Object.entries(params)) form.append(k, v);
+            let res = await fetch(API_URL, { method: 'POST', body: form });
+            return await res.json();
+        } else {
+            let url = new URL(API_URL);
+            url.searchParams.append('ruta', ruta);
+            for (let [k, v] of Object.entries(params)) url.searchParams.append(k, v);
+            let res = await fetch(url.toString());
+            return await res.json();
         }
-        guardarClientesLocal();
-    }
-    function actualizarPreciosPorDefecto() {
-        // Asignar precios base según productos actuales
-        clientes.forEach(c => {
-            if (!precios[c]) precios[c] = {};
-            for (let p of productos) {
-                precios[c][p.nombre] = p.precioBase;
-            }
-        });
-    }
-    function guardarClientesLocal() {
-        localStorage.setItem("myc_clientes", JSON.stringify(clientes));
-        localStorage.setItem("myc_precios", JSON.stringify(precios));
-    }
-    function cargarProductos() {
-        let stored = localStorage.getItem("myc_productos");
-        if (stored) productos = JSON.parse(stored);
-        else productos = [...DEFAULT_PRODUCTOS];
-        guardarProductosLocal();
-        // Sincronizar precios de clientes con productos actuales
-        actualizarPreciosPorDefecto();
-        guardarClientesLocal();
-    }
-    function guardarProductosLocal() {
-        localStorage.setItem("myc_productos", JSON.stringify(productos));
-    }
-    function agregarProducto(nombre, precioBase) {
-        nombre = nombre.trim();
-        if (!nombre) return false;
-        if (productos.some(p => p.nombre === nombre)) return false;
-        productos.push({ nombre: nombre, precioBase: precioBase });
-        guardarProductosLocal();
-        // Agregar este producto a todos los clientes con el precio base
-        clientes.forEach(c => {
-            if (!precios[c]) precios[c] = {};
-            precios[c][nombre] = precioBase;
-        });
-        guardarClientesLocal();
-        return true;
-    }
-    function eliminarProducto(nombre) {
-        if (!confirm(`¿Eliminar producto "${nombre}"?`)) return;
-        productos = productos.filter(p => p.nombre !== nombre);
-        guardarProductosLocal();
-        // Eliminar de todos los clientes
-        clientes.forEach(c => {
-            if (precios[c] && precios[c][nombre]) delete precios[c][nombre];
-        });
-        guardarClientesLocal();
-    }
-    function actualizarPrecioBaseProducto(nombre, nuevoPrecio) {
-        let prod = productos.find(p => p.nombre === nombre);
-        if (prod) prod.precioBase = nuevoPrecio;
-        guardarProductosLocal();
-        // Actualizar el precio base en todos los clientes para ese producto (solo si no tienen precio personalizado? Mejor actualizar siempre)
-        clientes.forEach(c => {
-            if (precios[c]) precios[c][nombre] = nuevoPrecio;
-        });
-        guardarClientesLocal();
-    }
+    } catch(e) { console.error(e); return null; }
+}
 
-    function agregarCliente(nombre) {
-        nombre = nombre.toUpperCase().trim();
-        if (!nombre) return false;
-        if (clientes.includes(nombre)) return false;
-        clientes.push(nombre);
-        precios[nombre] = {};
-        for (let p of productos) {
-            precios[nombre][p.nombre] = p.precioBase;
+// Sincronización con nube
+async function sincronizarConNube(chofer) {
+    try {
+        let clientesNube = await apiCall('clientes');
+        if (clientesNube && Array.isArray(clientesNube) && clientesNube.length) {
+            clientes = clientesNube.map(c => c.toUpperCase().trim());
+            guardarClientesLocal();
         }
-        guardarClientesLocal();
-        apiCall('agregarCliente', { nombre }, true).catch(e=>console.log);
-        return true;
-    }
-    function eliminarCliente(nombre) {
-        if (!confirm(`¿Eliminar cliente ${nombre}?`)) return;
-        clientes = clientes.filter(c => c !== nombre);
-        delete precios[nombre];
-        guardarClientesLocal();
-        apiCall('eliminarCliente', { nombre }, true).catch(e=>console.log);
-        if (currentUser !== '9999') renderDriver();
-        else renderAdmin();
-    }
+        let config = await apiCall('obtenerConfiguracion');
+        if (config && config.precios) {
+            precios = JSON.parse(config.precios);
+            guardarClientesLocal();
+        }
+        if (config && config.productos) {
+            productos = JSON.parse(config.productos);
+            guardarProductosLocal();
+        }
+        let ventasNube = await apiCall('obtenerVentas', { chofer });
+        if (ventasNube && Array.isArray(ventasNube)) {
+            ventas = ventasNube.map(v => {
+                if (v.fecha) v.fecha = v.fecha.split('T')[0];
+                if (v.cantidades && typeof v.cantidades === 'string') v.cantidades = JSON.parse(v.cantidades);
+                return v;
+            });
+            guardarVentasLocal();
+            let hoy = getToday();
+            cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
+        }
+    } catch(e) { console.error(e); }
+}
 
-    // Ventas
-    function getToday() { return new Date().toISOString().slice(0,10); }
-    function guardarVentasLocal() {
-        let key = `ventas_${currentUser}`;
-        localStorage.setItem(key, JSON.stringify(ventas));
+// Ventas
+function getToday() { return new Date().toISOString().slice(0,10); }
+function guardarVentasLocal() {
+    let key = `ventas_${currentUser}`;
+    localStorage.setItem(key, JSON.stringify(ventas));
+}
+function cargarVentasLocal() {
+    let key = `ventas_${currentUser}`;
+    let data = localStorage.getItem(key);
+    ventas = data ? JSON.parse(data) : [];
+    let hoy = getToday();
+    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
+}
+function calcularTotal(cliente, cantidades) {
+    let p = precios[cliente] || { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
+    let total = 0;
+    for (let [prod, cant] of Object.entries(cantidades)) {
+        let precioProd = p[prod] || 0;
+        total += cant * precioProd;
     }
-    function cargarVentasLocal() {
-        let key = `ventas_${currentUser}`;
-        let data = localStorage.getItem(key);
-        if (data) ventas = JSON.parse(data);
-        else ventas = [];
-        let hoy = getToday();
-        cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
-    }
-    function calcularTotal(cliente, cantidades) {
-        let p = precios[cliente] || {};
-        let total = 0;
-        for (let prod of productos) {
-            let cantidad = cantidades[prod.nombre] || 0;
-            let precioUnitario = p[prod.nombre] || prod.precioBase;
-            total += cantidad * precioUnitario;
-        }
-        return total;
-    }
-    function agregarVenta(cliente, cantidades, pago, cobroMonto) {
-        let total = (pago === "cobrocc") ? 0 : calcularTotal(cliente, cantidades);
-        let nueva = {
-            id: Date.now(),
-            fecha: getToday(),
-            cliente: cliente,
-            cantidades: cantidades,
-            pago: pago,
-            total: total,
-            cobroDeuda: (pago === "cobrocc") ? cobroMonto : 0
-        };
-        ventas.push(nueva);
-        if (pago === "cobrocc") cobrosCC += cobroMonto;
-        guardarVentasLocal();
-        // Enviar a la nube (opcional, pero no leeremos ventas desde la nube para evitar duplicados)
-        apiCall('guardarVenta', {
+    return total;
+}
+function agregarVenta(cliente, cantidades, pago, cobroMonto) {
+    let total = (pago === "cobrocc") ? 0 : calcularTotal(cliente, cantidades);
+    let nueva = {
+        id: Date.now(),
+        fecha: getToday(),
+        cliente: cliente,
+        cantidades: cantidades,
+        pago: pago,
+        total: total,
+        cobroDeuda: (pago === "cobrocc") ? cobroMonto : 0
+    };
+    ventas.push(nueva);
+    if (pago === "cobrocc") cobrosCC += cobroMonto;
+    guardarVentasLocal();
+    // Enviar a la nube (Google Sheets)
+    apiCall('guardarVenta', {
+        fecha: nueva.fecha,
+        cliente: nueva.cliente,
+        cantidades: JSON.stringify(nueva.cantidades),
+        pago: nueva.pago,
+        total: nueva.total,
+        cobroDeuda: nueva.cobroDeuda,
+        chofer: currentUser
+    }, true).catch(e=>console.log);
+    // Sincronizar con el control de deudas (index.html)
+    if (pago === "ctacte" && total > 0) {
+        apiCall('agregarMovimiento', {
             fecha: nueva.fecha,
             cliente: nueva.cliente,
-            cantidades: JSON.stringify(nueva.cantidades),
-            pago: nueva.pago,
-            total: nueva.total,
-            cobroDeuda: nueva.cobroDeuda,
-            chofer: currentUser
+            tipo: 'deuda',
+            monto: total,
+            formaPago: '',
+            detalle: `Venta de hielo: ${JSON.stringify(cantidades)}`
         }, true).catch(e=>console.log);
-        // Sincronizar deudas con control de deudas
-        if (pago === "ctacte" && total > 0) {
-            apiCall('agregarMovimiento', {
-                fecha: nueva.fecha,
-                cliente: nueva.cliente,
-                tipo: 'deuda',
-                monto: total,
-                formaPago: '',
-                detalle: `Venta de hielo: ${JSON.stringify(cantidades)}`
-            }, true).catch(e=>console.log);
-        } else if (pago === "cobrocc" && cobroMonto > 0) {
-            apiCall('agregarMovimiento', {
-                fecha: nueva.fecha,
-                cliente: nueva.cliente,
-                tipo: 'pago',
-                monto: cobroMonto,
-                formaPago: 'Efectivo',
-                detalle: 'Cobro de deuda desde planilla'
-            }, true).catch(e=>console.log);
-        }
-        return nueva;
+    } else if (pago === "cobrocc" && cobroMonto > 0) {
+        apiCall('agregarMovimiento', {
+            fecha: nueva.fecha,
+            cliente: nueva.cliente,
+            tipo: 'pago',
+            monto: cobroMonto,
+            formaPago: 'Efectivo',
+            detalle: 'Cobro de deuda desde planilla'
+        }, true).catch(e=>console.log);
     }
-    function eliminarVenta(id) {
-        ventas = ventas.filter(v => v.id != id);
-        guardarVentasLocal();
-        let hoy = getToday();
-        cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
-        // También eliminar de la nube (opcional, pero no es crítico)
-        apiCall('eliminarVenta', { id: id }, true).catch(e=>console.log);
-    }
-    function resetJornada() {
-        let hoy = getToday();
-        ventas = ventas.filter(v => v.fecha !== hoy);
-        guardarVentasLocal();
-        cobrosCC = 0;
-    }
+    return nueva;
+}
+function eliminarVenta(id) {
+    ventas = ventas.filter(v => v.id != id);
+    guardarVentasLocal();
+    let hoy = getToday();
+    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
+    apiCall('eliminarVenta', { id: id }, true).catch(e=>console.log);
+}
+function resetJornada() {
+    let hoy = getToday();
+    ventas = ventas.filter(v => v.fecha !== hoy);
+    guardarVentasLocal();
+    cobrosCC = 0;
+}
 
-    // Render chofer
-    function renderDriver() {
-        document.getElementById("driverId").innerText = `(PIN ${currentUser})`;
-        let select = document.getElementById("clienteSelect");
-        select.innerHTML = clientes.map(c => `<option value="${c}">${c}</option>`).join("");
-        let hoy = getToday();
-        let ventasHoy = ventas.filter(v => v.fecha === hoy);
-        let totalV=0, totalE=0, totalT=0, totalC=0, totalCob=0;
-        for (let v of ventasHoy) {
-            if (v.pago !== "cobrocc") totalV += v.total;
-            if (v.pago === "efectivo") totalE += v.total;
-            if (v.pago === "transferencia") totalT += v.total;
-            if (v.pago === "ctacte") totalC += v.total;
-            if (v.pago === "cobrocc") totalCob += v.cobroDeuda;
-        }
-        document.getElementById("totalVentas").innerText = formatMoney(totalV);
-        document.getElementById("totalEfectivo").innerText = formatMoney(totalE);
-        document.getElementById("totalTransf").innerText = formatMoney(totalT);
-        document.getElementById("totalCtaCte").innerText = formatMoney(totalC);
-        document.getElementById("totalCobros").innerText = formatMoney(totalCob);
-        let tbody = document.getElementById("salesTableBody");
-        if (ventasHoy.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center">Sin ventas registradas hoy</div><div>';
-        } else {
-            let html = '';
-            for (let v of ventasHoy) {
-                html += `<tr>
-                    <td><strong>${v.cliente}</strong></td>
-                    <td style="text-align:center;">${v.cantidades["1,7 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades["3,5 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades["14 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades["ESC.20KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades["ESC.32KG"]||0}</td>
-                    <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
-                    <td>${badgePago(v.pago)}</div><div>
-                    <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
-                    <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></div><div>
-                </tr>`;
-            }
-            tbody.innerHTML = html;
-        }
+// Gestión de clientes y precios
+function agregarCliente(nombre) {
+    nombre = nombre.toUpperCase().trim();
+    if (!nombre || clientes.includes(nombre)) return false;
+    clientes.push(nombre);
+    precios[nombre] = { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
+    guardarClientesLocal();
+    apiCall('agregarCliente', { nombre }, true).catch(e=>console.log);
+    return true;
+}
+function eliminarCliente(nombre) {
+    if (!confirm(`¿Eliminar cliente ${nombre}?`)) return;
+    clientes = clientes.filter(c => c !== nombre);
+    delete precios[nombre];
+    guardarClientesLocal();
+    apiCall('eliminarCliente', { nombre }, true).catch(e=>console.log);
+    if (currentUser === '9999') renderClientesAdmin();
+    else renderDriver();
+}
+function guardarPreciosClientes() {
+    let inputs = document.querySelectorAll(".precio-input");
+    for (let inp of inputs) {
+        let cli = inp.dataset.cliente;
+        let prod = inp.dataset.prod;
+        let valor = parseInt(inp.value) || 0;
+        if (!precios[cli]) precios[cli] = {};
+        precios[cli][prod] = valor;
     }
-    function eliminarVentaHandler(id) {
-        eliminarVenta(id);
-        renderDriver();
-        toast("Venta eliminada");
-    }
+    guardarClientesLocal();
+    // Guardar en la nube
+    apiCall('guardarConfiguracion', {
+        precios: JSON.stringify(precios),
+        costos: JSON.stringify({}),
+        productos: JSON.stringify(productos)
+    }, true).catch(e=>console.log);
+    toast("Precios de clientes guardados");
+    if (currentUser !== '9999') renderDriver();
+}
 
-    // Render admin
-    function renderAdmin() {
-        let chofer = document.getElementById("adminChoferSelect").value;
-        let key = `ventas_${chofer}`;
-        let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
-        let hoy = getToday();
-        let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
-        let totalV=0, totalE=0, totalT=0, totalC=0, totalCob=0;
+// Gestión de productos
+function agregarProducto(nombre, precioBase) {
+    if (!nombre) return false;
+    let existe = productos.find(p => p.clave === nombre);
+    if (existe) return false;
+    productos.push({ clave: nombre, precioBase: precioBase, imagen: "" });
+    guardarProductosLocal();
+    return true;
+}
+function eliminarProducto(clave) {
+    if (!confirm(`¿Eliminar producto ${clave}?`)) return;
+    productos = productos.filter(p => p.clave !== clave);
+    guardarProductosLocal();
+    renderProductosAdmin();
+}
+function guardarProductos() {
+    let inputs = document.querySelectorAll(".producto-precio-input");
+    for (let inp of inputs) {
+        let clave = inp.dataset.clave;
+        let nuevoPrecio = parseInt(inp.value) || 0;
+        let prod = productos.find(p => p.clave === clave);
+        if (prod) prod.precioBase = nuevoPrecio;
+    }
+    guardarProductosLocal();
+    apiCall('guardarConfiguracion', {
+        precios: JSON.stringify(precios),
+        costos: JSON.stringify({}),
+        productos: JSON.stringify(productos)
+    }, true).catch(e=>console.log);
+    toast("Productos guardados");
+}
+
+// Exportar respaldo
+function exportarRespaldo() {
+    let data = {
+        fecha: new Date().toISOString(),
+        clientes: clientes,
+        precios: precios,
+        productos: productos,
+        ventas: {
+            "1234": JSON.parse(localStorage.getItem("ventas_1234") || "[]"),
+            "5678": JSON.parse(localStorage.getItem("ventas_5678") || "[]")
+        }
+    };
+    let blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `myc_respaldo_${new Date().toISOString().slice(0,19)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Respaldo exportado");
+}
+
+// Renderizados
+function renderDriver() {
+    document.getElementById("driverId").innerText = `(PIN ${currentUser})`;
+    let select = document.getElementById("clienteSelect");
+    select.innerHTML = clientes.map(c => `<option value="${c}">${c}</option>`).join("");
+    let hoy = getToday();
+    let ventasHoy = ventas.filter(v => v.fecha === hoy);
+    let totalV=0, totalE=0, totalT=0, totalC=0, totalCob=0;
+    for (let v of ventasHoy) {
+        if (v.pago !== "cobrocc") totalV += v.total;
+        if (v.pago === "efectivo") totalE += v.total;
+        if (v.pago === "transferencia") totalT += v.total;
+        if (v.pago === "ctacte") totalC += v.total;
+        if (v.pago === "cobrocc") totalCob += v.cobroDeuda;
+    }
+    document.getElementById("totalVentas").innerText = formatMoney(totalV);
+    document.getElementById("totalEfectivo").innerText = formatMoney(totalE);
+    document.getElementById("totalTransf").innerText = formatMoney(totalT);
+    document.getElementById("totalCtaCte").innerText = formatMoney(totalC);
+    document.getElementById("totalCobros").innerText = formatMoney(totalCob);
+    let tbody = document.getElementById("salesTableBody");
+    if (ventasHoy.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center">Sin ventas registradas hoy</div><div>';
+    } else {
+        let html = '';
         for (let v of ventasHoy) {
-            if (v.pago !== "cobrocc") totalV += v.total;
-            if (v.pago === "efectivo") totalE += v.total;
-            if (v.pago === "transferencia") totalT += v.total;
-            if (v.pago === "ctacte") totalC += v.total;
-            if (v.pago === "cobrocc") totalCob += v.cobroDeuda;
-        }
-        document.getElementById("adminStats").innerHTML = `
-            <div class="card">💰 Venta Bruta: ${formatMoney(totalV)}</div>
-            <div class="card">💵 Efectivo: ${formatMoney(totalE)}</div>
-            <div class="card">💳 Transf.: ${formatMoney(totalT)}</div>
-            <div class="card">📘 Cta Cte: ${formatMoney(totalC)}</div>
-            <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
-        `;
-        let tbody = document.getElementById("adminSalesBody");
-        if (ventasHoy.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9">Sin ventas</div><div>';
-        } else {
-            let html = '';
-            for (let v of ventasHoy) {
-                html += `<tr>
-                    <td><strong>${v.cliente}</strong></td>
-                    <td>${v.cantidades["1,7 KG"]||0}</td>
-                    <td>${v.cantidades["3,5 KG"]||0}</div><div>
-                    <td>${v.cantidades["14 KG"]||0}</div><div>
-                    <td>${v.cantidades["ESC.20KG"]||0}</div><div>
-                    <td>${v.cantidades["ESC.32KG"]||0}</div><div>
-                    <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></div><div>
-                    <td>${badgePago(v.pago)}</div><div>
-                    <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
-                </tr>`;
-            }
-            tbody.innerHTML = html;
-        }
-        renderClientesAdmin();
-        renderProductosAdmin();
-    }
-    function renderClientesAdmin() {
-        let tbody = document.getElementById("clientesTbody");
-        tbody.innerHTML = "";
-        for (let c of clientes) {
-            let p = precios[c] || {};
-            let row = `<tr>
-                <td><strong>${c}</strong></td>`;
-            for (let prod of productos) {
-                let valor = p[prod.nombre] !== undefined ? p[prod.nombre] : prod.precioBase;
-                row += `<td><input class="precio-input" data-cliente="${c}" data-producto="${prod.nombre}" value="${valor}" style="width:70px"></td>`;
-            }
-            row += `<td><button onclick="eliminarCliente('${c}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td></tr>`;
-            tbody.innerHTML += row;
-        }
-    }
-    function renderProductosAdmin() {
-        let tbody = document.getElementById("productosTbody");
-        tbody.innerHTML = "";
-        for (let p of productos) {
-            tbody.innerHTML += `<tr>
-                <td><strong>${p.nombre}</strong></td>
-                <td><input class="producto-precio" data-producto="${p.nombre}" value="${p.precioBase}" style="width:80px"></td>
-                <td><button onclick="eliminarProducto('${p.nombre}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
+            html += `<tr>
+                <td><strong>${v.cliente}</strong></td>
+                <td style="text-align:center;">${v.cantidades["1,7 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades["3,5 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades["14 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades["ESC.20KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades["ESC.32KG"]||0}</td>
+                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                <td>${badgePago(v.pago)}</div><div>
+                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
+                <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></div><div>
             </tr>`;
         }
+        tbody.innerHTML = html;
     }
-    function guardarPreciosClientes() {
-        let inputs = document.querySelectorAll(".precio-input");
-        for (let inp of inputs) {
-            let cliente = inp.dataset.cliente;
-            let producto = inp.dataset.producto;
-            let valor = parseInt(inp.value) || 0;
-            if (!precios[cliente]) precios[cliente] = {};
-            precios[cliente][producto] = valor;
-        }
-        guardarClientesLocal();
-        toast("Precios de clientes guardados");
-        apiCall('guardarConfiguracion', { precios: JSON.stringify(precios), costos: "{}", productos: JSON.stringify(productos) }, true).catch(e=>console.log);
-    }
-    function guardarProductos() {
-        let inputs = document.querySelectorAll(".producto-precio");
-        for (let inp of inputs) {
-            let nombre = inp.dataset.producto;
-            let nuevoPrecio = parseInt(inp.value) || 0;
-            actualizarPrecioBaseProducto(nombre, nuevoPrecio);
-        }
-        guardarProductosLocal();
-        renderProductosAdmin();
-        renderClientesAdmin(); // actualizar precios visibles en tabla de clientes
-        toast("Productos guardados");
-        apiCall('guardarConfiguracion', { precios: JSON.stringify(precios), costos: "{}", productos: JSON.stringify(productos) }, true).catch(e=>console.log);
-    }
+}
 
-    // Utilidades
-    function formatMoney(n) { return '$' + Number(n).toLocaleString('es-AR'); }
-    function badgePago(pago) {
-        const map = { efectivo: 'badge-efectivo', transferencia: 'badge-transf', ctacte: 'badge-ctacte', cobrocc: 'badge-cobrocc' };
-        const labels = { efectivo: 'Efectivo', transferencia: 'Transf.', ctacte: 'Cta Cte', cobrocc: 'Cobro CC' };
-        return `<span class="badge ${map[pago]}">${labels[pago]}</span>`;
+function renderAdmin() {
+    let chofer = document.getElementById("adminChoferSelect").value;
+    let key = `ventas_${chofer}`;
+    let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
+    let hoy = getToday();
+    let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
+    let totalV=0, totalE=0, totalT=0, totalC=0, totalCob=0;
+    for (let v of ventasHoy) {
+        if (v.pago !== "cobrocc") totalV += v.total;
+        if (v.pago === "efectivo") totalE += v.total;
+        if (v.pago === "transferencia") totalT += v.total;
+        if (v.pago === "ctacte") totalC += v.total;
+        if (v.pago === "cobrocc") totalCob += v.cobroDeuda;
     }
-    function toast(msg) {
-        let t = document.getElementById("toast");
-        t.innerText = msg;
-        t.style.display = "block";
-        setTimeout(() => t.style.display = "none", 2000);
+    document.getElementById("adminStats").innerHTML = `
+        <div class="card">💰 Venta Bruta: ${formatMoney(totalV)}</div>
+        <div class="card">💵 Efectivo: ${formatMoney(totalE)}</div>
+        <div class="card">💳 Transf.: ${formatMoney(totalT)}</div>
+        <div class="card">📘 Cta Cte: ${formatMoney(totalC)}</div>
+        <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
+    `;
+    let tbody = document.getElementById("adminSalesBody");
+    if (ventasHoy.length === 0) {
+        tbody.innerHTML = '<td><td colspan="9">Sin ventas</div><div>';
+    } else {
+        let html = '';
+        for (let v of ventasHoy) {
+            html += `<tr>
+                <td><strong>${v.cliente}</strong></td>
+                <td>${v.cantidades["1,7 KG"]||0}</td>
+                <td>${v.cantidades["3,5 KG"]||0}</td>
+                <td>${v.cantidades["14 KG"]||0}</td>
+                <td>${v.cantidades["ESC.20KG"]||0}</td>
+                <td>${v.cantidades["ESC.32KG"]||0}</td>
+                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                <td>${badgePago(v.pago)}</div><div>
+                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
     }
+    renderClientesAdmin();
+    renderProductosAdmin();
+}
 
-    async function apiCall(ruta, params, usePost = false) {
-        try {
-            if (usePost) {
-                let form = new URLSearchParams();
-                for (let [k, v] of Object.entries(params)) form.append(k, v);
-                let res = await fetch(API_URL, { method: 'POST', body: form });
-                return await res.json();
-            } else {
-                let url = new URL(API_URL);
-                url.searchParams.append('ruta', ruta);
-                for (let [k, v] of Object.entries(params)) url.searchParams.append(k, v);
-                let res = await fetch(url.toString());
-                return await res.json();
-            }
-        } catch(e) { console.error(e); return null; }
+function renderClientesAdmin() {
+    let tbody = document.getElementById("clientesTbody");
+    tbody.innerHTML = "";
+    for (let c of clientes) {
+        let p = precios[c] || { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${c}</strong></td>
+                <td><input class="precio-input" data-cliente="${c}" data-prod="1,7 KG" value="${p["1,7 KG"]}" style="width:70px"></td>
+                <td><input class="precio-input" data-cliente="${c}" data-prod="3,5 KG" value="${p["3,5 KG"]}" style="width:70px"></td>
+                <td><input class="precio-input" data-cliente="${c}" data-prod="14 KG" value="${p["14 KG"]}" style="width:70px"></td>
+                <td><input class="precio-input" data-cliente="${c}" data-prod="ESC.20KG" value="${p["ESC.20KG"]}" style="width:70px"></td>
+                <td><input class="precio-input" data-cliente="${c}" data-prod="ESC.32KG" value="${p["ESC.32KG"]}" style="width:70px"></td>
+                <td><button onclick="eliminarCliente('${c}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
+            </tr>
+        `;
     }
+}
+function renderProductosAdmin() {
+    let tbody = document.getElementById("productosTbody");
+    tbody.innerHTML = "";
+    for (let p of productos) {
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${p.clave}</strong></td>
+                <td><input class="producto-precio-input" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px"></td>
+                <td><button onclick="eliminarProducto('${p.clave}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
+            </tr>
+        `;
+    }
+}
 
-    // Eventos UI
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-        let pin = document.getElementById("pinInput").value.trim();
-        if (pin === "9999") {
-            currentUser = "9999";
-            document.getElementById("loginScreen").style.display = "none";
-            document.getElementById("driverPanel").style.display = "none";
-            document.getElementById("adminPanel").style.display = "block";
-            cargarClientes();
-            cargarProductos();
-            renderAdmin();
-        } else if (pin === "1234" || pin === "5678") {
-            currentUser = pin;
-            document.getElementById("loginScreen").style.display = "none";
-            document.getElementById("driverPanel").style.display = "block";
-            document.getElementById("adminPanel").style.display = "none";
-            cargarClientes();
-            cargarProductos();
-            cargarVentasLocal();
-            renderDriver();
-        } else {
-            document.getElementById("loginError").style.display = "block";
-        }
-    });
-    document.getElementById("logoutDriver")?.addEventListener("click", () => location.reload());
-    document.getElementById("logoutAdmin")?.addEventListener("click", () => location.reload());
-    document.getElementById("addSaleBtn")?.addEventListener("click", () => {
-        let cliente = document.getElementById("clienteSelect").value;
-        let pago = document.getElementById("paymentType").value;
-        let cobroMonto = parseFloat(document.getElementById("cobroDeudaInput").value) || 0;
-        let cantidades = {};
-        for (let prod of productos) {
-            let inputId = `qty_${prod.nombre.replace(/ /g, '_')}`;
-            let input = document.getElementById(inputId);
-            if (input) cantidades[prod.nombre] = parseInt(input.value) || 0;
-        }
-        // Para los productos predefinidos, usar los inputs con ids fijos (por compatibilidad)
-        cantidades["1,7 KG"] = parseInt(document.getElementById("qty_17").value) || 0;
-        cantidades["3,5 KG"] = parseInt(document.getElementById("qty_35").value) || 0;
-        cantidades["14 KG"] = parseInt(document.getElementById("qty_14").value) || 0;
-        cantidades["ESC.20KG"] = parseInt(document.getElementById("qty_20").value) || 0;
-        cantidades["ESC.32KG"] = parseInt(document.getElementById("qty_32").value) || 0;
-        if (pago === "cobrocc") {
-            if (cobroMonto <= 0) { toast("Ingrese monto para cobro"); return; }
-        } else {
-            let hay = Object.values(cantidades).some(v => v > 0);
-            if (!hay) { toast("Ingrese al menos un producto"); return; }
-        }
-        agregarVenta(cliente, cantidades, pago, cobroMonto);
-        document.getElementById("qty_17").value = 0;
-        document.getElementById("qty_35").value = 0;
-        document.getElementById("qty_14").value = 0;
-        document.getElementById("qty_20").value = 0;
-        document.getElementById("qty_32").value = 0;
-        document.getElementById("cobroDeudaInput").value = 0;
-        renderDriver();
-        toast("✅ Venta registrada");
-    });
-    document.getElementById("resetDayBtn")?.addEventListener("click", () => {
-        if (confirm("¿Reiniciar jornada? Se borrarán todas las ventas de hoy.")) {
-            resetJornada();
-            renderDriver();
-        }
-    });
-    document.getElementById("cerrarDiaAdmin")?.addEventListener("click", () => {
-        let chofer = document.getElementById("adminChoferSelect").value;
-        let key = `ventas_${chofer}`;
-        let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
-        let hoy = getToday();
-        let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
-        if (ventasHoy.length === 0) { toast("No hay ventas hoy"); return; }
-        let historicoKey = `historico_${chofer}`;
-        let historico = JSON.parse(localStorage.getItem(historicoKey) || "[]");
-        historico.push({ fecha: hoy, ventas: ventasHoy });
-        localStorage.setItem(historicoKey, JSON.stringify(historico));
-        let nuevasVentas = ventasChofer.filter(v => v.fecha !== hoy);
-        localStorage.setItem(key, JSON.stringify(nuevasVentas));
+// Utilidades
+function formatMoney(n) { return '$' + Number(n).toLocaleString('es-AR'); }
+function badgePago(pago) {
+    const map = { efectivo: 'badge-efectivo', transferencia: 'badge-transf', ctacte: 'badge-ctacte', cobrocc: 'badge-cobrocc' };
+    const labels = { efectivo: 'Efectivo', transferencia: 'Transf.', ctacte: 'Cta Cte', cobrocc: 'Cobro CC' };
+    return `<span class="badge ${map[pago]}">${labels[pago]}</span>`;
+}
+function toast(msg) {
+    let t = document.getElementById("toast");
+    t.innerText = msg;
+    t.style.display = "block";
+    setTimeout(() => t.style.display = "none", 2000);
+}
+function eliminarVentaHandler(id) {
+    eliminarVenta(id);
+    renderDriver();
+    toast("Venta eliminada");
+}
+
+// Eventos y ciclo de vida
+document.getElementById("loginBtn").addEventListener("click", async () => {
+    let pin = document.getElementById("pinInput").value.trim();
+    if (pin === "9999") {
+        currentUser = "9999";
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("driverPanel").style.display = "none";
+        document.getElementById("adminPanel").style.display = "block";
+        cargarDatosLocales();
+        await sincronizarConNube("1234"); // solo para traer configuraciones generales
         renderAdmin();
-        toast("Día cerrado y archivado");
-    });
-    document.getElementById("adminChoferSelect")?.addEventListener("change", () => renderAdmin());
-    document.getElementById("agregarClienteBtn")?.addEventListener("click", () => {
-        let nombre = document.getElementById("nuevoCliente").value.trim().toUpperCase();
-        if (!nombre) { toast("Escriba un nombre"); return; }
-        if (agregarCliente(nombre)) {
-            toast(`Cliente ${nombre} agregado`);
-            if (currentUser === "9999") renderAdmin();
-            else renderDriver();
-        } else toast("Ya existe");
-        document.getElementById("nuevoCliente").value = "";
-    });
-    document.getElementById("guardarPreciosBtn")?.addEventListener("click", guardarPreciosClientes);
-    document.getElementById("agregarProductoBtn")?.addEventListener("click", () => {
-        let nombre = document.getElementById("nuevoProducto").value.trim();
-        let precio = parseInt(document.getElementById("nuevoProductoPrecio").value) || 0;
-        if (!nombre) { toast("Escriba un nombre de producto"); return; }
-        if (agregarProducto(nombre, precio)) {
-            toast(`Producto ${nombre} agregado`);
-            if (currentUser === "9999") renderAdmin();
-            else renderDriver();
-        } else toast("Ya existe");
-        document.getElementById("nuevoProducto").value = "";
-        document.getElementById("nuevoProductoPrecio").value = "";
-    });
-    document.getElementById("guardarProductosBtn")?.addEventListener("click", guardarProductos);
-    window.eliminarCliente = eliminarCliente;
-    window.eliminarProducto = eliminarProducto;
-    window.eliminarVentaHandler = eliminarVentaHandler;
+    } else if (pin === "1234" || pin === "5678") {
+        currentUser = pin;
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("driverPanel").style.display = "block";
+        document.getElementById("adminPanel").style.display = "none";
+        cargarDatosLocales();
+        cargarVentasLocal();
+        await sincronizarConNube(currentUser);
+        renderDriver();
+    } else {
+        document.getElementById("loginError").style.display = "block";
+    }
+});
+document.getElementById("logoutDriver")?.addEventListener("click", () => location.reload());
+document.getElementById("logoutAdmin")?.addEventListener("click", () => location.reload());
+document.getElementById("addSaleBtn")?.addEventListener("click", () => {
+    let cliente = document.getElementById("clienteSelect").value;
+    let pago = document.getElementById("paymentType").value;
+    let cobroMonto = parseFloat(document.getElementById("cobroDeudaInput").value) || 0;
+    let cantidades = {
+        "1,7 KG": parseInt(document.getElementById("qty_17").value) || 0,
+        "3,5 KG": parseInt(document.getElementById("qty_35").value) || 0,
+        "14 KG": parseInt(document.getElementById("qty_14").value) || 0,
+        "ESC.20KG": parseInt(document.getElementById("qty_20").value) || 0,
+        "ESC.32KG": parseInt(document.getElementById("qty_32").value) || 0
+    };
+    if (pago === "cobrocc") {
+        if (cobroMonto <= 0) { toast("Ingrese monto para cobro"); return; }
+    } else {
+        let hay = Object.values(cantidades).some(v => v > 0);
+        if (!hay) { toast("Ingrese al menos un producto"); return; }
+    }
+    agregarVenta(cliente, cantidades, pago, cobroMonto);
+    document.getElementById("qty_17").value = 0;
+    document.getElementById("qty_35").value = 0;
+    document.getElementById("qty_14").value = 0;
+    document.getElementById("qty_20").value = 0;
+    document.getElementById("qty_32").value = 0;
+    document.getElementById("cobroDeudaInput").value = 0;
+    renderDriver();
+    toast("✅ Venta registrada");
+});
+document.getElementById("resetDayBtn")?.addEventListener("click", () => {
+    if (confirm("¿Reiniciar jornada? Se borrarán las ventas de hoy.")) {
+        resetJornada();
+        renderDriver();
+    }
+});
+document.getElementById("cerrarDiaAdmin")?.addEventListener("click", () => {
+    let chofer = document.getElementById("adminChoferSelect").value;
+    let key = `ventas_${chofer}`;
+    let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
+    let hoy = getToday();
+    let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
+    if (ventasHoy.length === 0) { toast("No hay ventas hoy"); return; }
+    let historicoKey = `historico_${chofer}`;
+    let historico = JSON.parse(localStorage.getItem(historicoKey) || "[]");
+    historico.push({ fecha: hoy, ventas: ventasHoy });
+    localStorage.setItem(historicoKey, JSON.stringify(historico));
+    let nuevasVentas = ventasChofer.filter(v => v.fecha !== hoy);
+    localStorage.setItem(key, JSON.stringify(nuevasVentas));
+    renderAdmin();
+    toast("Día cerrado y archivado");
+});
+document.getElementById("adminChoferSelect")?.addEventListener("change", () => renderAdmin());
+document.getElementById("exportBackupBtn")?.addEventListener("click", exportarRespaldo);
+document.getElementById("agregarClienteBtn")?.addEventListener("click", () => {
+    let nombre = document.getElementById("nuevoCliente").value.trim().toUpperCase();
+    if (!nombre) { toast("Escriba un nombre"); return; }
+    if (agregarCliente(nombre)) {
+        toast(`Cliente ${nombre} agregado`);
+        if (currentUser === "9999") renderClientesAdmin();
+        else renderDriver();
+    } else toast("Ya existe o nombre inválido");
+    document.getElementById("nuevoCliente").value = "";
+});
+document.getElementById("guardarPreciosBtn")?.addEventListener("click", guardarPreciosClientes);
+document.getElementById("agregarProductoBtn")?.addEventListener("click", () => {
+    let nombre = document.getElementById("nuevoProducto").value.trim();
+    let precio = parseInt(document.getElementById("nuevoProductoPrecio").value) || 0;
+    if (!nombre) { toast("Ingrese nombre del producto"); return; }
+    if (agregarProducto(nombre, precio)) {
+        toast(`Producto ${nombre} agregado`);
+        renderProductosAdmin();
+    } else toast("El producto ya existe");
+    document.getElementById("nuevoProducto").value = "";
+    document.getElementById("nuevoProductoPrecio").value = "";
+});
+document.getElementById("guardarProductosBtn")?.addEventListener("click", guardarProductos);
+window.eliminarCliente = eliminarCliente;
+window.eliminarProducto = eliminarProducto;
+window.eliminarVentaHandler = eliminarVentaHandler;
 
-    // Tabs en admin
-    document.querySelectorAll(".tab").forEach(tab => {
-        tab.addEventListener("click", () => {
-            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-            tab.classList.add("active");
-            document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
-            document.getElementById(`tab${tab.dataset.tab.charAt(0).toUpperCase()+tab.dataset.tab.slice(1)}`).classList.add("active");
-        });
+// Tabs en admin
+document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById("tabClientes").classList.remove("active");
+        document.getElementById("tabProductos").classList.remove("active");
+        document.getElementById(`tab${tab.dataset.tab.charAt(0).toUpperCase()+tab.dataset.tab.slice(1)}`).classList.add("active");
     });
+});
 
-    // Inicializar
-    cargarClientes();
-    cargarProductos();
+cargarDatosLocales();
 </script>
 </body>
 </html>
