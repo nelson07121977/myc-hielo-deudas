@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (DEFINITIVA)</title>
+    <title>MYC HIELO – Planilla de Reparto (FINAL)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -135,7 +135,7 @@
         .tab-content.active {
             display: block;
         }
-        .clientes-table input {
+        .clientes-table input, .productos-table input {
             width: 70px;
             padding: 4px;
             margin: 0;
@@ -221,19 +221,40 @@
         <h3>Ventas del día</h3>
         <div style="overflow-x: auto;"><table id="adminSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th></tr></thead><tbody id="adminSalesBody"></tbody></table></div>
         
-        <!-- Gestión de clientes y precios -->
-        <h3>🏷️ Clientes y precios</h3>
-        <div class="form-row">
-            <div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="nuevoCliente" placeholder="Nombre"></div>
-            <div class="form-group"><button id="agregarClienteBtn">Agregar</button></div>
+        <!-- Pestañas para Clientes y Productos -->
+        <div style="margin-top: 24px;">
+            <div class="tab active" data-tab="clientes">🏷️ Clientes y precios</div>
+            <div class="tab" data-tab="productos">📦 Productos (tipos de bolsa)</div>
         </div>
-        <div style="overflow-x: auto;">
-            <table id="clientesTable" class="clientes-table">
-                <thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Acciones</th></tr></thead>
-                <tbody id="clientesTbody"></tbody>
-            </table>
+        
+        <div id="tabClientes" class="tab-content active">
+            <div class="form-row">
+                <div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="nuevoCliente" placeholder="Nombre"></div>
+                <div class="form-group"><button id="agregarClienteBtn">Agregar</button></div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="clientesTable" class="clientes-table">
+                    <thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Acciones</th></tr></thead>
+                    <tbody id="clientesTbody"></tbody>
+                </table>
+            </div>
+            <button id="guardarPreciosBtn" style="margin-top:8px;">💾 Guardar precios de clientes</button>
         </div>
-        <button id="guardarPreciosBtn" style="margin-top:8px;">💾 Guardar precios</button>
+        
+        <div id="tabProductos" class="tab-content">
+            <div class="form-row">
+                <div class="form-group"><label>➕ Nuevo producto</label><input type="text" id="nuevoProducto" placeholder="Ej: Bolsa 25KG"></div>
+                <div class="form-group"><label>Precio base</label><input type="number" id="nuevoProductoPrecio" placeholder="0"></div>
+                <div class="form-group"><button id="agregarProductoBtn">Agregar</button></div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="productosTable" class="productos-table">
+                    <thead><tr><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead>
+                    <tbody id="productosTbody"></tbody>
+                </table>
+            </div>
+            <button id="guardarProductosBtn" style="margin-top:8px;">💾 Guardar productos</button>
+        </div>
     </div>
 </div>
 
@@ -245,55 +266,108 @@
     let currentUser = null; // '1234', '5678' o '9999'
     let clientes = [];
     let precios = {}; // { cliente: { "1,7 KG":1500, ... } }
+    let productos = []; // [{ nombre: "1,7 KG", precioBase: 1500 }]
     let ventas = [];    // todas las ventas del usuario actual
     let cobrosCC = 0;
-    let gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }; // no se usa en esta versión simple pero se deja
 
-    // Clientes por defecto (todos los que tenías)
+    // Productos por defecto
+    const DEFAULT_PRODUCTOS = [
+        { nombre: "1,7 KG", precioBase: 1500 },
+        { nombre: "3,5 KG", precioBase: 2500 },
+        { nombre: "14 KG", precioBase: 7000 },
+        { nombre: "ESC.20KG", precioBase: 8000 },
+        { nombre: "ESC.32KG", precioBase: 12000 }
+    ];
+
+    // Clientes por defecto
     const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
 
-    // Precios por defecto
-    function getDefaultPrecio() {
-        return { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
-    }
-
-    // Cargar clientes y precios desde localStorage
+    // Cargar datos desde localStorage
     function cargarClientes() {
         let stored = localStorage.getItem("myc_clientes");
-        if (stored) {
-            clientes = JSON.parse(stored);
-        } else {
-            clientes = [...DEFAULT_CLIENTES];
-        }
+        if (stored) clientes = JSON.parse(stored);
+        else clientes = [...DEFAULT_CLIENTES];
         let storedPrecios = localStorage.getItem("myc_precios");
-        if (storedPrecios) {
-            precios = JSON.parse(storedPrecios);
-        } else {
+        if (storedPrecios) precios = JSON.parse(storedPrecios);
+        else {
             precios = {};
-            clientes.forEach(c => { precios[c] = getDefaultPrecio(); });
+            clientes.forEach(c => { precios[c] = {}; });
+            actualizarPreciosPorDefecto();
         }
-        // Asegurar que todos los clientes tengan precios
-        clientes.forEach(c => {
-            if (!precios[c]) precios[c] = getDefaultPrecio();
-        });
         guardarClientesLocal();
+    }
+    function actualizarPreciosPorDefecto() {
+        // Asignar precios base según productos actuales
+        clientes.forEach(c => {
+            if (!precios[c]) precios[c] = {};
+            for (let p of productos) {
+                precios[c][p.nombre] = p.precioBase;
+            }
+        });
     }
     function guardarClientesLocal() {
         localStorage.setItem("myc_clientes", JSON.stringify(clientes));
         localStorage.setItem("myc_precios", JSON.stringify(precios));
     }
+    function cargarProductos() {
+        let stored = localStorage.getItem("myc_productos");
+        if (stored) productos = JSON.parse(stored);
+        else productos = [...DEFAULT_PRODUCTOS];
+        guardarProductosLocal();
+        // Sincronizar precios de clientes con productos actuales
+        actualizarPreciosPorDefecto();
+        guardarClientesLocal();
+    }
+    function guardarProductosLocal() {
+        localStorage.setItem("myc_productos", JSON.stringify(productos));
+    }
+    function agregarProducto(nombre, precioBase) {
+        nombre = nombre.trim();
+        if (!nombre) return false;
+        if (productos.some(p => p.nombre === nombre)) return false;
+        productos.push({ nombre: nombre, precioBase: precioBase });
+        guardarProductosLocal();
+        // Agregar este producto a todos los clientes con el precio base
+        clientes.forEach(c => {
+            if (!precios[c]) precios[c] = {};
+            precios[c][nombre] = precioBase;
+        });
+        guardarClientesLocal();
+        return true;
+    }
+    function eliminarProducto(nombre) {
+        if (!confirm(`¿Eliminar producto "${nombre}"?`)) return;
+        productos = productos.filter(p => p.nombre !== nombre);
+        guardarProductosLocal();
+        // Eliminar de todos los clientes
+        clientes.forEach(c => {
+            if (precios[c] && precios[c][nombre]) delete precios[c][nombre];
+        });
+        guardarClientesLocal();
+    }
+    function actualizarPrecioBaseProducto(nombre, nuevoPrecio) {
+        let prod = productos.find(p => p.nombre === nombre);
+        if (prod) prod.precioBase = nuevoPrecio;
+        guardarProductosLocal();
+        // Actualizar el precio base en todos los clientes para ese producto (solo si no tienen precio personalizado? Mejor actualizar siempre)
+        clientes.forEach(c => {
+            if (precios[c]) precios[c][nombre] = nuevoPrecio;
+        });
+        guardarClientesLocal();
+    }
+
     function agregarCliente(nombre) {
         nombre = nombre.toUpperCase().trim();
         if (!nombre) return false;
-        if (!clientes.includes(nombre)) {
-            clientes.push(nombre);
-            precios[nombre] = getDefaultPrecio();
-            guardarClientesLocal();
-            // También agregar a la nube (opcional)
-            apiCall('agregarCliente', { nombre }, true).catch(e=>console.log);
-            return true;
+        if (clientes.includes(nombre)) return false;
+        clientes.push(nombre);
+        precios[nombre] = {};
+        for (let p of productos) {
+            precios[nombre][p.nombre] = p.precioBase;
         }
-        return false;
+        guardarClientesLocal();
+        apiCall('agregarCliente', { nombre }, true).catch(e=>console.log);
+        return true;
     }
     function eliminarCliente(nombre) {
         if (!confirm(`¿Eliminar cliente ${nombre}?`)) return;
@@ -301,14 +375,8 @@
         delete precios[nombre];
         guardarClientesLocal();
         apiCall('eliminarCliente', { nombre }, true).catch(e=>console.log);
-        // Eliminar también sus ventas? No, mejor dejarlas.
-        if (currentUser !== '9999') {
-            // si es chofer, recargar vista
-            renderDriver();
-        } else {
-            renderAdmin();
-            renderClientesAdmin();
-        }
+        if (currentUser !== '9999') renderDriver();
+        else renderAdmin();
     }
 
     // Ventas
@@ -322,17 +390,17 @@
         let data = localStorage.getItem(key);
         if (data) ventas = JSON.parse(data);
         else ventas = [];
-        // recalcular cobros del día
         let hoy = getToday();
         cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
     }
     function calcularTotal(cliente, cantidades) {
-        let p = precios[cliente] || getDefaultPrecio();
-        let total = (cantidades["1,7 KG"]||0) * p["1,7 KG"] +
-                    (cantidades["3,5 KG"]||0) * p["3,5 KG"] +
-                    (cantidades["14 KG"]||0) * p["14 KG"] +
-                    (cantidades["ESC.20KG"]||0) * p["ESC.20KG"] +
-                    (cantidades["ESC.32KG"]||0) * p["ESC.32KG"];
+        let p = precios[cliente] || {};
+        let total = 0;
+        for (let prod of productos) {
+            let cantidad = cantidades[prod.nombre] || 0;
+            let precioUnitario = p[prod.nombre] || prod.precioBase;
+            total += cantidad * precioUnitario;
+        }
         return total;
     }
     function agregarVenta(cliente, cantidades, pago, cobroMonto) {
@@ -349,7 +417,7 @@
         ventas.push(nueva);
         if (pago === "cobrocc") cobrosCC += cobroMonto;
         guardarVentasLocal();
-        // Sincronizar con nube (Google Sheets)
+        // Enviar a la nube (opcional, pero no leeremos ventas desde la nube para evitar duplicados)
         apiCall('guardarVenta', {
             fecha: nueva.fecha,
             cliente: nueva.cliente,
@@ -359,7 +427,7 @@
             cobroDeuda: nueva.cobroDeuda,
             chofer: currentUser
         }, true).catch(e=>console.log);
-        // Sincronizar deudas con control de deudas (index.html)
+        // Sincronizar deudas con control de deudas
         if (pago === "ctacte" && total > 0) {
             apiCall('agregarMovimiento', {
                 fecha: nueva.fecha,
@@ -386,6 +454,7 @@
         guardarVentasLocal();
         let hoy = getToday();
         cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
+        // También eliminar de la nube (opcional, pero no es crítico)
         apiCall('eliminarVenta', { id: id }, true).catch(e=>console.log);
     }
     function resetJornada() {
@@ -467,18 +536,18 @@
         `;
         let tbody = document.getElementById("adminSalesBody");
         if (ventasHoy.length === 0) {
-            tbody.innerHTML = '<td><td colspan="9">Sin ventas</div><div>';
+            tbody.innerHTML = '<tr><td colspan="9">Sin ventas</div><div>';
         } else {
             let html = '';
             for (let v of ventasHoy) {
                 html += `<tr>
                     <td><strong>${v.cliente}</strong></td>
                     <td>${v.cantidades["1,7 KG"]||0}</td>
-                    <td>${v.cantidades["3,5 KG"]||0}</td>
-                    <td>${v.cantidades["14 KG"]||0}</td>
-                    <td>${v.cantidades["ESC.20KG"]||0}</td>
-                    <td>${v.cantidades["ESC.32KG"]||0}</td>
-                    <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                    <td>${v.cantidades["3,5 KG"]||0}</div><div>
+                    <td>${v.cantidades["14 KG"]||0}</div><div>
+                    <td>${v.cantidades["ESC.20KG"]||0}</div><div>
+                    <td>${v.cantidades["ESC.32KG"]||0}</div><div>
+                    <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></div><div>
                     <td>${badgePago(v.pago)}</div><div>
                     <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
                 </tr>`;
@@ -486,43 +555,59 @@
             tbody.innerHTML = html;
         }
         renderClientesAdmin();
+        renderProductosAdmin();
     }
     function renderClientesAdmin() {
         let tbody = document.getElementById("clientesTbody");
         tbody.innerHTML = "";
         for (let c of clientes) {
-            let p = precios[c] || getDefaultPrecio();
-            tbody.innerHTML += `
-                <tr>
-                    <td><strong>${c}</strong></td>
-                    <td><input class="precio-input" data-cliente="${c}" data-prod="1,7 KG" value="${p["1,7 KG"]}" style="width:70px"></td>
-                    <td><input class="precio-input" data-cliente="${c}" data-prod="3,5 KG" value="${p["3,5 KG"]}" style="width:70px"></td>
-                    <td><input class="precio-input" data-cliente="${c}" data-prod="14 KG" value="${p["14 KG"]}" style="width:70px"></td>
-                    <td><input class="precio-input" data-cliente="${c}" data-prod="ESC.20KG" value="${p["ESC.20KG"]}" style="width:70px"></td>
-                    <td><input class="precio-input" data-cliente="${c}" data-prod="ESC.32KG" value="${p["ESC.32KG"]}" style="width:70px"></td>
-                    <td><button onclick="eliminarCliente('${c}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
-                </tr>
-            `;
+            let p = precios[c] || {};
+            let row = `<tr>
+                <td><strong>${c}</strong></td>`;
+            for (let prod of productos) {
+                let valor = p[prod.nombre] !== undefined ? p[prod.nombre] : prod.precioBase;
+                row += `<td><input class="precio-input" data-cliente="${c}" data-producto="${prod.nombre}" value="${valor}" style="width:70px"></td>`;
+            }
+            row += `<td><button onclick="eliminarCliente('${c}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td></tr>`;
+            tbody.innerHTML += row;
         }
     }
-    function guardarPrecios() {
+    function renderProductosAdmin() {
+        let tbody = document.getElementById("productosTbody");
+        tbody.innerHTML = "";
+        for (let p of productos) {
+            tbody.innerHTML += `<tr>
+                <td><strong>${p.nombre}</strong></td>
+                <td><input class="producto-precio" data-producto="${p.nombre}" value="${p.precioBase}" style="width:80px"></td>
+                <td><button onclick="eliminarProducto('${p.nombre}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
+            </tr>`;
+        }
+    }
+    function guardarPreciosClientes() {
         let inputs = document.querySelectorAll(".precio-input");
         for (let inp of inputs) {
             let cliente = inp.dataset.cliente;
-            let producto = inp.dataset.prod;
+            let producto = inp.dataset.producto;
             let valor = parseInt(inp.value) || 0;
-            if (!precios[cliente]) precios[cliente] = getDefaultPrecio();
+            if (!precios[cliente]) precios[cliente] = {};
             precios[cliente][producto] = valor;
         }
         guardarClientesLocal();
-        toast("Precios guardados localmente");
-        // Opcional: guardar en la nube
-        apiCall('guardarConfiguracion', {
-            precios: JSON.stringify(precios),
-            costos: JSON.stringify({}),
-            productos: JSON.stringify([])
-        }, true).catch(e=>console.log);
-        if (currentUser !== '9999') renderDriver(); // si es admin no hace falta
+        toast("Precios de clientes guardados");
+        apiCall('guardarConfiguracion', { precios: JSON.stringify(precios), costos: "{}", productos: JSON.stringify(productos) }, true).catch(e=>console.log);
+    }
+    function guardarProductos() {
+        let inputs = document.querySelectorAll(".producto-precio");
+        for (let inp of inputs) {
+            let nombre = inp.dataset.producto;
+            let nuevoPrecio = parseInt(inp.value) || 0;
+            actualizarPrecioBaseProducto(nombre, nuevoPrecio);
+        }
+        guardarProductosLocal();
+        renderProductosAdmin();
+        renderClientesAdmin(); // actualizar precios visibles en tabla de clientes
+        toast("Productos guardados");
+        apiCall('guardarConfiguracion', { precios: JSON.stringify(precios), costos: "{}", productos: JSON.stringify(productos) }, true).catch(e=>console.log);
     }
 
     // Utilidades
@@ -539,7 +624,6 @@
         setTimeout(() => t.style.display = "none", 2000);
     }
 
-    // API helper
     async function apiCall(ruta, params, usePost = false) {
         try {
             if (usePost) {
@@ -557,33 +641,6 @@
         } catch(e) { console.error(e); return null; }
     }
 
-    // Cargar datos de la nube al iniciar sesión (clientes, precios, ventas previas)
-    async function sincronizarConNube(chofer) {
-        try {
-            let clientesNube = await apiCall('clientes');
-            if (clientesNube && Array.isArray(clientesNube) && clientesNube.length) {
-                clientes = clientesNube.map(c => c.toUpperCase().trim());
-                guardarClientesLocal();
-            }
-            let config = await apiCall('obtenerConfiguracion');
-            if (config && config.precios) {
-                precios = JSON.parse(config.precios);
-                guardarClientesLocal();
-            }
-            let ventasNube = await apiCall('obtenerVentas', { chofer });
-            if (ventasNube && Array.isArray(ventasNube)) {
-                ventas = ventasNube.map(v => {
-                    if (v.fecha) v.fecha = v.fecha.split('T')[0];
-                    if (v.cantidades && typeof v.cantidades === 'string') v.cantidades = JSON.parse(v.cantidades);
-                    return v;
-                });
-                guardarVentasLocal();
-                let hoy = getToday();
-                cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
-            }
-        } catch(e) { console.error(e); }
-    }
-
     // Eventos UI
     document.getElementById("loginBtn").addEventListener("click", async () => {
         let pin = document.getElementById("pinInput").value.trim();
@@ -593,6 +650,7 @@
             document.getElementById("driverPanel").style.display = "none";
             document.getElementById("adminPanel").style.display = "block";
             cargarClientes();
+            cargarProductos();
             renderAdmin();
         } else if (pin === "1234" || pin === "5678") {
             currentUser = pin;
@@ -600,8 +658,8 @@
             document.getElementById("driverPanel").style.display = "block";
             document.getElementById("adminPanel").style.display = "none";
             cargarClientes();
+            cargarProductos();
             cargarVentasLocal();
-            await sincronizarConNube(currentUser);
             renderDriver();
         } else {
             document.getElementById("loginError").style.display = "block";
@@ -613,13 +671,18 @@
         let cliente = document.getElementById("clienteSelect").value;
         let pago = document.getElementById("paymentType").value;
         let cobroMonto = parseFloat(document.getElementById("cobroDeudaInput").value) || 0;
-        let cantidades = {
-            "1,7 KG": parseInt(document.getElementById("qty_17").value) || 0,
-            "3,5 KG": parseInt(document.getElementById("qty_35").value) || 0,
-            "14 KG": parseInt(document.getElementById("qty_14").value) || 0,
-            "ESC.20KG": parseInt(document.getElementById("qty_20").value) || 0,
-            "ESC.32KG": parseInt(document.getElementById("qty_32").value) || 0
-        };
+        let cantidades = {};
+        for (let prod of productos) {
+            let inputId = `qty_${prod.nombre.replace(/ /g, '_')}`;
+            let input = document.getElementById(inputId);
+            if (input) cantidades[prod.nombre] = parseInt(input.value) || 0;
+        }
+        // Para los productos predefinidos, usar los inputs con ids fijos (por compatibilidad)
+        cantidades["1,7 KG"] = parseInt(document.getElementById("qty_17").value) || 0;
+        cantidades["3,5 KG"] = parseInt(document.getElementById("qty_35").value) || 0;
+        cantidades["14 KG"] = parseInt(document.getElementById("qty_14").value) || 0;
+        cantidades["ESC.20KG"] = parseInt(document.getElementById("qty_20").value) || 0;
+        cantidades["ESC.32KG"] = parseInt(document.getElementById("qty_32").value) || 0;
         if (pago === "cobrocc") {
             if (cobroMonto <= 0) { toast("Ingrese monto para cobro"); return; }
         } else {
@@ -664,18 +727,42 @@
         if (!nombre) { toast("Escriba un nombre"); return; }
         if (agregarCliente(nombre)) {
             toast(`Cliente ${nombre} agregado`);
-            if (currentUser === "9999") renderClientesAdmin();
+            if (currentUser === "9999") renderAdmin();
             else renderDriver();
-        } else {
-            toast("Ya existe");
-        }
+        } else toast("Ya existe");
         document.getElementById("nuevoCliente").value = "";
     });
-    document.getElementById("guardarPreciosBtn")?.addEventListener("click", guardarPrecios);
+    document.getElementById("guardarPreciosBtn")?.addEventListener("click", guardarPreciosClientes);
+    document.getElementById("agregarProductoBtn")?.addEventListener("click", () => {
+        let nombre = document.getElementById("nuevoProducto").value.trim();
+        let precio = parseInt(document.getElementById("nuevoProductoPrecio").value) || 0;
+        if (!nombre) { toast("Escriba un nombre de producto"); return; }
+        if (agregarProducto(nombre, precio)) {
+            toast(`Producto ${nombre} agregado`);
+            if (currentUser === "9999") renderAdmin();
+            else renderDriver();
+        } else toast("Ya existe");
+        document.getElementById("nuevoProducto").value = "";
+        document.getElementById("nuevoProductoPrecio").value = "";
+    });
+    document.getElementById("guardarProductosBtn")?.addEventListener("click", guardarProductos);
     window.eliminarCliente = eliminarCliente;
+    window.eliminarProducto = eliminarProducto;
     window.eliminarVentaHandler = eliminarVentaHandler;
-    // Inicialización
+
+    // Tabs en admin
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
+            document.getElementById(`tab${tab.dataset.tab.charAt(0).toUpperCase()+tab.dataset.tab.slice(1)}`).classList.add("active");
+        });
+    });
+
+    // Inicializar
     cargarClientes();
+    cargarProductos();
 </script>
 </body>
 </html>
