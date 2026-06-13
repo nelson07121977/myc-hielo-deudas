@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* ===== ESTILOS COMPLETOS (sin cambios) ===== */
+        /* ===== ESTILOS COMPLETOS ===== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; font-family: 'Inter', system-ui, 'Segoe UI', sans-serif; }
         :root {
@@ -291,12 +291,7 @@
             <div class="chart-container"><h3>📦 Ventas por producto (hoy)</h3><div id="productosReport" class="productos-vendidos"></div></div>
             <div class="chart-container no-print"><h3>📈 Evolución últimos 7 días</h3><canvas id="evolucionChart"></canvas></div>
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 12px;">📋 Ventas y Cobros del día</h3>
-            <div class="tabla-wrapper">
-                <table id="salesDetailTable">
-                    <thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></tr></thead>
-                    <tbody id="salesDetailBody"></tbody>
-                </table>
-            </div>
+            <div class="tabla-wrapper"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></tr></thead><tbody id="salesDetailBody"></tbody></table></div>
         </div>
         <div id="tabReportes" class="panel-content" style="display:none;">
             <h2 style="font-size:1rem; color:var(--azul); margin:0 0 16px;">📅 Resumen últimos 7 días</h2>
@@ -304,9 +299,7 @@
             <div class="chart-container"><h3>🏆 Top 10 clientes por volumen</h3><canvas id="topClientesChart"></canvas></div>
             <div class="chart-container"><h3>📈 Evolución diaria</h3><canvas id="weeklySalesChart"></canvas></div>
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">💸 Detalle ventas semana</h3>
-            <div class="tabla-wrapper">
-                <table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table>
-            </div>
+            <div class="tabla-wrapper"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div>
         </div>
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 14px;">Gestión de clientes — precios de venta y costos</h3>
@@ -322,14 +315,14 @@
         <div id="tabProductos" class="panel-content" style="display:none;">
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 14px;">📸 Tipos de Bolsas / Productos</h3>
             <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group" style="flex:0 0 auto;"><button id="addProductBtn" class="btn-small" style="margin-top:18px;">➕ Agregar</button></div></div>
-            <div class="tabla-wrapper"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></tr></div>
+            <div class="tabla-wrapper"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div>
             <button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
         </div>
         <div id="tabStock" class="panel-content" style="display:none;">
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 14px;">📦 Carga de fábrica (stock inicial del día)</h3>
             <div class="form-row"><div class="form-group"><label>🥤 1,7 KG</label><input type="number" id="fab_17" value="0" step="1"></div><div class="form-group"><label>🥤 3,5 KG</label><input type="number" id="fab_35" value="0" step="1"></div><div class="form-group"><label>🧊 14 KG</label><input type="number" id="fab_14" value="0" step="1"></div><div class="form-group"><label>🧊 ESC.20KG</label><input type="number" id="fab_20" value="0" step="1"></div><div class="form-group"><label>🧊 ESC.32KG</label><input type="number" id="fab_32" value="0" step="1"></div><div class="form-group" style="flex:0 0 auto;"><button id="updateStockBtn" class="btn-small" style="margin-top:18px;">Actualizar stock</button></div></div>
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">📊 Vendido / Restante</h3>
-            <div class="tabla-wrapper"><table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table></div>
+            <div class="tabla-wrapper"><table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></table></thead><tbody></tbody></table></div>
         </div>
     </div>
 
@@ -373,7 +366,7 @@
             <div class="tabla-wrapper"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             <div class="comprobantes-section">
                 <div class="sec-title">📄 Comprobantes X (No fiscales)<div style="display:flex; gap:8px;"><button id="genComprobanteDiaBtn" class="btn-small btn-verde">📅 Día</button><button id="genComprobanteSemanaBtn" class="btn-small btn-azul-medio">📆 Semana</button></div></div>
-                <div class="tabla-wrapper"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div>
+                <div class="tabla-wrapper"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></tr></div>
             </div>
             <button id="resetDayBtn" style="background:linear-gradient(135deg,#dc2626,#b91c1c); margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
         </div>
@@ -387,7 +380,6 @@
 
 <script>
 // ==================== CONFIGURACIÓN GLOBAL ====================
-// *** URL DEFINITIVA DE TU SCRIPT (con CORS y eliminarVenta) ***
 const API_URL = "https://script.google.com/macros/s/AKfycbxYnCewctWFjUcfrcRKVV2jfzeOnxfDXIbtz3NMLNypEyMZmzKcJiW1F7RdAjd5EA/exec";
 
 let currentDriverPin = null;
@@ -401,12 +393,10 @@ let comprobantesHistorial = [];
 const API_URL_DEUDAS = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
 
-// ==================== HELPERS ====================
 function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 function badgePago(pago) { const map={efectivo:'badge-efectivo', transferencia:'badge-transf', ctacte:'badge-ctacte', cobrocc:'badge-cobrocc'}; const labels={efectivo:'Efectivo', transferencia:'Transf.', ctacte:'Cta Cte', cobrocc:'Cobro CC'}; return `<span class="badge ${map[pago]||''}">${labels[pago]||pago}</span>`; }
 function fmtMoney(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 
-// ==================== PRECIOS / COSTOS ====================
 function getPreciosCliente(cliente) {
     let p17=1500, p35=2500, p14=7000, p20=8000, p32=12000;
     const specials={"AFRICA":{p14:5000},"LETS GO":{p14:6000},"GUTIERREZ":{p14:5500},"TERRANO":{p14:7500},"PADDEL TURCO":{p14:5500},"ROSADITA":{p14:7000},"ICONOS":{p14:7000},"WILLIAMS":{p14:8000},"ERIC SALON":{p14:6000},"GABRIEL BARRIO DORREGO":{p35:3500,p14:7000},"KIOSCO VAMPIRO":{p35:3500,p14:7000}};
@@ -420,7 +410,6 @@ function calcularTotalVenta(cliente, cant) {
     return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32;
 }
 
-// ==================== FUNCIONES DE FECHA (UTC) ====================
 function getTodayUTC() {
     return new Date().toISOString().slice(0,10);
 }
@@ -436,7 +425,6 @@ function getVentasUltimos7Dias() {
     return ventas.filter(v => v.fecha >= fechaLimite);
 }
 
-// ==================== CARGA / GUARDA LOCAL ====================
 function loadCommonProducts() {
     let sprod = localStorage.getItem("planilla77_productos");
     if(sprod) productos = JSON.parse(sprod);
@@ -487,7 +475,6 @@ function saveAll() {
     saveGlobalPrices();
 }
 
-// ==================== API ====================
 async function apiCall(ruta, params = {}, usePost = false) {
     if (usePost) {
         const response = await fetch(API_URL, {
@@ -504,15 +491,44 @@ async function apiCall(ruta, params = {}, usePost = false) {
         return res.json();
     }
 }
+
 async function cargarClientesDesdeSheets() {
     try { const data = await apiCall('clientes'); if(data && Array.isArray(data)) { CLIENTES_LIST = data.map(c => c.toUpperCase().trim()).filter(c => c); localStorage.setItem('myc_clientes_list', JSON.stringify(CLIENTES_LIST)); console.log('Clientes desde Sheets:', CLIENTES_LIST.length); return; } } catch(e) { console.error('Error cargando clientes:', e); }
     let cli = localStorage.getItem("myc_clientes_list"); if(cli) CLIENTES_LIST = JSON.parse(cli); else CLIENTES_LIST = [...DEFAULT_CLIENTES];
 }
 function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON.stringify(CLIENTES_LIST)); }
-async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre]=getPreciosCliente(nombre); costosClientes[nombre]=getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); try{ await apiCall('agregarCliente',{ nombre }); }catch(e){} return true; } return false; }
-async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c=>c!==nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; guardarClientesLocal(); saveGlobalPrices(); try{ await apiCall('eliminarCliente',{ nombre }); }catch(e){} ventas = ventas.filter(v=>v.cliente!==nombre); saveAll(); return true; } return false; }
-async function cargarConfiguracion() { try{ const config = await apiCall('obtenerConfiguracion'); if(config.precios) preciosClientes=config.precios; if(config.costos) costosClientes=config.costos; if(config.productos && config.productos.length) productos=config.productos; for(let c of CLIENTES_LIST) { if(!preciosClientes[c]) preciosClientes[c]=getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c]=getCostosCliente(); } } catch(e){} }
-async function guardarConfiguracionRemota() { try{ await apiCall('guardarConfiguracion',{ precios:preciosClientes, costos:costosClientes, productos:productos }, true); toast("✅ Configuración guardada en la nube"); } catch(e){ toast("❌ Error al guardar configuración (los precios no se guardarán, pero el resto sigue funcionando)"); } }
+
+async function agregarClienteGlobal(nombre) {
+    if(!CLIENTES_LIST.includes(nombre)) {
+        CLIENTES_LIST.push(nombre);
+        preciosClientes[nombre]=getPreciosCliente(nombre);
+        costosClientes[nombre]=getCostosCliente();
+        guardarClientesLocal(); saveGlobalPrices();
+        try{ await apiCall('agregarCliente',{ nombre }); }catch(e){}
+        return true;
+    }
+    return false;
+}
+async function eliminarClienteGlobal(nombre) {
+    if(confirm(`¿Eliminar cliente "${nombre}"?`)) {
+        CLIENTES_LIST = CLIENTES_LIST.filter(c=>c!==nombre);
+        delete preciosClientes[nombre]; delete costosClientes[nombre];
+        guardarClientesLocal(); saveGlobalPrices();
+        try{ await apiCall('eliminarCliente',{ nombre }); }catch(e){}
+        ventas = ventas.filter(v=>v.cliente!==nombre);
+        saveAll();
+        return true;
+    }
+    return false;
+}
+
+async function cargarConfiguracion() {
+    try{ const config = await apiCall('obtenerConfiguracion'); if(config.precios) preciosClientes=config.precios; if(config.costos) costosClientes=config.costos; if(config.productos && config.productos.length) productos=config.productos; for(let c of CLIENTES_LIST) { if(!preciosClientes[c]) preciosClientes[c]=getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c]=getCostosCliente(); } } catch(e){} }
+}
+async function guardarConfiguracionRemota() {
+    try{ await apiCall('guardarConfiguracion',{ precios:preciosClientes, costos:costosClientes, productos:productos }, true); toast("✅ Configuración guardada en la nube"); } catch(e){ toast("❌ Error al guardar configuración"); }
+}
+
 async function cargarVentas(chofer) {
     try {
         const data = await apiCall('obtenerVentas', {});
@@ -522,6 +538,7 @@ async function cargarVentas(chofer) {
         cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || 0), 0);
     } catch(e) { console.error("Error cargando ventas:", e); ventas = []; }
 }
+
 async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
     let total = 0; if(pago !== "cobrocc") total = calcularTotalVenta(cliente, cantidades);
     const fechaStr = getTodayUTC();
@@ -532,6 +549,7 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
     try { if(pago==="ctacte" && total>0) { await fetch(API_URL_DEUDAS, { method:'POST', mode:'no-cors', body: new URLSearchParams({ ruta:'agregarMovimiento', fecha:fechaStr, cliente, tipo:'deuda', monto:total, formaPago:'', detalle:`Venta de hielo: ${JSON.stringify(cantidades)}` }) }); } else if(pago==="cobrocc" && cobroDeuda>0) { await fetch(API_URL_DEUDAS, { method:'POST', mode:'no-cors', body: new URLSearchParams({ ruta:'agregarMovimiento', fecha:fechaStr, cliente, tipo:'pago', monto:cobroDeuda, formaPago:'Efectivo', detalle:'Cobro de deuda registrado desde Planilla de Reparto' }) }); } } catch(e) { console.error("Error al sincronizar deuda:", e); }
     return nueva;
 }
+
 async function eliminarVenta(id) {
     try {
         const res = await apiCall('eliminarVenta', { id });
@@ -546,15 +564,18 @@ async function eliminarVenta(id) {
         } else { toast("❌ Error al eliminar de la nube, intenta de nuevo"); }
     } catch(e) { console.error("Error en eliminarVenta:", e); toast("❌ Error de red, no se pudo eliminar"); }
 }
+
 function resetJornada() { const hoy = getTodayUTC(); ventas = ventas.filter(v => v.fecha !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
-async function cargarGastos(chofer) { try { const data = await apiCall('obtenerGastos', { chofer }); const hoy = getTodayUTC(); const gastosHoy = data.filter(g => g.fecha === hoy); let nafta=0,choferes=0,otros=0; for(const g of gastosHoy){ if(g.categoria==='Nafta') nafta+=g.monto; else if(g.categoria==='Chofer') choferes+=g.monto; else if(g.categoria==='Otros') otros+=g.monto; } gastosDetalle={ nafta, choferes, otros }; gastos=nafta+choferes+otros; } catch(e){} }
+
+async function cargarGastos(chofer) {
+    try { const data = await apiCall('obtenerGastos', { chofer }); const hoy = getTodayUTC(); const gastosHoy = data.filter(g => g.fecha === hoy); let nafta=0,choferes=0,otros=0; for(const g of gastosHoy){ if(g.categoria==='Nafta') nafta+=g.monto; else if(g.categoria==='Chofer') choferes+=g.monto; else if(g.categoria==='Otros') otros+=g.monto; } gastosDetalle={ nafta, choferes, otros }; gastos=nafta+choferes+otros; } catch(e){} }
 async function guardarGastoRemota(categoria, monto, nota) { const fecha = getTodayUTC(); await apiCall('guardarGasto', { fecha, chofer: currentDriverPin, categoria, monto, nota }); }
 async function actualizarGastosDesdeDetalle() { const nafta=parseFloat(document.getElementById("gastoNafta")?.value)||0; const choferes=parseFloat(document.getElementById("gastoChoferes")?.value)||0; const otros=parseFloat(document.getElementById("gastoOtros")?.value)||0; if(nafta!==gastosDetalle.nafta) await guardarGastoRemota('Nafta', nafta, ''); if(choferes!==gastosDetalle.choferes) await guardarGastoRemota('Chofer', choferes, ''); if(otros!==gastosDetalle.otros) await guardarGastoRemota('Otros', otros, ''); gastosDetalle={ nafta, choferes, otros }; gastos=nafta+choferes+otros; saveAll(); document.getElementById("totalGastos").innerText=gastos; if (document.getElementById("adminPanel").style.display === "block") renderAdmin(); else renderDriver(); }
+
 async function cargarStock(chofer) { try { const fecha = getTodayUTC(); const stock = await apiCall('obtenerStock', { fecha, chofer }); if(stock && Object.keys(stock).length) stockFabrica=stock; else stockFabrica={ "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 }; } catch(e){} }
 async function guardarStockRemota(chofer) { const fecha = getTodayUTC(); await apiCall('guardarStock', { fecha, chofer, stock: JSON.stringify(stockFabrica) }); }
 function cerrarDiaAdmin() { alert("Función de cierre de día disponible en la versión completa"); }
 
-// ==================== RENDER ADMIN ====================
 function renderAdmin() {
     const ventasHoy = getVentasHoy();
     let totalVentas=0, totalEfectivo=0, totalTransferencia=0, totalCtaCte=0, gananciaTotal=0;
@@ -584,7 +605,6 @@ function renderAdmin() {
     actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); renderClientesTab(); renderProductosTab(); renderStockTab(); renderWeeklyReport();
 }
 
-// ==================== RENDER DRIVER ====================
 function renderDriver() {
     let select = document.getElementById("clienteSelect");
     if(select) select.innerHTML = CLIENTES_LIST.map(c => `<option value="${c}">${c}</option>`).join("");
@@ -621,7 +641,6 @@ function renderDriver() {
     renderComprobantesHistorial();
 }
 
-// ==================== RENDER CLIENTES TAB ====================
 function renderClientesTab() {
     let tbody = document.getElementById("clientesTbody"); if(!tbody) return; tbody.innerHTML = "";
     for(let cli of CLIENTES_LIST) {
@@ -647,7 +666,6 @@ function renderClientesTab() {
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async () => { const cli = btn.getAttribute("data-cli"); if(await eliminarClienteGlobal(cli)) { renderAdmin(); if(document.getElementById("driverPanel").style.display==="block") renderDriver(); } }));
 }
 
-// ==================== RENDER PRODUCTOS ====================
 function renderProductosTab() {
     let tbody = document.getElementById("productsTbody"); if(!tbody) return; tbody.innerHTML = "";
     for(let p of productos) {
@@ -662,7 +680,6 @@ function renderProductosTab() {
     document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", () => { const clave = btn.getAttribute("data-clave"); if(confirm(`¿Eliminar producto ${clave}?`)) { productos = productos.filter(p=>p.clave!==clave); saveCommonProducts(); renderProductosTab(); guardarConfiguracionRemota(); } }));
 }
 
-// ==================== RENDER STOCK (corregido) ====================
 function renderStockTab() {
     const ventasHoy = getVentasHoy();
     const vendido = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
@@ -686,14 +703,13 @@ function renderStockTab() {
             return `<tr>
                 <td><strong>${prod}</strong></td>
                 <td style="text-align:center;">${stockFabrica[prod]}</td>
-                <td style="text-align:center;">${vendido[prod]}</div><div>
-                <td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</div><div>
+                <td style="text-align:center;">${vendido[prod]}</td>
+                <td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</td>
             </tr>`;
         }).join('');
     }
 }
 
-// ==================== RENDER SEMANAL ====================
 function renderWeeklyReport() {
     const weeklyVentas = getVentasUltimos7Dias();
     let totalVentasSemana=0, totalEfectivoSemana=0, totalTransferenciaSemana=0, totalCtaCteSemana=0, totalCobrosDeudaSemana=0, totalGananciaReal=0;
@@ -704,8 +720,8 @@ function renderWeeklyReport() {
     const ctxTop = document.getElementById('topClientesChart')?.getContext('2d'); if(ctxTop) { if(topClientesChart) topClientesChart.destroy(); topClientesChart = new Chart(ctxTop, { type:'bar', data:{ labels:topClientes.map(c=>c[0]), datasets:[{ label:'Ventas $', data:topClientes.map(c=>c[1]), backgroundColor:'#f59e0b' }] }, options:{ responsive:true } }); }
     const diasSemana = [...Array(7).keys()].map(i=>{ let d=new Date(); d.setDate(d.getDate()-i); return d; }).reverse();
     const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d'); if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type:'line', data:{ labels:diasSemana.map(d=>d.toISOString().slice(0,10)), datasets:[{ label:'Ventas diarias $', data:diasSemana.map(d=>ventasPorDia[d.toISOString().slice(0,10)]||0), borderColor:'#0a3e6d', fill:false }] } }); }
-    const tbody = document.getElementById("weeklySalesBody"); if(tbody) { tbody.innerHTML = weeklyVentas.length===0 ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</div><div>` : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
-        <tr>${v.fecha}</td>
+    const tbody = document.getElementById("weeklySalesBody"); if(tbody) { tbody.innerHTML = weeklyVentas.length===0 ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</div><div>` : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<td>
+        <td>${v.fecha}</td>
         <td><strong>${v.cliente}</strong></td>
         <td>${fmtMoney(v.total)}</div><div>
         <td>${badgePago(v.pago)}</div><div>
@@ -713,7 +729,6 @@ function renderWeeklyReport() {
     </tr>`).join(''); }
 }
 
-// ==================== GRÁFICOS ====================
 function actualizarGraficoClientes() {
     const ventasHoy = getVentasHoy();
     const ventasPorCliente = {};
@@ -738,7 +753,6 @@ function renderEvolucionDiaria() {
     if(ctx) { if(chartEvolucion) chartEvolucion.destroy(); chartEvolucion = new Chart(ctx, { type:'line', data:{ labels:fechas.map(f=>f.toISOString().slice(0,10)), datasets:[{ label:'Ventas totales $', data:fechas.map(f=>ventasPorDia[f.toISOString().slice(0,10)]), borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true } }); }
 }
 
-// ==================== AGREGAR TRANSACCIÓN ====================
 async function agregarTransaccion() {
     const cliente = document.getElementById("clienteSelect").value;
     const pago = document.getElementById("paymentType").value;
@@ -765,7 +779,6 @@ async function agregarTransaccion() {
     toast("✅ Venta registrada");
 }
 
-// ==================== COMPROBANTES (simplificados) ====================
 function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) { return "<div>Comprobante generado</div>"; }
 function generarComprobanteTextoPlanoPremium(tipo, datos, numero, fechaISO) { return "Texto"; }
 function getNextComprobanteNum() { let n = localStorage.getItem(`myc_${currentDriverPin}_nextComprobante`); if(!n) n=1; return parseInt(n); }
@@ -781,17 +794,15 @@ function copiarComprobanteTexto() { if(window.currentComprobanteTexto){ navigato
 function descargarComprobanteTxt() { if(window.currentComprobanteTexto) { let blob = new Blob([window.currentComprobanteTexto], {type:"text/plain"}); let a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`comprobante_X_${Date.now()}.txt`; a.click(); } }
 function renderComprobantesHistorial() { let tbody = document.getElementById("comprobantesBody"); if(!tbody) return; if(comprobantesHistorial.length===0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin comprobantes generados</div><div>`; return; } tbody.innerHTML = comprobantesHistorial.map(c => `<tr>
         <td><strong>X-${String(c.numero).padStart(6,'0')}</strong></td>
-        <td>${new Date(c.fecha).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div><div>
-        <td>${c.resumen}</div><div>
-        <td><strong>${fmtMoney(c.total)}</strong></div><div>
+        <td>${new Date(c.fecha).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+        <td>${c.resumen}</td>
+        <td><strong>${fmtMoney(c.total)}</strong></td>
         <td style="white-space:nowrap;"><button class="btn-small" style="background:#1259a0;" onclick="verComprobante(${c.numero})">👁️</button><button class="btn-small" onclick="reimprimirComprobante(${c.numero})">🖨️</button><button class="btn-small btn-rojo" onclick="eliminarComprobante(${c.numero})">🗑️</button></td>
-    </tr>`).join(''); }
+    </table>`).join(''); }
 }
 
-// ==================== EXPORTAR PDF ====================
 async function exportarPDF(elementId, fileName) { alert("Función PDF disponible en la versión completa"); }
 
-// ==================== INICIALIZACIÓN ====================
 async function iniciarSesionChofer(pin) {
     currentDriverPin = pin;
     loadDataByPin(pin);
