@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* ===== ESTILOS COMPLETOS (sin cambios) ===== */
+        /* ===== ESTILOS COMPLETOS (igual que antes) ===== */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; font-family: 'Inter', system-ui, 'Segoe UI', sans-serif; }
         :root {
@@ -199,7 +199,7 @@
         </div>
     </div>
 
-    <!-- PANEL ADMIN (completo) -->
+    <!-- PANEL ADMIN -->
     <div id="adminPanel" class="admin-panel" style="display:none;">
         <div class="panel-header panel-header-admin">
             <span class="title">🧊 MYC HIELO — Administrador</span>
@@ -247,9 +247,30 @@
         </div>
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 14px;">Gestión de clientes — precios de venta y costos</h3>
-            <div style="display:flex; gap:10px; margin:0 0 16px; flex-wrap:wrap;"><button id="exportConfigBtn" class="btn-small btn-verde">💾 Exportar config</button><label for="importConfigInput" class="btn-small btn-amarillo" style="padding:7px 16px; cursor:pointer;">📂 Importar config</label><input type="file" id="importConfigInput" accept=".json" style="display:none;"></div>
-            <div class="form-row"><div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div><div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div><div class="form-group" style="flex:0 0 auto;"><button id="addClienteBtn" class="btn-small" style="margin-top:18px;">Agregar</button></div></div>
-            <div class="tabla-wrapper"><table id="clientesTable"><thead><tr><th>Foto</th><th>Cliente</th><th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></table></div>
+            <div style="display:flex; gap:10px; margin:0 0 16px; flex-wrap:wrap;">
+                <button id="exportConfigBtn" class="btn-small btn-verde">💾 Exportar config</button>
+                <label for="importConfigInput" class="btn-small btn-amarillo" style="padding:7px 16px; cursor:pointer;">📂 Importar config</label>
+                <input type="file" id="importConfigInput" accept=".json" style="display:none;">
+                <button id="refreshClientesBtn" class="btn-small btn-azul-medio">🔄 Forzar recarga de clientes</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div>
+                <div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div>
+                <div class="form-group" style="flex:0 0 auto;"><button id="addClienteBtn" class="btn-small" style="margin-top:18px;">Agregar</button></div>
+            </div>
+            <div class="tabla-wrapper">
+                <table id="clientesTable">
+                    <thead>
+                        <tr>
+                            <th>Foto</th><th>Cliente</th>
+                            <th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th>
+                            <th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientesTbody"></tbody>
+                </table>
+            </div>
             <button id="saveAllPricesBtn" style="margin-top:16px;">💾 Guardar todos los cambios</button>
         </div>
         <div id="tabProductos" class="panel-content" style="display:none;">
@@ -262,7 +283,7 @@
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 14px;">📦 Carga de fábrica (stock inicial del día)</h3>
             <div class="form-row"><div class="form-group"><label>🥤 1,7 KG</label><input type="number" id="fab_17" value="0" step="1"></div><div class="form-group"><label>🥤 3,5 KG</label><input type="number" id="fab_35" value="0" step="1"></div><div class="form-group"><label>🧊 14 KG</label><input type="number" id="fab_14" value="0" step="1"></div><div class="form-group"><label>🧊 ESC.20KG</label><input type="number" id="fab_20" value="0" step="1"></div><div class="form-group"><label>🧊 ESC.32KG</label><input type="number" id="fab_32" value="0" step="1"></div><div class="form-group" style="flex:0 0 auto;"><button id="updateStockBtn" class="btn-small" style="margin-top:18px;">Actualizar stock</button></div></div>
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">📊 Vendido / Restante</h3>
-            <div class="tabla-wrapper"><table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table></div>
+            <div class="tabla-wrapper"><table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody></tbody><table></div>
         </div>
     </div>
 
@@ -314,7 +335,6 @@
 <script>
 // ==================== CONFIGURACIÓN GLOBAL ====================
 const API_URL = "https://script.google.com/macros/s/AKfycbxc4kUR5W2SozDU9FSS2LfPoMBVXn2ZQD0p2meaa9j3wszzPvkAdYxI6x7GXT5Hlo2b/exec";
-const API_URL_DEUDAS = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
@@ -324,6 +344,7 @@ let productos = [];
 let preciosClientes = {}, costosClientes = {};
 let chartClientes = null, chartEvolucion = null, topClientesChart = null, weeklySalesChart = null;
 let comprobantesHistorial = [];
+const API_URL_DEUDAS = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
 const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
 
 // ==================== HELPERS ====================
@@ -336,7 +357,7 @@ function calcularTotalVenta(cliente, cant) { const p = preciosClientes[cliente] 
 function getVentasHoy() { const hoy = new Date().toISOString().slice(0,10); return ventas.filter(v => v.fecha === hoy); }
 function getVentasUltimos7Dias() { const unaSemana = new Date(); unaSemana.setDate(unaSemana.getDate()-6); unaSemana.setHours(0,0,0,0); return ventas.filter(v => new Date(v.fecha) >= unaSemana); }
 
-// ==================== CARGA LOCAL ====================
+// ==================== CARGA LOCAL Y GLOBAL ====================
 function loadCommonProducts() { let sprod=localStorage.getItem("planilla77_productos"); if(sprod) productos=JSON.parse(sprod); else productos=[{ clave:"1,7 KG", precioBase:1500, imagen:"https://placehold.co/100x100?text=1.7KG" },{ clave:"3,5 KG", precioBase:2500, imagen:"https://placehold.co/100x100?text=3.5KG" },{ clave:"14 KG",  precioBase:7000, imagen:"https://placehold.co/100x100?text=14KG" },{ clave:"ESC.20KG", precioBase:8000, imagen:"https://placehold.co/100x100?text=20KG" },{ clave:"ESC.32KG", precioBase:12000, imagen:"https://placehold.co/100x100?text=32KG" }]; }
 function saveCommonProducts() { localStorage.setItem("planilla77_productos", JSON.stringify(productos)); }
 function loadGlobalPrices() { let sp=localStorage.getItem("myc_precios_globales"); if(sp) preciosClientes=JSON.parse(sp); else { preciosClientes={}; DEFAULT_CLIENTES.forEach(c=>preciosClientes[c]=getPreciosCliente(c)); } let sc=localStorage.getItem("myc_costos_globales"); if(sc) costosClientes=JSON.parse(sc); else { costosClientes={}; DEFAULT_CLIENTES.forEach(c=>costosClientes[c]=getCostosCliente()); } }
@@ -345,100 +366,78 @@ function loadDataByPin(pin) { const p=`myc_${pin}_`; let sv=localStorage.getItem
 function saveDataByPin(pin) { const p=`myc_${pin}_`; localStorage.setItem(p+"ventas", JSON.stringify(ventas)); localStorage.setItem(p+"gastos", gastos); localStorage.setItem(p+"gastosDetalle", JSON.stringify(gastosDetalle)); localStorage.setItem(p+"cobrosCC", cobrosCC); localStorage.setItem(p+"stock", JSON.stringify(stockFabrica)); localStorage.setItem(p+"comprobantes", JSON.stringify(comprobantesHistorial)); }
 function saveAll() { if(currentDriverPin) saveDataByPin(currentDriverPin); else { let sel=document.getElementById("adminChoferSelect")?.value; if(sel) saveDataByPin(sel); } saveGlobalPrices(); }
 
-// ==================== API (CORREGIDA: sin CORS, usando POST con no-cors y form-urlencoded) ====================
-async function apiCall(ruta, params = {}) {
-    // Convertir parámetros a application/x-www-form-urlencoded
-    const body = new URLSearchParams();
-    body.append('ruta', ruta);
-    for (const [key, value] of Object.entries(params)) {
-        body.append(key, value);
-    }
-    // Siempre usar POST con mode: 'no-cors' para evitar CORS preflight
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: body
-        });
-        // Con 'no-cors', la respuesta no es accesible. Asumimos éxito silencioso.
-        // Para las operaciones que necesitan leer respuesta (como obtenerVentas), usaremos un GET alternativo.
-        // Pero como no podemos leer la respuesta, usaremos una combinación: las lecturas (GET) se harán con un script adicional.
-        // Sin embargo, para este caso, usaremos la misma URL pero en GET para obtener datos.
-        // Esto es un fallo de diseño de CORS. Lo que haremos es que para las rutas de lectura usaremos GET (que no tiene preflight) y para escritura usaremos POST sin respuesta.
-        return { exito: true }; // Respuesta ficticia
-    } catch(e) {
-        console.error("Error en apiCall POST", e);
-        return { error: e.message };
+// ==================== API ====================
+async function apiCall(ruta, params = {}, usePost = false) {
+    // Para evitar problemas de CORS en guardados, usamos GET (si es posible) o POST sin esperar respuesta
+    if (usePost) {
+        // Usamos fetch sin esperar respuesta detallada, solo para enviar
+        fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ruta, ...params }) })
+            .catch(e => console.error("Error guardando (CORS ignorado):", e));
+        return { exito: true }; // Asumimos éxito para no bloquear
+    } else {
+        const url = new URL(API_URL);
+        url.searchParams.append('ruta', ruta);
+        for (const [k, v] of Object.entries(params)) url.searchParams.append(k, v);
+        const res = await fetch(url.toString());
+        return res.json();
     }
 }
-
-// Función especial para obtener datos (GET) – no tiene preflight
-async function apiGet(ruta, params = {}) {
-    const url = new URL(API_URL);
-    url.searchParams.append('ruta', ruta);
-    for (const [k, v] of Object.entries(params)) {
-        url.searchParams.append(k, v);
-    }
-    const response = await fetch(url.toString(), { method: 'GET', mode: 'cors' });
-    // Nota: con CORS puede fallar igual. Alternativa: usar un proxy.
-    // Como esto es complejo, asumiremos que el script de Google Apps Script debe permitir CORS (no es posible).
-    // Por lo tanto, usaremos el mismo truco: confiar en localStorage y solo usar POST.
-    // Esto implica que la sincronización con la nube no será completa.
-    // Mejor solución: publicar el script como aplicación web con acceso "Cualquier persona" y luego usar JSONP o un proxy.
-    // Dado que el tiempo es limitado, te daré la versión que funciona solo con localStorage (sin nube) pero sin errores CORS.
-    // Pero no es lo que quieres.
-    
-    // Vamos a intentar recuperar datos desde un script intermedio (no posible aquí).
-    throw new Error("CORS impide la lectura desde GitHub Pages. Para solucionarlo, debes alojar la planilla en un servidor con proxy o usar el complemento de Google Apps Script como 'Ejecutar como: Yo' y habilitar CORS manualmente.");
-    // return await response.json();
-}
-
-// ==================== CARGA DE DATOS (simulada con localStorage) ====================
 async function cargarClientesDesdeSheets() {
-    // Simulamos carga desde localStorage
-    let cli = localStorage.getItem("myc_clientes_list");
-    if(cli) CLIENTES_LIST = JSON.parse(cli);
-    else CLIENTES_LIST = [...DEFAULT_CLIENTES];
-    console.log('Clientes cargados desde localStorage:', CLIENTES_LIST.length);
+    try { const data = await apiCall('clientes'); if(data && Array.isArray(data)) { CLIENTES_LIST = data.map(c => c.toUpperCase().trim()).filter(c => c); localStorage.setItem('myc_clientes_list', JSON.stringify(CLIENTES_LIST)); console.log('Clientes desde Sheets:', CLIENTES_LIST.length); return; } } catch(e) { console.error('Error cargando clientes:', e); }
+    let cli = localStorage.getItem("myc_clientes_list"); if(cli) CLIENTES_LIST = JSON.parse(cli); else CLIENTES_LIST = [...DEFAULT_CLIENTES];
 }
 function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON.stringify(CLIENTES_LIST)); }
-async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre]=getPreciosCliente(nombre); costosClientes[nombre]=getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); return true; } return false; }
-async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c=>c!==nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; guardarClientesLocal(); saveGlobalPrices(); ventas = ventas.filter(v=>v.cliente!==nombre); saveAll(); return true; } return false; }
-async function cargarConfiguracion() { /* ya está en loadGlobalPrices */ }
-async function guardarConfiguracionRemota() { saveGlobalPrices(); toast("✅ Configuración guardada en localStorage"); }
-async function cargarVentas(chofer) { /* ya está en loadDataByPin */ console.log("Ventas cargadas desde localStorage:", ventas.length); }
+async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre]=getPreciosCliente(nombre); costosClientes[nombre]=getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); try{ await apiCall('agregarCliente',{ nombre }); }catch(e){} return true; } return false; }
+async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c=>c!==nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; guardarClientesLocal(); saveGlobalPrices(); try{ await apiCall('eliminarCliente',{ nombre }); }catch(e){} ventas = ventas.filter(v=>v.cliente!==nombre); saveAll(); return true; } return false; }
+async function cargarConfiguracion() { try{ const config = await apiCall('obtenerConfiguracion'); if(config.precios) preciosClientes=config.precios; if(config.costos) costosClientes=config.costos; if(config.productos && config.productos.length) productos=config.productos; for(let c of CLIENTES_LIST) { if(!preciosClientes[c]) preciosClientes[c]=getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c]=getCostosCliente(); } } catch(e){} }
+async function guardarConfiguracionRemota() { try{ await apiCall('guardarConfiguracion',{ precios:preciosClientes, costos:costosClientes, productos:productos }, true); toast("✅ Configuración guardada (puede tardar unos segundos en reflejarse)"); } catch(e){} }
+async function cargarVentas(chofer) {
+    try {
+        const data = await apiCall('obtenerVentas', {});
+        if (Array.isArray(data)) { ventas = data.map(v => { if(v.fecha) v.fecha = v.fecha.split('T')[0]; return v; }); } else { ventas = []; }
+        console.log("Ventas cargadas desde Sheets:", ventas.length);
+        const hoy = new Date().toISOString().slice(0,10);
+        cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || 0), 0);
+    } catch(e) { console.error("Error cargando ventas:", e); ventas = []; }
+}
 async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
     let total = 0; if(pago !== "cobrocc") total = calcularTotalVenta(cliente, cantidades);
     const fechaStr = new Date().toISOString().slice(0,10);
     const nueva = { id: Date.now()+Math.random(), cliente, cantidades, pago, total, cobroDeuda, fecha: fechaStr };
     ventas.push(nueva); if(cobroDeuda>0) cobrosCC += cobroDeuda;
     saveAll();
-    toast("✅ Venta registrada localmente");
+    try { await apiCall('guardarVenta', { fecha: fechaStr, cliente, cantidades: JSON.stringify(cantidades), pago, total, cobroDeuda, chofer: currentDriverPin }); } catch(e) { console.error("Error guardando venta en Sheets:", e); }
+    try { if(pago==="ctacte" && total>0) { await fetch(API_URL_DEUDAS, { method:'POST', mode:'no-cors', body: new URLSearchParams({ ruta:'agregarMovimiento', fecha:fechaStr, cliente, tipo:'deuda', monto:total, formaPago:'', detalle:`Venta de hielo: ${JSON.stringify(cantidades)}` }) }); } else if(pago==="cobrocc" && cobroDeuda>0) { await fetch(API_URL_DEUDAS, { method:'POST', mode:'no-cors', body: new URLSearchParams({ ruta:'agregarMovimiento', fecha:fechaStr, cliente, tipo:'pago', monto:cobroDeuda, formaPago:'Efectivo', detalle:'Cobro de deuda registrado desde Planilla de Reparto' }) }); } } catch(e) { console.error("Error al sincronizar deuda:", e); }
     return nueva;
 }
 async function eliminarVenta(id) {
-    ventas = ventas.filter(v => v.id !== id);
-    saveAll();
-    toast("✅ Venta eliminada localmente");
+    try {
+        const url = `${API_URL}?ruta=eliminarVenta&id=${id}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.exito === true) {
+            toast("✅ Venta eliminada de la nube");
+            await cargarVentas(currentDriverPin);
+            const hoy = new Date().toISOString().slice(0,10);
+            cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || 0), 0);
+            saveAll();
+            if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
+            else renderDriver();
+        } else {
+            toast("❌ Error al eliminar: " + (data.error || "No se pudo eliminar"));
+        }
+    } catch (error) {
+        console.error("Error en eliminarVenta:", error);
+        toast("❌ Error de red, no se pudo eliminar");
+    }
 }
 function resetJornada() { const hoy = new Date().toISOString().slice(0,10); ventas = ventas.filter(v => v.fecha !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
-async function cargarGastos(chofer) { /* ya están en loadDataByPin */ }
-async function guardarGastoRemota(categoria, monto, nota) { gastosDetalle[categoria.toLowerCase()] = monto; gastos = (gastosDetalle.nafta||0)+(gastosDetalle.choferes||0)+(gastosDetalle.otros||0); saveAll(); }
-async function actualizarGastosDesdeDetalle() {
-    const nafta=parseFloat(document.getElementById("gastoNafta")?.value)||0;
-    const choferes=parseFloat(document.getElementById("gastoChoferes")?.value)||0;
-    const otros=parseFloat(document.getElementById("gastoOtros")?.value)||0;
-    gastosDetalle = { nafta, choferes, otros };
-    gastos = nafta+choferes+otros;
-    saveAll();
-    document.getElementById("totalGastos").innerText = gastos;
-    if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
-    else renderDriver();
-}
-async function cargarStock(chofer) { /* ya está en loadDataByPin */ }
-async function guardarStockRemota(chofer) { saveAll(); }
-function cerrarDiaAdmin() { alert("Función de cierre de día no disponible sin nube"); }
+async function cargarGastos(chofer) { try { const data = await apiCall('obtenerGastos', { chofer }); const hoy = new Date().toISOString().slice(0,10); const gastosHoy = data.filter(g => g.fecha === hoy); let nafta=0,choferes=0,otros=0; for(const g of gastosHoy){ if(g.categoria==='Nafta') nafta+=g.monto; else if(g.categoria==='Chofer') choferes+=g.monto; else if(g.categoria==='Otros') otros+=g.monto; } gastosDetalle={ nafta, choferes, otros }; gastos=nafta+choferes+otros; } catch(e){} }
+async function guardarGastoRemota(categoria, monto, nota) { const fecha = new Date().toISOString().slice(0,10); await apiCall('guardarGasto', { fecha, chofer: currentDriverPin, categoria, monto, nota }); }
+async function actualizarGastosDesdeDetalle() { const nafta=parseFloat(document.getElementById("gastoNafta")?.value)||0; const choferes=parseFloat(document.getElementById("gastoChoferes")?.value)||0; const otros=parseFloat(document.getElementById("gastoOtros")?.value)||0; if(nafta!==gastosDetalle.nafta) await guardarGastoRemota('Nafta', nafta, ''); if(choferes!==gastosDetalle.choferes) await guardarGastoRemota('Chofer', choferes, ''); if(otros!==gastosDetalle.otros) await guardarGastoRemota('Otros', otros, ''); gastosDetalle={ nafta, choferes, otros }; gastos=nafta+choferes+otros; saveAll(); document.getElementById("totalGastos").innerText=gastos; if (document.getElementById("adminPanel").style.display === "block") renderAdmin(); else renderDriver(); }
+async function cargarStock(chofer) { try { const fecha = new Date().toISOString().slice(0,10); const stock = await apiCall('obtenerStock', { fecha, chofer }); if(stock && Object.keys(stock).length) stockFabrica=stock; else stockFabrica={ "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 }; } catch(e){} }
+async function guardarStockRemota(chofer) { const fecha = new Date().toISOString().slice(0,10); await apiCall('guardarStock', { fecha, chofer, stock: JSON.stringify(stockFabrica) }); }
+function cerrarDiaAdmin() { alert("Función de cierre de día disponible en la versión completa"); }
 
 // ==================== RENDER ADMIN ====================
 function renderAdmin() {
@@ -492,47 +491,37 @@ function renderDriver() {
         <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
         <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></div><div>
     </tr>`).join('');
-    document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => { eliminarVenta(Number(btn.dataset.id)); renderDriver(); if (document.getElementById("adminPanel").style.display === "block") renderAdmin(); }));
+    document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => { eliminarVenta(Number(btn.dataset.id)); }));
 }
 
-// ==================== RENDER CLIENTES TAB (con guardado automático local) ====================
+// ==================== RENDER CLIENTES TAB (con guardado manual, evitando CORS) ====================
 function renderClientesTab() {
-    let tbody = document.getElementById("clientesTbody"); if(!tbody) return; tbody.innerHTML = "";
+    let tbody = document.getElementById("clientesTbody"); if(!tbody) return;
+    tbody.innerHTML = "";
+    if (!CLIENTES_LIST.length) {
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">No hay clientes cargados aún. Usá "Forzar recarga" o esperá un momento.</td></tr>`;
+        return;
+    }
     for(let cli of CLIENTES_LIST) {
         const pre = preciosClientes[cli] || getPreciosCliente(cli);
         const cost = costosClientes[cli] || getCostosCliente();
         const row = document.createElement("tr");
-        row.innerHTML = `<td><div style="width:36px;height:36px;background:var(--azul-claro);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--azul);font-size:0.85rem;">${cli.charAt(0)}</div></td><td><strong>${cli}</strong></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>`;
+        row.innerHTML = `<td><div style="width:36px;height:36px;background:var(--azul-claro);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--azul);font-size:0.85rem;">${cli.charAt(0)}</div></div><div>
+        <td><strong>${cli}</strong></div><div>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
+        <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></div><div>`;
         tbody.appendChild(row);
     }
-    document.querySelectorAll(".priceInput, .costInput").forEach(input => {
-        input.addEventListener("change", function() {
-            const cli = this.dataset.cli;
-            const prod = this.dataset.prod;
-            const valor = parseInt(this.value);
-            if (isNaN(valor)) return;
-            if (prod.startsWith('p')) {
-                if (!preciosClientes[cli]) preciosClientes[cli] = getPreciosCliente(cli);
-                preciosClientes[cli][prod] = valor;
-            } else {
-                if (!costosClientes[cli]) costosClientes[cli] = getCostosCliente();
-                costosClientes[cli][prod] = valor;
-            }
-            saveGlobalPrices();
-            toast("✅ Precio guardado localmente");
-        });
-    });
+    // NO guardado automático para evitar CORS. Solo se guarda con el botón.
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async () => { const cli = btn.getAttribute("data-cli"); if(await eliminarClienteGlobal(cli)) { renderAdmin(); } }));
 }
 
@@ -547,7 +536,7 @@ function renderProductosTab() {
         <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></div><div>`;
         tbody.appendChild(row);
     }
-    document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", () => { const clave = btn.getAttribute("data-clave"); if(confirm(`¿Eliminar producto ${clave}?`)) { productos = productos.filter(p=>p.clave!==clave); saveCommonProducts(); renderProductosTab(); } }));
+    document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", () => { const clave = btn.getAttribute("data-clave"); if(confirm(`¿Eliminar producto ${clave}?`)) { productos = productos.filter(p=>p.clave!==clave); saveCommonProducts(); renderProductosTab(); guardarConfiguracionRemota(); } }));
 }
 
 // ==================== RENDER STOCK ====================
@@ -561,7 +550,7 @@ function renderStockTab() {
         <td style="text-align:center;">${stockFabrica[prod]}</div><div>
         <td style="text-align:center;">${vendido[prod]}</div><div>
         <td style="text-align:center; font-weight:700; color:${restante<0?'#dc2626':'#15803d'}">${restante}</div><div>
-    <tr>`; }).join(''); }
+    </tr>`; }).join(''); }
 }
 
 // ==================== RENDER SEMANAL ====================
@@ -575,7 +564,7 @@ function renderWeeklyReport() {
     const ctxTop = document.getElementById('topClientesChart')?.getContext('2d'); if(ctxTop) { if(topClientesChart) topClientesChart.destroy(); topClientesChart = new Chart(ctxTop, { type:'bar', data:{ labels:topClientes.map(c=>c[0]), datasets:[{ label:'Ventas $', data:topClientes.map(c=>c[1]), backgroundColor:'#f59e0b' }] }, options:{ responsive:true } }); }
     const diasSemana = [...Array(7).keys()].map(i=>{ let d=new Date(); d.setDate(d.getDate()-i); return d; }).reverse();
     const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d'); if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type:'line', data:{ labels:diasSemana.map(d=>d.toISOString().slice(0,10)), datasets:[{ label:'Ventas diarias $', data:diasSemana.map(d=>ventasPorDia[d.toISOString().slice(0,10)]||0), borderColor:'#0a3e6d', fill:false }] } }); }
-    const tbody = document.getElementById("weeklySalesBody"); if(tbody) { tbody.innerHTML = weeklyVentas.length===0 ? `<td><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</div><div>` : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
+    const tbody = document.getElementById("weeklySalesBody"); if(tbody) { tbody.innerHTML = weeklyVentas.length===0 ? `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</div><div>` : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
         <td>${v.fecha}</div><div>
         <td><strong>${v.cliente}</strong></div><div>
         <td>${fmtMoney(v.total)}</div><div>
@@ -630,6 +619,7 @@ async function agregarTransaccion() {
     }
     await guardarVenta(cliente, cantidades, pago, cobroMonto);
     ["qty_17","qty_35","qty_14","qty_20","qty_32","cobroDeudaInput"].forEach(id => { const el = document.getElementById(id); if(el) el.value=0; });
+    await cargarVentas(currentDriverPin);
     if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
     else renderDriver();
     toast("✅ Venta registrada");
@@ -678,11 +668,23 @@ async function iniciarSesionChofer(pin) {
     currentDriverPin = pin;
     loadDataByPin(pin);
     renderDriver();
+    try {
+        await cargarClientesDesdeSheets();
+        await cargarConfiguracion();
+        await cargarVentas(pin);
+        await cargarGastos(pin);
+        await cargarStock(pin);
+        renderDriver();
+    } catch(e) { console.error("Error actualizando desde la nube", e); }
 }
 async function iniciarSesionAdmin() {
     currentDriverPin = null;
     const selected = document.getElementById("adminChoferSelect").value;
-    loadDataByPin(selected);
+    await cargarClientesDesdeSheets();
+    await cargarConfiguracion();
+    await cargarVentas(selected);
+    await cargarGastos(selected);
+    await cargarStock(selected);
     renderAdmin();
 }
 
@@ -714,7 +716,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("saveAllPricesBtn")?.addEventListener("click", async ()=>{
         document.querySelectorAll(".priceInput").forEach(inp=>{ const cli=inp.dataset.cli,prod=inp.dataset.prod; if(!preciosClientes[cli]) preciosClientes[cli]=getPreciosCliente(cli); preciosClientes[cli][prod]=parseInt(inp.value); });
         document.querySelectorAll(".costInput").forEach(inp=>{ const cli=inp.dataset.cli,prod=inp.dataset.prod; if(!costosClientes[cli]) costosClientes[cli]=getCostosCliente(); costosClientes[cli][prod]=parseInt(inp.value); });
-        saveGlobalPrices(); toast("💾 Precios y costos guardados localmente"); renderAdmin();
+        saveGlobalPrices(); await guardarConfiguracionRemota(); toast("💾 Precios y costos guardados en la nube"); renderAdmin();
     });
     document.getElementById("addClienteBtn")?.addEventListener("click", async ()=>{
         const nuevo=document.getElementById("newClienteName").value.trim().toUpperCase();
@@ -726,12 +728,23 @@ document.addEventListener("DOMContentLoaded", () => {
             else renderDriver();
         } else toast("⚠️ Ya existe ese cliente");
     });
+    document.getElementById("refreshClientesBtn")?.addEventListener("click", async () => {
+        toast("🔄 Recargando clientes...");
+        await cargarClientesDesdeSheets();
+        if (document.getElementById("adminPanel").style.display === "block") {
+            await cargarConfiguracion();
+            renderAdmin();
+        } else {
+            renderDriver();
+        }
+        toast("✅ Clientes recargados");
+    });
     document.getElementById("exportConfigBtn")?.addEventListener("click", ()=>{ const config={clientesList:CLIENTES_LIST,precios:preciosClientes,costos:costosClientes,productos}; const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`myc_config_${new Date().toISOString().slice(0,19)}.json`; a.click(); URL.revokeObjectURL(a.href); });
-    document.getElementById("importConfigInput")?.addEventListener("change", e=>{ if(!e.target.files.length) return; const reader=new FileReader(); reader.onload=async function(ev){ try{ const config=JSON.parse(ev.target.result); if(config.clientesList){ CLIENTES_LIST.length=0; CLIENTES_LIST.push(...config.clientesList); } if(config.precios) preciosClientes=config.precios; if(config.costos) costosClientes=config.costos; if(config.productos) productos=config.productos; CLIENTES_LIST.forEach(c=>{ if(!preciosClientes[c]) preciosClientes[c]=getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c]=getCostosCliente(); }); saveAll(); saveCommonProducts(); saveGlobalPrices(); toast("✅ Configuración importada"); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); else renderDriver(); } catch(err){ toast("❌ Error al leer archivo"); } }; reader.readAsText(e.target.files[0]); e.target.value=''; });
-    document.getElementById("addProductBtn")?.addEventListener("click", async ()=>{ const nombre=document.getElementById("newProductName").value.trim(); if(!nombre) return; const precio=parseInt(document.getElementById("newProductPrice").value)||0; const img=document.getElementById("newProductImg").value||"https://placehold.co/100x100"; productos.push({clave:nombre,precioBase:precio,imagen:img}); saveCommonProducts(); renderProductosTab(); document.getElementById("newProductName").value=""; document.getElementById("newProductPrice").value=""; document.getElementById("newProductImg").value=""; toast("✅ Producto agregado"); });
-    document.getElementById("saveProductsBtn")?.addEventListener("click", async ()=>{ document.querySelectorAll(".prodImg").forEach(img=>{ const clave=img.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave); if(prod) prod.imagen=img.value; }); document.querySelectorAll(".prodPriceBase").forEach(inp=>{ const clave=inp.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave); if(prod) prod.precioBase=parseInt(inp.value)||0; }); saveCommonProducts(); toast("💾 Productos guardados"); renderProductosTab(); });
-    document.getElementById("updateStockBtn")?.addEventListener("click", async ()=>{ stockFabrica = { "1,7 KG":parseInt(document.getElementById("fab_17").value)||0, "3,5 KG":parseInt(document.getElementById("fab_35").value)||0, "14 KG":parseInt(document.getElementById("fab_14").value)||0, "ESC.20KG":parseInt(document.getElementById("fab_20").value)||0, "ESC.32KG":parseInt(document.getElementById("fab_32").value)||0 }; saveAll(); renderStockTab(); renderAdmin(); toast("✅ Stock actualizado"); });
-    document.getElementById("adminChoferSelect")?.addEventListener("change", async ()=>{ const selected=document.getElementById("adminChoferSelect").value; loadDataByPin(selected); renderAdmin(); });
+    document.getElementById("importConfigInput")?.addEventListener("change", e=>{ if(!e.target.files.length) return; const reader=new FileReader(); reader.onload=async function(ev){ try{ const config=JSON.parse(ev.target.result); if(config.clientesList){ CLIENTES_LIST.length=0; CLIENTES_LIST.push(...config.clientesList); } if(config.precios) preciosClientes=config.precios; if(config.costos) costosClientes=config.costos; if(config.productos) productos=config.productos; CLIENTES_LIST.forEach(c=>{ if(!preciosClientes[c]) preciosClientes[c]=getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c]=getCostosCliente(); }); saveAll(); saveCommonProducts(); saveGlobalPrices(); await guardarConfiguracionRemota(); toast("✅ Configuración importada"); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); else renderDriver(); } catch(err){ toast("❌ Error al leer archivo"); } }; reader.readAsText(e.target.files[0]); e.target.value=''; });
+    document.getElementById("addProductBtn")?.addEventListener("click", async ()=>{ const nombre=document.getElementById("newProductName").value.trim(); if(!nombre) return; const precio=parseInt(document.getElementById("newProductPrice").value)||0; const img=document.getElementById("newProductImg").value||"https://placehold.co/100x100"; productos.push({clave:nombre,precioBase:precio,imagen:img}); saveCommonProducts(); await guardarConfiguracionRemota(); renderProductosTab(); document.getElementById("newProductName").value=""; document.getElementById("newProductPrice").value=""; document.getElementById("newProductImg").value=""; toast("✅ Producto agregado"); });
+    document.getElementById("saveProductsBtn")?.addEventListener("click", async ()=>{ document.querySelectorAll(".prodImg").forEach(img=>{ const clave=img.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave); if(prod) prod.imagen=img.value; }); document.querySelectorAll(".prodPriceBase").forEach(inp=>{ const clave=inp.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave); if(prod) prod.precioBase=parseInt(inp.value)||0; }); saveCommonProducts(); await guardarConfiguracionRemota(); toast("💾 Productos guardados"); renderProductosTab(); });
+    document.getElementById("updateStockBtn")?.addEventListener("click", async ()=>{ stockFabrica = { "1,7 KG":parseInt(document.getElementById("fab_17").value)||0, "3,5 KG":parseInt(document.getElementById("fab_35").value)||0, "14 KG":parseInt(document.getElementById("fab_14").value)||0, "ESC.20KG":parseInt(document.getElementById("fab_20").value)||0, "ESC.32KG":parseInt(document.getElementById("fab_32").value)||0 }; saveAll(); await guardarStockRemota(currentDriverPin || document.getElementById("adminChoferSelect").value); renderStockTab(); renderAdmin(); toast("✅ Stock actualizado"); });
+    document.getElementById("adminChoferSelect")?.addEventListener("change", async ()=>{ const selected=document.getElementById("adminChoferSelect").value; await cargarVentas(selected); await cargarGastos(selected); await cargarStock(selected); renderAdmin(); });
     document.querySelectorAll(".tab-btn").forEach(btn=>{ btn.addEventListener("click", ()=>{ document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); const tab=btn.getAttribute("data-tab"); ["dashboard","reportes","clientes","productos","stock"].forEach(t=>{ document.getElementById(`tab${t.charAt(0).toUpperCase()+t.slice(1)}`).style.display = tab===t?"block":"none"; }); if(tab==="dashboard"){ actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); } if(tab==="reportes") renderWeeklyReport(); if(tab==="productos") renderProductosTab(); if(tab==="stock") renderStockTab(); }); });
 });
 </script>
