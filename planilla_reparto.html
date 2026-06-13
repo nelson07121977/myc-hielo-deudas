@@ -3,894 +3,679 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (Completa)</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>MYC HIELO – Planilla de Reparto (DEFINITIVA)</title>
     <style>
-        /* === ESTILO ORIGINAL COMPLETO (sin cambios) === */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; font-family: 'Inter', system-ui, 'Segoe UI', sans-serif; }
-        :root {
-            --azul: #0a3e6d; --azul-medio: #1259a0; --azul-claro: #e8f0fb;
-            --verde: #1e5a3a; --verde-claro: #e8f5ee; --amarillo: #f59e0b;
-            --rojo: #dc2626; --gris-bg: #f0f4f8; --gris-borde: #e2e8f0;
-            --gris-texto: #64748b; --blanco: #ffffff;
-            --sombra: 0 4px 20px rgba(10,62,109,0.10);
-            --sombra-hover: 0 8px 30px rgba(10,62,109,0.18);
-            --radio: 16px; --radio-grande: 24px;
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', sans-serif;
         }
-        body { background: var(--gris-bg); margin: 0; padding: 16px; min-height: 100vh; }
-        .login-container { max-width: 400px; margin: 8vh auto; background: var(--blanco); border-radius: 28px; box-shadow: var(--sombra-hover); overflow: hidden; text-align: center; }
-        .login-header { background: linear-gradient(135deg, var(--azul) 0%, #1259a0 100%); padding: 36px 28px 28px; }
-        .logo { font-size: 2.2rem; font-weight: 800; color: white; letter-spacing: 1px; display: block; margin-bottom: 6px; }
-        .logo-sub { color: rgba(255,255,255,0.75); font-size: 0.85rem; font-weight: 500; }
-        .login-body { padding: 28px 28px 36px; }
-        .login-body h2 { font-size: 1.2rem; font-weight: 700; color: var(--azul); margin: 0 0 6px; }
-        .login-hint { font-size: 0.8rem; color: var(--gris-texto); margin: 0 0 22px; line-height: 1.6; }
-        input[type=password], input[type=text], input[type=number], select {
-            width: 100%; padding: 11px 16px; margin: 6px 0;
-            border: 1.5px solid var(--gris-borde); border-radius: 50px;
-            font-size: 0.92rem; font-family: inherit; color: #1e293b;
-            background: var(--blanco); transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+        body {
+            background: #f0f4f8;
+            margin: 0;
+            padding: 16px;
         }
-        input:focus, select:focus { border-color: var(--azul-medio); box-shadow: 0 0 0 3px rgba(18,89,160,0.12); }
+        .login-container, .panel {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .login-header, .panel-header {
+            background: #0a3e6d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .login-body, .panel-body {
+            padding: 24px;
+        }
+        input, select, button {
+            padding: 10px 16px;
+            margin: 8px 0;
+            border-radius: 50px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            width: 100%;
+        }
         button {
-            width: 100%; padding: 12px 18px; margin: 8px 0;
-            background: linear-gradient(135deg, var(--azul) 0%, var(--azul-medio) 100%);
-            color: white; font-weight: 700; font-size: 0.92rem; font-family: inherit;
-            border: none; border-radius: 50px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+            background: #0a3e6d;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
         }
-        button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(10,62,109,0.28); }
-        button:active { transform: translateY(0); }
-        .error { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; padding: 10px 16px; border-radius: 50px; font-size: 0.82rem; margin-top: 10px; }
-        .admin-panel, .driver-panel { max-width: 1440px; margin: 0 auto; background: var(--blanco); border-radius: var(--radio-grande); box-shadow: var(--sombra); overflow: hidden; }
-        .panel-header { padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .panel-header-admin { background: linear-gradient(135deg, var(--azul) 0%, #1259a0 100%); }
-        .panel-header-driver { background: linear-gradient(135deg, var(--verde) 0%, #2d7a50 100%); }
-        .panel-header .title { color: white; font-weight: 700; font-size: 1rem; }
-        .panel-header .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .tabs { display: flex; background: #f8fafc; border-bottom: 2px solid var(--gris-borde); flex-wrap: wrap; }
-        .tab-btn { flex: 1; background: none; border: none; border-radius: 0; padding: 13px 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; color: #64748b; white-space: nowrap; transition: color 0.2s, background 0.2s; margin: 0; box-shadow: none; }
-        .tab-btn:hover { background: #f1f5f9; color: var(--azul); transform: none; }
-        .tab-btn.active { background: white; color: var(--azul); border-bottom: 3px solid var(--azul); }
-        .panel-content { padding: 22px 24px; }
-        .btn-small { background: var(--azul); color: white; padding: 7px 16px; width: auto; border-radius: 50px; font-size: 0.75rem; font-weight: 600; margin: 3px; display: inline-block; white-space: nowrap; box-shadow: none; }
-        .btn-small:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        .btn-verde { background: linear-gradient(135deg, #16a34a, #15803d) !important; }
-        .btn-rojo { background: linear-gradient(135deg, #dc2626, #b91c1c) !important; }
-        .btn-amarillo { background: linear-gradient(135deg, #f59e0b, #d97706) !important; }
-        .btn-azul-medio { background: linear-gradient(135deg, #2563eb, #1d4ed8) !important; }
-        .btn-logout { background: rgba(255,255,255,0.15); color: white; border: 1.5px solid rgba(255,255,255,0.4); width: auto; padding: 7px 18px; font-size: 0.82rem; border-radius: 50px; font-weight: 600; }
-        .btn-logout:hover { background: rgba(255,255,255,0.25); box-shadow: none; }
-        .summary-cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; background: var(--azul-claro); padding: 16px; border-radius: 20px; }
-        .card { background: white; flex: 1; min-width: 120px; padding: 14px 16px; border-radius: 16px; text-align: center; box-shadow: 0 2px 8px rgba(10,62,109,0.07); border: 1px solid rgba(10,62,109,0.06); }
-        .card h4 { margin: 0 0 6px; font-size: 0.7rem; font-weight: 600; color: var(--gris-texto); text-transform: uppercase; letter-spacing: 0.5px; }
-        .card .value { font-size: 1.45rem; font-weight: 800; color: var(--azul); }
-        .card.cobro-card { background: #fffbeb; border-left: 4px solid var(--amarillo); }
-        .card.cobro-card .value { color: #b45309; }
-        .gastos-detalle { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
-        .gastos-detalle label { font-size: 0.68rem; font-weight: 600; color: var(--gris-texto); text-align: left; margin-bottom: -2px; }
-        .gastos-detalle input { margin: 2px 0; padding: 7px 12px; font-size: 0.82rem; }
-        .gastos-detalle button { margin-top: 6px; padding: 8px; font-size: 0.75rem; }
-        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: flex-end; }
-        .form-group { flex: 1 1 140px; }
-        label { font-size: 0.7rem; font-weight: 600; color: #475569; display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
-        .tabla-wrapper { overflow-x: auto; border-radius: var(--radio); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; background: white; min-width: 600px; }
-        th { background: var(--azul); color: white; padding: 11px 10px; text-align: left; font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { border-bottom: 1px solid #f1f5f9; padding: 10px 10px; vertical-align: middle; color: #1e293b; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: #f8fafc; }
-        tr:nth-child(even) td { background: #fafbfd; }
-        tr:nth-child(even):hover td { background: #f1f5f9; }
-        .badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
-        .badge-efectivo   { background: #dcfce7; color: #15803d; }
-        .badge-transf     { background: #dbeafe; color: #1d4ed8; }
-        .badge-ctacte     { background: #fef9c3; color: #92400e; }
-        .badge-cobrocc    { background: #fce7f3; color: #9d174d; }
-        .chart-container { background: white; padding: 20px 22px; border-radius: 20px; margin-bottom: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--gris-borde); }
-        .chart-container h3 { margin: 0 0 16px; font-size: 0.9rem; color: var(--azul); font-weight: 700; }
-        canvas { max-height: 380px; width: 100%; }
-        .productos-vendidos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; margin-top: 12px; }
-        .prod-card { background: var(--azul-claro); padding: 14px; border-radius: 16px; text-align: center; border: 1px solid rgba(10,62,109,0.08); }
-        .prod-card strong { font-size: 0.85rem; color: var(--azul); display: block; margin-bottom: 4px; }
-        .force-scale-checkbox { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.18); padding: 5px 12px; border-radius: 50px; }
-        .force-scale-checkbox label { font-size: 0.75rem; margin: 0; color: white; text-transform: none; letter-spacing: 0; }
-        .force-scale-checkbox input { width: auto; margin: 0; }
-        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--azul); color: white; padding: 11px 24px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; z-index: 9999; display: none; box-shadow: 0 8px 24px rgba(10,62,109,0.35); white-space: nowrap; }
-        .toast.show { display: block; animation: toastIn 0.2s ease; }
-        @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
-        footer { text-align: center; font-size: 0.72rem; margin-top: 18px; color: #94a3b8; }
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            .panel-content { padding: 14px 14px; }
-            .form-group { flex: 1 1 120px; }
-            .card .value { font-size: 1.2rem; }
+        button:hover {
+            background: #1259a0;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 120px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #e8f0fb;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-efectivo { background: #dcfce7; color: #15803d; }
+        .badge-transf { background: #dbeafe; color: #1d4ed8; }
+        .badge-ctacte { background: #fef9c3; color: #92400e; }
+        .badge-cobrocc { background: #fce7f3; color: #9d174d; }
+        .error {
+            color: #b91c1c;
+            background: #fee2e2;
+            padding: 8px;
+            border-radius: 50px;
+            margin-top: 8px;
+            display: none;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0a3e6d;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: none;
+            z-index: 1000;
+        }
+        .card {
+            background: #e8f0fb;
+            padding: 12px;
+            border-radius: 16px;
+            flex: 1;
+            text-align: center;
+        }
+        .flex-cards {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+        .tab {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #e2e8f0;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        .tab.active {
+            background: #0a3e6d;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            margin-top: 16px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .clientes-table input {
+            width: 70px;
+            padding: 4px;
+            margin: 0;
         }
     </style>
 </head>
 <body>
-<div id="app">
-    <!-- LOGIN -->
-    <div id="loginScreen" class="login-container">
-        <div class="login-header"><span class="logo">🧊 MYC HIELO</span><span class="logo-sub">Planilla de Reparto</span></div>
-        <div class="login-body">
-            <h2>Ingresá tu PIN</h2>
-            <p class="login-hint">🔹 Choferes: <strong>1234</strong> o <strong>5678</strong><br>🔹 Administrador: <strong>9999</strong></p>
-            <input type="password" id="pinInput" placeholder="● ● ● ●">
-            <button id="loginBtn">Ingresar</button>
-            <div id="loginError" class="error">PIN incorrecto. Intentá de nuevo.</div>
-        </div>
-    </div>
 
-    <!-- PANEL ADMIN -->
-    <div id="adminPanel" class="admin-panel" style="display:none;">
-        <div class="panel-header panel-header-admin">
-            <span class="title">🧊 MYC HIELO — Administrador</span>
-            <div class="controls">
-                <div class="force-scale-checkbox"><input type="checkbox" id="forceOnePageCheckbox"><label>📄 Una sola página</label></div>
-                <select id="adminChoferSelect" style="width:auto;"><option value="1234">Chofer 1234</option><option value="5678">Chofer 5678</option></select>
-                <button id="exportPdfBtn" class="btn-small btn-verde">📄 PDF Dashboard</button>
-                <button id="exportReportPdfBtn" class="btn-small btn-amarillo">📊 PDF Semanal</button>
-                <button id="cerrarDiaBtn" class="btn-small btn-rojo">📦 Cerrar día</button>
-                <button id="logoutAdmin" class="btn-logout">Salir</button>
-            </div>
-        </div>
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
-            <button class="tab-btn" data-tab="reportes">📈 Semanal</button>
-            <button class="tab-btn" data-tab="clientes">🏷️ Clientes</button>
-            <button class="tab-btn" data-tab="productos">📦 Productos</button>
-        </div>
-        <div id="tabDashboard" class="panel-content">
-            <div class="summary-cards" id="adminStats"></div>
-            <div class="chart-container no-print"><h3>📊 Ventas por cliente (hoy)</h3><canvas id="ventasChart"></canvas></div>
-            <div class="chart-container"><h3>📦 Ventas por producto (hoy)</h3><div id="productosReport" class="productos-vendidos"></div></div>
-            <div class="chart-container no-print"><h3>📈 Evolución últimos 7 días</h3><canvas id="evolucionChart"></canvas></div>
-            <h3 style="margin:0 0 12px;">📋 Ventas y Cobros del día</h3>
-            <div class="tabla-wrapper"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></tr></thead><tbody id="salesDetailBody"></tbody></table></div>
-        </div>
-        <div id="tabReportes" class="panel-content" style="display:none;">
-            <h2 style="font-size:1rem; margin:0 0 16px;">📅 Resumen últimos 7 días</h2>
-            <div class="summary-cards" id="weeklyStats"></div>
-            <div class="chart-container"><h3>🏆 Top 10 clientes por volumen</h3><canvas id="topClientesChart"></canvas></div>
-            <div class="chart-container"><h3>📈 Evolución diaria</h3><canvas id="weeklySalesChart"></canvas></div>
-            <h3 style="font-size:0.9rem; margin:0 0 10px;">💸 Detalle ventas semana</h3>
-            <div class="tabla-wrapper"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div>
-        </div>
-        <div id="tabClientes" class="panel-content" style="display:none;">
-            <h3 style="font-size:0.95rem; margin:0 0 14px;">Gestión de clientes — precios de venta y costos</h3>
-            <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
-                <button id="exportFullBackupBtn" class="btn-small btn-verde">💾 Respaldar TODO</button>
-                <label for="importFullBackupInput" class="btn-small btn-amarillo" style="padding:7px 16px; cursor:pointer;">📂 Restaurar TODO</label>
-                <input type="file" id="importFullBackupInput" accept=".json" style="display:none;">
-                <button id="forceSavePricesBtn" class="btn-small btn-primary">💾 Guardar precios (forzar)</button>
-            </div>
-            <div class="form-row"><div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div><div class="form-group"><button id="addClienteBtn" class="btn-small">Agregar</button></div></div>
-            <div class="tabla-wrapper"><table id="clientesTable"><thead><tr><th>Cliente</th><th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></td></div>
-            <button id="saveAllPricesBtn" class="btn-small">💾 Guardar todos los cambios (local + nube)</button>
-        </div>
-        <div id="tabProductos" class="panel-content" style="display:none;">
-            <h3 style="font-size:0.95rem; margin:0 0 14px;">📸 Tipos de Bolsas / Productos</h3>
-            <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div></div>
-            <div class="tabla-wrapper"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div>
-            <button id="saveProductsBtn" class="btn-small">💾 Guardar imágenes y precios base</button>
-        </div>
+<div id="loginScreen" class="login-container">
+    <div class="login-header">
+        <h2>🧊 MYC HIELO</h2>
+        <p>Planilla de Reparto</p>
     </div>
-
-    <!-- PANEL CHOFER -->
-    <div id="driverPanel" class="driver-panel" style="display:none;">
-        <div class="panel-header panel-header-driver">
-            <span class="title">🚚 CHOFER <span id="driverIdLabel"></span> — Registrar entregas</span>
-            <button id="logoutDriver" class="btn-logout">Salir</button>
-        </div>
-        <div class="panel-content">
-            <div class="form-row">
-                <div class="form-group"><label>Cliente</label><select id="clienteSelect"></select></div>
-                <div class="form-group"><label>1,7 Kg</label><input type="number" id="qty_17" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>3,5 Kg</label><input type="number" id="qty_35" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>14 Kg</label><input type="number" id="qty_14" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>20 Kg</label><input type="number" id="qty_20" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>32 Kg</label><input type="number" id="qty_32" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>Forma de pago</label><select id="paymentType"><option value="efectivo">💵 Efectivo</option><option value="transferencia">💳 Transferencia</option><option value="ctacte">📘 Cuenta Corriente</option><option value="cobrocc">🔄 Cobro de Cta. Cte.</option></select></div>
-                <div class="form-group"><label>Cobro deuda anterior ($)</label><input type="number" id="cobroDeudaInput" value="0" step="1" min="0"></div>
-                <div class="form-group"><button id="addSaleBtn" style="background:linear-gradient(135deg,#16a34a,#15803d);">➕ Agregar venta</button></div>
-            </div>
-            <div class="summary-cards">
-                <div class="card"><h4>Total Ventas $</h4><div class="value" id="driverTotalVenta">0</div></div>
-                <div class="card"><h4>💵 Efectivo</h4><div class="value" id="driverTotalEfectivo">0</div></div>
-                <div class="card"><h4>💳 Transf.</h4><div class="value" id="driverTotalTransferencia">0</div></div>
-                <div class="card"><h4>📘 Cta Cte</h4><div class="value" id="driverTotalCtaCte">0</div></div>
-                <div class="card cobro-card"><h4>🔄 Cobrado hoy</h4><div class="value" id="totalCobrosCC">0</div><small>deudas anteriores</small></div>
-                <div class="card">
-                    <h4>💸 Gastos</h4>
-                    <div class="gastos-detalle">
-                        <label>⛽ Nafta $</label><input type="number" id="gastoNafta" value="0" step="100">
-                        <label>👨‍✈️ Choferes $</label><input type="number" id="gastoChoferes" value="0" step="100">
-                        <label>📦 Otros $</label><input type="number" id="gastoOtros" value="0" step="100">
-                        <button id="setGastosDetalleBtn">Aplicar gastos</button>
-                        <div style="margin-top:6px; font-weight:700;">Total: $<span id="totalGastos">0</span></div>
-                    </div>
-                </div>
-                <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small>Ef + Transf + Cobros - Gastos</small></div>
-            </div>
-            <h3 style="margin:0 0 10px;">📋 Ventas del día</h3>
-            <div class="tabla-wrapper"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
-            <button id="resetDayBtn" class="btn-small btn-rojo" style="margin-top:20px;">🔄 Reiniciar Jornada</button>
-        </div>
+    <div class="login-body">
+        <label>Ingresá tu PIN</label>
+        <input type="password" id="pinInput" placeholder="●●●●">
+        <button id="loginBtn">Ingresar</button>
+        <div id="loginError" class="error">PIN incorrecto. Usá 1234, 5678 o 9999</div>
+        <p style="font-size:0.8rem; margin-top:12px;">Choferes: 1234 / 5678 | Admin: 9999</p>
     </div>
 </div>
-<footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Cerrar día archiva la jornada y limpia el registro actual.</footer>
+
+<!-- PANEL CHOFER -->
+<div id="driverPanel" class="panel" style="display: none;">
+    <div class="panel-header">
+        <h2>🚚 CHOFER <span id="driverId"></span></h2>
+        <button id="logoutDriver" style="background:#dc2626; width:auto; padding:6px 12px;">Salir</button>
+    </div>
+    <div class="panel-body">
+        <div class="form-row">
+            <div class="form-group"><label>Cliente</label><select id="clienteSelect"></select></div>
+            <div class="form-group"><label>1,7 Kg</label><input type="number" id="qty_17" value="0" min="0"></div>
+            <div class="form-group"><label>3,5 Kg</label><input type="number" id="qty_35" value="0" min="0"></div>
+            <div class="form-group"><label>14 Kg</label><input type="number" id="qty_14" value="0" min="0"></div>
+            <div class="form-group"><label>20 Kg</label><input type="number" id="qty_20" value="0" min="0"></div>
+            <div class="form-group"><label>32 Kg</label><input type="number" id="qty_32" value="0" min="0"></div>
+            <div class="form-group">
+                <label>Forma de pago</label>
+                <select id="paymentType">
+                    <option value="efectivo">💵 Efectivo</option>
+                    <option value="transferencia">💳 Transferencia</option>
+                    <option value="ctacte">📘 Cuenta Corriente</option>
+                    <option value="cobrocc">🔄 Cobro de deuda</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Cobro deuda ($)</label><input type="number" id="cobroDeudaInput" value="0" min="0"></div>
+            <div class="form-group"><button id="addSaleBtn" style="background:#16a34a;">➕ Agregar venta</button></div>
+        </div>
+
+        <div class="flex-cards">
+            <div class="card"><strong>Total Ventas $</strong><br><span id="totalVentas">0</span></div>
+            <div class="card"><strong>💵 Efectivo</strong><br><span id="totalEfectivo">0</span></div>
+            <div class="card"><strong>💳 Transf.</strong><br><span id="totalTransf">0</span></div>
+            <div class="card"><strong>📘 Cta Cte</strong><br><span id="totalCtaCte">0</span></div>
+            <div class="card"><strong>🔄 Cobrado hoy</strong><br><span id="totalCobros">0</span></div>
+        </div>
+
+        <h3>📋 Ventas del día</h3>
+        <div style="overflow-x: auto;">
+            <table id="salesTable">
+                <thead>
+                    <tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th><th></th></tr>
+                </thead>
+                <tbody id="salesTableBody"></tbody>
+            </table>
+        </div>
+        <button id="resetDayBtn" style="background:#dc2626; margin-top:16px;">🔄 Reiniciar jornada</button>
+    </div>
+</div>
+
+<!-- PANEL ADMIN -->
+<div id="adminPanel" class="panel" style="display: none;">
+    <div class="panel-header">
+        <h2>🧊 Administrador</h2>
+        <button id="logoutAdmin" style="background:#dc2626; width:auto; padding:6px 12px;">Salir</button>
+    </div>
+    <div class="panel-body">
+        <div class="form-row">
+            <div class="form-group"><label>Ver chofer</label><select id="adminChoferSelect"><option value="1234">Chofer 1234</option><option value="5678">Chofer 5678</option></select></div>
+            <div class="form-group"><button id="cerrarDiaAdmin" style="background:#dc2626;">📦 Cerrar día</button></div>
+        </div>
+        <div id="adminStats" class="flex-cards"></div>
+        <h3>Ventas del día</h3>
+        <div style="overflow-x: auto;"><table id="adminSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th></tr></thead><tbody id="adminSalesBody"></tbody></table></div>
+        
+        <!-- Gestión de clientes y precios -->
+        <h3>🏷️ Clientes y precios</h3>
+        <div class="form-row">
+            <div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="nuevoCliente" placeholder="Nombre"></div>
+            <div class="form-group"><button id="agregarClienteBtn">Agregar</button></div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table id="clientesTable" class="clientes-table">
+                <thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Acciones</th></tr></thead>
+                <tbody id="clientesTbody"></tbody>
+            </table>
+        </div>
+        <button id="guardarPreciosBtn" style="margin-top:8px;">💾 Guardar precios</button>
+    </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
-// ==================== CONFIGURACIÓN GLOBAL ====================
-const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-let currentDriverPin = null;
-let CLIENTES_LIST = [];
-let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, cobrosCC = 0;
-let productos = [];
-let preciosClientes = {}, costosClientes = {};
-let chartClientes = null, chartEvolucion = null, topClientesChart = null, weeklySalesChart = null;
+    // ==================== CONFIGURACIÓN GLOBAL ====================
+    const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
+    let currentUser = null; // '1234', '5678' o '9999'
+    let clientes = [];
+    let precios = {}; // { cliente: { "1,7 KG":1500, ... } }
+    let ventas = [];    // todas las ventas del usuario actual
+    let cobrosCC = 0;
+    let gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }; // no se usa en esta versión simple pero se deja
 
-// Lista completa de clientes original
-const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
+    // Clientes por defecto (todos los que tenías)
+    const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
 
-// ==================== UTILIDADES ====================
-function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
-function badgePago(pago) { const map={efectivo:'badge-efectivo', transferencia:'badge-transf', ctacte:'badge-ctacte', cobrocc:'badge-cobrocc'}; const labels={efectivo:'Efectivo', transferencia:'Transf.', ctacte:'Cta Cte', cobrocc:'Cobro CC'}; return `<span class="badge ${map[pago]||''}">${labels[pago]||pago}</span>`; }
-function fmtMoney(n) { return '$' + Number(n).toLocaleString('es-AR'); }
+    // Precios por defecto
+    function getDefaultPrecio() {
+        return { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
+    }
 
-function getPreciosCliente(cliente) {
-    // Valores por defecto
-    let p17=1500, p35=2500, p14=7000, p20=8000, p32=12000;
-    // Precios especiales para algunos clientes (igual que original)
-    const specials={"AFRICA":{p14:5000},"LETS GO":{p14:6000},"GUTIERREZ":{p14:5500},"TERRANO":{p14:7500},"PADDEL TURCO":{p14:5500},"ROSADITA":{p14:7000},"ICONOS":{p14:7000},"WILLIAMS":{p14:8000},"ERIC SALON":{p14:6000},"GABRIEL BARRIO DORREGO":{p35:3500,p14:7000},"KIOSCO VAMPIRO":{p35:3500,p14:7000}};
-    if(specials[cliente]) { if(specials[cliente].p14) p14=specials[cliente].p14; if(specials[cliente].p35) p35=specials[cliente].p35; }
-    return { p17, p35, p14, p20, p32 };
-}
-function getCostosCliente() { return { c17:1000, c35:1500, c14:4000, c20:4500, c32:6000 }; }
-
-function calcularTotalVenta(cliente, cant) {
-    const p = preciosClientes[cliente] || getPreciosCliente(cliente);
-    return (cant["1,7 KG"]||0)*p.p17 + (cant["3,5 KG"]||0)*p.p35 + (cant["14 KG"]||0)*p.p14 + (cant["ESC.20KG"]||0)*p.p20 + (cant["ESC.32KG"]||0)*p.p32;
-}
-
-function getTodayUTC() { return new Date().toISOString().slice(0,10); }
-function getVentasHoy() { const hoy = getTodayUTC(); return ventas.filter(v => v.fecha === hoy); }
-function getVentasUltimos7Dias() { const hoy = new Date(); const unaSemanaAtras = new Date(hoy); unaSemanaAtras.setDate(hoy.getDate() - 6); const fechaLimite = unaSemanaAtras.toISOString().slice(0,10); return ventas.filter(v => v.fecha >= fechaLimite); }
-
-// ==================== PERSISTENCIA LOCAL ====================
-function loadCommonProducts() {
-    let sprod = localStorage.getItem("planilla77_productos");
-    if(sprod) productos = JSON.parse(sprod);
-    else productos = [
-        { clave:"1,7 KG", precioBase:1500, imagen:"https://placehold.co/100x100?text=1.7KG" },
-        { clave:"3,5 KG", precioBase:2500, imagen:"https://placehold.co/100x100?text=3.5KG" },
-        { clave:"14 KG",  precioBase:7000, imagen:"https://placehold.co/100x100?text=14KG" },
-        { clave:"ESC.20KG", precioBase:8000, imagen:"https://placehold.co/100x100?text=20KG" },
-        { clave:"ESC.32KG", precioBase:12000, imagen:"https://placehold.co/100x100?text=32KG" }
-    ];
-}
-function saveCommonProducts() { localStorage.setItem("planilla77_productos", JSON.stringify(productos)); }
-
-function loadGlobalPrices() {
-    let sp = localStorage.getItem("myc_precios_globales");
-    let sc = localStorage.getItem("myc_costos_globales");
-    if(sp) preciosClientes = JSON.parse(sp);
-    else { preciosClientes = {}; DEFAULT_CLIENTES.forEach(c => preciosClientes[c] = getPreciosCliente(c)); }
-    if(sc) costosClientes = JSON.parse(sc);
-    else { costosClientes = {}; DEFAULT_CLIENTES.forEach(c => costosClientes[c] = getCostosCliente()); }
-}
-function saveGlobalPrices() { 
-    localStorage.setItem("myc_precios_globales", JSON.stringify(preciosClientes)); 
-    localStorage.setItem("myc_costos_globales", JSON.stringify(costosClientes)); 
-    toast("✅ Precios y costos guardados en local");
-}
-
-function loadDataByPin(pin) {
-    const p = `myc_${pin}_`;
-    let sv = localStorage.getItem(p+"ventas"); ventas = sv ? JSON.parse(sv) : [];
-    let sg = localStorage.getItem(p+"gastos"); gastos = sg ? Number(sg) : 0;
-    let sgd = localStorage.getItem(p+"gastosDetalle"); gastosDetalle = sgd ? JSON.parse(sgd) : { nafta:0, choferes:0, otros:0 };
-    let scb = localStorage.getItem(p+"cobrosCC"); cobrosCC = scb ? Number(scb) : 0;
-}
-function saveDataByPin(pin) {
-    const p = `myc_${pin}_`;
-    localStorage.setItem(p+"ventas", JSON.stringify(ventas));
-    localStorage.setItem(p+"gastos", gastos);
-    localStorage.setItem(p+"gastosDetalle", JSON.stringify(gastosDetalle));
-    localStorage.setItem(p+"cobrosCC", cobrosCC);
-}
-function saveAll() {
-    if(currentDriverPin) saveDataByPin(currentDriverPin);
-    else { let sel = document.getElementById("adminChoferSelect")?.value; if(sel) saveDataByPin(sel); }
-    saveGlobalPrices();
-}
-
-// ==================== API CALLS ====================
-async function apiCall(ruta, params = {}, usePost = false) {
-    try {
-        if (usePost) {
-            const form = new URLSearchParams();
-            for (const [k, v] of Object.entries(params)) form.append(k, v);
-            const response = await fetch(API_URL, { method: 'POST', body: form });
-            return await response.json();
+    // Cargar clientes y precios desde localStorage
+    function cargarClientes() {
+        let stored = localStorage.getItem("myc_clientes");
+        if (stored) {
+            clientes = JSON.parse(stored);
         } else {
-            const url = new URL(API_URL);
-            url.searchParams.append('ruta', ruta);
-            for (const [k, v] of Object.entries(params)) url.searchParams.append(k, v);
-            const res = await fetch(url.toString());
-            return await res.json();
+            clientes = [...DEFAULT_CLIENTES];
         }
-    } catch(e) { console.error(e); return null; }
-}
-
-// ==================== CLIENTES ====================
-async function cargarClientesDesdeSheets() {
-    try {
-        const data = await apiCall('clientes');
-        if(data && Array.isArray(data) && data.length>0) { 
-            CLIENTES_LIST = data.map(c => c.toUpperCase().trim()).filter(c => c); 
-            localStorage.setItem('myc_clientes_list', JSON.stringify(CLIENTES_LIST));
-            return;
-        }
-    } catch(e) { console.error(e); }
-    let cli = localStorage.getItem("myc_clientes_list");
-    if(cli) CLIENTES_LIST = JSON.parse(cli);
-    else CLIENTES_LIST = [...DEFAULT_CLIENTES];
-}
-function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON.stringify(CLIENTES_LIST)); }
-
-async function agregarClienteGlobal(nombre) {
-    if(!CLIENTES_LIST.includes(nombre)) {
-        CLIENTES_LIST.push(nombre);
-        preciosClientes[nombre]=getPreciosCliente(nombre);
-        costosClientes[nombre]=getCostosCliente();
-        guardarClientesLocal(); saveGlobalPrices();
-        try { await apiCall('agregarCliente', { nombre }, true); } catch(e){}
-        return true;
-    }
-    return false;
-}
-async function eliminarClienteGlobal(nombre) {
-    if(confirm(`¿Eliminar cliente "${nombre}"?`)) {
-        CLIENTES_LIST = CLIENTES_LIST.filter(c=>c!==nombre);
-        delete preciosClientes[nombre]; delete costosClientes[nombre];
-        guardarClientesLocal(); saveGlobalPrices();
-        try { await apiCall('eliminarCliente', { nombre }, true); } catch(e){}
-        ventas = ventas.filter(v=>v.cliente!==nombre);
-        saveAll();
-        return true;
-    }
-    return false;
-}
-
-// ==================== CONFIGURACIÓN ====================
-async function cargarConfiguracion() {
-    try {
-        const config = await apiCall('obtenerConfiguracion');
-        if(config && config.productos && config.productos.length) productos = config.productos;
-        if(!localStorage.getItem("myc_precios_globales") && config && config.precios) preciosClientes = config.precios;
-        if(!localStorage.getItem("myc_costos_globales") && config && config.costos) costosClientes = config.costos;
-    } catch(e) { console.error(e); }
-}
-async function guardarConfiguracionRemota() {
-    try { 
-        await apiCall('guardarConfiguracion', { precios:JSON.stringify(preciosClientes), costos:JSON.stringify(costosClientes), productos:JSON.stringify(productos) }, true); 
-        toast("✅ Configuración guardada en la nube");
-    } catch(e) { toast("❌ Error al guardar"); }
-}
-
-// ==================== VENTAS ====================
-async function cargarVentas(chofer) {
-    try {
-        const data = await apiCall('obtenerVentas', { chofer });
-        if (Array.isArray(data) && data.length>0) { 
-            ventas = data.map(v => { if(v.fecha) v.fecha = v.fecha.split('T')[0]; return v; });
-            saveDataByPin(chofer);
-        }
-    } catch(e) { console.error(e); }
-    const hoy = getTodayUTC();
-    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || 0), 0);
-}
-async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
-    let total = 0;
-    if(pago !== "cobrocc") total = calcularTotalVenta(cliente, cantidades);
-    const fechaStr = getTodayUTC();
-    const nueva = { id: Date.now()+'_'+Math.floor(Math.random()*10000), cliente, cantidades, pago, total, cobroDeuda, fecha: fechaStr };
-    ventas.push(nueva);
-    if(cobroDeuda>0) cobrosCC += cobroDeuda;
-    saveAll();
-    try { await apiCall('guardarVenta', { fecha: fechaStr, cliente, cantidades: JSON.stringify(cantidades), pago, total, cobroDeuda, chofer: currentDriverPin }, true); } catch(e) { console.error(e); }
-    // Sincronizar con deudas
-    try {
-        if(pago === "ctacte" && total > 0) {
-            await apiCall('agregarMovimiento', { fecha: fechaStr, cliente, tipo: 'deuda', monto: total, formaPago: '', detalle: `Venta de hielo: ${JSON.stringify(cantidades)}` }, true);
-        } else if(pago === "cobrocc" && cobroDeuda > 0) {
-            await apiCall('agregarMovimiento', { fecha: fechaStr, cliente, tipo: 'pago', monto: cobroDeuda, formaPago: 'Efectivo', detalle: 'Cobro de deuda' }, true);
-        }
-    } catch(e) { console.error(e); }
-    return nueva;
-}
-async function eliminarVenta(id) {
-    const idStr = String(id);
-    try { await apiCall('eliminarVenta', { id: idStr }, true); } catch(e) { console.error(e); }
-    ventas = ventas.filter(v => String(v.id) !== idStr);
-    const hoy = getTodayUTC();
-    cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda || 0), 0);
-    saveAll();
-    if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
-    else renderDriver();
-    toast("Venta eliminada");
-}
-function resetJornada() { const hoy = getTodayUTC(); ventas = ventas.filter(v => v.fecha !== hoy); gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0; saveAll(); }
-
-// ==================== GASTOS ====================
-async function cargarGastos(chofer) {
-    try {
-        const data = await apiCall('obtenerGastos', { chofer });
-        const hoy = getTodayUTC();
-        const gastosHoy = Array.isArray(data) ? data.filter(g => g.fecha === hoy) : [];
-        let nafta=0, choferes=0, otros=0;
-        for(const g of gastosHoy){ if(g.categoria==='Nafta') nafta+=g.monto; else if(g.categoria==='Chofer') choferes+=g.monto; else if(g.categoria==='Otros') otros+=g.monto; }
-        gastosDetalle={ nafta, choferes, otros }; gastos=nafta+choferes+otros;
-    } catch(e){ console.error(e); }
-}
-async function guardarGastoRemota(categoria, monto, nota) { const fecha = getTodayUTC(); await apiCall('guardarGasto', { fecha, chofer: currentDriverPin, categoria, monto, nota }, true); }
-async function actualizarGastosDesdeDetalle() {
-    const nafta=parseFloat(document.getElementById("gastoNafta")?.value)||0;
-    const choferes=parseFloat(document.getElementById("gastoChoferes")?.value)||0;
-    const otros=parseFloat(document.getElementById("gastoOtros")?.value)||0;
-    if(nafta!==gastosDetalle.nafta) await guardarGastoRemota('Nafta', nafta, '');
-    if(choferes!==gastosDetalle.choferes) await guardarGastoRemota('Chofer', choferes, '');
-    if(otros!==gastosDetalle.otros) await guardarGastoRemota('Otros', otros, '');
-    gastosDetalle={ nafta, choferes, otros }; gastos=nafta+choferes+otros;
-    saveAll();
-    if (document.getElementById("adminPanel").style.display === "block") renderAdmin(); else renderDriver();
-    toast("Gastos actualizados");
-}
-function cerrarDiaAdmin() {
-    if(!confirm("Cerrar día archivará las ventas de hoy. ¿Continuar?")) return;
-    const historicoKey = `myc_historico_${getTodayUTC()}_${currentDriverPin || 'admin'}`;
-    const ventasHoy = getVentasHoy();
-    if(ventasHoy.length === 0) { toast("No hay ventas hoy"); return; }
-    let historial = JSON.parse(localStorage.getItem(historicoKey) || '[]');
-    historial.push({ fecha: getTodayUTC(), ventas: ventasHoy, gastos, gastosDetalle, cobrosCC });
-    localStorage.setItem(historicoKey, JSON.stringify(historial));
-    ventas = ventas.filter(v => v.fecha !== getTodayUTC());
-    gastos = 0; gastosDetalle = { nafta:0, choferes:0, otros:0 }; cobrosCC = 0;
-    saveAll();
-    toast("✅ Día cerrado");
-    renderAdmin();
-}
-
-// ==================== RENDER ADMIN ====================
-function renderAdmin() {
-    const ventasHoy = getVentasHoy();
-    let totalVentas=0, totalEfectivo=0, totalTransferencia=0, totalCtaCte=0, gananciaTotal=0;
-    ventasHoy.forEach(v => {
-        if(v.pago!=="cobrocc") totalVentas += v.total;
-        if(v.pago==="efectivo") totalEfectivo += v.total;
-        if(v.pago==="transferencia") totalTransferencia += v.total;
-        if(v.pago==="ctacte") totalCtaCte += v.total;
-        const cost = costosClientes[v.cliente] || getCostosCliente();
-        let costo = 0;
-        if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32;
-        gananciaTotal += (v.total-costo);
-    });
-    const gananciaNeta = gananciaTotal - gastos + cobrosCC;
-    document.getElementById("adminStats").innerHTML = `
-        <div class="card"><h4>Venta Bruta</h4><div class="value">${fmtMoney(totalVentas)}</div></div>
-        <div class="card"><h4>💵 Efectivo</h4><div class="value">${fmtMoney(totalEfectivo)}</div></div>
-        <div class="card"><h4>💳 Transf.</h4><div class="value">${fmtMoney(totalTransferencia)}</div></div>
-        <div class="card"><h4>📘 Cta.Cte</h4><div class="value">${fmtMoney(totalCtaCte)}</div></div>
-        <div class="card"><h4>💸 Gastos</h4><div class="value">${fmtMoney(gastos)}</div><small>Nafta:${gastosDetalle.nafta} Ch:${gastosDetalle.choferes} Otros:${gastosDetalle.otros}</small></div>
-        <div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">${fmtMoney(cobrosCC)}</div></div>
-        <div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(gananciaNeta)}</div></div>`;
-    const tbody = document.getElementById("salesDetailBody");
-    if(tbody) {
-        if(ventasHoy.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Sin ventas registradas hoy</div><div>';
+        let storedPrecios = localStorage.getItem("myc_precios");
+        if (storedPrecios) {
+            precios = JSON.parse(storedPrecios);
         } else {
-            let html = '';
-            for(const v of ventasHoy) {
-                html += `<tr>
-                    <td><strong>${v.cliente}</strong></td>
-                    <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
-                    <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-                    <td>${badgePago(v.pago)}</div><div>
-                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-                </tr>`;
-            }
-            tbody.innerHTML = html;
+            precios = {};
+            clientes.forEach(c => { precios[c] = getDefaultPrecio(); });
         }
+        // Asegurar que todos los clientes tengan precios
+        clientes.forEach(c => {
+            if (!precios[c]) precios[c] = getDefaultPrecio();
+        });
+        guardarClientesLocal();
     }
-    actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); renderClientesTab(); renderProductosTab(); renderWeeklyReport();
-}
-
-// ==================== RENDER DRIVER ====================
-function renderDriver() {
-    let select = document.getElementById("clienteSelect");
-    if(select) select.innerHTML = CLIENTES_LIST.map(c => `<option value="${c}">${c}</option>`).join("");
-    document.getElementById("driverIdLabel").innerText = `(PIN ${currentDriverPin})`;
-    const ventasHoy = getVentasHoy();
-    let totalV=0, totalE=0, totalT=0, totalC=0;
-    ventasHoy.forEach(v => {
-        if(v.pago!=="cobrocc") totalV += v.total;
-        if(v.pago==="efectivo") totalE += v.total;
-        if(v.pago==="transferencia") totalT += v.total;
-        if(v.pago==="ctacte") totalC += v.total;
-    });
-    document.getElementById("driverTotalVenta").innerText = fmtMoney(totalV);
-    document.getElementById("driverTotalEfectivo").innerText = fmtMoney(totalE);
-    document.getElementById("driverTotalTransferencia").innerText = fmtMoney(totalT);
-    document.getElementById("driverTotalCtaCte").innerText = fmtMoney(totalC);
-    document.getElementById("totalCobrosCC").innerText = fmtMoney(cobrosCC);
-    document.getElementById("gastoNafta").value = gastosDetalle.nafta;
-    document.getElementById("gastoChoferes").value = gastosDetalle.choferes;
-    document.getElementById("gastoOtros").value = gastosDetalle.otros;
-    document.getElementById("totalGastos").innerText = fmtMoney(gastos);
-    document.getElementById("driverNetoDia").innerText = fmtMoney(totalE + totalT + cobrosCC - gastos);
-    const tbody = document.getElementById("driverSalesBody");
-    if(tbody) {
-        if(ventasHoy.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Sin ventas registradas hoy</div><div>';
+    function guardarClientesLocal() {
+        localStorage.setItem("myc_clientes", JSON.stringify(clientes));
+        localStorage.setItem("myc_precios", JSON.stringify(precios));
+    }
+    function agregarCliente(nombre) {
+        nombre = nombre.toUpperCase().trim();
+        if (!nombre) return false;
+        if (!clientes.includes(nombre)) {
+            clientes.push(nombre);
+            precios[nombre] = getDefaultPrecio();
+            guardarClientesLocal();
+            // También agregar a la nube (opcional)
+            apiCall('agregarCliente', { nombre }, true).catch(e=>console.log);
+            return true;
+        }
+        return false;
+    }
+    function eliminarCliente(nombre) {
+        if (!confirm(`¿Eliminar cliente ${nombre}?`)) return;
+        clientes = clientes.filter(c => c !== nombre);
+        delete precios[nombre];
+        guardarClientesLocal();
+        apiCall('eliminarCliente', { nombre }, true).catch(e=>console.log);
+        // Eliminar también sus ventas? No, mejor dejarlas.
+        if (currentUser !== '9999') {
+            // si es chofer, recargar vista
+            renderDriver();
         } else {
-            let html = '';
-            for(const v of ventasHoy) {
-                html += `<tr>
-                    <td><strong>${v.cliente}</strong></td>
-                    <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
-                    <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
-                    <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-                    <td>${badgePago(v.pago)}</div><div>
-                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-                    <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></div><div>
-                </tr>`;
-            }
-            tbody.innerHTML = html;
-            document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => eliminarVenta(btn.dataset.id)));
+            renderAdmin();
+            renderClientesAdmin();
         }
     }
-}
 
-// ==================== RENDER TABS (resto original) ====================
-function renderClientesTab() {
-    let tbody = document.getElementById("clientesTbody"); if(!tbody) return; tbody.innerHTML = "";
-    for(let cli of CLIENTES_LIST) {
-        const pre = preciosClientes[cli] || getPreciosCliente(cli);
-        const cost = costosClientes[cli] || getCostosCliente();
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td><strong>${cli}</strong></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:70px;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:70px;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:70px;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:70px;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:70px;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:70px;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:70px;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:70px;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:70px;"></td>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:70px;"></td>
-            <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>
-        `;
-        tbody.appendChild(row);
+    // Ventas
+    function getToday() { return new Date().toISOString().slice(0,10); }
+    function guardarVentasLocal() {
+        let key = `ventas_${currentUser}`;
+        localStorage.setItem(key, JSON.stringify(ventas));
     }
-    document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async () => {
-        if(await eliminarClienteGlobal(btn.dataset.cli)) renderAdmin();
-    }));
-}
-function renderProductosTab() {
-    let tbody = document.getElementById("productsTbody"); if(!tbody) return; tbody.innerHTML = "";
-    for(let p of productos) {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td><img src="${p.imagen}" style="width:48px;height:48px;object-fit:cover;" onerror="this.src='https://placehold.co/100x100'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px;"></td>
-            <td><strong>${p.clave}</strong></td>
-            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px;"></td>
-            <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></td>
-        `;
-        tbody.appendChild(row);
+    function cargarVentasLocal() {
+        let key = `ventas_${currentUser}`;
+        let data = localStorage.getItem(key);
+        if (data) ventas = JSON.parse(data);
+        else ventas = [];
+        // recalcular cobros del día
+        let hoy = getToday();
+        cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
     }
-    document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", () => {
-        if(confirm("¿Eliminar producto?")) {
-            productos = productos.filter(p => p.clave !== btn.dataset.clave);
-            saveCommonProducts(); renderProductosTab(); guardarConfiguracionRemota();
-        }
-    }));
-}
-function renderWeeklyReport() {
-    const weekly = getVentasUltimos7Dias();
-    let totalVentasSemana=0, totalEfectivoSemana=0, totalTransferenciaSemana=0, totalCtaCteSemana=0, totalCobrosDeudaSemana=0, totalGananciaReal=0;
-    const ventasPorCliente={}, ventasPorDia={};
-    weekly.forEach(v => {
-        if(v.pago!=="cobrocc") { totalVentasSemana += v.total; if(v.pago==="efectivo") totalEfectivoSemana += v.total; if(v.pago==="transferencia") totalTransferenciaSemana += v.total; if(v.pago==="ctacte") totalCtaCteSemana += v.total; }
-        totalCobrosDeudaSemana += v.cobroDeuda||0;
-        const cost = costosClientes[v.cliente] || getCostosCliente();
-        let costo=0; if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17+(v.cantidades["3,5 KG"]||0)*cost.c35+(v.cantidades["14 KG"]||0)*cost.c14+(v.cantidades["ESC.20KG"]||0)*cost.c20+(v.cantidades["ESC.32KG"]||0)*cost.c32;
-        totalGananciaReal += (v.total-costo)+(v.cobroDeuda||0);
-        if(v.pago!=="cobrocc") ventasPorCliente[v.cliente] = (ventasPorCliente[v.cliente]||0)+v.total;
-        ventasPorDia[v.fecha] = (ventasPorDia[v.fecha]||0)+v.total;
-    });
-    document.getElementById("weeklyStats").innerHTML = `
-        <div class="card"><h4>💰 Venta Bruta</h4><div class="value">${fmtMoney(totalVentasSemana)}</div></div>
-        <div class="card"><h4>💵 Efectivo</h4><div class="value">${fmtMoney(totalEfectivoSemana)}</div></div>
-        <div class="card"><h4>💳 Transf.</h4><div class="value">${fmtMoney(totalTransferenciaSemana)}</div></div>
-        <div class="card"><h4>📘 Cta Cte</h4><div class="value">${fmtMoney(totalCtaCteSemana)}</div></div>
-        <div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">${fmtMoney(totalCobrosDeudaSemana)}</div></div>
-        <div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(totalGananciaReal)}</div></div>`;
-    const top = Object.entries(ventasPorCliente).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    const ctxTop = document.getElementById('topClientesChart')?.getContext('2d');
-    if(ctxTop) { if(topClientesChart) topClientesChart.destroy(); topClientesChart = new Chart(ctxTop, { type:'bar', data:{ labels:top.map(t=>t[0]), datasets:[{ label:'Ventas $', data:top.map(t=>t[1]), backgroundColor:'#f59e0b' }] } }); }
-    const dias = [...Array(7).keys()].map(i=>{ let d=new Date(); d.setDate(d.getDate()-i); return d; }).reverse();
-    const ctxLine = document.getElementById('weeklySalesChart')?.getContext('2d');
-    if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type:'line', data:{ labels:dias.map(d=>d.toISOString().slice(0,10)), datasets:[{ label:'Ventas diarias', data:dias.map(d=>ventasPorDia[d.toISOString().slice(0,10)]||0), borderColor:'#0a3e6d' }] } }); }
-    const tbody = document.getElementById("weeklySalesBody");
-    if(tbody) {
-        if(weekly.length === 0) {
-            tbody.innerHTML = '<td><td colspan="5">Sin ventas en la última semana</div><div>';
-        } else {
-            let html = '';
-            for(const v of weekly) {
-                html += `<tr>
-                    <td>${v.fecha}</div><div>
-                    <td><strong>${v.cliente}</strong></div><div>
-                    <td>${fmtMoney(v.total)}</div><div>
-                    <td>${badgePago(v.pago)}</div><div>
-                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-                </tr>`;
-            }
-            tbody.innerHTML = html;
-        }
+    function calcularTotal(cliente, cantidades) {
+        let p = precios[cliente] || getDefaultPrecio();
+        let total = (cantidades["1,7 KG"]||0) * p["1,7 KG"] +
+                    (cantidades["3,5 KG"]||0) * p["3,5 KG"] +
+                    (cantidades["14 KG"]||0) * p["14 KG"] +
+                    (cantidades["ESC.20KG"]||0) * p["ESC.20KG"] +
+                    (cantidades["ESC.32KG"]||0) * p["ESC.32KG"];
+        return total;
     }
-}
-function actualizarGraficoClientes() {
-    const ventasHoy = getVentasHoy();
-    const porCliente = {};
-    ventasHoy.forEach(v=>{ if(v.pago!=="cobrocc") porCliente[v.cliente] = (porCliente[v.cliente]||0)+v.total; });
-    const labels = Object.keys(porCliente).slice(0,10);
-    const datos = labels.map(l=>porCliente[l]);
-    const ctx = document.getElementById('ventasChart')?.getContext('2d');
-    if(ctx) { if(chartClientes) chartClientes.destroy(); if(labels.length) chartClientes = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ label:'Ventas $', data:datos, backgroundColor:'#0a3e6d' }] } }); }
-}
-function renderVentasPorProducto() {
-    const ventasHoy = getVentasHoy();
-    const resumen = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    ventasHoy.forEach(v => { if(v.pago!=="cobrocc" && v.cantidades) for(let k in resumen) resumen[k] += v.cantidades[k]||0; });
-    const container = document.getElementById("productosReport");
-    if(container) container.innerHTML = Object.entries(resumen).map(([k,v]) => `<div class="prod-card"><strong>${k}</strong><br>Cant: ${v}</div>`).join('');
-}
-function renderEvolucionDiaria() {
-    const fechas = [...Array(7).keys()].map(i=>{ let d=new Date(); d.setDate(d.getDate()-i); return d; }).reverse();
-    const ventasPorDia = {};
-    fechas.forEach(f=>ventasPorDia[f.toISOString().slice(0,10)]=0);
-    ventas.forEach(v=>{ if(v.pago!=="cobrocc") ventasPorDia[v.fecha] = (ventasPorDia[v.fecha]||0)+v.total; });
-    const ctx = document.getElementById('evolucionChart')?.getContext('2d');
-    if(ctx) { if(chartEvolucion) chartEvolucion.destroy(); chartEvolucion = new Chart(ctx, { type:'line', data:{ labels:fechas.map(f=>f.toISOString().slice(0,10)), datasets:[{ label:'Ventas diarias', data:fechas.map(f=>ventasPorDia[f.toISOString().slice(0,10)]), borderColor:'#f59e0b', fill:true }] } }); }
-}
-
-// ==================== AGREGAR VENTA ====================
-async function agregarTransaccion() {
-    const cliente = document.getElementById("clienteSelect").value;
-    const pago = document.getElementById("paymentType").value;
-    let cobroMonto = parseFloat(document.getElementById("cobroDeudaInput").value)||0;
-    let cantidades = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    if(pago === "cobrocc") {
-        if(cobroMonto <= 0) { toast("Ingrese monto para cobro"); return; }
-    } else {
-        cantidades = {
-            "1,7 KG": parseInt(document.getElementById("qty_17").value)||0,
-            "3,5 KG": parseInt(document.getElementById("qty_35").value)||0,
-            "14 KG": parseInt(document.getElementById("qty_14").value)||0,
-            "ESC.20KG": parseInt(document.getElementById("qty_20").value)||0,
-            "ESC.32KG": parseInt(document.getElementById("qty_32").value)||0
+    function agregarVenta(cliente, cantidades, pago, cobroMonto) {
+        let total = (pago === "cobrocc") ? 0 : calcularTotal(cliente, cantidades);
+        let nueva = {
+            id: Date.now(),
+            fecha: getToday(),
+            cliente: cliente,
+            cantidades: cantidades,
+            pago: pago,
+            total: total,
+            cobroDeuda: (pago === "cobrocc") ? cobroMonto : 0
         };
-        if(Object.values(cantidades).every(v=>v===0) && cobroMonto===0) { toast("Ingrese al menos un producto"); return; }
-    }
-    await guardarVenta(cliente, cantidades, pago, cobroMonto);
-    // Limpiar campos
-    ["qty_17","qty_35","qty_14","qty_20","qty_32","cobroDeudaInput"].forEach(id => document.getElementById(id).value = 0);
-    // Refrescar vista
-    if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
-    else renderDriver();
-    toast("✅ Venta registrada");
-}
-
-// ==================== PDF ====================
-async function exportarPDF(elementId, fileName) {
-    const element = document.getElementById(elementId);
-    if(!element) { toast("No se encontró el elemento"); return; }
-    const canvas = await html2canvas(element, { scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 190;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-    pdf.save(`${fileName}.pdf`);
-    toast("PDF generado");
-}
-
-// ==================== RESPALDO ====================
-function exportFullBackup() {
-    const backup = {
-        version: "1.0",
-        fecha: new Date().toISOString(),
-        config: { clientesList: CLIENTES_LIST, precios: preciosClientes, costos: costosClientes, productos },
-        data: {
-            "1234": { ventas: JSON.parse(localStorage.getItem("myc_1234_ventas") || '[]'), gastos: localStorage.getItem("myc_1234_gastos"), gastosDetalle: localStorage.getItem("myc_1234_gastosDetalle"), cobrosCC: localStorage.getItem("myc_1234_cobrosCC") },
-            "5678": { ventas: JSON.parse(localStorage.getItem("myc_5678_ventas") || '[]'), gastos: localStorage.getItem("myc_5678_gastos"), gastosDetalle: localStorage.getItem("myc_5678_gastosDetalle"), cobrosCC: localStorage.getItem("myc_5678_cobrosCC") }
+        ventas.push(nueva);
+        if (pago === "cobrocc") cobrosCC += cobroMonto;
+        guardarVentasLocal();
+        // Sincronizar con nube (Google Sheets)
+        apiCall('guardarVenta', {
+            fecha: nueva.fecha,
+            cliente: nueva.cliente,
+            cantidades: JSON.stringify(nueva.cantidades),
+            pago: nueva.pago,
+            total: nueva.total,
+            cobroDeuda: nueva.cobroDeuda,
+            chofer: currentUser
+        }, true).catch(e=>console.log);
+        // Sincronizar deudas con control de deudas (index.html)
+        if (pago === "ctacte" && total > 0) {
+            apiCall('agregarMovimiento', {
+                fecha: nueva.fecha,
+                cliente: nueva.cliente,
+                tipo: 'deuda',
+                monto: total,
+                formaPago: '',
+                detalle: `Venta de hielo: ${JSON.stringify(cantidades)}`
+            }, true).catch(e=>console.log);
+        } else if (pago === "cobrocc" && cobroMonto > 0) {
+            apiCall('agregarMovimiento', {
+                fecha: nueva.fecha,
+                cliente: nueva.cliente,
+                tipo: 'pago',
+                monto: cobroMonto,
+                formaPago: 'Efectivo',
+                detalle: 'Cobro de deuda desde planilla'
+            }, true).catch(e=>console.log);
         }
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], {type: "application/json"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `myc_backup_${new Date().toISOString().slice(0,19)}.json`;
-    a.click();
-    toast("Backup exportado");
-}
-function importFullBackup(file) {
-    const reader = new FileReader();
-    reader.onload = async function(e) {
+        return nueva;
+    }
+    function eliminarVenta(id) {
+        ventas = ventas.filter(v => v.id != id);
+        guardarVentasLocal();
+        let hoy = getToday();
+        cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
+        apiCall('eliminarVenta', { id: id }, true).catch(e=>console.log);
+    }
+    function resetJornada() {
+        let hoy = getToday();
+        ventas = ventas.filter(v => v.fecha !== hoy);
+        guardarVentasLocal();
+        cobrosCC = 0;
+    }
+
+    // Render chofer
+    function renderDriver() {
+        document.getElementById("driverId").innerText = `(PIN ${currentUser})`;
+        let select = document.getElementById("clienteSelect");
+        select.innerHTML = clientes.map(c => `<option value="${c}">${c}</option>`).join("");
+        let hoy = getToday();
+        let ventasHoy = ventas.filter(v => v.fecha === hoy);
+        let totalV=0, totalE=0, totalT=0, totalC=0, totalCob=0;
+        for (let v of ventasHoy) {
+            if (v.pago !== "cobrocc") totalV += v.total;
+            if (v.pago === "efectivo") totalE += v.total;
+            if (v.pago === "transferencia") totalT += v.total;
+            if (v.pago === "ctacte") totalC += v.total;
+            if (v.pago === "cobrocc") totalCob += v.cobroDeuda;
+        }
+        document.getElementById("totalVentas").innerText = formatMoney(totalV);
+        document.getElementById("totalEfectivo").innerText = formatMoney(totalE);
+        document.getElementById("totalTransf").innerText = formatMoney(totalT);
+        document.getElementById("totalCtaCte").innerText = formatMoney(totalC);
+        document.getElementById("totalCobros").innerText = formatMoney(totalCob);
+        let tbody = document.getElementById("salesTableBody");
+        if (ventasHoy.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center">Sin ventas registradas hoy</div><div>';
+        } else {
+            let html = '';
+            for (let v of ventasHoy) {
+                html += `<tr>
+                    <td><strong>${v.cliente}</strong></td>
+                    <td style="text-align:center;">${v.cantidades["1,7 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades["3,5 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades["14 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades["ESC.20KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades["ESC.32KG"]||0}</td>
+                    <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                    <td>${badgePago(v.pago)}</div><div>
+                    <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
+                    <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></div><div>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+    }
+    function eliminarVentaHandler(id) {
+        eliminarVenta(id);
+        renderDriver();
+        toast("Venta eliminada");
+    }
+
+    // Render admin
+    function renderAdmin() {
+        let chofer = document.getElementById("adminChoferSelect").value;
+        let key = `ventas_${chofer}`;
+        let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
+        let hoy = getToday();
+        let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
+        let totalV=0, totalE=0, totalT=0, totalC=0, totalCob=0;
+        for (let v of ventasHoy) {
+            if (v.pago !== "cobrocc") totalV += v.total;
+            if (v.pago === "efectivo") totalE += v.total;
+            if (v.pago === "transferencia") totalT += v.total;
+            if (v.pago === "ctacte") totalC += v.total;
+            if (v.pago === "cobrocc") totalCob += v.cobroDeuda;
+        }
+        document.getElementById("adminStats").innerHTML = `
+            <div class="card">💰 Venta Bruta: ${formatMoney(totalV)}</div>
+            <div class="card">💵 Efectivo: ${formatMoney(totalE)}</div>
+            <div class="card">💳 Transf.: ${formatMoney(totalT)}</div>
+            <div class="card">📘 Cta Cte: ${formatMoney(totalC)}</div>
+            <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
+        `;
+        let tbody = document.getElementById("adminSalesBody");
+        if (ventasHoy.length === 0) {
+            tbody.innerHTML = '<td><td colspan="9">Sin ventas</div><div>';
+        } else {
+            let html = '';
+            for (let v of ventasHoy) {
+                html += `<tr>
+                    <td><strong>${v.cliente}</strong></td>
+                    <td>${v.cantidades["1,7 KG"]||0}</td>
+                    <td>${v.cantidades["3,5 KG"]||0}</td>
+                    <td>${v.cantidades["14 KG"]||0}</td>
+                    <td>${v.cantidades["ESC.20KG"]||0}</td>
+                    <td>${v.cantidades["ESC.32KG"]||0}</td>
+                    <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                    <td>${badgePago(v.pago)}</div><div>
+                    <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+        renderClientesAdmin();
+    }
+    function renderClientesAdmin() {
+        let tbody = document.getElementById("clientesTbody");
+        tbody.innerHTML = "";
+        for (let c of clientes) {
+            let p = precios[c] || getDefaultPrecio();
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${c}</strong></td>
+                    <td><input class="precio-input" data-cliente="${c}" data-prod="1,7 KG" value="${p["1,7 KG"]}" style="width:70px"></td>
+                    <td><input class="precio-input" data-cliente="${c}" data-prod="3,5 KG" value="${p["3,5 KG"]}" style="width:70px"></td>
+                    <td><input class="precio-input" data-cliente="${c}" data-prod="14 KG" value="${p["14 KG"]}" style="width:70px"></td>
+                    <td><input class="precio-input" data-cliente="${c}" data-prod="ESC.20KG" value="${p["ESC.20KG"]}" style="width:70px"></td>
+                    <td><input class="precio-input" data-cliente="${c}" data-prod="ESC.32KG" value="${p["ESC.32KG"]}" style="width:70px"></td>
+                    <td><button onclick="eliminarCliente('${c}')" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
+                </tr>
+            `;
+        }
+    }
+    function guardarPrecios() {
+        let inputs = document.querySelectorAll(".precio-input");
+        for (let inp of inputs) {
+            let cliente = inp.dataset.cliente;
+            let producto = inp.dataset.prod;
+            let valor = parseInt(inp.value) || 0;
+            if (!precios[cliente]) precios[cliente] = getDefaultPrecio();
+            precios[cliente][producto] = valor;
+        }
+        guardarClientesLocal();
+        toast("Precios guardados localmente");
+        // Opcional: guardar en la nube
+        apiCall('guardarConfiguracion', {
+            precios: JSON.stringify(precios),
+            costos: JSON.stringify({}),
+            productos: JSON.stringify([])
+        }, true).catch(e=>console.log);
+        if (currentUser !== '9999') renderDriver(); // si es admin no hace falta
+    }
+
+    // Utilidades
+    function formatMoney(n) { return '$' + Number(n).toLocaleString('es-AR'); }
+    function badgePago(pago) {
+        const map = { efectivo: 'badge-efectivo', transferencia: 'badge-transf', ctacte: 'badge-ctacte', cobrocc: 'badge-cobrocc' };
+        const labels = { efectivo: 'Efectivo', transferencia: 'Transf.', ctacte: 'Cta Cte', cobrocc: 'Cobro CC' };
+        return `<span class="badge ${map[pago]}">${labels[pago]}</span>`;
+    }
+    function toast(msg) {
+        let t = document.getElementById("toast");
+        t.innerText = msg;
+        t.style.display = "block";
+        setTimeout(() => t.style.display = "none", 2000);
+    }
+
+    // API helper
+    async function apiCall(ruta, params, usePost = false) {
         try {
-            const backup = JSON.parse(e.target.result);
-            if(backup.config) {
-                if(backup.config.clientesList) { CLIENTES_LIST.length=0; CLIENTES_LIST.push(...backup.config.clientesList); }
-                if(backup.config.precios) preciosClientes = backup.config.precios;
-                if(backup.config.costos) costosClientes = backup.config.costos;
-                if(backup.config.productos) productos = backup.config.productos;
-                saveGlobalPrices(); saveCommonProducts();
+            if (usePost) {
+                let form = new URLSearchParams();
+                for (let [k, v] of Object.entries(params)) form.append(k, v);
+                let res = await fetch(API_URL, { method: 'POST', body: form });
+                return await res.json();
+            } else {
+                let url = new URL(API_URL);
+                url.searchParams.append('ruta', ruta);
+                for (let [k, v] of Object.entries(params)) url.searchParams.append(k, v);
+                let res = await fetch(url.toString());
+                return await res.json();
             }
-            if(backup.data) {
-                for(const [pin, data] of Object.entries(backup.data)) {
-                    if(data.ventas) localStorage.setItem(`myc_${pin}_ventas`, JSON.stringify(data.ventas));
-                    if(data.gastos) localStorage.setItem(`myc_${pin}_gastos`, data.gastos);
-                    if(data.gastosDetalle) localStorage.setItem(`myc_${pin}_gastosDetalle`, data.gastosDetalle);
-                    if(data.cobrosCC) localStorage.setItem(`myc_${pin}_cobrosCC`, data.cobrosCC);
-                }
+        } catch(e) { console.error(e); return null; }
+    }
+
+    // Cargar datos de la nube al iniciar sesión (clientes, precios, ventas previas)
+    async function sincronizarConNube(chofer) {
+        try {
+            let clientesNube = await apiCall('clientes');
+            if (clientesNube && Array.isArray(clientesNube) && clientesNube.length) {
+                clientes = clientesNube.map(c => c.toUpperCase().trim());
+                guardarClientesLocal();
             }
-            toast("Backup restaurado, recargando...");
-            location.reload();
-        } catch(err) { toast("Error al restaurar"); }
-    };
-    reader.readAsText(file);
-}
+            let config = await apiCall('obtenerConfiguracion');
+            if (config && config.precios) {
+                precios = JSON.parse(config.precios);
+                guardarClientesLocal();
+            }
+            let ventasNube = await apiCall('obtenerVentas', { chofer });
+            if (ventasNube && Array.isArray(ventasNube)) {
+                ventas = ventasNube.map(v => {
+                    if (v.fecha) v.fecha = v.fecha.split('T')[0];
+                    if (v.cantidades && typeof v.cantidades === 'string') v.cantidades = JSON.parse(v.cantidades);
+                    return v;
+                });
+                guardarVentasLocal();
+                let hoy = getToday();
+                cobrosCC = ventas.filter(v => v.fecha === hoy && v.pago === 'cobrocc').reduce((a,b) => a + (b.cobroDeuda||0), 0);
+            }
+        } catch(e) { console.error(e); }
+    }
 
-// ==================== INICIO DE SESIÓN ====================
-async function iniciarSesionChofer(pin) {
-    currentDriverPin = pin;
-    loadDataByPin(pin);
-    await cargarClientesDesdeSheets();
-    await cargarConfiguracion();
-    await cargarVentas(pin);
-    await cargarGastos(pin);
-    renderDriver();
-}
-async function iniciarSesionAdmin() {
-    currentDriverPin = null;
-    const selected = document.getElementById("adminChoferSelect").value;
-    await cargarClientesDesdeSheets();
-    await cargarConfiguracion();
-    await cargarVentas(selected);
-    await cargarGastos(selected);
-    renderAdmin();
-}
-
-// ==================== EVENTOS ====================
-document.addEventListener("DOMContentLoaded", () => {
-    loadCommonProducts();
-    loadGlobalPrices();
+    // Eventos UI
     document.getElementById("loginBtn").addEventListener("click", async () => {
-        const pin = document.getElementById("pinInput").value;
-        if(pin === "9999") {
+        let pin = document.getElementById("pinInput").value.trim();
+        if (pin === "9999") {
+            currentUser = "9999";
             document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("driverPanel").style.display = "none";
             document.getElementById("adminPanel").style.display = "block";
-            await iniciarSesionAdmin();
-        } else if(pin === "1234" || pin === "5678") {
+            cargarClientes();
+            renderAdmin();
+        } else if (pin === "1234" || pin === "5678") {
+            currentUser = pin;
             document.getElementById("loginScreen").style.display = "none";
             document.getElementById("driverPanel").style.display = "block";
-            await iniciarSesionChofer(pin);
+            document.getElementById("adminPanel").style.display = "none";
+            cargarClientes();
+            cargarVentasLocal();
+            await sincronizarConNube(currentUser);
+            renderDriver();
         } else {
             document.getElementById("loginError").style.display = "block";
         }
     });
-    document.getElementById("pinInput").addEventListener("keydown", e => { if(e.key === "Enter") document.getElementById("loginBtn").click(); });
-    document.getElementById("logoutAdmin")?.addEventListener("click", () => location.reload());
     document.getElementById("logoutDriver")?.addEventListener("click", () => location.reload());
-    document.getElementById("addSaleBtn")?.addEventListener("click", agregarTransaccion);
-    document.getElementById("setGastosDetalleBtn")?.addEventListener("click", actualizarGastosDesdeDetalle);
-    document.getElementById("resetDayBtn")?.addEventListener("click", () => { if(confirm("¿Reiniciar jornada?")){ resetJornada(); location.reload(); } });
-    document.getElementById("cerrarDiaBtn")?.addEventListener("click", cerrarDiaAdmin);
-    document.getElementById("exportPdfBtn")?.addEventListener("click", () => exportarPDF("tabDashboard", "dashboard"));
-    document.getElementById("exportReportPdfBtn")?.addEventListener("click", () => exportarPDF("tabReportes", "reporte_semanal"));
-    const guardarPrecios = async () => {
-        document.querySelectorAll(".priceInput").forEach(inp => {
-            const cli = inp.dataset.cli, prod = inp.dataset.prod;
-            if(!preciosClientes[cli]) preciosClientes[cli] = getPreciosCliente(cli);
-            preciosClientes[cli][prod] = parseInt(inp.value) || 0;
-        });
-        document.querySelectorAll(".costInput").forEach(inp => {
-            const cli = inp.dataset.cli, prod = inp.dataset.prod;
-            if(!costosClientes[cli]) costosClientes[cli] = getCostosCliente();
-            costosClientes[cli][prod] = parseInt(inp.value) || 0;
-        });
-        saveGlobalPrices();
-        await guardarConfiguracionRemota();
+    document.getElementById("logoutAdmin")?.addEventListener("click", () => location.reload());
+    document.getElementById("addSaleBtn")?.addEventListener("click", () => {
+        let cliente = document.getElementById("clienteSelect").value;
+        let pago = document.getElementById("paymentType").value;
+        let cobroMonto = parseFloat(document.getElementById("cobroDeudaInput").value) || 0;
+        let cantidades = {
+            "1,7 KG": parseInt(document.getElementById("qty_17").value) || 0,
+            "3,5 KG": parseInt(document.getElementById("qty_35").value) || 0,
+            "14 KG": parseInt(document.getElementById("qty_14").value) || 0,
+            "ESC.20KG": parseInt(document.getElementById("qty_20").value) || 0,
+            "ESC.32KG": parseInt(document.getElementById("qty_32").value) || 0
+        };
+        if (pago === "cobrocc") {
+            if (cobroMonto <= 0) { toast("Ingrese monto para cobro"); return; }
+        } else {
+            let hay = Object.values(cantidades).some(v => v > 0);
+            if (!hay) { toast("Ingrese al menos un producto"); return; }
+        }
+        agregarVenta(cliente, cantidades, pago, cobroMonto);
+        document.getElementById("qty_17").value = 0;
+        document.getElementById("qty_35").value = 0;
+        document.getElementById("qty_14").value = 0;
+        document.getElementById("qty_20").value = 0;
+        document.getElementById("qty_32").value = 0;
+        document.getElementById("cobroDeudaInput").value = 0;
+        renderDriver();
+        toast("✅ Venta registrada");
+    });
+    document.getElementById("resetDayBtn")?.addEventListener("click", () => {
+        if (confirm("¿Reiniciar jornada? Se borrarán todas las ventas de hoy.")) {
+            resetJornada();
+            renderDriver();
+        }
+    });
+    document.getElementById("cerrarDiaAdmin")?.addEventListener("click", () => {
+        let chofer = document.getElementById("adminChoferSelect").value;
+        let key = `ventas_${chofer}`;
+        let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
+        let hoy = getToday();
+        let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
+        if (ventasHoy.length === 0) { toast("No hay ventas hoy"); return; }
+        let historicoKey = `historico_${chofer}`;
+        let historico = JSON.parse(localStorage.getItem(historicoKey) || "[]");
+        historico.push({ fecha: hoy, ventas: ventasHoy });
+        localStorage.setItem(historicoKey, JSON.stringify(historico));
+        let nuevasVentas = ventasChofer.filter(v => v.fecha !== hoy);
+        localStorage.setItem(key, JSON.stringify(nuevasVentas));
         renderAdmin();
-        toast("Precios guardados");
-    };
-    document.getElementById("saveAllPricesBtn")?.addEventListener("click", guardarPrecios);
-    document.getElementById("forceSavePricesBtn")?.addEventListener("click", guardarPrecios);
-    document.getElementById("addClienteBtn")?.addEventListener("click", async () => {
-        const nuevo = document.getElementById("newClienteName").value.trim().toUpperCase();
-        if(!nuevo) return;
-        if(await agregarClienteGlobal(nuevo)) {
-            document.getElementById("newClienteName").value = "";
-            toast(`Cliente ${nuevo} agregado`);
-            renderAdmin();
-            if(document.getElementById("driverPanel").style.display === "block") renderDriver();
-        } else toast("Ya existe");
+        toast("Día cerrado y archivado");
     });
-    document.getElementById("exportFullBackupBtn")?.addEventListener("click", exportFullBackup);
-    document.getElementById("importFullBackupInput")?.addEventListener("change", e => { if(e.target.files.length) importFullBackup(e.target.files[0]); });
-    document.getElementById("addProductBtn")?.addEventListener("click", async () => {
-        const nombre = document.getElementById("newProductName").value.trim();
-        if(!nombre) return;
-        const precio = parseInt(document.getElementById("newProductPrice").value)||0;
-        const img = document.getElementById("newProductImg").value || "https://placehold.co/100x100";
-        productos.push({ clave: nombre, precioBase: precio, imagen: img });
-        saveCommonProducts();
-        await guardarConfiguracionRemota();
-        renderProductosTab();
-        document.getElementById("newProductName").value = "";
-        document.getElementById("newProductPrice").value = "";
-        document.getElementById("newProductImg").value = "";
-        toast("Producto agregado");
+    document.getElementById("adminChoferSelect")?.addEventListener("change", () => renderAdmin());
+    document.getElementById("agregarClienteBtn")?.addEventListener("click", () => {
+        let nombre = document.getElementById("nuevoCliente").value.trim().toUpperCase();
+        if (!nombre) { toast("Escriba un nombre"); return; }
+        if (agregarCliente(nombre)) {
+            toast(`Cliente ${nombre} agregado`);
+            if (currentUser === "9999") renderClientesAdmin();
+            else renderDriver();
+        } else {
+            toast("Ya existe");
+        }
+        document.getElementById("nuevoCliente").value = "";
     });
-    document.getElementById("saveProductsBtn")?.addEventListener("click", async () => {
-        document.querySelectorAll(".prodImg").forEach(img => {
-            const prod = productos.find(p => p.clave === img.dataset.clave);
-            if(prod) prod.imagen = img.value;
-        });
-        document.querySelectorAll(".prodPriceBase").forEach(inp => {
-            const prod = productos.find(p => p.clave === inp.dataset.clave);
-            if(prod) prod.precioBase = parseInt(inp.value) || 0;
-        });
-        saveCommonProducts();
-        await guardarConfiguracionRemota();
-        toast("Productos guardados");
-        renderProductosTab();
-    });
-    document.getElementById("adminChoferSelect")?.addEventListener("change", async () => {
-        await cargarVentas(document.getElementById("adminChoferSelect").value);
-        await cargarGastos(document.getElementById("adminChoferSelect").value);
-        renderAdmin();
-    });
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            const tab = btn.dataset.tab;
-            document.getElementById("tabDashboard").style.display = tab === "dashboard" ? "block" : "none";
-            document.getElementById("tabReportes").style.display = tab === "reportes" ? "block" : "none";
-            document.getElementById("tabClientes").style.display = tab === "clientes" ? "block" : "none";
-            document.getElementById("tabProductos").style.display = tab === "productos" ? "block" : "none";
-            if(tab === "dashboard") { actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); }
-            if(tab === "reportes") renderWeeklyReport();
-            if(tab === "productos") renderProductosTab();
-        });
-    });
-});
+    document.getElementById("guardarPreciosBtn")?.addEventListener("click", guardarPrecios);
+    window.eliminarCliente = eliminarCliente;
+    window.eliminarVentaHandler = eliminarVentaHandler;
+    // Inicialización
+    cargarClientes();
 </script>
 </body>
 </html>
