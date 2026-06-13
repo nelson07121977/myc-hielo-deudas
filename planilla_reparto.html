@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (sin stock)</title>
+    <title>MYC HIELO – Planilla de Reparto (sin stock ni comprobantes)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -97,37 +97,9 @@
         .force-scale-checkbox { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.18); padding: 5px 12px; border-radius: 50px; }
         .force-scale-checkbox label { font-size: 0.75rem; margin: 0; color: white; text-transform: none; letter-spacing: 0; }
         .force-scale-checkbox input { width: auto; margin: 0; }
-        .comprobante-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
-        .comprobante-modal-content { background: #ffffff; max-width:820px; width:94%; border-radius:28px; box-shadow:0 30px 60px rgba(0,0,0,0.35); overflow:hidden; animation:fadeInUp 0.25s ease; }
-        @keyframes fadeInUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-        .comprobante-header-premium { background: linear-gradient(135deg, var(--azul) 0%, #0f5a8a 100%); padding: 20px 28px; display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #eab308; }
-        .mc-logo { font-size:2rem; font-weight:800; letter-spacing:2px; color:white; line-height:1.1; }
-        .mc-logo small { font-size:0.75rem; font-weight:500; display:block; color:#e2e8f0; }
-        .x-simbolo { background:#eab308; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:800; color:var(--azul); box-shadow:0 4px 10px rgba(0,0,0,0.2); }
-        .comprobante-cuerpo { padding:24px 28px; background:white; max-height:70vh; overflow-y:auto; }
-        .info-fecha-premium { display:flex; justify-content:space-between; background:#f8fafc; padding:10px 18px; border-radius:16px; margin-bottom:20px; font-size:0.8rem; color:#1e293b; border:1px solid #e2e8f0; flex-wrap:wrap; gap:8px; }
-        .info-fecha-premium strong { color:var(--azul); }
-        .tabla-productos-premium { width:100%; border-collapse:collapse; margin:16px 0; font-size:0.8rem; border-radius:12px; overflow:hidden; }
-        .tabla-productos-premium th { background:#eef2ff; padding:11px 8px; text-align:left; font-weight:700; color:#0f172a; border-bottom:2px solid #cbd5e1; }
-        .tabla-productos-premium td { padding:9px 8px; border-bottom:1px solid #e2e8f0; vertical-align:top; }
-        .totales-premium { text-align:right; margin-top:20px; border-top:2px dashed #cbd5e1; padding-top:16px; }
-        .monto-final-premium { font-size:1.7rem; font-weight:800; color:var(--azul); margin-top:4px; }
-        .footer-premium { margin-top:20px; text-align:center; font-size:0.7rem; color:#64748b; border-top:1px solid #e2e8f0; padding-top:14px; }
-        .modal-buttons-premium { display:flex; gap:10px; justify-content:center; padding:14px 24px 22px; background:#f9fafb; border-top:1px solid #eef2ff; flex-wrap:wrap; }
-        .btn-modal-premium { background:white; border:1.5px solid #cbd5e1; padding:8px 20px; border-radius:50px; font-size:0.75rem; font-weight:600; cursor:pointer; transition:0.15s; width:auto; margin:0; }
-        .btn-modal-premium:hover { background:#f1f5f9; transform:translateY(-1px); }
-        .btn-primary-premium { background:var(--azul); border:none; color:white; }
-        @media print {
-            body * { visibility:hidden; }
-            .comprobante-modal, .comprobante-modal * { visibility:visible; }
-            .comprobante-modal { position:absolute; top:0; left:0; width:100%; background:white; }
-            .modal-buttons-premium { display:none; }
-        }
         .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--azul); color: white; padding: 11px 24px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; z-index: 9999; display: none; box-shadow: 0 8px 24px rgba(10,62,109,0.35); white-space: nowrap; }
         .toast.show { display: block; animation: toastIn 0.2s ease; }
         @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
-        .comprobantes-section { background: #f8fafc; border: 1px solid var(--gris-borde); border-radius: 20px; padding: 18px 20px; margin-top: 24px; }
-        .comprobantes-section .sec-title { font-weight: 800; font-size: 1rem; color: var(--azul); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
         footer { text-align: center; font-size: 0.72rem; margin-top: 18px; color: #94a3b8; }
         @media (max-width: 600px) {
             body { padding: 10px; }
@@ -201,7 +173,7 @@
                 <button id="forceSavePricesBtn" class="btn-small btn-primary">💾 Guardar precios (forzar)</button>
             </div>
             <div class="form-row"><div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div><div class="form-group" style="flex:0 0 auto;"><button id="addClienteBtn" class="btn-small" style="margin-top:18px;">Agregar</button></div></div>
-            <div class="tabla-wrapper"><table id="clientesTable"><thead><tr><th>Cliente</th><th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></tr></div>
+            <div class="tabla-wrapper"><table id="clientesTable"><thead><tr><th>Cliente</th><th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></td></thead><tbody id="clientesTbody"></tbody></table></div>
             <button id="saveAllPricesBtn" style="margin-top:16px;">💾 Guardar todos los cambios (local + nube)</button>
         </div>
         <div id="tabProductos" class="panel-content" style="display:none;">
@@ -256,33 +228,13 @@
                 <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small style="font-size:0.65rem; color:var(--gris-texto);">Ef + Transf + Cobros - Gastos</small></div>
             </div>
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">📋 Ventas del día</h3>
-            <div class="tabla-wrapper"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
-            <div class="comprobantes-section">
-                <div class="sec-title">📄 Comprobantes X (No fiscales)<div style="display:flex; gap:8px;"><button id="genComprobanteDiaBtn" class="btn-small btn-verde">📅 Día</button><button id="genComprobanteSemanaBtn" class="btn-small btn-azul-medio">📆 Semana</button></div></div>
-                <div class="tabla-wrapper"><table id="comprobantesTable" style="font-size:0.75rem;"><thead><tr><th>Nº</th><th>Fecha</th><th>Resumen</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="comprobantesBody"></tbody></table></div>
-            </div>
+            <div class="tabla-wrapper"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th><tr></thead><tbody id="driverSalesBody"></tbody></table></div>
             <button id="resetDayBtn" style="background:linear-gradient(135deg,#dc2626,#b91c1c); margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
         </div>
     </div>
 </div>
 <footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Cerrar día archiva la jornada y limpia el registro actual.</footer>
 
-<!-- MODAL COMPROBANTE -->
-<div id="comprobanteModal" class="comprobante-modal">
-    <div class="comprobante-modal-content">
-        <div class="comprobante-header-premium">
-            <div class="mc-logo">M&C<small>HIELO</small></div>
-            <div class="x-simbolo">X</div>
-        </div>
-        <div id="comprobanteCuerpo" class="comprobante-cuerpo"></div>
-        <div class="modal-buttons-premium">
-            <button id="printComprobanteBtn" class="btn-modal-premium btn-primary-premium">🖨️ Imprimir</button>
-            <button id="copyComprobanteBtn" class="btn-modal-premium">📋 Copiar texto</button>
-            <button id="downloadComprobanteBtn" class="btn-modal-premium">💾 Descargar .txt</button>
-            <button id="closeComprobanteModalBtn" class="btn-modal-premium">Cerrar</button>
-        </div>
-    </div>
-</div>
 <div id="toast" class="toast"></div>
 
 <script>
@@ -294,7 +246,6 @@ let ventas = [], gastos = 0, gastosDetalle = { nafta:0, choferes:0, otros:0 }, c
 let productos = [];
 let preciosClientes = {}, costosClientes = {};
 let chartClientes = null, chartEvolucion = null, topClientesChart = null, weeklySalesChart = null;
-let comprobantesHistorial = [];
 
 const DEFAULT_CLIENTES = ["AQUELARRE","AFRICA","LETS GO","GUTIERREZ","PREMIUN","TERRANO","PALATIUM","SHI RYU","FABRICA HIELO DANILO","PISTONE","HECTOR EVENTOS","CALLE BURGOS","CALLE SAN MIGUEL Y PASOLOS ANDES","FOOD TASTY","TUTIFRUTI","PADDEL TURCO","CANCHAS FUTBOL","BIGOTE","NO TE METAS CON MI HERMANA","CALLE MARIQUITA TONSA","CALLE BAHIA BLANCA","AUTENTICOS","ROSADITA","FILIPO","ALUX","LUA BAR","CHE PICADA","WILLIAMS","ESTILO BURGER","GATO NEGRO","ICONOS","NAPOLI","OLIVER","SALOME RODRIGUEZ","CANTINA REGATAS","PEDRO NAVAJAS BAR","K. SAAVEDRA","DON JOSE","UNIMEV SUMISTICA","UNIMEV","K 24 HS","CALLE SARMIENTO","CALLE PASO DE LOS ANDES Y SAN MIGUEL","TINCHO","EVENTO MARCELO","GABRIEL BARRIO DORREGO","KIOSCO VAMPIRO","CARO PEPE","KIOSCO LOS ABUELOS","ERIC SALON","KIOSKO SAENZ PEÑA"];
 
@@ -354,7 +305,6 @@ function loadDataByPin(pin) {
     let sg = localStorage.getItem(p+"gastos"); gastos = sg ? Number(sg) : 0;
     let sgd = localStorage.getItem(p+"gastosDetalle"); gastosDetalle = sgd ? JSON.parse(sgd) : { nafta:0, choferes:0, otros:0 };
     let scb = localStorage.getItem(p+"cobrosCC"); cobrosCC = scb ? Number(scb) : 0;
-    let comps = localStorage.getItem(p+"comprobantes"); comprobantesHistorial = comps ? JSON.parse(comps) : [];
 }
 function saveDataByPin(pin) {
     const p = `myc_${pin}_`;
@@ -362,7 +312,6 @@ function saveDataByPin(pin) {
     localStorage.setItem(p+"gastos", gastos);
     localStorage.setItem(p+"gastosDetalle", JSON.stringify(gastosDetalle));
     localStorage.setItem(p+"cobrosCC", cobrosCC);
-    localStorage.setItem(p+"comprobantes", JSON.stringify(comprobantesHistorial));
 }
 function saveAll() {
     if(currentDriverPin) saveDataByPin(currentDriverPin);
@@ -433,7 +382,6 @@ async function cargarConfiguracion() {
     try {
         const config = await apiCall('obtenerConfiguracion');
         if(config && config.productos && config.productos.length) productos = config.productos;
-        // No sobrescribir precios locales por la nube automáticamente
         if(!localStorage.getItem("myc_precios_globales") && config && config.precios) preciosClientes = config.precios;
         if(!localStorage.getItem("myc_costos_globales") && config && config.costos) costosClientes = config.costos;
     } catch(e) { console.error("Error cargando configuración remota", e); }
@@ -563,19 +511,22 @@ function renderAdmin() {
         <div class="card"><h4>💸 Gastos</h4><div class="value">${fmtMoney(gastos)}</div><small>Nafta:${gastosDetalle.nafta} Ch:${gastosDetalle.choferes} Otros:${gastosDetalle.otros}</small></div>
         <div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">${fmtMoney(cobrosCC)}</div></div>
         <div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(gananciaNeta)}</div></div>`;
-    document.getElementById("salesDetailBody").innerHTML = ventasHoy.length === 0
-        ? '<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>'
-        : ventasHoy.map(v => `<tr>
-              <td><strong>${v.cliente}</strong></td>
-            <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-            <td>${badgePago(v.pago)}</div><div>
-            <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-          </tr>`).join('');
+    const tbody = document.getElementById("salesDetailBody");
+    if(tbody) {
+        tbody.innerHTML = ventasHoy.length === 0
+            ? '<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>'
+            : ventasHoy.map(v => `<tr>
+                <td><strong>${v.cliente}</strong></td>
+                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
+                <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
+                <td>${badgePago(v.pago)}</td>
+                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+            </tr>`).join('');
+    }
     actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); renderClientesTab(); renderProductosTab(); renderWeeklyReport();
 }
 
@@ -603,22 +554,24 @@ function renderDriver() {
     document.getElementById("totalGastos").innerText = gastos;
     document.getElementById("driverNetoDia").innerText = (totalE + totalT + cobrosCC - gastos).toFixed(0);
     const tbody = document.getElementById("driverSalesBody");
-    tbody.innerHTML = ventasHoy.length === 0
-        ? '<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>'
-        : ventasHoy.map(v => `<tr>
-              <td><strong>${v.cliente}</strong></td>
-            <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
-            <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
-            <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-            <td>${badgePago(v.pago)}</div><div>
-            <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-            <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></div><div>
-          </tr>`).join('');
-    document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => { eliminarVenta(btn.dataset.id); }));
-    renderComprobantesHistorial();
+    if(tbody) {
+        tbody.innerHTML = ventasHoy.length === 0
+            ? '<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>'
+            : ventasHoy.map(v => `<tr>
+                <td><strong>${v.cliente}</strong></td>
+                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
+                <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
+                <td>${badgePago(v.pago)}</td>
+                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+                <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></td>
+            </tr>`).join('');
+        // Asignar eventos a los botones de eliminar
+        document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => { eliminarVenta(btn.dataset.id); }));
+    }
 }
 
 // ==================== RENDER TABS ====================
@@ -629,18 +582,18 @@ function renderClientesTab() {
         const cost = costosClientes[cli] || getCostosCliente();
         const row = document.createElement("tr");
         row.innerHTML = `
-              <td><strong>${cli}</strong></td>
-              <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-              <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-              <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></div><div>
+            <td><strong>${cli}</strong></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>
         `;
         tbody.appendChild(row);
     }
@@ -655,10 +608,10 @@ function renderProductosTab() {
     for(let p of productos) {
         const row = document.createElement("tr");
         row.innerHTML = `
-              <td><img class="product-img" src="${p.imagen}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></div><div>
-              <td><strong>${p.clave}</strong></div><div>
-              <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></div><div>
-              <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></div><div>
+            <td><img class="product-img" src="${p.imagen}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></td>
+            <td><strong>${p.clave}</strong></td>
+            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></td>
+            <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></td>
         `;
         tbody.appendChild(row);
     }
@@ -698,14 +651,14 @@ function renderWeeklyReport() {
     const tbody = document.getElementById("weeklySalesBody");
     if(tbody) {
         tbody.innerHTML = weeklyVentas.length===0
-            ? '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</div><div>'
+            ? '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</td></tr>'
             : weeklyVentas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => `<tr>
-                  <td>${v.fecha}</div><div>
-                  <td><strong>${v.cliente}</strong></div><div>
-                  <td>${fmtMoney(v.total)}</div><div>
-                  <td>${badgePago(v.pago)}</div><div>
-                  <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-              </tr>`).join('');
+                <td>${v.fecha}</td>
+                <td><strong>${v.cliente}</strong></td>
+                <td>${fmtMoney(v.total)}</td>
+                <td>${badgePago(v.pago)}</td>
+                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+            </tr>`).join('');
     }
 }
 
@@ -734,7 +687,7 @@ function renderEvolucionDiaria() {
     if(ctx) { if(chartEvolucion) chartEvolucion.destroy(); chartEvolucion = new Chart(ctx, { type:'line', data:{ labels:fechas.map(f=>f.toISOString().slice(0,10)), datasets:[{ label:'Ventas totales $', data:fechas.map(f=>ventasPorDia[f.toISOString().slice(0,10)]), borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true } }); }
 }
 
-// ==================== AGREGAR TRANSACCIÓN (sin validación de stock) ====================
+// ==================== AGREGAR TRANSACCIÓN ====================
 async function agregarTransaccion() {
     const cliente = document.getElementById("clienteSelect").value;
     const pago = document.getElementById("paymentType").value;
@@ -752,87 +705,16 @@ async function agregarTransaccion() {
         };
         const hayProductos = Object.values(cantidades).some(v=>v>0);
         if(!hayProductos && cobroMonto===0){ toast("Debe ingresar al menos una cantidad de producto"); return; }
-        // Ya no validamos stock
     }
     await guardarVenta(cliente, cantidades, pago, cobroMonto);
-    ["qty_17","qty_35","qty_14","qty_20","qty_32","cobroDeudaInput"].forEach(id => { const el = document.getElementById(id); if(el) el.value=0; });
+    // Limpiar campos
+    ["qty_17","qty_35","qty_14","qty_20","qty_32","cobroDeudaInput"].forEach(id => { const el = document.getElementById(id); if(el) el.value = 0; });
+    // Recargar ventas del chofer actual (para mantener coherencia)
     await cargarVentas(currentDriverPin);
-    if (document.getElementById("adminPanel").style.display === "block") renderAdmin(); else renderDriver();
+    // Refrescar la vista
+    if (document.getElementById("adminPanel").style.display === "block") renderAdmin();
+    else renderDriver();
     toast("✅ Venta registrada");
-}
-
-// ==================== COMPROBANTES ====================
-function generarFacturaPremiumHTML(tipo, datos, numero, fechaISO) {
-    const ventasFiltradas = datos.ventas.filter(v => v.pago !== "cobrocc");
-    const cobros = datos.ventas.filter(v => v.pago === "cobrocc");
-    const totalVentas = ventasFiltradas.reduce((s,v)=>s+v.total,0);
-    const totalCobros = cobros.reduce((s,v)=>s+(v.cobroDeuda||0),0);
-    const fecha = new Date(fechaISO);
-    const fechaStr = fecha.toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
-    const horaStr = fecha.toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
-    const filas = ventasFiltradas.map(v => {
-        const prods = Object.entries(v.cantidades||{}).filter(([,c])=>c>0).map(([k,c])=>`${k}: ${c}`).join(' / ') || '—';
-        return `<tr><td>${v.cliente}</div><div><td class="productos-texto">${prods}</div><div><td>${badgePago(v.pago)}</div><td style="text-align:right;font-weight:700;">${fmtMoney(v.total)}</div><div>`;
-    }).join('');
-    const cobroFilas = cobros.map(v=>`<tr><td>${v.cliente}</div><div><td colspan="2">Cobro de deuda</div><div><td>${badgePago(v.pago)}</div><td style="text-align:right;font-weight:700;">${fmtMoney(v.cobroDeuda||0)}</div><div>`).join('');
-    return `
-    <div class="info-fecha-premium">
-        <span><strong>Tipo:</strong> Comprobante ${tipo==='dia'?'del Día':'Semanal'}</span>
-        <span><strong>Nº:</strong> X-${String(numero).padStart(6,'0')}</span>
-        <span><strong>Fecha:</strong> ${fechaStr} ${horaStr}</span>
-    </div>
-    <table class="tabla-productos-premium">
-        <thead><tr><th>Cliente</th><th>Productos</th><th>Forma Pago</th><th>Total</th></tr></thead>
-        <tbody>${filas}${cobroFilas}</tbody>
-    </table>
-    <div class="totales-premium">
-        <div style="font-size:0.8rem;color:#64748b;">Subtotal ventas: ${fmtMoney(totalVentas)}</div>
-        ${totalCobros>0?`<div style="font-size:0.8rem;color:#64748b;">Cobros deuda: ${fmtMoney(totalCobros)}</div>`:''}
-        <div class="monto-final-premium">TOTAL: ${fmtMoney(totalVentas+totalCobros)}</div>
-    </div>
-    <div class="footer-premium">MYC HIELO · Comprobante X No Fiscal · Nº X-${String(numero).padStart(6,'0')}<br>Este documento no tiene validez fiscal.</div>`;
-}
-function generarComprobanteTextoPlanoPremium(tipo, datos, numero, fechaISO) {
-    const fecha = new Date(fechaISO).toLocaleDateString('es-AR');
-    let txt = `=== MYC HIELO ===\nComprobante X-${String(numero).padStart(6,'0')}\nTipo: ${tipo==='dia'?'Día':'Semana'} | Fecha: ${fecha}\n${'─'.repeat(40)}\n`;
-    datos.ventas.forEach(v => { txt += `${v.cliente}: ${fmtMoney(v.pago==='cobrocc'?v.cobroDeuda||0:v.total)} (${v.pago})\n`; });
-    const total = datos.ventas.reduce((s,v)=>s+v.total+(v.cobroDeuda||0),0);
-    txt += `${'─'.repeat(40)}\nTOTAL: ${fmtMoney(total)}\nNo tiene validez fiscal.\n`;
-    return txt;
-}
-function getNextComprobanteNum() { let n = localStorage.getItem(`myc_${currentDriverPin}_nextComprobante`); if(!n) n=1; return parseInt(n); }
-function incrementComprobanteNum() { let n = getNextComprobanteNum(); localStorage.setItem(`myc_${currentDriverPin}_nextComprobante`, n+1); }
-function guardarComprobante(tipo, datos, html, texto) {
-    const numero = getNextComprobanteNum();
-    const fecha = new Date().toISOString();
-    const comprobante = { numero, fecha, tipo, resumen: tipo==='dia'?`Día (${datos.ventas.length} ventas)`:`Semana (${datos.ventas.length} ventas)`, total: datos.ventas.reduce((s,v)=>s+v.total+(v.cobroDeuda||0),0), html, texto };
-    comprobantesHistorial.unshift(comprobante);
-    localStorage.setItem(`myc_${currentDriverPin}_comprobantes`, JSON.stringify(comprobantesHistorial));
-    incrementComprobanteNum();
-    return comprobante;
-}
-function mostrarComprobante(html) { document.getElementById("comprobanteCuerpo").innerHTML = html; document.getElementById("comprobanteModal").style.display = "flex"; }
-function generarComprobanteDia() { let ventasHoy = getVentasHoy(); if(ventasHoy.length===0){ toast("No hay ventas hoy"); return; } const numero = getNextComprobanteNum(); const fechaISO = new Date().toISOString(); const htmlFactura = generarFacturaPremiumHTML('dia', {ventas:ventasHoy}, numero, fechaISO); const textoPlano = generarComprobanteTextoPlanoPremium('dia', {ventas:ventasHoy}, numero, fechaISO); const comp = guardarComprobante('dia', {ventas:ventasHoy}, htmlFactura, textoPlano); mostrarComprobante(comp.html); window.currentComprobanteTexto = comp.texto; renderComprobantesHistorial(); }
-function generarComprobanteSemana() { let ventasSemana = getVentasUltimos7Dias(); if(ventasSemana.length===0){ toast("No hay ventas en la última semana"); return; } const numero = getNextComprobanteNum(); const fechaISO = new Date().toISOString(); const htmlFactura = generarFacturaPremiumHTML('semana', {ventas:ventasSemana}, numero, fechaISO); const textoPlano = generarComprobanteTextoPlanoPremium('semana', {ventas:ventasSemana}, numero, fechaISO); const comp = guardarComprobante('semana', {ventas:ventasSemana}, htmlFactura, textoPlano); mostrarComprobante(comp.html); window.currentComprobanteTexto = comp.texto; renderComprobantesHistorial(); }
-function verComprobante(numero) { let comp = comprobantesHistorial.find(c=>c.numero===numero); if(comp){ mostrarComprobante(comp.html); window.currentComprobanteTexto = comp.texto; } else alert("Comprobante no encontrado"); }
-function reimprimirComprobante(numero) { verComprobante(numero); }
-function eliminarComprobante(numero) { if(confirm("¿Eliminar comprobante?")) { comprobantesHistorial = comprobantesHistorial.filter(c=>c.numero!==numero); localStorage.setItem(`myc_${currentDriverPin}_comprobantes`, JSON.stringify(comprobantesHistorial)); renderComprobantesHistorial(); } }
-function copiarComprobanteTexto() { if(window.currentComprobanteTexto){ navigator.clipboard.writeText(window.currentComprobanteTexto); toast("Texto copiado"); } }
-function descargarComprobanteTxt() { if(window.currentComprobanteTexto) { let blob = new Blob([window.currentComprobanteTexto], {type:"text/plain"}); let a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`comprobante_X_${Date.now()}.txt`; a.click(); } }
-function renderComprobantesHistorial() {
-    let tbody = document.getElementById("comprobantesBody"); if(!tbody) return;
-    if(comprobantesHistorial.length===0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin comprobantes generados</div><div>'; return; }
-    tbody.innerHTML = comprobantesHistorial.map(c => `<tr>
-          <td><strong>X-${String(c.numero).padStart(6,'0')}</strong></div><div>
-          <td>${new Date(c.fecha).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div><div>
-          <td>${c.resumen}</div><div>
-          <td><strong>${fmtMoney(c.total)}</strong></div><div>
-        <td style="white-space:nowrap;">
-            <button class="btn-small" style="background:#1259a0;" onclick="verComprobante(${c.numero})">👁️</button>
-            <button class="btn-small" onclick="reimprimirComprobante(${c.numero})">🖨️</button>
-            <button class="btn-small btn-rojo" onclick="eliminarComprobante(${c.numero})">🗑️</button>
-          </div><div>
-      </tr>`).join('');
 }
 
 // ==================== PDF EXPORT ====================
@@ -878,8 +760,8 @@ function exportFullBackup() {
         fecha: new Date().toISOString(),
         config: { clientesList: CLIENTES_LIST, precios: preciosClientes, costos: costosClientes, productos },
         data: {
-            "1234": { ventas: JSON.parse(localStorage.getItem("myc_1234_ventas") || '[]'), gastos: localStorage.getItem("myc_1234_gastos"), gastosDetalle: localStorage.getItem("myc_1234_gastosDetalle"), cobrosCC: localStorage.getItem("myc_1234_cobrosCC"), comprobantes: localStorage.getItem("myc_1234_comprobantes") },
-            "5678": { ventas: JSON.parse(localStorage.getItem("myc_5678_ventas") || '[]'), gastos: localStorage.getItem("myc_5678_gastos"), gastosDetalle: localStorage.getItem("myc_5678_gastosDetalle"), cobrosCC: localStorage.getItem("myc_5678_cobrosCC"), comprobantes: localStorage.getItem("myc_5678_comprobantes") }
+            "1234": { ventas: JSON.parse(localStorage.getItem("myc_1234_ventas") || '[]'), gastos: localStorage.getItem("myc_1234_gastos"), gastosDetalle: localStorage.getItem("myc_1234_gastosDetalle"), cobrosCC: localStorage.getItem("myc_1234_cobrosCC") },
+            "5678": { ventas: JSON.parse(localStorage.getItem("myc_5678_ventas") || '[]'), gastos: localStorage.getItem("myc_5678_gastos"), gastosDetalle: localStorage.getItem("myc_5678_gastosDetalle"), cobrosCC: localStorage.getItem("myc_5678_cobrosCC") }
         }
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], {type: "application/json"});
@@ -908,7 +790,6 @@ function importFullBackup(file) {
                     if(data.gastos) localStorage.setItem(`myc_${pin}_gastos`, data.gastos);
                     if(data.gastosDetalle) localStorage.setItem(`myc_${pin}_gastosDetalle`, data.gastosDetalle);
                     if(data.cobrosCC) localStorage.setItem(`myc_${pin}_cobrosCC`, data.cobrosCC);
-                    if(data.comprobantes) localStorage.setItem(`myc_${pin}_comprobantes`, data.comprobantes);
                 }
             }
             toast("✅ Backup restaurado correctamente");
@@ -1031,13 +912,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if(tab==="productos") renderProductosTab();
         });
     });
-    document.getElementById("genComprobanteDiaBtn")?.addEventListener("click", generarComprobanteDia);
-    document.getElementById("genComprobanteSemanaBtn")?.addEventListener("click", generarComprobanteSemana);
-    document.getElementById("printComprobanteBtn")?.addEventListener("click", ()=>window.print());
-    document.getElementById("copyComprobanteBtn")?.addEventListener("click", copiarComprobanteTexto);
-    document.getElementById("downloadComprobanteBtn")?.addEventListener("click", descargarComprobanteTxt);
-    document.getElementById("closeComprobanteModalBtn")?.addEventListener("click", ()=>document.getElementById("comprobanteModal").style.display="none");
-    window.onclick = e=>{ if(e.target===document.getElementById("comprobanteModal")) document.getElementById("comprobanteModal").style.display="none"; };
 });
 </script>
 </body>
