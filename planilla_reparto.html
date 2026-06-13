@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (CORREGIDA - ORIGINAL)</title>
+    <title>MYC HIELO – Planilla de Reparto</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* === TU ESTILO ORIGINAL COMPLETO (sin cambios) === */
+        /* === ESTILO ORIGINAL COMPLETO (sin cambios) === */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; font-family: 'Inter', system-ui, 'Segoe UI', sans-serif; }
         :root {
@@ -120,7 +120,7 @@
             <p class="login-hint">🔹 Choferes: <strong>1234</strong> o <strong>5678</strong><br>🔹 Administrador: <strong>9999</strong></p>
             <input type="password" id="pinInput" placeholder="● ● ● ●">
             <button id="loginBtn">Ingresar</button>
-            <div id="loginError" class="error">PIN incorrecto. Intentá de nuevo.</div>
+            <div id="loginError" class="error" style="display:none;">PIN incorrecto. Intentá de nuevo.</div>
         </div>
     </div>
 
@@ -171,7 +171,7 @@
                 <button id="forceSavePricesBtn" class="btn-small btn-primary">💾 Guardar precios (forzar)</button>
             </div>
             <div class="form-row"><div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div><div class="form-group" style="flex:0 0 auto;"><button id="addClienteBtn" class="btn-small" style="margin-top:18px;">Agregar</button></div></div>
-            <div class="tabla-wrapper"><table id="clientesTable"><thead><tr><th>Cliente</th><th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></table></div>
+            <div class="tabla-wrapper"><table id="clientesTable"><thead><tr><th>Cliente</th><th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th><tr></thead><tbody id="clientesTbody"></tbody></table></div>
             <button id="saveAllPricesBtn" style="margin-top:16px;">💾 Guardar todos los cambios (local + nube)</button>
         </div>
         <div id="tabProductos" class="panel-content" style="display:none;">
@@ -485,7 +485,7 @@ function cerrarDiaAdmin() {
     renderAdmin();
 }
 
-// ==================== RENDER ADMIN ====================
+// ==================== RENDER ADMIN (CORREGIDO) ====================
 function renderAdmin() {
     const ventasHoy = getVentasHoy();
     let totalVentas=0, totalEfectivo=0, totalTransferencia=0, totalCtaCte=0, gananciaTotal=0;
@@ -511,7 +511,7 @@ function renderAdmin() {
     const tbody = document.getElementById("salesDetailBody");
     if(tbody) {
         if(ventasHoy.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>';
         } else {
             let html = '';
             for(const v of ventasHoy) {
@@ -523,8 +523,8 @@ function renderAdmin() {
                     <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
                     <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
                     <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-                    <td>${badgePago(v.pago)}</div><div>
-                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
+                    <td>${badgePago(v.pago)}</td>
+                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
                 </tr>`;
             }
             tbody.innerHTML = html;
@@ -559,7 +559,7 @@ function renderDriver() {
     const tbody = document.getElementById("driverSalesBody");
     if(tbody) {
         if(ventasHoy.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>';
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>';
         } else {
             let html = '';
             for(const v of ventasHoy) {
@@ -571,9 +571,9 @@ function renderDriver() {
                     <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
                     <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
                     <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-                    <td>${badgePago(v.pago)}</div><div>
-                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-                    <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></div><div>
+                    <td>${badgePago(v.pago)}</td>
+                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+                    <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></td>
                 </tr>`;
             }
             tbody.innerHTML = html;
@@ -582,7 +582,7 @@ function renderDriver() {
     }
 }
 
-// ==================== RENDER TABS (sin cambios, solo se mantiene) ====================
+// ==================== RENDER TABS (resto igual que original, sin cambios) ====================
 function renderClientesTab() {
     let tbody = document.getElementById("clientesTbody"); if(!tbody) return; tbody.innerHTML = "";
     for(let cli of CLIENTES_LIST) {
@@ -592,16 +592,16 @@ function renderClientesTab() {
         row.innerHTML = `
             <td><strong>${cli}</strong></td>
             <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-            <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></div><div>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+            <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>
         `;
         tbody.appendChild(row);
     }
@@ -616,10 +616,10 @@ function renderProductosTab() {
     for(let p of productos) {
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td><img class="product-img" src="${p.imagen}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></div><div>
-            <td><strong>${p.clave}</strong></div><div>
-            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></div><div>
-            <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></div><div>
+            <td><img class="product-img" src="${p.imagen}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></td>
+            <td><strong>${p.clave}</strong></td>
+            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></td>
+            <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></td>
         `;
         tbody.appendChild(row);
     }
@@ -658,16 +658,16 @@ function renderWeeklyReport() {
     const tbody = document.getElementById("weeklySalesBody");
     if(tbody) {
         if(weeklyVentas.length===0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</div><div>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas en la última semana</td></tr>';
         } else {
             let html = '';
             for(const v of weeklyVentas) {
                 html += `<tr>
-                    <td>${v.fecha}</div><div>
-                    <td><strong>${v.cliente}</strong></div><div>
-                    <td>${fmtMoney(v.total)}</div><div>
-                    <td>${badgePago(v.pago)}</div><div>
-                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
+                    <td>${v.fecha}</td>
+                    <td><strong>${v.cliente}</strong></td>
+                    <td>${fmtMoney(v.total)}</td>
+                    <td>${badgePago(v.pago)}</td>
+                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
                 </tr>`;
             }
             tbody.innerHTML = html;
@@ -789,25 +789,57 @@ function importFullBackup(file) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         try {
+            const toast("✅ Backup completo exportado");
+}
+function importFullBackup(file) {
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
             const backup = JSON.parse(e.target.result);
             if(backup.config) {
                 if(backup.config.clientesList) { CLIENTES_LIST.length=0; CLIENTES_LIST.push(...backup.config.clientesList); }
                 if(backup.config.precios) preciosClientes = backup.config.precios;
+                if backup = JSON.parse(e.target.result);
+            if(backup.config) {
+                if(backup.config.clientesList) { CLIENTES_LIST.length=0; CLIENTES_LIST.push(...backup.config.clientesList); }
+                if(backup.config.precios) preciosClientes = backup.config.precios;
                 if(backup.config.costos) costosClientes = backup.config.costos;
+                if(backup.config.productos) productos = backup.config.productos;
+                saveGlobalPrices(); saveCommonProducts(backup.config.costos) costosClientes = backup.config.costos;
                 if(backup.config.productos) productos = backup.config.productos;
                 saveGlobalPrices(); saveCommonProducts();
             }
             if(backup.data) {
                 for(const [pin, data] of Object.entries(backup.data)) {
                     if(data.ventas) localStorage.setItem(`myc_${pin}_ventas`, JSON.stringify(data.ventas));
+                    if(data.gastos) localStorage.setItem(`myc_${pin();
+            }
+            if(backup.data) {
+                for(const [pin, data] of Object.entries(backup.data)) {
+                    if(data.ventas) localStorage.setItem(`myc_${pin}_ventas`, JSON.stringify(data.ventas));
                     if(data.gastos) localStorage.setItem(`myc_${pin}_gastos`, data.gastos);
                     if(data.gastosDetalle) localStorage.setItem(`myc_${pin}_gastosDetalle`, data.gastosDetalle);
-                    if(data.cobrosCC) localStorage.setItem(`myc_${pin}_cobrosCC`, data.cobrosCC);
+                   }_gastos`, data.gastos);
+                    if(data.gastosDetalle) localStorage.setItem(`myc_${pin}_gastosDetalle`, data.gastosDetalle);
+                    if(data.cobrosCC) localStorage.setItem(`myc_${pin}_cobrosCC if(data.cobrosCC) localStorage.setItem(`myc_${pin}_cobrosCC`, data.cobrosCC);
+                }
+            }
+            toast("✅ Backup`, data.cobrosCC);
                 }
             }
             toast("✅ Backup restaurado correctamente");
             location.reload();
         } catch(err) { toast("❌ Error al restaurar backup: " + err.message); }
+    };
+    reader.readAsText restaurado correctamente");
+            location.reload();
+        } catch(err) { toast("❌ Error al restaurar backup: " + err.message);(file);
+}
+
+// ==================== INICIO DE SESIÓN ====================
+async function iniciarSesionChofer(pin) {
+    currentDriverPin = pin;
+    load }
     };
     reader.readAsText(file);
 }
@@ -827,7 +859,34 @@ async function iniciarSesionChofer(pin) {
 }
 async function iniciarSesionAdmin() {
     currentDriverPin = null;
-    const selected = document.getElementById("adminChoferSelect").value;
+    const selected = document.getElementById("adminChoferSelect").valueDataByPin(pin);
+    renderDriver();
+    try {
+        await cargarClientesDesdeSheets();
+        await cargarConfiguracion();
+        await cargarVentas(pin);
+        await cargarGastos(pin);
+        renderDriver();
+    } catch(e) { console.error("Error actualizando desde la nube", e); }
+}
+async function iniciarSesionAdmin() {
+    currentDriverPin = null;
+    const selected = document.getElementById("adminChofer;
+    await cargarClientesDesdeSheets();
+    await cargarConfiguracion();
+    await cargarVentas(selected);
+    await cargarGastos(selected);
+    renderAdmin();
+}
+
+// ==================== EVENTOS DOM ====================
+document.addEventListener("DOMContentLoaded", () => {
+    loadCommonProducts();
+    loadGlobalPrices();
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+        const pin = document.getElementById("pinInput").value;
+       Select").value;
     await cargarClientesDesdeSheets();
     await cargarConfiguracion();
     await cargarVentas(selected);
@@ -844,10 +903,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const pin = document.getElementById("pinInput").value;
         if(pin === "9999") {
             document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("adminPanel").style.display = if(pin === "9999") {
+            document.getElementById("loginScreen").style.display = "none";
             document.getElementById("adminPanel").style.display = "block";
             await iniciarSesionAdmin();
         } else if(pin === "1234" || pin === "5678") {
+            "block";
+            await iniciarSesionAdmin();
+        } else if(pin === "1234" || pin === "5678") {
             document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("driverPanel").style.display = "block";
+            await iniciarSesionChofer(pin);
+        } else document.getElementById("loginScreen").style.display = "none";
             document.getElementById("driverPanel").style.display = "block";
             await iniciarSesionChofer(pin);
         } else {
@@ -856,21 +923,45 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     document.getElementById("pinInput").addEventListener("keydown", e => { if(e.key === "Enter") document.getElementById("loginBtn").click(); });
     document.getElementById("logoutAdmin")?.addEventListener("click", () => location.reload());
+    document.getElementById {
+            document.getElementById("loginError").style.display = "block";
+        }
+    });
+    document.getElementById("pinInput").addEventListener("keydown", e => { if(e.key === "Enter") document.getElementById("loginBtn").click(); });
+    document.getElementById("logoutAdmin")?.addEventListener("click", () => location.reload());
     document.getElementById("logoutDriver")?.addEventListener("click", () => location.reload());
     document.getElementById("addSaleBtn")?.addEventListener("click", agregarTransaccion);
+    document.getElementById("setGastosDetalleBtn")?.addEventListener("click", actualizarGastosDesdeDetalle("logoutDriver")?.addEventListener("click", () => location.reload());
+    document.getElementById("addSaleBtn")?.addEventListener("click", agregarTransaccion);
     document.getElementById("setGastosDetalleBtn")?.addEventListener("click", actualizarGastosDesdeDetalle);
-    document.getElementById("resetDayBtn")?.addEventListener("click", ()=>{ if(confirm("⚠️ REINICIAR JORNADA borrará ventas, cobros y gastos del día. ¿Continuar?")){ resetJornada(); alert("Jornada reiniciada."); location.reload(); } });
+    document.getElementById(");
+    document.getElementById("resetDayBtn")?.addEventListener("click", ()=>{ if(confirm("⚠️ REINICIAR JORNADA borrará ventas, cobros yresetDayBtn")?.addEventListener("click", ()=>{ if(confirm("⚠️ REINICIAR JORNADA borrará ventas, cobros y gastos del día. ¿Continuar?")){ resetJornada(); alert("Jornada reiniciada."); location.reload(); } });
+    document.getElementById("cerrarDiaBtn")?.addEventListener("click", cerrarDiaAdmin);
+    document.getElementById("exportPdfBtn")?.addEventListener("click", ()=>exportarPDF("tabDashboard","dashboard_myc"));
+    document.getElementById("exportReportPdfBtn")?.addEventListener("click", ()=>exportarPDF("tabReportes","reporte_semanal_myc"));
+    
+    const guardarPrecios = async () => gastos del día. ¿Continuar?")){ resetJornada(); alert("Jornada reiniciada."); location.reload(); } });
     document.getElementById("cerrarDiaBtn")?.addEventListener("click", cerrarDiaAdmin);
     document.getElementById("exportPdfBtn")?.addEventListener("click", ()=>exportarPDF("tabDashboard","dashboard_myc"));
     document.getElementById("exportReportPdfBtn")?.addEventListener("click", ()=>exportarPDF("tabReportes","reporte_semanal_myc"));
     
     const guardarPrecios = async () => {
         document.querySelectorAll(".priceInput").forEach(inp => {
+            const cli = inp.dataset.cl {
+        document.querySelectorAll(".priceInput").forEach(inp => {
             const cli = inp.dataset.cli;
             const prod = inp.dataset.prod;
-            if(!preciosClientes[cli]) preciosClientes[cli] = getPreciosCliente(cli);
+            if(!preciosClientes[cli]) preciosClientes[clii;
+            const prod = inp.dataset.prod;
+            if(!preciosClientes[cli]) preciosClientes[cli] = getPreciosCliente] = getPreciosCliente(cli);
+            preciosClientes[cli][prod] = parseInt(inp.value) || 0;
+       (cli);
             preciosClientes[cli][prod] = parseInt(inp.value) || 0;
         });
+        document.querySelectorAll(".costInput").forEach(inp => {
+            const cli = inp.dataset.cli;
+            const prod = inp.dataset.prod;
+            if(!costosClientes[cli]) costosClient });
         document.querySelectorAll(".costInput").forEach(inp => {
             const cli = inp.dataset.cli;
             const prod = inp.dataset.prod;
@@ -884,7 +975,25 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     
     document.getElementById("saveAllPricesBtn")?.addEventListener("click", guardarPrecios);
-    document.getElementById("forceSavePricesBtn")?.addEventListener("click", guardarPrecios);
+    document.getElementById("forceSavePricesBtn")?.addEventListeneres[cli] = getCostosCliente();
+            costosClientes[cli][prod] = parseInt(inp.value) || 0;
+        });
+        saveGlobalPrices();
+        await guardarConfiguracionRemota();
+        renderAdmin();
+        toast("✅ Precios y costos guardados correctamente");
+    };
+    
+    document.getElementById("saveAllPricesBtn")?.addEventListener("click", guardarPrecios);
+    document.getElementById("("click", guardarPrecios);
+    
+    document.getElementById("addClienteBtn")?.addEventListener("click", async ()=>{
+        const nuevo=document.getElementById("newClienteName").value.trim().toUpperCase();
+        if(!nuevo) return;
+        if(await agregarClienteGlobal(nuevo)){
+            document.getElementById("newClienteName").value=""; toast(`✅ Cliente ${nuevo} agregado`);
+            if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); else renderDriver();
+        } else toast("⚠forceSavePricesBtn")?.addEventListener("click", guardarPrecios);
     
     document.getElementById("addClienteBtn")?.addEventListener("click", async ()=>{
         const nuevo=document.getElementById("newClienteName").value.trim().toUpperCase();
@@ -897,19 +1006,41 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("exportFullBackupBtn")?.addEventListener("click", exportFullBackup);
     document.getElementById("importFullBackupInput")?.addEventListener("change", e => { if(e.target.files.length) importFullBackup(e.target.files[0]); e.target.value=''; });
     document.getElementById("addProductBtn")?.addEventListener("click", async ()=>{
+        const nombre=document.getElementById("️ Ya existe ese cliente");
+    });
+    document.getElementById("exportFullBackupBtn")?.addEventListener("click", exportFullBackup);
+    document.getElementById("importFullBackupInput")?.addEventListener("change", e => { if(e.target.files.length) importFullBackup(e.target.files[0]); e.target.value=''; });
+    document.getElementById("addProductBtn")?.addEventListener("click", async ()=>{
         const nombre=document.getElementById("newProductName").value.trim(); if(!nombre) return;
+        const precio=parseInt(document.getElementById("newProductPrice").value)newProductName").value.trim(); if(!nombre) return;
         const precio=parseInt(document.getElementById("newProductPrice").value)||0;
+        const img=document.getElementById("newProductImg").value||"https://placehold.co/100x100";
+        productos.push({clave:nombre,precioBase:precio,imagen:img}); saveCommonProducts(); await guard||0;
         const img=document.getElementById("newProductImg").value||"https://placehold.co/100x100";
         productos.push({clave:nombre,precioBase:precio,imagen:img}); saveCommonProducts(); await guardarConfiguracionRemota(); renderProductosTab();
         document.getElementById("newProductName").value=""; document.getElementById("newProductPrice").value=""; document.getElementById("newProductImg").value=""; toast("✅ Producto agregado");
     });
+    document.getElementById("saveProductsBtn")?.addarConfiguracionRemota(); renderProductosTab();
+        document.getElementById("newProductName").value=""; document.getElementById("newProductPrice").value=""; document.getElementById("newProductImg").value=""; toast("✅ Producto agregado");
+    });
     document.getElementById("saveProductsBtn")?.addEventListener("click", async ()=>{
-        document.querySelectorAll(".prodImg").forEach(img=>{ const clave=img.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave); if(prod) prod.imagen=img.value; });
+        document.querySelectorAll(".prodImg").forEach(img=>{ constEventListener("click", async ()=>{
+        document.querySelectorAll(".prodImg").forEach(img=>{ const clave=img.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave); if(prod) prod.imagen=img.value; clave=img.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave });
+        document.querySelectorAll(".prodPriceBase").forEach(inp=>{ const clave=inp.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave); if(prod) prod.precioBase=parseInt(inp.value)||0; });
+        save); if(prod) prod.imagen=img.value; });
         document.querySelectorAll(".prodPriceBase").forEach(inp=>{ const clave=inp.getAttribute("data-clave"); const prod=productos.find(p=>p.clave===clave); if(prod) prod.precioBase=parseInt(inp.value)||0; });
         saveCommonProducts(); await guardarConfiguracionRemota(); toast("💾 Productos guardados"); renderProductosTab();
     });
     document.getElementById("adminChoferSelect")?.addEventListener("change", async ()=>{
+        const selected=CommonProducts(); await guardarConfiguracionRemota(); toast("💾 Productos guardados"); renderProductosTab();
+    });
+    document.getElementById("adminChoferSelect")?.addEventListener("change", async ()=>{
         const selected=document.getElementById("adminChoferSelect").value;
+        await cargarVentas(selected); await cargarGastos(selected); renderAdmin();
+    });
+    document.querySelectorAll(".tab-btn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+            document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("activedocument.getElementById("adminChoferSelect").value;
         await cargarVentas(selected); await cargarGastos(selected); renderAdmin();
     });
     document.querySelectorAll(".tab-btn").forEach(btn=>{
@@ -926,6 +1057,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 });
-</script>
+</script");
+            const tab=btn.getAttribute("data-tab");
+            ["dashboard","reportes","clientes","productos"].forEach(t=>{
+                const el = document.getElementById(`tab${t.charAt(0).toUpperCase()+t.slice(1)}`);
+                if(el) el.style.display = tab===t?"block":"none";
+            });
+            if(tab==="dashboard"){ actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); }
+            if(tab==="reportes") renderWeeklyReport();
+            if(tab==="productos") renderProductosTab();
+        });
+   >
 </body>
 </html>
