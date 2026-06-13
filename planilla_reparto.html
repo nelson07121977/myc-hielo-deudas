@@ -242,35 +242,14 @@
             <div class="chart-container"><h3>📈 Evolución diaria</h3><canvas id="weeklySalesChart"></canvas></div>
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">💸 Detalle ventas semana</h3>
             <div class="tabla-wrapper">
-                <table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table>
+                <table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></td></thead><tbody id="weeklySalesBody"></tbody></table>
             </div>
         </div>
         <div id="tabClientes" class="panel-content" style="display:none;">
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 14px;">Gestión de clientes — precios de venta y costos</h3>
-            <div style="display:flex; gap:10px; margin:0 0 16px; flex-wrap:wrap;">
-                <button id="exportConfigBtn" class="btn-small btn-verde">💾 Exportar config</button>
-                <label for="importConfigInput" class="btn-small btn-amarillo" style="padding:7px 16px; cursor:pointer;">📂 Importar config</label>
-                <input type="file" id="importConfigInput" accept=".json" style="display:none;">
-                <button id="refreshClientesBtn" class="btn-small btn-azul-medio">🔄 Forzar recarga de clientes</button>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div>
-                <div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div>
-                <div class="form-group" style="flex:0 0 auto;"><button id="addClienteBtn" class="btn-small" style="margin-top:18px;">Agregar</button></div>
-            </div>
-            <div class="tabla-wrapper">
-                <table id="clientesTable">
-                    <thead>
-                        <tr>
-                            <th>Foto</th><th>Cliente</th>
-                            <th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th>
-                            <th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="clientesTbody"></tbody>
-                </table>
-            </div>
+            <div style="display:flex; gap:10px; margin:0 0 16px; flex-wrap:wrap;"><button id="exportConfigBtn" class="btn-small btn-verde">💾 Exportar config</button><label for="importConfigInput" class="btn-small btn-amarillo" style="padding:7px 16px; cursor:pointer;">📂 Importar config</label><input type="file" id="importConfigInput" accept=".json" style="display:none;"></div>
+            <div class="form-row"><div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div><div class="form-group"><label>Foto URL (opcional)</label><input type="text" id="newClienteImg" placeholder="https://..."></div><div class="form-group" style="flex:0 0 auto;"><button id="addClienteBtn" class="btn-small" style="margin-top:18px;">Agregar</button></div></div>
+            <div class="tabla-wrapper"><table id="clientesTable"><thead><tr><th>Foto</th><th>Cliente</th><th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></table></div>
             <button id="saveAllPricesBtn" style="margin-top:16px;">💾 Guardar todos los cambios</button>
         </div>
         <div id="tabProductos" class="panel-content" style="display:none;">
@@ -283,7 +262,7 @@
             <h3 style="font-size:0.95rem; color:var(--azul); margin:0 0 14px;">📦 Carga de fábrica (stock inicial del día)</h3>
             <div class="form-row"><div class="form-group"><label>🥤 1,7 KG</label><input type="number" id="fab_17" value="0" step="1"></div><div class="form-group"><label>🥤 3,5 KG</label><input type="number" id="fab_35" value="0" step="1"></div><div class="form-group"><label>🧊 14 KG</label><input type="number" id="fab_14" value="0" step="1"></div><div class="form-group"><label>🧊 ESC.20KG</label><input type="number" id="fab_20" value="0" step="1"></div><div class="form-group"><label>🧊 ESC.32KG</label><input type="number" id="fab_32" value="0" step="1"></div><div class="form-group" style="flex:0 0 auto;"><button id="updateStockBtn" class="btn-small" style="margin-top:18px;">Actualizar stock</button></div></div>
             <h3 style="font-size:0.9rem; color:var(--azul); margin:0 0 10px;">📊 Vendido / Restante</h3>
-            <div class="tabla-wrapper"><table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody></tbody><table></div>
+            <div class="tabla-wrapper"><table id="stockTable"><thead><tr><th>Producto</th><th>Carga Fábrica</th><th>Vendido</th><th>Restante</th></tr></thead><tbody></tbody></table></div>
         </div>
     </div>
 
@@ -334,7 +313,8 @@
 
 <script>
 // ==================== CONFIGURACIÓN GLOBAL ====================
-const API_URL = "https://script.google.com/macros/s/AKfycbxc4kUR5W2SozDU9FSS2LfPoMBVXn2ZQD0p2meaa9j3wszzPvkAdYxI6x7GXT5Hlo2b/exec";
+// *** NUEVA URL CON CORS HABILITADO ***
+const API_URL = "https://script.google.com/macros/s/AKfycbwP42ZXphOiBWoL43RbBqGNx8s6Gm8x25X8P8dXqZvDvzn23xagoOAwWfNZAiipW3Vo/exec";
 
 let currentDriverPin = null;
 let CLIENTES_LIST = [];
@@ -368,12 +348,13 @@ function saveAll() { if(currentDriverPin) saveDataByPin(currentDriverPin); else 
 
 // ==================== API ====================
 async function apiCall(ruta, params = {}, usePost = false) {
-    // Para evitar problemas de CORS en guardados, usamos GET (si es posible) o POST sin esperar respuesta
     if (usePost) {
-        // Usamos fetch sin esperar respuesta detallada, solo para enviar
-        fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ruta, ...params }) })
-            .catch(e => console.error("Error guardando (CORS ignorado):", e));
-        return { exito: true }; // Asumimos éxito para no bloquear
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ruta, ...params })
+        });
+        return response.json();
     } else {
         const url = new URL(API_URL);
         url.searchParams.append('ruta', ruta);
@@ -390,7 +371,7 @@ function guardarClientesLocal() { localStorage.setItem("myc_clientes_list", JSON
 async function agregarClienteGlobal(nombre) { if(!CLIENTES_LIST.includes(nombre)) { CLIENTES_LIST.push(nombre); preciosClientes[nombre]=getPreciosCliente(nombre); costosClientes[nombre]=getCostosCliente(); guardarClientesLocal(); saveGlobalPrices(); try{ await apiCall('agregarCliente',{ nombre }); }catch(e){} return true; } return false; }
 async function eliminarClienteGlobal(nombre) { if(confirm(`¿Eliminar cliente "${nombre}"?`)) { CLIENTES_LIST = CLIENTES_LIST.filter(c=>c!==nombre); delete preciosClientes[nombre]; delete costosClientes[nombre]; guardarClientesLocal(); saveGlobalPrices(); try{ await apiCall('eliminarCliente',{ nombre }); }catch(e){} ventas = ventas.filter(v=>v.cliente!==nombre); saveAll(); return true; } return false; }
 async function cargarConfiguracion() { try{ const config = await apiCall('obtenerConfiguracion'); if(config.precios) preciosClientes=config.precios; if(config.costos) costosClientes=config.costos; if(config.productos && config.productos.length) productos=config.productos; for(let c of CLIENTES_LIST) { if(!preciosClientes[c]) preciosClientes[c]=getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c]=getCostosCliente(); } } catch(e){} }
-async function guardarConfiguracionRemota() { try{ await apiCall('guardarConfiguracion',{ precios:preciosClientes, costos:costosClientes, productos:productos }, true); toast("✅ Configuración guardada (puede tardar unos segundos en reflejarse)"); } catch(e){} }
+async function guardarConfiguracionRemota() { try{ await apiCall('guardarConfiguracion',{ precios:preciosClientes, costos:costosClientes, productos:productos }, true); toast("✅ Configuración guardada en la nube"); } catch(e){ toast("❌ Error al guardar configuración"); } }
 async function cargarVentas(chofer) {
     try {
         const data = await apiCall('obtenerVentas', {});
@@ -446,7 +427,7 @@ function renderAdmin() {
     ventasHoy.forEach(v => { if(v.pago!=="cobrocc") totalVentas += v.total; if(v.pago==="efectivo") totalEfectivo += v.total; if(v.pago==="transferencia") totalTransferencia += v.total; if(v.pago==="ctacte") totalCtaCte += v.total; const cost = costosClientes[v.cliente] || getCostosCliente(); let costo = 0; if(v.cantidades) costo += (v.cantidades["1,7 KG"]||0)*cost.c17 + (v.cantidades["3,5 KG"]||0)*cost.c35 + (v.cantidades["14 KG"]||0)*cost.c14 + (v.cantidades["ESC.20KG"]||0)*cost.c20 + (v.cantidades["ESC.32KG"]||0)*cost.c32; gananciaTotal += (v.total-costo); });
     const gananciaNeta = gananciaTotal - gastos + cobrosCC;
     document.getElementById("adminStats").innerHTML = `<div class="card"><h4>Venta Bruta</h4><div class="value">${fmtMoney(totalVentas)}</div></div><div class="card"><h4>💵 Efectivo</h4><div class="value">${fmtMoney(totalEfectivo)}</div></div><div class="card"><h4>💳 Transf.</h4><div class="value">${fmtMoney(totalTransferencia)}</div></div><div class="card"><h4>📘 Cta.Cte</h4><div class="value">${fmtMoney(totalCtaCte)}</div></div><div class="card"><h4>💸 Gastos</h4><div class="value">${fmtMoney(gastos)}</div><small style="font-size:0.68rem; color:var(--gris-texto);">Nafta:${gastosDetalle.nafta} Ch:${gastosDetalle.choferes} Otros:${gastosDetalle.otros}</small></div><div class="card cobro-card"><h4>🔄 Cobros Deuda</h4><div class="value">${fmtMoney(cobrosCC)}</div></div><div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(gananciaNeta)}</div></div>`;
-    document.getElementById("salesDetailBody").innerHTML = ventasHoy.length === 0 ? `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>` : ventasHoy.map(v => `<tr>
+    document.getElementById("salesDetailBody").innerHTML = ventasHoy.length === 0 ? `</td><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>` : ventasHoy.map(v => `<tr>
         <td><strong>${v.cliente}</strong></td>
         <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
         <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
@@ -456,7 +437,7 @@ function renderAdmin() {
         <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
         <td>${badgePago(v.pago)}</div><div>
         <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-    </tr>`).join('');
+    </td>`).join('');
     actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); renderClientesTab(); renderProductosTab(); renderStockTab(); renderWeeklyReport();
 }
 
@@ -479,7 +460,7 @@ function renderDriver() {
     document.getElementById("totalGastos").innerText = gastos;
     document.getElementById("driverNetoDia").innerText = (totalE + totalT + cobrosCC - gastos).toFixed(0);
     const tbody = document.getElementById("driverSalesBody");
-    tbody.innerHTML = ventasHoy.length === 0 ? `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>` : ventasHoy.map(v => `<tr>
+    tbody.innerHTML = ventasHoy.length === 0 ? `<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>` : ventasHoy.map(v => `</table>
         <td><strong>${v.cliente}</strong></td>
         <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
         <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
@@ -494,34 +475,32 @@ function renderDriver() {
     document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => { eliminarVenta(Number(btn.dataset.id)); }));
 }
 
-// ==================== RENDER CLIENTES TAB (con guardado manual, evitando CORS) ====================
+// ==================== RENDER CLIENTES TAB ====================
 function renderClientesTab() {
-    let tbody = document.getElementById("clientesTbody"); if(!tbody) return;
-    tbody.innerHTML = "";
+    let tbody = document.getElementById("clientesTbody"); if(!tbody) return; tbody.innerHTML = "";
     if (!CLIENTES_LIST.length) {
-        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">No hay clientes cargados aún. Usá "Forzar recarga" o esperá un momento.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">Cargando clientes...</td></tr>`;
         return;
     }
     for(let cli of CLIENTES_LIST) {
         const pre = preciosClientes[cli] || getPreciosCliente(cli);
         const cost = costosClientes[cli] || getCostosCliente();
         const row = document.createElement("tr");
-        row.innerHTML = `<td><div style="width:36px;height:36px;background:var(--azul-claro);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--azul);font-size:0.85rem;">${cli.charAt(0)}</div></div><div>
-        <td><strong>${cli}</strong></div><div>
-        <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></div><div>
-        <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></div><div>`;
+        row.innerHTML = `<tr><div style="width:36px;height:36px;background:var(--azul-claro);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--azul);font-size:0.85rem;">${cli.charAt(0)}</div></td>
+        <td><strong>${cli}</strong></td>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:72px; padding:5px 8px; font-size:0.78rem;"></td>
+        <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>`;
         tbody.appendChild(row);
     }
-    // NO guardado automático para evitar CORS. Solo se guarda con el botón.
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async () => { const cli = btn.getAttribute("data-cli"); if(await eliminarClienteGlobal(cli)) { renderAdmin(); } }));
 }
 
@@ -530,10 +509,10 @@ function renderProductosTab() {
     let tbody = document.getElementById("productsTbody"); if(!tbody) return; tbody.innerHTML = "";
     for(let p of productos) {
         const row = document.createElement("tr");
-        row.innerHTML = `<td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></div><div>
-        <td><strong>${p.clave}</strong></div><div>
-        <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></div><div>
-        <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></div><div>`;
+        row.innerHTML = `<td><img class="product-img" src="${p.imagen}" onerror="this.src='https://placehold.co/100x100?text=No+img'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px; font-size:0.7rem; margin-top:4px;"></td>
+        <td><strong>${p.clave}</strong></td>
+        <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px; padding:5px 8px; font-size:0.82rem;"></td>
+        <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></td>`;
         tbody.appendChild(row);
     }
     document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", () => { const clave = btn.getAttribute("data-clave"); if(confirm(`¿Eliminar producto ${clave}?`)) { productos = productos.filter(p=>p.clave!==clave); saveCommonProducts(); renderProductosTab(); guardarConfiguracionRemota(); } }));
@@ -727,17 +706,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if(document.getElementById("adminPanel").style.display==="block") renderAdmin();
             else renderDriver();
         } else toast("⚠️ Ya existe ese cliente");
-    });
-    document.getElementById("refreshClientesBtn")?.addEventListener("click", async () => {
-        toast("🔄 Recargando clientes...");
-        await cargarClientesDesdeSheets();
-        if (document.getElementById("adminPanel").style.display === "block") {
-            await cargarConfiguracion();
-            renderAdmin();
-        } else {
-            renderDriver();
-        }
-        toast("✅ Clientes recargados");
     });
     document.getElementById("exportConfigBtn")?.addEventListener("click", ()=>{ const config={clientesList:CLIENTES_LIST,precios:preciosClientes,costos:costosClientes,productos}; const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`myc_config_${new Date().toISOString().slice(0,19)}.json`; a.click(); URL.revokeObjectURL(a.href); });
     document.getElementById("importConfigInput")?.addEventListener("change", e=>{ if(!e.target.files.length) return; const reader=new FileReader(); reader.onload=async function(ev){ try{ const config=JSON.parse(ev.target.result); if(config.clientesList){ CLIENTES_LIST.length=0; CLIENTES_LIST.push(...config.clientesList); } if(config.precios) preciosClientes=config.precios; if(config.costos) costosClientes=config.costos; if(config.productos) productos=config.productos; CLIENTES_LIST.forEach(c=>{ if(!preciosClientes[c]) preciosClientes[c]=getPreciosCliente(c); if(!costosClientes[c]) costosClientes[c]=getCostosCliente(); }); saveAll(); saveCommonProducts(); saveGlobalPrices(); await guardarConfiguracionRemota(); toast("✅ Configuración importada"); if(document.getElementById("adminPanel").style.display==="block") renderAdmin(); else renderDriver(); } catch(err){ toast("❌ Error al leer archivo"); } }; reader.readAsText(e.target.files[0]); e.target.value=''; });
