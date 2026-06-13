@@ -10,103 +10,73 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <style>
-:root {
-  --bg:        #0d1b2e;
-  --surface:   #132238;
-  --surface2:  #1a2f48;
-  --border:    #243a55;
-  --accent:    #00c4ff;
-  --accent2:   #0086cc;
-  --success:   #00e096;
-  --danger:    #ff4d6d;
-  --warning:   #ffb547;
-  --text:      #e8f0fb;
-  --text-muted:#7a9abf;
-  --radius:    14px;
-  --radius-sm: 8px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 16px; font-size: 14px; }
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--surface); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-.container { max-width: 1600px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-.header { background: linear-gradient(135deg, #0d2d52 0%, #0a1e35 60%, #061529 100%); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; overflow: hidden; }
-.header::before { content: '🧊'; position: absolute; right: -10px; top: -20px; font-size: 120px; opacity: 0.04; pointer-events: none; }
-.header-left h1 { font-size: 1.7rem; font-weight: 900; letter-spacing: -0.5px; color: #fff; display: flex; align-items: center; gap: 10px; }
-.header-left h1 span { color: var(--accent); }
-.header-left p { color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; }
-.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
-.card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-.card-title { font-weight: 700; font-size: 0.95rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
-.card-title .icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; background: var(--surface2); flex-shrink: 0; }
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-.kpi-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; position: relative; overflow: hidden; }
-.kpi-card::after { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--kpi-color, var(--accent)); border-radius: 3px 0 0 3px; }
-.kpi-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 6px; }
-.kpi-value { font-size: 1.7rem; font-weight: 800; color: var(--text); line-height: 1; }
-.kpi-card.deuda   { --kpi-color: var(--danger); }
-.kpi-card.cobros  { --kpi-color: var(--success); }
-.kpi-card.gastos  { --kpi-color: var(--warning); }
-.kpi-card.neto    { --kpi-color: var(--accent); }
-.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 40px; font-size: 0.72rem; font-weight: 600; cursor: pointer; border: none; transition: opacity 0.15s; font-family: inherit; }
-.btn:active { transform: scale(0.96); }
-.btn:hover { opacity: 0.88; }
-.btn-primary   { background: var(--accent);   color: #041020; }
-.btn-success   { background: var(--success);  color: #041020; }
-.btn-danger    { background: var(--danger);   color: #fff; }
-.btn-warning   { background: var(--warning);  color: #041020; }
-.btn-ghost     { background: rgba(255,255,255,0.08); color: var(--text); }
-.btn-sm        { padding: 4px 10px; font-size: 0.68rem; }
-.btn-xs        { padding: 3px 7px; font-size: 0.62rem; gap: 3px; }
-.filtro { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
-input[type="text"], input[type="date"], select { padding: 7px 12px; border-radius: 40px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 0.8rem; font-family: inherit; outline: none; }
-input:focus, select:focus { border-color: var(--accent); }
-.scroll-table { overflow-x: auto; overflow-y: auto; max-height: 420px; border-radius: var(--radius-sm); }
-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-thead th { background: var(--bg); color: var(--text-muted); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid var(--border); white-space: nowrap; }
-tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.1s; }
-tbody tr:hover { background: rgba(255,255,255,0.03); }
-tbody td { padding: 9px 12px; vertical-align: middle; }
-.empty-row td { text-align: center; color: var(--text-muted); padding: 28px; }
-.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 20px; font-size: 0.65rem; font-weight: 600; white-space: nowrap; }
-.badge-deuda         { background: rgba(255,77,109,0.15); color: #ff8099; }
-.badge-pago          { background: rgba(0,224,150,0.15); color: #00e096; }
-.badge-efectivo      { background: rgba(0,196,255,0.15); color: #00c4ff; }
-.badge-transferencia { background: rgba(255,181,71,0.15); color: #ffb547; }
-.badge-credito       { background: rgba(180,120,255,0.15); color: #c484ff; }
-#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; backdrop-filter: blur(10px); }
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 8000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-.modal.open { display: flex; }
-.modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
-.modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 20px; }
-.modal-footer { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
-.form-group { margin-bottom: 14px; }
-.form-group label { display: block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.productos-texto { font-size: 0.72rem; color: var(--text-muted); }
-@media print {
-  body { background: white; color: black; }
-  .no-print { display: none !important; }
-  .card { border: 1px solid #ccc; border-radius: 8px; }
-  .header { background: #0a3e6d; -webkit-print-color-adjust: exact; }
-  table { font-size: 11px; }
-  thead th { background: #eef2ff; color: #0a3e6d; }
-}
-@media (max-width: 600px) {
-  .header { padding: 16px; }
-  .header-left h1 { font-size: 1.3rem; }
-  .kpi-value { font-size: 1.4rem; }
-  .grid-2 { grid-template-columns: 1fr; }
-}
-.num-positive { color: var(--success); font-weight: 700; }
-.num-negative { color: var(--danger); font-weight: 700; }
-.num-neutral  { color: var(--text); font-weight: 700; }
-.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+:root{--bg:#0d1b2e;--surface:#132238;--surface2:#1a2f48;--border:#243a55;--accent:#00c4ff;--accent2:#0086cc;--success:#00e096;--danger:#ff4d6d;--warning:#ffb547;--text:#e8f0fb;--text-muted:#7a9abf;--radius:14px;--radius-sm:8px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;font-size:14px;}
+.container{max-width:1600px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+.header{background:linear-gradient(135deg,#0d2d52 0%,#0a1e35 60%,#061529 100%);border:1px solid var(--border);border-radius:var(--radius);padding:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;position:relative;overflow:hidden;}
+.header::before{content:'🧊';position:absolute;right:-10px;top:-20px;font-size:120px;opacity:.04;pointer-events:none;}
+.header-left h1{font-size:1.7rem;font-weight:900;letter-spacing:-0.5px;color:#fff;display:flex;align-items:center;gap:10px;}
+.header-left h1 span{color:var(--accent);}
+.header-left p{color:var(--text-muted);font-size:.8rem;margin-top:4px;}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.card-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.card-title{font-weight:700;font-size:.95rem;color:var(--text);display:flex;align-items:center;gap:8px;}
+.card-title .icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;background:var(--surface2);flex-shrink:0;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+.kpi-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;position:relative;overflow:hidden;}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--kpi-color,var(--accent));border-radius:3px 0 0 3px;}
+.kpi-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin-bottom:6px;}
+.kpi-value{font-size:1.7rem;font-weight:800;color:var(--text);line-height:1;}
+.kpi-card.deuda{--kpi-color:var(--danger);}
+.kpi-card.cobros{--kpi-color:var(--success);}
+.kpi-card.gastos{--kpi-color:var(--warning);}
+.kpi-card.neto{--kpi-color:var(--accent);}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:40px;font-size:.72rem;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit;}
+.btn:active{transform:scale(.96);}
+.btn:hover{opacity:.88;}
+.btn-primary{background:var(--accent);color:#041020;}
+.btn-success{background:var(--success);color:#041020;}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-warning{background:var(--warning);color:#041020;}
+.btn-ghost{background:rgba(255,255,255,0.08);color:var(--text);}
+.btn-sm{padding:4px 10px;font-size:.68rem;}
+.btn-xs{padding:3px 7px;font-size:.62rem;gap:3px;}
+.filtro{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+input[type="text"],input[type="date"],select{padding:7px 12px;border-radius:40px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.8rem;font-family:inherit;outline:none;}
+input:focus,select:focus{border-color:var(--accent);}
+.scroll-table{overflow-x:auto;overflow-y:auto;max-height:420px;border-radius:var(--radius-sm);}
+table{width:100%;border-collapse:collapse;font-size:.78rem;}
+thead th{background:var(--bg);color:var(--text-muted);font-weight:600;font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;text-align:left;position:sticky;top:0;z-index:2;border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background .1s;}
+tbody tr:hover{background:rgba(255,255,255,0.03);}
+tbody td{padding:9px 12px;vertical-align:middle;}
+.empty-row td{text-align:center;color:var(--text-muted);padding:28px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:.65rem;font-weight:600;white-space:nowrap;}
+.badge-deuda{background:rgba(255,77,109,0.15);color:#ff8099;}
+.badge-pago{background:rgba(0,224,150,0.15);color:#00e096;}
+.badge-efectivo{background:rgba(0,196,255,0.15);color:#00c4ff;}
+.badge-transferencia{background:rgba(255,181,71,0.15);color:#ffb547;}
+.badge-credito{background:rgba(180,120,255,0.15);color:#c484ff;}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:10px 20px;border-radius:40px;font-size:.8rem;z-index:9999;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;backdrop-filter:blur(10px);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:8000;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal.open{display:flex;}
+.modal-content{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:90%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:1rem;font-weight:700;margin-bottom:20px;}
+.modal-footer{display:flex;gap:8px;margin-top:20px;justify-content:flex-end;}
+.productos-texto{font-size:.72rem;color:var(--text-muted);}
+@media print{body{background:white;color:black;}.no-print{display:none!important;}.card{border:1px solid #ccc;border-radius:8px;}.header{background:#0a3e6d;-webkit-print-color-adjust:exact;}table{font-size:11px;}thead th{background:#eef2ff;color:#0a3e6d;}}
+@media (max-width:600px){.header{padding:16px;}.header-left h1{font-size:1.3rem;}.kpi-value{font-size:1.4rem;}.grid-2{grid-template-columns:1fr;}}
+.num-positive{color:var(--success);font-weight:700;}
+.num-negative{color:var(--danger);font-weight:700;}
+.num-neutral{color:var(--text);font-weight:700;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <body>
 <div class="container">
@@ -157,399 +127,45 @@ tbody td { padding: 9px 12px; vertical-align: middle; }
 <div id="modal" class="modal"><div class="modal-content"><div class="modal-title" id="modalTitulo">Confirmar</div><div id="modalBody"></div><div class="modal-footer"><button id="modalCancelar" class="btn btn-ghost">Cancelar</button><button id="modalConfirmar" class="btn btn-danger">Confirmar</button></div></div></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzwlbrwQPvhOhHRGPtCsXtr2aisD87vjGJa4XD9Hm8OH4Y6v8bNnDyj8xdOlYyzE8AZ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 
-let clientes = [];
-let movimientos = [];
-let gastos = [];
-let ventasLocal = [];
+let clientes = [], movimientos = [], gastos = [], ventasLocal = [];
+function getHoy(){return new Date().toISOString().slice(0,10);}
+function toast(msg,type='info'){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._timer);el._timer=setTimeout(()=>el.classList.remove("show"),2500);}
+function confirmar(titulo,msg){return new Promise(resolve=>{document.getElementById("modalTitulo").textContent=titulo;document.getElementById("modalBody").textContent=msg;const modal=document.getElementById("modal");modal.classList.add("open");const btnOk=document.getElementById("modalConfirmar");const btnNo=document.getElementById("modalCancelar");const cleanup=()=>{modal.classList.remove("open");btnOk.removeEventListener('click',yes);btnNo.removeEventListener('click',no);};const yes=()=>{cleanup();resolve(true);};const no=()=>{cleanup();resolve(false);};btnOk.addEventListener('click',yes);btnNo.addEventListener('click',no);});}
+function normalizarNumero(val){if(val===undefined||val===null)return 0;if(typeof val==='number')return isNaN(val)?0:val;const str=String(val).replace(/[$. ]/g,'').replace(/,/g,'');const n=parseFloat(str);return isNaN(n)?0:n;}
+function fechaYMD(fecha){if(!fecha)return '';let s=String(fecha).split('T')[0];if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);if(/^\d{2}\/\d{2}\/\d{4}/.test(s)){const p=s.split('/');return `${p[2]}-${p[1]}-${p[0]}`;}return s;}
+function fechaDMY(fecha){const ymd=fechaYMD(fecha);const p=ymd.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:ymd;}
+function pesos(n){return '$'+n.toLocaleString('es-AR',{minimumFractionDigits:0});}
+function formatProductos(cant){if(!cant)return '—';const mapa={"1,7 KG":"1.7kg","3,5 KG":"3.5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg"};const items=Object.entries(mapa).filter(([k])=>cant[k]>0).map(([k,v])=>`${v}:${cant[k]}`);return items.length?items.join(' · '):'—';}
+function badgeTipo(item){if(item.tipo==="deuda")return `<span class="badge badge-deuda">➕ DEUDA</span>`;if(item.tipo==="pago")return `<span class="badge badge-pago">✅ PAGO</span>`;if(item.pago==="efectivo")return `<span class="badge badge-efectivo">💵 EFECTIVO</span>`;if(item.pago==="transferencia")return `<span class="badge badge-transferencia">💳 TRANSF.</span>`;if(item.pago==="ctacte")return `<span class="badge badge-credito">📘 CRÉDITO</span>`;if(item.pago==="cobrocc")return `<span class="badge badge-pago">🔄 COBRO</span>`;return '—';}
+function numClass(n){return n>=0?'num-positive':'num-negative';}
+function emptyRow(cols,msg){return `<tr class="empty-row"><td colspan="${cols}">${msg}</td></tr>`;}
 
-function getHoy() { return new Date().toISOString().slice(0,10); }
-function toast(msg, type = 'info') {
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove("show"), 2500);
-}
-function confirmar(titulo, msg) {
-  return new Promise(resolve => {
-    document.getElementById("modalTitulo").textContent = titulo;
-    document.getElementById("modalBody").textContent = msg;
-    const modal = document.getElementById("modal");
-    modal.classList.add("open");
-    const btnOk = document.getElementById("modalConfirmar");
-    const btnNo = document.getElementById("modalCancelar");
-    const cleanup = () => { modal.classList.remove("open"); btnOk.removeEventListener('click', yes); btnNo.removeEventListener('click', no); };
-    const yes = () => { cleanup(); resolve(true); };
-    const no  = () => { cleanup(); resolve(false); };
-    btnOk.addEventListener('click', yes);
-    btnNo.addEventListener('click', no);
-  });
-}
-function normalizarNumero(val) {
-  if (val === undefined || val === null) return 0;
-  if (typeof val === 'number') return isNaN(val) ? 0 : val;
-  const str = String(val).replace(/[$. ]/g, '').replace(/,/g, '');
-  const n = parseFloat(str);
-  return isNaN(n) ? 0 : n;
-}
-function fechaYMD(fecha) {
-  if (!fecha) return '';
-  let s = String(fecha).split('T')[0];
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) { const p = s.split('/'); return `${p[2]}-${p[1]}-${p[0]}`; }
-  return s;
-}
-function fechaDMY(fecha) { const ymd = fechaYMD(fecha); const p = ymd.split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : ymd; }
-function pesos(n) { return '$' + n.toLocaleString('es-AR', { minimumFractionDigits:0 }); }
-function formatProductos(cant) {
-  if (!cant) return '—';
-  const mapa = { "1,7 KG":"1.7kg","3,5 KG":"3.5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg" };
-  const items = Object.entries(mapa).filter(([k]) => cant[k] > 0).map(([k,v]) => `${v}:${cant[k]}`);
-  return items.length ? items.join(' · ') : '—';
-}
-function badgeTipo(item) {
-  if (item.tipo === "deuda")              return `<span class="badge badge-deuda">➕ DEUDA</span>`;
-  if (item.tipo === "pago")               return `<span class="badge badge-pago">✅ PAGO</span>`;
-  if (item.pago === "efectivo")           return `<span class="badge badge-efectivo">💵 EFECTIVO</span>`;
-  if (item.pago === "transferencia")      return `<span class="badge badge-transferencia">💳 TRANSF.</span>`;
-  if (item.pago === "ctacte")             return `<span class="badge badge-credito">📘 CRÉDITO</span>`;
-  if (item.pago === "cobrocc")            return `<span class="badge badge-pago">🔄 COBRO</span>`;
-  return '—';
-}
-function numClass(n) { return n >= 0 ? 'num-positive' : 'num-negative'; }
-function emptyRow(cols, msg) { return `<tr class="empty-row"><td colspan="${cols}">${msg}</td></tr>`; }
-
-async function cargarSheets() {
-  try {
-    const [r1, r2] = await Promise.all([
-      fetch(`${API_URL}?ruta=clientes&_=${Date.now()}`),
-      fetch(`${API_URL}?ruta=movimientos&_=${Date.now()}`)
-    ]);
-    if (!r1.ok || !r2.ok) throw new Error('Error en la respuesta de Sheets');
-    clientes = await r1.json();
-    const raw = await r2.json();
-    movimientos = (raw || []).map(m => ({
-      id: m.id,
-      fecha: fechaYMD(m.fecha),
-      cliente: m.cliente_nombre || m.cliente,
-      tipo: m.tipo,
-      monto: normalizarNumero(m.monto),
-      detalle: m.detalle || ''
-    }));
-    toast("Datos de Sheets cargados", 'success');
-  } catch(e) { console.error(e); toast("Error al cargar Google Sheets", 'error'); clientes = []; movimientos = []; }
-}
-
-function cargarLocalStorage() {
-  gastos = [];
-  ventasLocal = [];
-  for (const pin of ["1234","5678"]) {
-    const pref = `myc_${pin}_`;
-    const ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
-    for (const v of ventas) {
-      ventasLocal.push({
-        id: v.id, fecha: fechaYMD(v.fecha), cliente: v.cliente, pago: v.pago,
-        total: normalizarNumero(v.total), cobroDeuda: normalizarNumero(v.cobroDeuda),
-        cantidades: v.cantidades || {}, detalle: v.detalle || '', chofer: pin
-      });
-    }
-    const gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
-    for (const g of gastosDet) gastos.push({ ...g, fecha: fechaYMD(g.fecha), chofer: pin });
-    const gastosSimp = JSON.parse(localStorage.getItem(pref + "gastosDetalle") || "{}");
-    const hoy = getHoy();
-    if (gastosSimp.nafta)    gastos.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gastosSimp.nafta), nota: "", chofer: pin });
-    if (gastosSimp.choferes) gastos.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gastosSimp.choferes), nota: "", chofer: pin });
-    if (gastosSimp.otros)    gastos.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gastosSimp.otros), nota: "", chofer: pin });
-  }
-  toast("Datos locales cargados", 'success');
-}
-
-function renderResumen() {
-  let totalDeuda = 0, totalCobros = 0, totalGastosHoy = 0;
-  for (const m of movimientos) { if (m.tipo === "deuda") totalDeuda += m.monto; if (m.tipo === "pago") totalCobros += m.monto; }
-  const hoy = getHoy();
-  for (const g of gastos) if (g.fecha === hoy) totalGastosHoy += g.monto;
-  let efectivoHoy = 0, transferHoy = 0, cobrosHoy = 0;
-  for (const v of ventasLocal) {
-    if (v.fecha !== hoy) continue;
-    if (v.pago === "efectivo") efectivoHoy += v.total;
-    if (v.pago === "transferencia") transferHoy += v.total;
-    if (v.pago === "cobrocc") cobrosHoy += v.total;
-    if (v.cobroDeuda > 0) cobrosHoy += v.cobroDeuda;
-  }
-  for (const m of movimientos) if (m.fecha === hoy && m.tipo === "pago") cobrosHoy += m.monto;
-  const neto = efectivoHoy + transferHoy + cobrosHoy - totalGastosHoy;
-  document.getElementById("totalDeudas").textContent = pesos(totalDeuda);
-  document.getElementById("totalCobros").textContent = pesos(totalCobros);
-  document.getElementById("totalGastos").textContent = pesos(totalGastosHoy);
-  const elNeto = document.getElementById("netoTotal");
-  elNeto.textContent = pesos(neto);
-  elNeto.style.color = neto >= 0 ? 'var(--success)' : 'var(--danger)';
-}
-
-function calcRendicionFecha(pin, fecha) {
-  let efectivo = 0, transfer = 0, cobros = 0;
-  for (const v of ventasLocal.filter(v => v.chofer === pin && v.fecha === fecha)) {
-    if (v.pago === "efectivo") efectivo += v.total;
-    if (v.pago === "transferencia") transfer += v.total;
-    if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
-    else if (v.pago === "cobrocc") cobros += v.total;
-  }
-  for (const m of movimientos) if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
-  const gastosChofer = gastos.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a, g) => a + g.monto, 0);
-  const neto = efectivo + transfer + cobros - gastosChofer;
-  return { efectivo, transfer, cobros, gastosChofer, neto };
-}
-
-function renderRendicionChofer(pin, tbodyId) {
-  const fechas = new Set();
-  ventasLocal.filter(v => v.chofer === pin).forEach(v => v.fecha && fechas.add(v.fecha));
-  gastos.filter(g => g.chofer === pin).forEach(g => g.fecha && fechas.add(g.fecha));
-  const tbody = document.getElementById(tbodyId);
-  if (!tbody) return;
-  const sorted = Array.from(fechas).sort().reverse();
-  if (sorted.length === 0) { tbody.innerHTML = emptyRow(7, 'Sin datos'); return; }
-  tbody.innerHTML = sorted.map(fecha => {
-    const r = calcRendicionFecha(pin, fecha);
-    return `<tr>
-      <td>${fechaDMY(fecha)}</td>
-      <td>${pesos(r.efectivo)}</td>
-      <td>${pesos(r.transfer)}</td>
-      <td>${pesos(r.cobros)}</td>
-      <td style="color:var(--warning)">${pesos(r.gastosChofer)}</td>
-      <td><span class="${numClass(r.neto)}">${pesos(r.neto)}</span></td>
-      <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button></td>
-    </tr>`;
-  }).join('');
-}
-
-async function confirmarEliminarDia(pin, fecha) {
-  const ok = await confirmar('Eliminar día', `¿Eliminar TODOS los registros del ${fechaDMY(fecha)} para Chofer ${pin}?`);
-  if (!ok) return;
-  const pref = `myc_${pin}_`;
-  let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
-  ventas = ventas.filter(v => fechaYMD(v.fecha) !== fecha);
-  localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
-  let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
-  gastosDet = gastosDet.filter(g => fechaYMD(g.fecha) !== fecha);
-  localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
-  toast(`Día ${fechaDMY(fecha)} eliminado`, 'success');
-  cargarLocalStorage();
-  renderTodo();
-}
-
-function addRendicionFecha(pin, tbodyId, fecha) {
-  if (!fecha) { toast("Seleccioná una fecha"); return; }
-  const tbody = document.getElementById(tbodyId);
-  for (const row of tbody.rows) {
-    if (row.cells[0]?.textContent === fechaDMY(fecha)) { toast("Esa fecha ya está en la tabla"); return; }
-  }
-  const r = calcRendicionFecha(pin, fecha);
-  const tr = tbody.insertRow();
-  tr.innerHTML = `
-    <td>${fechaDMY(fecha)}</td>
-    <td>${pesos(r.efectivo)}</td>
-    <td>${pesos(r.transfer)}</td>
-    <td>${pesos(r.cobros)}</td>
-    <td style="color:var(--warning)">${pesos(r.gastosChofer)}</td>
-    <td><span class="${numClass(r.neto)}">${pesos(r.neto)}</span></td>
-    <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button></td>
-  `;
-}
-
-function renderMovimientos(fecha = null) {
-  let todos = [
-    ...movimientos.map(m => ({ ...m, tipoMov: 'sheets' })),
-    ...ventasLocal.map(v => ({
-      id: v.id, fecha: v.fecha, cliente: v.cliente,
-      tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null),
-      pago: v.pago, monto: v.pago === "cobrocc" ? (v.cobroDeuda || v.total) : v.total,
-      detalle: v.detalle, cantidades: v.cantidades, chofer: v.chofer, tipoMov: 'local'
-    }))
-  ];
-  if (fecha) todos = todos.filter(t => t.fecha === fecha);
-  todos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  const tbody = document.getElementById("bodyMovimientos");
-  if (!tbody) return;
-  if (todos.length === 0) { tbody.innerHTML = emptyRow(7, 'Sin movimientos'); return; }
-  tbody.innerHTML = todos.map(t => {
-    const acciones = t.tipoMov === 'sheets'
-      ? `<button class="btn btn-danger btn-xs" onclick="eliminarMovSheet(${t.id})"><i class="fas fa-trash-alt"></i> Eliminar</button>`
-      : `<button class="btn btn-xs" style="background:var(--surface2)" onclick="toast('Editar: use la Planilla de Reparto')"><i class="fas fa-edit"></i></button>
-         <button class="btn btn-danger btn-xs" onclick="confirmarEliminarVenta(${t.id},'${t.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
-    return `<tr>
-      <td style="white-space:nowrap">${fechaDMY(t.fecha)}</td>
-      <td style="font-weight:600">${t.cliente || '—'}</td>
-      <td class="productos-texto">${badgeTipo(t)}</td>
-      <td style="white-space:nowrap"><span class="num-neutral">${pesos(t.monto)}</span></td>
-      <td class="productos-texto">${formatProductos(t.cantidades)}</td>
-      <td style="color:var(--text-muted);font-size:0.72rem">${t.detalle || ''}</td>
-      <td class="no-print" style="white-space:nowrap">${acciones}</td>
-    </tr>`;
-  }).join('');
-}
-
-async function eliminarMovSheet(id) {
-  const ok = await confirmar('Eliminar movimiento', '¿Eliminar este movimiento de Google Sheets?');
-  if (!ok) return;
-  try {
-    await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'eliminarMovimiento', id }) });
-    toast("Eliminado de Sheets", 'success');
-    await cargarSheets();
-    cargarLocalStorage();
-    renderTodo();
-  } catch { toast("Error al eliminar", 'error'); }
-}
-
-async function confirmarEliminarVenta(id, chofer) {
-  const ok = await confirmar('Eliminar venta', '¿Eliminar esta venta del almacenamiento local?');
-  if (!ok) return;
-  const pref = `myc_${chofer}_`;
-  let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
-  ventas = ventas.filter(v => v.id !== id);
-  localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
-  toast("Venta eliminada", 'success');
-  cargarLocalStorage();
-  renderTodo();
-}
-
-function calcSaldos() {
-  const saldos = {};
-  for (const c of clientes) saldos[c] = 0;
-  for (const m of movimientos) {
-    if (!saldos[m.cliente]) saldos[m.cliente] = 0;
-    if (m.tipo === "deuda") saldos[m.cliente] += m.monto;
-    if (m.tipo === "pago")  saldos[m.cliente] -= m.monto;
-  }
-  return saldos;
-}
-
-function renderDeudores() {
-  const saldos = calcSaldos();
-  const deudores = Object.entries(saldos).filter(([, s]) => s > 0).sort((a,b) => b[1] - a[1]);
-  const tbody = document.getElementById("bodyDeudores");
-  if (!tbody) return;
-  if (deudores.length === 0) { tbody.innerHTML = emptyRow(4, '🎉 Sin deudores pendientes'); return; }
-  tbody.innerHTML = deudores.map(([cliente, saldo]) => `<tr>
-    <td style="font-weight:600">${cliente}</td>
-    <td><span class="num-negative">${pesos(saldo)}</span></td>
-    <td><span class="badge badge-deuda">🔴 DEBE</span></td>
-    <td class="no-print"><button class="btn btn-primary btn-xs" onclick="verHistorialCliente('${cliente}')"><i class="fas fa-history"></i> Historial</button></td>
-  </tr>`).join('');
-}
-
-function verHistorialCliente(cliente) {
-  const todos = [
-    ...movimientos.filter(m => m.cliente === cliente).map(m => ({ ...m, tipoMov:'sheets' })),
-    ...ventasLocal.filter(v => v.cliente === cliente).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
-  ].sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  const saldos = calcSaldos();
-  const saldo = saldos[cliente] || 0;
-  const saldoHtml = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);"><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Saldo actual</span><span class="${numClass(saldo)}" style="font-size:1.1rem">${pesos(saldo)}</span></div>`;
-  if (todos.length === 0) { document.getElementById("clienteResultado").innerHTML = saldoHtml + `<p style="color:var(--text-muted);text-align:center;padding:20px">Sin movimientos registrados.</p>`; return; }
-  const filas = todos.map(t => `<tr><td>${fechaDMY(t.fecha)}</td><td class="productos-texto">${badgeTipo(t)}</td><td class="productos-texto"><span class="num-neutral">${pesos(t.monto)}</span></td><td class="productos-texto">${formatProductos(t.cantidades)}</td><td style="color:var(--text-muted)">${t.detalle || ''}</td></tr>`).join('');
-  document.getElementById("clienteResultado").innerHTML = `${saldoHtml}<div class="scroll-table" style="max-height:380px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></tr></thead><tbody>${filas}</tbody></table></div><div class="no-print" style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${cliente}').then(()=>toast('Copiado'))"><i class="fas fa-copy"></i> Copiar nombre</button><button class="btn btn-success btn-sm" onclick="exportarClienteExcel('${cliente}')"><i class="fas fa-file-excel"></i> Excel</button></div>`;
-}
-
-function renderGastos(pin, fecha = null, todos = false) {
-  const tbodyId = pin === "1234" ? "bodyGastos1234" : "bodyGastos5678";
-  const tbody = document.getElementById(tbodyId);
-  if (!tbody) return;
-  let filtrados = gastos.filter(g => g.chofer === pin);
-  if (!todos && fecha) filtrados = filtrados.filter(g => g.fecha === fecha);
-  filtrados.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  if (filtrados.length === 0) { tbody.innerHTML = emptyRow(5, 'Sin gastos registrados'); return; }
-  tbody.innerHTML = filtrados.map(g => `<tr>
-    <td style="white-space:nowrap">${fechaDMY(g.fecha)}</td>
-    <td>${g.categoria}</td>
-    <td><span style="color:var(--warning);font-weight:600">${pesos(g.monto)}</span></td>
-    <td style="color:var(--text-muted)">${g.nota || ''}</td>
-    <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarGasto('${pin}','${g.fecha}','${g.categoria}',${g.monto})"><i class="fas fa-trash-alt"></i></button></td>
-  </tr>`).join('');
-}
-
-async function confirmarEliminarGasto(pin, fecha, categoria, monto) {
-  const ok = await confirmar('Eliminar gasto', `¿Eliminar ${categoria} — ${pesos(monto)} del ${fechaDMY(fecha)}?`);
-  if (!ok) return;
-  const pref = `myc_${pin}_`;
-  let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
-  gastosDet = gastosDet.filter(g => !(g.fecha === fecha && g.categoria === categoria && g.monto === monto));
-  localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
-  toast("Gasto eliminado", 'success');
-  cargarLocalStorage();
-  renderTodo();
-}
-
-function buildWorkbook(sheets) { const wb = XLSX.utils.book_new(); for (const [nombre, data] of sheets) { const ws = XLSX.utils.aoa_to_sheet(data); XLSX.utils.book_append_sheet(wb, ws, nombre); } return wb; }
-function exportarExcelCompleto() {
-  const saldos = calcSaldos();
-  const resumen = [["MYC HIELO – Resumen de Reparto", new Date().toLocaleString('es-AR')], [], ["INDICADOR", "VALOR"], ["Total Deuda", document.getElementById("totalDeudas").textContent], ["Total Cobros", document.getElementById("totalCobros").textContent], ["Gastos del Día", document.getElementById("totalGastos").textContent], ["Neto General", document.getElementById("netoTotal").textContent], [], ["CLIENTES CON DEUDA"], ["Cliente", "Saldo Deudor"], ...Object.entries(saldos).filter(([, s]) => s > 0).map(([c,s]) => [c,s])];
-  const movs = [["Fecha","Cliente","Tipo","Monto","Productos","Detalle"], ...[...movimientos, ...ventasLocal].map(t => [fechaDMY(t.fecha), t.cliente, t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')), t.monto || t.total || 0, formatProductos(t.cantidades), t.detalle || ''])];
-  const wb = buildWorkbook([["Resumen", resumen], ["Movimientos", movs]]);
-  XLSX.writeFile(wb, `myc_resumen_${getHoy()}.xlsx`);
-  toast("Excel exportado", 'success');
-}
-function exportarDeudoresExcel() {
-  const saldos = calcSaldos();
-  const data = [["Deudores MYC HIELO", new Date().toLocaleString('es-AR')], [], ["Cliente","Saldo Deudor"], ...Object.entries(saldos).filter(([, s]) => s > 0).map(([c,s]) => [c,s])];
-  const wb = buildWorkbook([["Deudores", data]]);
-  XLSX.writeFile(wb, `deudores_${getHoy()}.xlsx`);
-  toast("Excel exportado", 'success');
-}
-function exportarClienteExcel(cliente) {
-  const todos = [...movimientos.filter(m => m.cliente === cliente), ...ventasLocal.filter(v => v.cliente === cliente)].sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  const data = [["Historial", cliente, new Date().toLocaleString('es-AR')], [], ["Fecha","Tipo","Monto","Productos","Detalle"], ...todos.map(t => [fechaDMY(t.fecha), t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')), t.monto || t.total || 0, formatProductos(t.cantidades), t.detalle || ''])];
-  const wb = buildWorkbook([[cliente.slice(0,30), data]]);
-  XLSX.writeFile(wb, `${cliente}_historial_${getHoy()}.xlsx`);
-  toast("Excel exportado", 'success');
-}
-function exportarMovimientosExcel() {
-  const fecha = document.getElementById("fechaMovimientos").value;
-  let todos = [...movimientos.map(m => ({ ...m })), ...ventasLocal.map(v => ({ ...v, monto: v.total }))];
-  if (fecha) todos = todos.filter(t => t.fecha === fecha);
-  todos.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  const data = [["Movimientos", fecha || "Todos", new Date().toLocaleString('es-AR')], [], ["Fecha","Cliente","Tipo","Monto","Productos","Detalle"], ...todos.map(t => [fechaDMY(t.fecha), t.cliente, t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')), t.monto || t.total || 0, formatProductos(t.cantidades), t.detalle || ''])];
-  const wb = buildWorkbook([["Movimientos", data]]);
-  XLSX.writeFile(wb, `movimientos_${fecha || "todos"}_${getHoy()}.xlsx`);
-  toast("Excel exportado", 'success');
-}
-function copiarTabla(tablaId) {
-  const tabla = document.getElementById(tablaId);
-  if (!tabla) return;
-  const texto = Array.from(tabla.querySelectorAll("tr")).map(tr => Array.from(tr.children).filter(td => !td.classList.contains('no-print')).map(td => td.innerText.trim()).join("\t")).join("\n");
-  navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada", 'success'));
-}
-function renderTodo() { renderResumen(); renderRendicionChofer("1234","body1234"); renderRendicionChofer("5678","body5678"); renderMovimientos(); renderDeudores(); renderGastos("1234", null, true); renderGastos("5678", null, true); }
-async function actualizarTodo() {
-  const btn = document.getElementById("refreshBtn");
-  btn.innerHTML = '<span class="spinner"></span> Actualizando…';
-  btn.disabled = true;
-  try { await cargarSheets(); cargarLocalStorage(); renderTodo(); toast("Datos actualizados", 'success'); } catch(e) { toast("Error", 'error'); }
-  finally { btn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar'; btn.disabled = false; }
-}
-
-document.getElementById("refreshBtn").addEventListener("click", actualizarTodo);
-document.getElementById("syncBtn").addEventListener("click", actualizarTodo);
-document.getElementById("exportExcelBtn").addEventListener("click", exportarExcelCompleto);
-document.getElementById("verFechaMovBtn").addEventListener("click", () => { const f = document.getElementById("fechaMovimientos").value; f ? renderMovimientos(f) : toast("Seleccioná una fecha"); });
-document.getElementById("verTodosMovBtn").addEventListener("click", () => renderMovimientos());
-document.getElementById("exportMovExcelBtn").addEventListener("click", exportarMovimientosExcel);
-document.getElementById("addFecha1234Btn").addEventListener("click", () => addRendicionFecha("1234","body1234", document.getElementById("fecha1234").value));
-document.getElementById("cargarTodo1234Btn").addEventListener("click", () => renderRendicionChofer("1234","body1234"));
-document.getElementById("addFecha5678Btn").addEventListener("click", () => addRendicionFecha("5678","body5678", document.getElementById("fecha5678").value));
-document.getElementById("cargarTodo5678Btn").addEventListener("click", () => renderRendicionChofer("5678","body5678"));
-document.getElementById("verGastos1234Btn").addEventListener("click", () => renderGastos("1234", document.getElementById("gastosFecha1234").value, false));
-document.getElementById("todosGastos1234Btn").addEventListener("click", () => renderGastos("1234", null, true));
-document.getElementById("verGastos5678Btn").addEventListener("click", () => renderGastos("5678", document.getElementById("gastosFecha5678").value, false));
-document.getElementById("todosGastos5678Btn").addEventListener("click", () => renderGastos("5678", null, true));
-document.getElementById("buscarClienteBtn").addEventListener("click", () => { const nom = document.getElementById("buscarClienteInput").value.trim(); nom ? verHistorialCliente(nom) : toast("Ingresá un nombre"); });
-document.getElementById("buscarClienteInput").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("buscarClienteBtn").click(); });
-document.getElementById("limpiarBusquedaBtn").addEventListener("click", () => { document.getElementById("buscarClienteInput").value = ""; document.getElementById("clienteResultado").innerHTML = ""; });
-document.getElementById("modal").addEventListener("click", e => { if (e.target === document.getElementById("modal")) document.getElementById("modal").classList.remove("open"); });
-actualizarTodo();
-setInterval(() => actualizarTodo(), 60000);
+async function cargarSheets(){try{const[r1,r2]=await Promise.all([fetch(`${API_URL}?ruta=clientes&_=${Date.now()}`),fetch(`${API_URL}?ruta=movimientos&_=${Date.now()}`)]);if(!r1.ok||!r2.ok)throw new Error('Error en la respuesta de Sheets');clientes=await r1.json();const raw=await r2.json();movimientos=(raw||[]).map(m=>({id:m.id,fecha:fechaYMD(m.fecha),cliente:m.cliente_nombre||m.cliente,tipo:m.tipo,monto:normalizarNumero(m.monto),detalle:m.detalle||''}));toast("Datos de Sheets cargados",'success');}catch(e){console.error(e);toast("Error al cargar Google Sheets",'error');clientes=[];movimientos=[];}}
+function cargarLocalStorage(){gastos=[];ventasLocal=[];for(const pin of["1234","5678"]){const pref=`myc_${pin}_`;const ventas=JSON.parse(localStorage.getItem(pref+"ventas")||"[]");for(const v of ventas){ventasLocal.push({id:v.id,fecha:fechaYMD(v.fecha),cliente:v.cliente,pago:v.pago,total:normalizarNumero(v.total),cobroDeuda:normalizarNumero(v.cobroDeuda),cantidades:v.cantidades||{},detalle:v.detalle||'',chofer:pin});}const gastosDet=JSON.parse(localStorage.getItem(pref+"gastosDetallados")||"[]");for(const g of gastosDet)gastos.push({...g,fecha:fechaYMD(g.fecha),chofer:pin});const gastosSimp=JSON.parse(localStorage.getItem(pref+"gastosDetalle")||"{}");const hoy=getHoy();if(gastosSimp.nafta)gastos.push({fecha:hoy,categoria:"Nafta",monto:normalizarNumero(gastosSimp.nafta),nota:"",chofer:pin});if(gastosSimp.choferes)gastos.push({fecha:hoy,categoria:"Chofer",monto:normalizarNumero(gastosSimp.choferes),nota:"",chofer:pin});if(gastosSimp.otros)gastos.push({fecha:hoy,categoria:"Otros",monto:normalizarNumero(gastosSimp.otros),nota:"",chofer:pin});}toast("Datos locales cargados",'success');}
+function renderResumen(){let totalDeuda=0,totalCobros=0,totalGastosHoy=0;for(const m of movimientos){if(m.tipo==="deuda")totalDeuda+=m.monto;if(m.tipo==="pago")totalCobros+=m.monto;}const hoy=getHoy();for(const g of gastos)if(g.fecha===hoy)totalGastosHoy+=g.monto;let efectivoHoy=0,transferHoy=0,cobrosHoy=0;for(const v of ventasLocal){if(v.fecha!==hoy)continue;if(v.pago==="efectivo")efectivoHoy+=v.total;if(v.pago==="transferencia")transferHoy+=v.total;if(v.pago==="cobrocc")cobrosHoy+=v.total;if(v.cobroDeuda>0)cobrosHoy+=v.cobroDeuda;}for(const m of movimientos)if(m.fecha===hoy&&m.tipo==="pago")cobrosHoy+=m.monto;const neto=efectivoHoy+transferHoy+cobrosHoy-totalGastosHoy;document.getElementById("totalDeudas").textContent=pesos(totalDeuda);document.getElementById("totalCobros").textContent=pesos(totalCobros);document.getElementById("totalGastos").textContent=pesos(totalGastosHoy);const elNeto=document.getElementById("netoTotal");elNeto.textContent=pesos(neto);elNeto.style.color=neto>=0?'var(--success)':'var(--danger)';}
+function calcRendicionFecha(pin,fecha){let efectivo=0,transfer=0,cobros=0;for(const v of ventasLocal.filter(v=>v.chofer===pin&&v.fecha===fecha)){if(v.pago==="efectivo")efectivo+=v.total;if(v.pago==="transferencia")transfer+=v.total;if(v.cobroDeuda>0)cobros+=v.cobroDeuda;else if(v.pago==="cobrocc")cobros+=v.total;}for(const m of movimientos)if(m.fecha===fecha&&m.tipo==="pago")cobros+=m.monto;const gastosChofer=gastos.filter(g=>g.chofer===pin&&g.fecha===fecha).reduce((a,g)=>a+g.monto,0);const neto=efectivo+transfer+cobros-gastosChofer;return{efectivo,transfer,cobros,gastosChofer,neto};}
+function renderRendicionChofer(pin,tbodyId){const fechas=new Set();ventasLocal.filter(v=>v.chofer===pin).forEach(v=>v.fecha&&fechas.add(v.fecha));gastos.filter(g=>g.chofer===pin).forEach(g=>g.fecha&&fechas.add(g.fecha));const tbody=document.getElementById(tbodyId);if(!tbody)return;const sorted=Array.from(fechas).sort().reverse();if(sorted.length===0){tbody.innerHTML=emptyRow(7,'Sin datos');return;}tbody.innerHTML=sorted.map(fecha=>{const r=calcRendicionFecha(pin,fecha);return`<tr><td>${fechaDMY(fecha)}</td><td>${pesos(r.efectivo)}</td><td>${pesos(r.transfer)}</td><td>${pesos(r.cobros)}</td><td style="color:var(--warning)">${pesos(r.gastosChofer)}</td><td><span class="${numClass(r.neto)}">${pesos(r.neto)}</span></td><td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button></td></tr>`;}).join('');}
+async function confirmarEliminarDia(pin,fecha){const ok=await confirmar('Eliminar día',`¿Eliminar TODOS los registros del ${fechaDMY(fecha)} para Chofer ${pin}?`);if(!ok)return;const pref=`myc_${pin}_`;let ventas=JSON.parse(localStorage.getItem(pref+"ventas")||"[]");ventas=ventas.filter(v=>fechaYMD(v.fecha)!==fecha);localStorage.setItem(pref+"ventas",JSON.stringify(ventas));let gastosDet=JSON.parse(localStorage.getItem(pref+"gastosDetallados")||"[]");gastosDet=gastosDet.filter(g=>fechaYMD(g.fecha)!==fecha);localStorage.setItem(pref+"gastosDetallados",JSON.stringify(gastosDet));toast(`Día ${fechaDMY(fecha)} eliminado`,'success');cargarLocalStorage();renderTodo();}
+function addRendicionFecha(pin,tbodyId,fecha){if(!fecha){toast("Seleccioná una fecha");return;}const tbody=document.getElementById(tbodyId);for(const row of tbody.rows){if(row.cells[0]?.textContent===fechaDMY(fecha)){toast("Esa fecha ya está en la tabla");return;}}const r=calcRendicionFecha(pin,fecha);const tr=tbody.insertRow();tr.innerHTML=`<tr><td>${fechaDMY(fecha)}</td><td>${pesos(r.efectivo)}</td><td>${pesos(r.transfer)}</td><td>${pesos(r.cobros)}</td><td style="color:var(--warning)">${pesos(r.gastosChofer)}</td><td><span class="${numClass(r.neto)}">${pesos(r.neto)}</span></td><td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button></td></tr>`;}
+function renderMovimientos(fecha=null){let todos=[...movimientos.map(m=>({...m,tipoMov:'sheets'})),...ventasLocal.map(v=>({id:v.id,fecha:v.fecha,cliente:v.cliente,tipo:v.pago==="ctacte"?"deuda":(v.pago==="cobrocc"?"pago":null),pago:v.pago,monto:v.pago==="cobrocc"?(v.cobroDeuda||v.total):v.total,detalle:v.detalle,cantidades:v.cantidades,chofer:v.chofer,tipoMov:'local'}))];if(fecha)todos=todos.filter(t=>t.fecha===fecha);todos.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));const tbody=document.getElementById("bodyMovimientos");if(!tbody)return;if(todos.length===0){tbody.innerHTML=emptyRow(7,'Sin movimientos');return;}tbody.innerHTML=todos.map(t=>{const acciones=t.tipoMov==='sheets'?`<button class="btn btn-danger btn-xs" onclick="eliminarMovSheet(${t.id})"><i class="fas fa-trash-alt"></i> Eliminar</button>`:`<button class="btn btn-xs" style="background:var(--surface2)" onclick="toast('Editar: use la Planilla de Reparto')"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="confirmarEliminarVenta(${t.id},'${t.chofer}')"><i class="fas fa-trash-alt"></i></button>`;return`<tr><td style="white-space:nowrap">${fechaDMY(t.fecha)}</td><td style="font-weight:600">${t.cliente||'—'}</td><td class="productos-texto">${badgeTipo(t)}</td><td style="white-space:nowrap"><span class="num-neutral">${pesos(t.monto)}</span></td><td class="productos-texto">${formatProductos(t.cantidades)}</td><td style="color:var(--text-muted);font-size:0.72rem">${t.detalle||''}</td><td class="no-print" style="white-space:nowrap">${acciones}</td></tr>`;}).join('');}
+async function eliminarMovSheet(id){const ok=await confirmar('Eliminar movimiento','¿Eliminar este movimiento de Google Sheets?');if(!ok)return;try{await fetch(API_URL,{method:'POST',body:new URLSearchParams({ruta:'eliminarMovimiento',id})});toast("Eliminado de Sheets",'success');await cargarSheets();cargarLocalStorage();renderTodo();}catch{toast("Error al eliminar",'error');}}
+async function confirmarEliminarVenta(id,chofer){const ok=await confirmar('Eliminar venta','¿Eliminar esta venta del almacenamiento local?');if(!ok)return;const pref=`myc_${chofer}_`;let ventas=JSON.parse(localStorage.getItem(pref+"ventas")||"[]");ventas=ventas.filter(v=>v.id!==id);localStorage.setItem(pref+"ventas",JSON.stringify(ventas));toast("Venta eliminada",'success');cargarLocalStorage();renderTodo();}
+function calcSaldos(){const saldos={};for(const c of clientes)saldos[c]=0;for(const m of movimientos){if(!saldos[m.cliente])saldos[m.cliente]=0;if(m.tipo==="deuda")saldos[m.cliente]+=m.monto;if(m.tipo==="pago")saldos[m.cliente]-=m.monto;}return saldos;}
+function renderDeudores(){const saldos=calcSaldos();const deudores=Object.entries(saldos).filter(([,s])=>s>0).sort((a,b)=>b[1]-a[1]);const tbody=document.getElementById("bodyDeudores");if(!tbody)return;if(deudores.length===0){tbody.innerHTML=emptyRow(4,'🎉 Sin deudores pendientes');return;}tbody.innerHTML=deudores.map(([cliente,saldo])=>`<tr><td style="font-weight:600">${cliente}</td><td><span class="num-negative">${pesos(saldo)}</span></td><td><span class="badge badge-deuda">🔴 DEBE</span></td><td class="no-print"><button class="btn btn-primary btn-xs" onclick="verHistorialCliente('${cliente}')"><i class="fas fa-history"></i> Historial</button></td></tr>`).join('');}
+function verHistorialCliente(cliente){const todos=[...movimientos.filter(m=>m.cliente===cliente).map(m=>({...m,tipoMov:'sheets'})),...ventasLocal.filter(v=>v.cliente===cliente).map(v=>({...v,monto:v.total,tipoMov:'local',tipo:v.pago==="ctacte"?"deuda":(v.pago==="cobrocc"?"pago":null)}))].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));const saldos=calcSaldos();const saldo=saldos[cliente]||0;const saldoHtml=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);"><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Saldo actual</span><span class="${numClass(saldo)}" style="font-size:1.1rem">${pesos(saldo)}</span></div>`;if(todos.length===0){document.getElementById("clienteResultado").innerHTML=saldoHtml+`<p style="color:var(--text-muted);text-align:center;padding:20px">Sin movimientos registrados.</p>`;return;}const filas=todos.map(t=>`<tr><td>${fechaDMY(t.fecha)}</td><td class="productos-texto">${badgeTipo(t)}</td><td class="productos-texto"><span class="num-neutral">${pesos(t.monto)}</span></td><td class="productos-texto">${formatProductos(t.cantidades)}</td><td style="color:var(--text-muted)">${t.detalle||''}</td></tr>`).join('');document.getElementById("clienteResultado").innerHTML=`${saldoHtml}<div class="scroll-table" style="max-height:380px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></tr></thead><tbody>${filas}</tbody></table></div><div class="no-print" style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${cliente}').then(()=>toast('Copiado'))"><i class="fas fa-copy"></i> Copiar nombre</button><button class="btn btn-success btn-sm" onclick="exportarClienteExcel('${cliente}')"><i class="fas fa-file-excel"></i> Excel</button></div>`;}
+function renderGastos(pin,fecha=null,todos=false){const tbodyId=pin==="1234"?"bodyGastos1234":"bodyGastos5678";const tbody=document.getElementById(tbodyId);if(!tbody)return;let filtrados=gastos.filter(g=>g.chofer===pin);if(!todos&&fecha)filtrados=filtrados.filter(g=>g.fecha===fecha);filtrados.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));if(filtrados.length===0){tbody.innerHTML=emptyRow(5,'Sin gastos registrados');return;}tbody.innerHTML=filtrados.map(g=>`<tr><td style="white-space:nowrap">${fechaDMY(g.fecha)}</td><td>${g.categoria}</td><td><span style="color:var(--warning);font-weight:600">${pesos(g.monto)}</span></td><td style="color:var(--text-muted)">${g.nota||''}</td><td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarGasto('${pin}','${g.fecha}','${g.categoria}',${g.monto})"><i class="fas fa-trash-alt"></i></button></td></tr>`).join('');}
+async function confirmarEliminarGasto(pin,fecha,categoria,monto){const ok=await confirmar('Eliminar gasto',`¿Eliminar ${categoria} — ${pesos(monto)} del ${fechaDMY(fecha)}?`);if(!ok)return;const pref=`myc_${pin}_`;let gastosDet=JSON.parse(localStorage.getItem(pref+"gastosDetallados")||"[]");gastosDet=gastosDet.filter(g=>!(g.fecha===fecha&&g.categoria===categoria&&g.monto===monto));localStorage.setItem(pref+"gastosDetallados",JSON.stringify(gastosDet));toast("Gasto eliminado",'success');cargarLocalStorage();renderTodo();}
+function buildWorkbook(sheets){const wb=XLSX.utils.book_new();for(const[nombre,data] of sheets){const ws=XLSX.utils.aoa_to_sheet(data);XLSX.utils.book_append_sheet(wb,ws,nombre);}return wb;}
+function exportarExcelCompleto(){const saldos=calcSaldos();const resumen=[["MYC HIELO – Resumen de Reparto",new Date().toLocaleString('es-AR')],[],["INDICADOR","VALOR"],["Total Deuda",document.getElementById("totalDeudas").textContent],["Total Cobros",document.getElementById("totalCobros").textContent],["Gastos del Día",document.getElementById("totalGastos").textContent],["Neto General",document.getElementById("netoTotal").textContent],[],["CLIENTES CON DEUDA"],["Cliente","Saldo Deudor"],...Object.entries(saldos).filter(([,s])=>s>0).map(([c,s])=>[c,s])];const movs=[["Fecha","Cliente","Tipo","Monto","Productos","Detalle"],[...movimientos,...ventasLocal].map(t=>[fechaDMY(t.fecha),t.cliente,t.tipo==="deuda"?"Deuda":(t.tipo==="pago"?"Pago":(t.pago||'')),t.monto||t.total||0,formatProductos(t.cantidades),t.detalle||''])];const wb=buildWorkbook([["Resumen",resumen],["Movimientos",movs]]);XLSX.writeFile(wb,`myc_resumen_${getHoy()}.xlsx`);toast("Excel exportado",'success');}
+function exportarDeudoresExcel(){const saldos=calcSaldos();const data=[["Deudores MYC HIELO",new Date().toLocaleString('es-AR')],[],["Cliente","Saldo Deudor"],...Object.entries(saldos).filter(([,s])=>s>0).map(([c,s])=>[c,s])];const wb=buildWorkbook([["Deudores",data]]);XLSX.writeFile(wb,`deudores_${getHoy()}.xlsx`);toast("Excel exportado",'success');}
+function exportarClienteExcel(cliente){const todos=[...movimientos.filter(m=>m.cliente===cliente),...ventasLocal.filter(v=>v.cliente===cliente)].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));const data=[["Historial",cliente,new Date().toLocaleString('es-AR')],[],["Fecha","Tipo","Monto","Productos","Detalle"],...todos.map(t=>[fechaDMY(t.fecha),t.tipo==="deuda"?"Deuda":(t.tipo==="pago"?"Pago":(t.pago||'')),t.monto||t.total||0,formatProductos(t.cantidades),t.detalle||''])];const wb=buildWorkbook([[cliente.slice(0,30),data]]);XLSX.writeFile(wb,`${cliente}_historial_${getHoy()}.xlsx`);toast("Excel exportado",'success');}
+function exportarMovimientosExcel(){const fecha=document.getElementById("fechaMovimientos").value;let todos=[...movimientos.map(m=>({...m})),...ventasLocal.map(v=>({...v,monto:v.total}))];if(fecha)todos=todos.filter(t=>t.fecha===fecha);todos.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));const data=[["Movimientos",fecha||"Todos",new Date().toLocaleString('es-AR')],[],["Fecha","Cliente","Tipo","Monto","Productos","Detalle"],...todos.map(t=>[fechaDMY(t.fecha),t.cliente,t.tipo==="deuda"?"Deuda":(t.tipo==="pago"?"Pago":(t.pago||'')),t.monto||t.total||0,formatProductos(t.cantidades),t.detalle||''])];const wb=buildWorkbook([["Movimientos",data]]);XLSX.writeFile(wb,`movimientos_${fecha||"todos"}_${getHoy()}.xlsx`);toast("Excel exportado",'success');}
+function copiarTabla(tablaId){const tabla=document.getElementById(tablaId);if(!tabla)return;const texto=Array.from(tabla.querySelectorAll("tr")).map(tr=>Array.from(tr.children).filter(td=>!td.classList.contains('no-print')).map(td=>td.innerText.trim()).join("\t")).join("\n");navigator.clipboard.writeText(texto).then(()=>toast("Tabla copiada",'success'));}
+function renderTodo(){renderResumen();renderRendicionChofer("1234","body1234");renderRendicionChofer("5678","body5678");renderMovimientos();renderDeudores();renderGastos("1234",null,true);renderGastos("5678",null,true);}
+async function actualizarTodo(){const btn=document.getElementById("refreshBtn");btn.innerHTML='<span class="spinner"></span> Actualizando…';btn.disabled=true;try{await cargarSheets();cargarLocalStorage();renderTodo();toast("Datos actualizados",'success');}catch(e){toast("Error",'error');}finally{btn.innerHTML='<i class="fas fa-sync-alt"></i> Actualizar';btn.disabled=false;}}
+document.getElementById("refreshBtn").addEventListener("click",actualizarTodo);document.getElementById("syncBtn").addEventListener("click",actualizarTodo);document.getElementById("exportExcelBtn").addEventListener("click",exportarExcelCompleto);document.getElementById("verFechaMovBtn").addEventListener("click",()=>{const f=document.getElementById("fechaMovimientos").value;f?renderMovimientos(f):toast("Seleccioná una fecha");});document.getElementById("verTodosMovBtn").addEventListener("click",()=>renderMovimientos());document.getElementById("exportMovExcelBtn").addEventListener("click",exportarMovimientosExcel);document.getElementById("addFecha1234Btn").addEventListener("click",()=>addRendicionFecha("1234","body1234",document.getElementById("fecha1234").value));document.getElementById("cargarTodo1234Btn").addEventListener("click",()=>renderRendicionChofer("1234","body1234"));document.getElementById("addFecha5678Btn").addEventListener("click",()=>addRendicionFecha("5678","body5678",document.getElementById("fecha5678").value));document.getElementById("cargarTodo5678Btn").addEventListener("click",()=>renderRendicionChofer("5678","body5678"));document.getElementById("verGastos1234Btn").addEventListener("click",()=>renderGastos("1234",document.getElementById("gastosFecha1234").value,false));document.getElementById("todosGastos1234Btn").addEventListener("click",()=>renderGastos("1234",null,true));document.getElementById("verGastos5678Btn").addEventListener("click",()=>renderGastos("5678",document.getElementById("gastosFecha5678").value,false));document.getElementById("todosGastos5678Btn").addEventListener("click",()=>renderGastos("5678",null,true));document.getElementById("buscarClienteBtn").addEventListener("click",()=>{const nom=document.getElementById("buscarClienteInput").value.trim();nom?verHistorialCliente(nom):toast("Ingresá un nombre");});document.getElementById("buscarClienteInput").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("buscarClienteBtn").click();});document.getElementById("limpiarBusquedaBtn").addEventListener("click",()=>{document.getElementById("buscarClienteInput").value="";document.getElementById("clienteResultado").innerHTML="";});document.getElementById("modal").addEventListener("click",e=>{if(e.target===document.getElementById("modal"))document.getElementById("modal").classList.remove("open");});actualizarTodo();setInterval(()=>actualizarTodo(),60000);
 </script>
 </body>
 </html>
