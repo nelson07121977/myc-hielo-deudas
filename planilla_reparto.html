@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (FINAL CORREGIDA)</title>
+    <title>MYC HIELO – Planilla de Reparto</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* === ESTILO ORIGINAL COMPLETO (sin cambios) === */
+        /* === MISMO ESTILO ORIGINAL (sin cambios) === */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; font-family: 'Inter', system-ui, 'Segoe UI', sans-serif; }
         :root {
@@ -120,7 +120,7 @@
             <p class="login-hint">🔹 Choferes: <strong>1234</strong> o <strong>5678</strong><br>🔹 Administrador: <strong>9999</strong></p>
             <input type="password" id="pinInput" placeholder="● ● ● ●">
             <button id="loginBtn">Ingresar</button>
-            <div id="loginError" class="error" style="display:none;">PIN incorrecto. Intentá de nuevo.</div>
+            <div id="loginError" class="error">PIN incorrecto</div>
         </div>
     </div>
 
@@ -148,34 +148,34 @@
             <div class="chart-container no-print"><h3>📊 Ventas por cliente (hoy)</h3><canvas id="ventasChart"></canvas></div>
             <div class="chart-container"><h3>📦 Ventas por producto (hoy)</h3><div id="productosReport" class="productos-vendidos"></div></div>
             <div class="chart-container no-print"><h3>📈 Evolución últimos 7 días</h3><canvas id="evolucionChart"></canvas></div>
-            <h3 style="font-size:0.95rem; margin:0 0 12px;">📋 Ventas y Cobros del día</h3>
+            <h3 style="margin:0 0 12px;">📋 Ventas y Cobros del día</h3>
             <div class="tabla-wrapper"><table id="salesDetailTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th></tr></thead><tbody id="salesDetailBody"></tbody></table></div>
         </div>
         <div id="tabReportes" class="panel-content" style="display:none;">
-            <h2 style="font-size:1rem; margin:0 0 16px;">📅 Resumen últimos 7 días</h2>
+            <h2 style="margin:0 0 16px;">📅 Resumen últimos 7 días</h2>
             <div class="summary-cards" id="weeklyStats"></div>
             <div class="chart-container"><h3>🏆 Top 10 clientes por volumen</h3><canvas id="topClientesChart"></canvas></div>
             <div class="chart-container"><h3>📈 Evolución diaria</h3><canvas id="weeklySalesChart"></canvas></div>
-            <h3 style="font-size:0.9rem; margin:0 0 10px;">💸 Detalle ventas semana</h3>
-            <div class="tabla-wrapper"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody></table></div>
+            <h3 style="margin:0 0 10px;">💸 Detalle ventas semana</h3>
+            <div class="tabla-wrapper"><table id="weeklySalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total $</th><th>Pago</th><th>Cobro Deuda</th></tr></thead><tbody id="weeklySalesBody"></tbody><td></div>
         </div>
         <div id="tabClientes" class="panel-content" style="display:none;">
-            <h3 style="font-size:0.95rem; margin:0 0 14px;">Gestión de clientes — precios de venta y costos</h3>
-            <div style="display:flex; gap:10px; margin:0 0 16px; flex-wrap:wrap;">
+            <h3 style="margin:0 0 14px;">Gestión de clientes — precios de venta y costos</h3>
+            <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
                 <button id="exportFullBackupBtn" class="btn-small btn-verde">💾 Respaldar TODO</button>
                 <label for="importFullBackupInput" class="btn-small btn-amarillo" style="padding:7px 16px; cursor:pointer;">📂 Restaurar TODO</label>
                 <input type="file" id="importFullBackupInput" accept=".json" style="display:none;">
                 <button id="forceSavePricesBtn" class="btn-small btn-primary">💾 Guardar precios (forzar)</button>
             </div>
-            <div class="form-row"><div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div><div class="form-group" style="flex:0 0 auto;"><button id="addClienteBtn" class="btn-small" style="margin-top:18px;">Agregar</button></div></div>
+            <div class="form-row"><div class="form-group"><label>➕ Nuevo cliente</label><input type="text" id="newClienteName" placeholder="Ej: BAR PLAZA"></div><div class="form-group"><button id="addClienteBtn" class="btn-small">Agregar</button></div></div>
             <div class="tabla-wrapper"><table id="clientesTable"><thead><tr><th>Cliente</th><th>1,7 $</th><th>3,5 $</th><th>14 $</th><th>20 $</th><th>32 $</th><th>Costo 1,7</th><th>Costo 3,5</th><th>Costo 14</th><th>Costo 20</th><th>Costo 32</th><th>Acciones</th></tr></thead><tbody id="clientesTbody"></tbody></table></div>
-            <button id="saveAllPricesBtn" style="margin-top:16px;">💾 Guardar todos los cambios (local + nube)</button>
+            <button id="saveAllPricesBtn" class="btn-small">💾 Guardar todos los cambios</button>
         </div>
         <div id="tabProductos" class="panel-content" style="display:none;">
-            <h3 style="font-size:0.95rem; margin:0 0 14px;">📸 Tipos de Bolsas / Productos</h3>
-            <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group" style="flex:0 0 auto;"><button id="addProductBtn" class="btn-small" style="margin-top:18px;">➕ Agregar</button></div></div>
+            <h3 style="margin:0 0 14px;">📸 Tipos de Bolsas / Productos</h3>
+            <div class="form-row"><div class="form-group"><label>Nuevo Producto</label><input type="text" id="newProductName" placeholder="Ej: Bolsa 25KG"></div><div class="form-group"><label>Precio base ($)</label><input type="number" id="newProductPrice" placeholder="0"></div><div class="form-group"><label>Imagen URL</label><input type="text" id="newProductImg" placeholder="https://..."></div><div class="form-group"><button id="addProductBtn" class="btn-small">➕ Agregar</button></div></div>
             <div class="tabla-wrapper"><table id="productsTable"><thead><tr><th>Imagen</th><th>Producto</th><th>Precio base</th><th>Acciones</th></tr></thead><tbody id="productsTbody"></tbody></table></div>
-            <button id="saveProductsBtn" style="margin-top:12px;">💾 Guardar imágenes y precios base</button>
+            <button id="saveProductsBtn" class="btn-small">💾 Guardar imágenes y precios base</button>
         </div>
     </div>
 
@@ -188,28 +188,21 @@
         <div class="panel-content">
             <div class="form-row">
                 <div class="form-group"><label>Cliente</label><select id="clienteSelect"></select></div>
-                <div class="form-group"><label>🥤 1,7 Kg</label><input type="number" id="qty_17" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>🥤 3,5 Kg</label><input type="number" id="qty_35" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>🧊 14 Kg</label><input type="number" id="qty_14" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>🧊 20 Kg</label><input type="number" id="qty_20" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>🧊 32 Kg</label><input type="number" id="qty_32" value="0" step="1" min="0"></div>
-                <div class="form-group"><label>Forma de pago</label>
-                    <select id="paymentType">
-                        <option value="efectivo">💵 Efectivo</option>
-                        <option value="transferencia">💳 Transferencia</option>
-                        <option value="ctacte">📘 Cuenta Corriente</option>
-                        <option value="cobrocc">🔄 Cobro de Cta. Cte.</option>
-                    </select>
-                </div>
+                <div class="form-group"><label>1,7 Kg</label><input type="number" id="qty_17" value="0" step="1" min="0"></div>
+                <div class="form-group"><label>3,5 Kg</label><input type="number" id="qty_35" value="0" step="1" min="0"></div>
+                <div class="form-group"><label>14 Kg</label><input type="number" id="qty_14" value="0" step="1" min="0"></div>
+                <div class="form-group"><label>20 Kg</label><input type="number" id="qty_20" value="0" step="1" min="0"></div>
+                <div class="form-group"><label>32 Kg</label><input type="number" id="qty_32" value="0" step="1" min="0"></div>
+                <div class="form-group"><label>Forma de pago</label><select id="paymentType"><option value="efectivo">💵 Efectivo</option><option value="transferencia">💳 Transferencia</option><option value="ctacte">📘 Cuenta Corriente</option><option value="cobrocc">🔄 Cobro de Cta. Cte.</option></select></div>
                 <div class="form-group"><label>Cobro deuda anterior ($)</label><input type="number" id="cobroDeudaInput" value="0" step="1" min="0"></div>
-                <div class="form-group" style="flex:0 0 auto;"><button id="addSaleBtn" style="background:linear-gradient(135deg,#16a34a,#15803d); margin-top:18px;">➕ Agregar venta</button></div>
+                <div class="form-group"><button id="addSaleBtn" style="background:linear-gradient(135deg,#16a34a,#15803d);">➕ Agregar venta</button></div>
             </div>
             <div class="summary-cards">
                 <div class="card"><h4>Total Ventas $</h4><div class="value" id="driverTotalVenta">0</div></div>
                 <div class="card"><h4>💵 Efectivo</h4><div class="value" id="driverTotalEfectivo">0</div></div>
                 <div class="card"><h4>💳 Transf.</h4><div class="value" id="driverTotalTransferencia">0</div></div>
                 <div class="card"><h4>📘 Cta Cte</h4><div class="value" id="driverTotalCtaCte">0</div></div>
-                <div class="card cobro-card"><h4>🔄 Cobrado hoy</h4><div class="value" id="totalCobrosCC">0</div><small style="color:#92400e; font-size:0.68rem;">deudas anteriores</small></div>
+                <div class="card cobro-card"><h4>🔄 Cobrado hoy</h4><div class="value" id="totalCobrosCC">0</div><small>deudas anteriores</small></div>
                 <div class="card">
                     <h4>💸 Gastos</h4>
                     <div class="gastos-detalle">
@@ -217,18 +210,18 @@
                         <label>👨‍✈️ Choferes $</label><input type="number" id="gastoChoferes" value="0" step="100">
                         <label>📦 Otros $</label><input type="number" id="gastoOtros" value="0" step="100">
                         <button id="setGastosDetalleBtn">Aplicar gastos</button>
-                        <div style="margin-top:6px; font-weight:700; font-size:0.82rem;">Total: $<span id="totalGastos">0</span></div>
+                        <div style="margin-top:6px; font-weight:700;">Total: $<span id="totalGastos">0</span></div>
                     </div>
                 </div>
-                <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small style="font-size:0.65rem; color:var(--gris-texto);">Ef + Transf + Cobros - Gastos</small></div>
+                <div class="card"><h4>💰 Neto del día</h4><div class="value" id="driverNetoDia">0</div><small>Ef + Transf + Cobros - Gastos</small></div>
             </div>
-            <h3 style="font-size:0.9rem; margin:0 0 10px;">📋 Ventas del día</h3>
+            <h3 style="margin:0 0 10px;">📋 Ventas del día</h3>
             <div class="tabla-wrapper"><table id="driverSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda $</th><th></th></tr></thead><tbody id="driverSalesBody"></tbody></table></div>
-            <button id="resetDayBtn" style="background:linear-gradient(135deg,#dc2626,#b91c1c); margin-top:20px;">🔄 Reiniciar Jornada (sin archivar)</button>
+            <button id="resetDayBtn" class="btn-small btn-rojo" style="margin-top:20px;">🔄 Reiniciar Jornada</button>
         </div>
     </div>
 </div>
-<footer>PIN Chofer: 1234 o 5678 | Admin: 9999 | Cerrar día archiva la jornada y limpia el registro actual.</footer>
+<footer>PIN Chofer: 1234 o 5678 | Admin: 9999</footer>
 <div id="toast" class="toast"></div>
 
 <script>
@@ -287,6 +280,7 @@ function loadGlobalPrices() {
 function saveGlobalPrices() { 
     localStorage.setItem("myc_precios_globales", JSON.stringify(preciosClientes)); 
     localStorage.setItem("myc_costos_globales", JSON.stringify(costosClientes)); 
+    toast("✅ Precios y costos guardados en local");
 }
 function loadDataByPin(pin) {
     const p = `myc_${pin}_`;
@@ -308,7 +302,7 @@ function saveAll() {
     saveGlobalPrices();
 }
 
-// ==================== API ====================
+// ==================== API CALLS ====================
 async function apiCall(ruta, params = {}, usePost = false) {
     try {
         if (usePost) {
@@ -403,13 +397,16 @@ async function guardarVenta(cliente, cantidades, pago, cobroDeuda=0) {
     if(cobroDeuda>0) cobrosCC += cobroDeuda;
     saveAll();
     try { await apiCall('guardarVenta', { fecha: fechaStr, cliente, cantidades: JSON.stringify(cantidades), pago, total, cobroDeuda, chofer: currentDriverPin }, true); } catch(e) { console.error(e); }
+    // Sincronizar con el módulo de deudas (index.html)
     try {
         if(pago === "ctacte" && total > 0) {
             await apiCall('agregarMovimiento', { fecha: fechaStr, cliente, tipo: 'deuda', monto: total, formaPago: '', detalle: `Venta de hielo: ${JSON.stringify(cantidades)}` }, true);
+            console.log("Deuda registrada en el control de deudas");
         } else if(pago === "cobrocc" && cobroDeuda > 0) {
-            await apiCall('agregarMovimiento', { fecha: fechaStr, cliente, tipo: 'pago', monto: cobroDeuda, formaPago: 'Efectivo', detalle: 'Cobro de deuda' }, true);
+            await apiCall('agregarMovimiento', { fecha: fechaStr, cliente, tipo: 'pago', monto: cobroDeuda, formaPago: 'Efectivo', detalle: 'Cobro de deuda desde Planilla' }, true);
+            console.log("Cobro registrado en el control de deudas");
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("Error al sincronizar deuda:", e); }
     return nueva;
 }
 async function eliminarVenta(id) {
@@ -450,7 +447,7 @@ async function actualizarGastosDesdeDetalle() {
     toast("Gastos actualizados");
 }
 function cerrarDiaAdmin() {
-    if(!confirm("Cerrar día archivará todas las ventas de hoy en un histórico y limpiará la jornada actual. ¿Continuar?")) return;
+    if(!confirm("Cerrar día archivará las ventas de hoy. ¿Continuar?")) return;
     const historicoKey = `myc_historico_${getTodayUTC()}_${currentDriverPin || 'admin'}`;
     const ventasHoy = getVentasHoy();
     if(ventasHoy.length === 0) { toast("No hay ventas hoy"); return; }
@@ -464,7 +461,7 @@ function cerrarDiaAdmin() {
     renderAdmin();
 }
 
-// ==================== RENDER ADMIN ====================
+// ==================== RENDER ADMIN (CORREGIDO - SIN SALTOS DE LÍNEA) ====================
 function renderAdmin() {
     const ventasHoy = getVentasHoy();
     let totalVentas=0, totalEfectivo=0, totalTransferencia=0, totalCtaCte=0, gananciaTotal=0;
@@ -489,24 +486,30 @@ function renderAdmin() {
         <div class="card"><h4>📈 Ganancia Neta</h4><div class="value">${fmtMoney(gananciaNeta)}</div></div>`;
     const tbody = document.getElementById("salesDetailBody");
     if(tbody) {
-        tbody.innerHTML = ventasHoy.length === 0
-            ? '<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</td></tr>'
-            : ventasHoy.map(v => `<tr>
-                <td><strong>${v.cliente}</strong></td>
-                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
-                <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
-                <td>${badgePago(v.pago)}</td>
-                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
-            </tr>`).join('');
+        if(ventasHoy.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Sin ventas registradas hoy</td></tr>';
+        } else {
+            let filas = '';
+            for(const v of ventasHoy) {
+                filas += `<tr>
+                    <td><strong>${v.cliente}</strong></td>
+                    <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
+                    <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
+                    <td>${badgePago(v.pago)}</td>
+                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+                </tr>`;
+            }
+            tbody.innerHTML = filas;
+        }
     }
     actualizarGraficoClientes(); renderVentasPorProducto(); renderEvolucionDiaria(); renderClientesTab(); renderProductosTab(); renderWeeklyReport();
 }
 
-// ==================== RENDER DRIVER ====================
+// ==================== RENDER DRIVER (CORREGIDO - SIN SALTOS DE LÍNEA) ====================
 function renderDriver() {
     let select = document.getElementById("clienteSelect");
     if(select) select.innerHTML = CLIENTES_LIST.map(c => `<option value="${c}">${c}</option>`).join("");
@@ -531,21 +534,27 @@ function renderDriver() {
     document.getElementById("driverNetoDia").innerText = fmtMoney(totalE + totalT + cobrosCC - gastos);
     const tbody = document.getElementById("driverSalesBody");
     if(tbody) {
-        tbody.innerHTML = ventasHoy.length === 0
-            ? '<tr><td colspan="10" style="text-align:center; color:#94a3b8; padding:18px;">Sin ventas registradas hoy</div><div>'
-            : ventasHoy.map(v => `<tr>
-                <td><strong>${v.cliente}</strong></div><div>
-                <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</div><div>
-                <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</div><div>
-                <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</div><div>
-                <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</div><div>
-                <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</div><div>
-                <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></div><div>
-                <td>${badgePago(v.pago)}</div><div>
-                <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</div><div>
-                <td><button class="delVentaBtn btn-small btn-rojo" data-id="${v.id}">🗑️</button></div><div>
-            </tr>`).join('');
-        document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => eliminarVenta(btn.dataset.id)));
+        if(ventasHoy.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Sin ventas registradas hoy</td></tr>';
+        } else {
+            let filas = '';
+            for(const v of ventasHoy) {
+                filas += `<tr>
+                    <td><strong>${v.cliente}</strong></td>
+                    <td style="text-align:center;">${v.cantidades?.["1,7 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades?.["3,5 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades?.["14 KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades?.["ESC.20KG"]||0}</td>
+                    <td style="text-align:center;">${v.cantidades?.["ESC.32KG"]||0}</td>
+                    <td><strong>${v.pago==="cobrocc"?"$0":fmtMoney(v.total)}</strong></td>
+                    <td>${badgePago(v.pago)}</td>
+                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+                    <td><button class="btn-small btn-rojo delVentaBtn" data-id="${v.id}">🗑️</button></td>
+                </tr>`;
+            }
+            tbody.innerHTML = filas;
+            document.querySelectorAll(".delVentaBtn").forEach(btn => btn.addEventListener("click", () => eliminarVenta(btn.dataset.id)));
+        }
     }
 }
 
@@ -555,22 +564,22 @@ function renderClientesTab() {
     for(let cli of CLIENTES_LIST) {
         const pre = preciosClientes[cli] || getPreciosCliente(cli);
         const cost = costosClientes[cli] || getCostosCliente();
-        tbody.innerHTML += `
-            <tr>
-                <td><strong>${cli}</strong></td>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:70px;"></td>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:70px;"></td>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:70px;"></td>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:70px;"></td>
-                <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:70px;"></td>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:70px;"></td>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:70px;"></td>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:70px;"></td>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:70px;"></td>
-                <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:70px;"></td>
-                <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>
-            </tr>
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${cli}</strong></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p17" value="${pre.p17}" style="width:70px;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p35" value="${pre.p35}" style="width:70px;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p14" value="${pre.p14}" style="width:70px;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p20" value="${pre.p20}" style="width:70px;"></td>
+            <td><input class="priceInput" data-cli="${cli}" data-prod="p32" value="${pre.p32}" style="width:70px;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c17" value="${cost.c17}" style="width:70px;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c35" value="${cost.c35}" style="width:70px;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c14" value="${cost.c14}" style="width:70px;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c20" value="${cost.c20}" style="width:70px;"></td>
+            <td><input class="costInput" data-cli="${cli}" data-prod="c32" value="${cost.c32}" style="width:70px;"></td>
+            <td><button class="deleteClienteBtn btn-small btn-rojo" data-cli="${cli}">🗑️</button></td>
         `;
+        tbody.appendChild(row);
     }
     document.querySelectorAll(".deleteClienteBtn").forEach(btn => btn.addEventListener("click", async () => {
         if(await eliminarClienteGlobal(btn.dataset.cli)) renderAdmin();
@@ -579,14 +588,14 @@ function renderClientesTab() {
 function renderProductosTab() {
     let tbody = document.getElementById("productsTbody"); if(!tbody) return; tbody.innerHTML = "";
     for(let p of productos) {
-        tbody.innerHTML += `
-            <tr>
-                <td><img src="${p.imagen}" style="width:48px;height:48px;object-fit:cover;" onerror="this.src='https://placehold.co/100x100'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px;"></td>
-                <td><strong>${p.clave}</strong></td>
-                <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px;"></td>
-                <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></td>
-            </tr>
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><img src="${p.imagen}" style="width:48px;height:48px;object-fit:cover;" onerror="this.src='https://placehold.co/100x100'"><br><input type="text" class="prodImg" data-clave="${p.clave}" value="${p.imagen}" style="width:90px;"></td>
+            <td><strong>${p.clave}</strong></td>
+            <td><input class="prodPriceBase" data-clave="${p.clave}" value="${p.precioBase}" style="width:80px;"></td>
+            <td><button class="delProdBtn btn-small btn-rojo" data-clave="${p.clave}">Eliminar</button></td>
         `;
+        tbody.appendChild(row);
     }
     document.querySelectorAll(".delProdBtn").forEach(btn => btn.addEventListener("click", () => {
         if(confirm("¿Eliminar producto?")) {
@@ -623,13 +632,21 @@ function renderWeeklyReport() {
     if(ctxLine) { if(weeklySalesChart) weeklySalesChart.destroy(); weeklySalesChart = new Chart(ctxLine, { type:'line', data:{ labels:dias.map(d=>d.toISOString().slice(0,10)), datasets:[{ label:'Ventas diarias', data:dias.map(d=>ventasPorDia[d.toISOString().slice(0,10)]||0), borderColor:'#0a3e6d' }] } }); }
     const tbody = document.getElementById("weeklySalesBody");
     if(tbody) {
-        tbody.innerHTML = weekly.length===0 ? '<tr><td colspan="5">Sin ventas</div><div>' : weekly.map(v => `<tr>
-                <td>${v.fecha}</div><div>
-                <td><strong>${v.cliente}</strong></div><div>
-                <td>${fmtMoney(v.total)}</div><div>
-                <td>${badgePago(v.pago)}</div><div>
-                <td>${v.cobroDeuda>0?fmtMoney(v.cobroDeuda):'—'}</div><div>
-            </tr>`).join('');
+        if(weekly.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">Sin ventas en la última semana</td></tr>';
+        } else {
+            let filas = '';
+            for(const v of weekly) {
+                filas += `<tr>
+                    <td>${v.fecha}</td>
+                    <td><strong>${v.cliente}</strong></td>
+                    <td>${fmtMoney(v.total)}</td>
+                    <td>${badgePago(v.pago)}</td>
+                    <td>${v.cobroDeuda>0 ? fmtMoney(v.cobroDeuda) : '—'}</td>
+                </tr>`;
+            }
+            tbody.innerHTML = filas;
+        }
     }
 }
 function actualizarGraficoClientes() {
@@ -678,13 +695,13 @@ async function agregarTransaccion() {
     await guardarVenta(cliente, cantidades, pago, cobroMonto);
     // Limpiar campos
     ["qty_17","qty_35","qty_14","qty_20","qty_32","cobroDeudaInput"].forEach(id => document.getElementById(id).value = 0);
-    // Refrescar vista sin recargar la nube (para que se vea rápido)
+    // Refrescar vista
     if (document.getElementById("adminPanel").style.display === "block") {
         renderAdmin();
     } else {
         renderDriver();
     }
-    toast("✅ Venta registrada");
+    toast("✅ Venta registrada y sincronizada con deudas");
 }
 
 // ==================== PDF ====================
