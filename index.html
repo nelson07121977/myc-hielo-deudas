@@ -129,23 +129,18 @@ th{background:var(--azul-light);color:var(--azul);font-weight:700;}
 
 <script>
 // ================= CONFIGURACIÓN =================
-const API_URL = "https://script.google.com/macros/s/AKfycbxhyA2l-sy9TS7DcLfraoj6sCMwoekXZI969x-ndGcmK6kDt9qsRqoJ-UcpoqFwBhNK/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxysL4SBBgo3U-ddZzCRURTogRzAX-v8yd-OvUI5_mfmYVqBC4o5RfOataKY23Bg3Dd/exec";
 
-// ========== FUNCIÓN PARA NORMALIZAR NOMBRES (mayúsculas, sin espacios extra) ==========
 function normalizarNombre(nombre) {
     if (!nombre) return '';
     return String(nombre).trim().toUpperCase().replace(/\s+/g, ' ');
 }
 
-// ========== FUNCIÓN PARA CONVERTIR CUALQUIER COSA A NÚMERO ==========
 function convertirANumero(valor) {
     if (valor === undefined || valor === null || valor === '') return 0;
     if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
     let str = String(valor).trim();
-    str = str.replace(/[$]/g, '');
-    str = str.replace(/[.]/g, '');
-    str = str.replace(/[,]/g, '');
-    str = str.replace(/\s/g, '');
+    str = str.replace(/[$]/g, '').replace(/[.]/g, '').replace(/[,]/g, '').replace(/\s/g, '');
     let match = str.match(/^-?\d+(?:\.\d+)?/);
     if (match) {
         let num = parseFloat(match[0]);
@@ -203,9 +198,7 @@ async function cargarDatos() {
   isLoading = true;
   try {
     const [cli, mov] = await Promise.all([obtenerClientes(), obtenerMovimientos()]);
-    // Normalizar nombres de clientes
     clientes = (cli && Array.isArray(cli)) ? cli.map(c => normalizarNombre(c)) : [];
-    // Normalizar movimientos
     movimientos = (mov && Array.isArray(mov)) ? mov.map(m => ({
       id: m.id,
       fecha: m.fecha,
@@ -247,13 +240,11 @@ function actualizarSelects() {
   const select1 = document.getElementById('dCliente');
   const select2 = document.getElementById('pCliente');
   if (!select1 || !select2) return;
-  
   if (!clientes || clientes.length === 0) {
     select1.innerHTML = '<option value="">Cargando clientes...</option>';
     select2.innerHTML = '<option value="">Cargando clientes...</option>';
     return;
   }
-  
   const opciones = '<option value="">Seleccionar cliente</option>' + clientes.map(c => `<option value="${c}">${c}</option>`).join('');
   select1.innerHTML = opciones;
   select2.innerHTML = opciones;
@@ -337,15 +328,15 @@ function renderMovimientos() {
   tbody.innerHTML = filtrados.map(m => {
     const montoSeguro = m.monto;
     return `
-    <tr>
-      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</td>
-      <td>${m.cliente_nombre || '?'}</td>
-      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></td>
-      <td>$${montoSeguro.toLocaleString('es-AR')}</td>
-      <td>${m.forma_pago || '—'}</td>
-      <td>${m.detalle || ''}</td>
-      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></td>
-    </tr>`;
+      <tr>
+        <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</td>
+        <td>${m.cliente_nombre || '?'}</td>
+        <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></td>
+        <td>$${montoSeguro.toLocaleString('es-AR')}</td>
+        <td>${m.forma_pago || '—'}</td>
+        <td>${m.detalle || ''}</td>
+        <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></td>
+      </tr>`;
   }).join('');
 }
 
