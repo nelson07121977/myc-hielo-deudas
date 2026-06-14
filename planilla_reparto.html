@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (FINAL CORREGIDA)</title>
+    <title>MYC HIELO – Planilla de Reparto (FINAL - SIN REINICIO AUTOMÁTICO)</title>
     <style>
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         body { background: #f0f4f8; margin: 0; padding: 16px; }
@@ -77,14 +77,16 @@
             <div class="card"><strong>📘 Cta Cte</strong><br><span id="totalCtaCte">0</span></div>
             <div class="card"><strong>🔄 Cobrado hoy</strong><br><span id="totalCobros">0</span></div>
         </div>
-        <h3>📋 Ventas del día</h3>
+        <h3>📋 Todas las ventas registradas</h3>
         <div style="overflow-x: auto;">
             <table id="salesTable">
-                <thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th><th></th></tr></thead>
+                <thead>
+                    <tr><th>Fecha</th><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th><th></th></tr>
+                </thead>
                 <tbody id="salesTableBody"></tbody>
             </table>
         </div>
-        <button id="resetDayBtn" style="background:#dc2626; margin-top:16px;">🔄 Reiniciar jornada</button>
+        <button id="resetDayBtn" style="background:#dc2626; margin-top:16px;">🔄 Reiniciar jornada (borrar todas las ventas)</button>
     </div>
 </div>
 
@@ -105,12 +107,12 @@
         <div id="tabVentas" class="tab-content active">
             <div class="form-row">
                 <div class="form-group"><label>Ver chofer</label><select id="adminChoferSelect"><option value="1234">Chofer 1234</option><option value="5678">Chofer 5678</option></select></div>
-                <div class="form-group"><button id="cerrarDiaAdmin" style="background:#dc2626;">📦 Cerrar día</button></div>
+                <div class="form-group"><button id="cerrarDiaAdmin" style="background:#dc2626;">📦 Archivar día</button></div>
                 <div class="form-group"><button id="forzarDeudasBtn" style="background:#f59e0b;">🔁 Forzar envío de deudas</button></div>
             </div>
             <div id="adminStats" class="flex-cards"></div>
-            <h3>Ventas del día</h3>
-            <div style="overflow-x: auto;"><table id="adminSalesTable"><thead><tr><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th></tr></thead><tbody id="adminSalesBody"></tbody></table></div>
+            <h3>Todas las ventas registradas</h3>
+            <div style="overflow-x: auto;"><table id="adminSalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th></tr></thead><tbody id="adminSalesBody"></tbody></table></div>
         </div>
 
         <div id="tabClientes" class="tab-content">
@@ -274,7 +276,6 @@ function agregarVenta(cliente, cantidades, pago, cobroMonto) {
     };
     ventas.push(nueva);
     guardarVentasLocal();
-    // Enviar a la nube inmediatamente (venta + movimiento de deuda si corresponde)
     guardarVentaEnNube(nueva);
     if (pago === "ctacte" && total > 0) {
         enviarMovimientoDeuda(nueva, 'deuda');
@@ -288,14 +289,13 @@ function eliminarVenta(id) {
     guardarVentasLocal();
 }
 function resetJornada() {
-    let hoy = getToday();
-    ventas = ventas.filter(v => v.fecha !== hoy);
+    if (!confirm("¿Eliminar TODAS las ventas? No se pueden recuperar.")) return;
+    ventas = [];
     guardarVentasLocal();
 }
 async function forzarEnvioDeudas() {
-    let hoy = getToday();
-    let deudasPendientes = ventas.filter(v => v.fecha === hoy && (v.pago === "ctacte" || v.pago === "cobrocc"));
-    if (deudasPendientes.length === 0) { toast("No hay deudas o cobros pendientes hoy"); return; }
+    let deudasPendientes = ventas.filter(v => v.pago === "ctacte" || v.pago === "cobrocc");
+    if (deudasPendientes.length === 0) { toast("No hay deudas o cobros pendientes"); return; }
     toast(`Reenviando ${deudasPendientes.length} movimientos...`);
     for (let v of deudasPendientes) {
         if (v.pago === "ctacte") await enviarMovimientoDeuda(v, 'deuda');
@@ -309,10 +309,10 @@ function renderDriver() {
     document.getElementById("driverId").innerText = `(PIN ${currentUser})`;
     let select = document.getElementById("clienteSelect");
     select.innerHTML = clientes.map(c => `<option value="${c}">${c}</option>`).join("");
-    let hoy = getToday();
-    let ventasHoy = ventas.filter(v => v.fecha === hoy);
+    
+    // Mostrar todas las ventas, sin filtrar por fecha
     let totalV=0,totalE=0,totalT=0,totalC=0,totalCob=0;
-    ventasHoy.forEach(v => {
+    ventas.forEach(v => {
         if (v.pago !== "cobrocc") totalV += v.total;
         if (v.pago === "efectivo") totalE += v.total;
         if (v.pago === "transferencia") totalT += v.total;
@@ -324,19 +324,21 @@ function renderDriver() {
     document.getElementById("totalTransf").innerText = formatMoney(totalT);
     document.getElementById("totalCtaCte").innerText = formatMoney(totalC);
     document.getElementById("totalCobros").innerText = formatMoney(totalCob);
+    
     let tbody = document.getElementById("salesTableBody");
-    if (ventasHoy.length === 0) tbody.innerHTML = '<tr><td colspan="10">Sin ventas registradas hoy</div><div>';
+    if (ventas.length === 0) tbody.innerHTML = '<tr><td colspan="11">No hay ventas registradas</div><div>';
     else {
         let html = '';
-        ventasHoy.forEach(v => {
+        ventas.slice().reverse().forEach(v => {  // mostrar más recientes primero
             html += `<tr>
-                <td><strong>${v.cliente}</strong></td>
-                <td style="text-align:center;">${v.cantidades["1,7 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades["3,5 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades["14 KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades["ESC.20KG"]||0}</td>
-                <td style="text-align:center;">${v.cantidades["ESC.32KG"]||0}</td>
-                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                <td>${v.fecha}</div><div>
+                <td><strong>${v.cliente}</strong></div><div>
+                <td style="text-align:center;">${v.cantidades["1,7 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades["3,5 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades["14 KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades["ESC.20KG"]||0}</div><div>
+                <td style="text-align:center;">${v.cantidades["ESC.32KG"]||0}</div><div>
+                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></div><div>
                 <td>${badgePago(v.pago)}</div><div>
                 <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
                 <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></div><div>
@@ -351,10 +353,8 @@ function renderAdmin() {
     let chofer = document.getElementById("adminChoferSelect").value;
     let key = `ventas_${chofer}`;
     let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
-    let hoy = getToday();
-    let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
     let totalV=0,totalE=0,totalT=0,totalC=0,totalCob=0;
-    ventasHoy.forEach(v => {
+    ventasChofer.forEach(v => {
         if (v.pago !== "cobrocc") totalV += v.total;
         if (v.pago === "efectivo") totalE += v.total;
         if (v.pago === "transferencia") totalT += v.total;
@@ -369,18 +369,19 @@ function renderAdmin() {
         <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
     `;
     let tbody = document.getElementById("adminSalesBody");
-    if (ventasHoy.length === 0) tbody.innerHTML = '<tr><td colspan="9">Sin ventas</div><div>';
+    if (ventasChofer.length === 0) tbody.innerHTML = '<tr><td colspan="10">Sin ventas</div><div>';
     else {
         let html = '';
-        ventasHoy.forEach(v => {
+        ventasChofer.slice().reverse().forEach(v => {
             html += `<tr>
-                <td><strong>${v.cliente}</strong></td>
-                <td>${v.cantidades["1,7 KG"]||0}</td>
-                <td>${v.cantidades["3,5 KG"]||0}</td>
-                <td>${v.cantidades["14 KG"]||0}</td>
-                <td>${v.cantidades["ESC.20KG"]||0}</td>
-                <td>${v.cantidades["ESC.32KG"]||0}</td>
-                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                <td>${v.fecha}</div><div>
+                <td><strong>${v.cliente}</strong></div><div>
+                <td>${v.cantidades["1,7 KG"]||0}</div><div>
+                <td>${v.cantidades["3,5 KG"]||0}</div><div>
+                <td>${v.cantidades["14 KG"]||0}</div><div>
+                <td>${v.cantidades["ESC.20KG"]||0}</div><div>
+                <td>${v.cantidades["ESC.32KG"]||0}</div><div>
+                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></div><div>
                 <td>${badgePago(v.pago)}</div><div>
                 <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
             </tr>`;
@@ -573,24 +574,22 @@ document.getElementById("addSaleBtn")?.addEventListener("click", () => {
     agregarVenta(cliente, cantidades, pago, cobroMonto);
     ["qty_17","qty_35","qty_14","qty_20","qty_32","cobroDeudaInput"].forEach(id => document.getElementById(id).value = 0);
     renderDriver();
-    toast("✅ Venta registrada y enviada a deudas");
+    toast("✅ Venta registrada");
 });
-document.getElementById("resetDayBtn")?.addEventListener("click", () => { if(confirm("¿Reiniciar jornada?")){ resetJornada(); renderDriver(); } });
+document.getElementById("resetDayBtn")?.addEventListener("click", () => { resetJornada(); renderDriver(); });
 document.getElementById("cerrarDiaAdmin")?.addEventListener("click", () => {
     let chofer = document.getElementById("adminChoferSelect").value;
     let key = `ventas_${chofer}`;
     let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
-    let hoy = getToday();
-    let ventasHoy = ventasChofer.filter(v => v.fecha === hoy);
-    if (ventasHoy.length === 0) { toast("No hay ventas hoy"); return; }
+    if (ventasChofer.length === 0) { toast("No hay ventas para archivar"); return; }
+    let fecha = getToday();
     let historicoKey = `historico_${chofer}`;
     let historico = JSON.parse(localStorage.getItem(historicoKey) || "[]");
-    historico.push({ fecha: hoy, ventas: ventasHoy });
+    historico.push({ fecha: fecha, ventas: ventasChofer });
     localStorage.setItem(historicoKey, JSON.stringify(historico));
-    let nuevas = ventasChofer.filter(v => v.fecha !== hoy);
-    localStorage.setItem(key, JSON.stringify(nuevas));
+    localStorage.setItem(key, "[]");
     renderAdmin();
-    toast("Día cerrado");
+    toast("Ventas archivadas. Se han limpiado las ventas actuales.");
 });
 document.getElementById("adminChoferSelect")?.addEventListener("change", () => renderAdmin());
 document.getElementById("agregarClienteBtn")?.addEventListener("click", agregarClienteAdmin);
