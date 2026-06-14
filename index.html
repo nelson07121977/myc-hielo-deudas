@@ -136,20 +136,12 @@ function normalizarNombre(nombre) {
     if (!nombre) return '';
     return String(nombre).trim().toUpperCase().replace(/\s+/g, ' ');
 }
-
 function convertirANumero(valor) {
     if (valor === undefined || valor === null || valor === '') return 0;
     if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
-    let str = String(valor).trim();
-    str = str.replace(/[$]/g, '');
-    str = str.replace(/[.]/g, '');
-    str = str.replace(/[,]/g, '');
-    str = str.replace(/\s/g, '');
+    let str = String(valor).trim().replace(/[$]/g, '').replace(/[.]/g, '').replace(/[,]/g, '').replace(/\s/g, '');
     let match = str.match(/^-?\d+(?:\.\d+)?/);
-    if (match) {
-        let num = parseFloat(match[0]);
-        return isNaN(num) ? 0 : num;
-    }
+    if (match) { let num = parseFloat(match[0]); return isNaN(num) ? 0 : num; }
     return 0;
 }
 
@@ -339,7 +331,7 @@ function renderMovimientos() {
       <td>$${montoSeguro.toLocaleString('es-AR')}</div><div>
       <td>${m.forma_pago || '—'}</div><div>
       <td>${m.detalle || ''}</div><div>
-      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento(${m.id})">🗑️</button></div><div>
+      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento('${m.id}')">🗑️</button></div><div>
     </tr>`;
   }).join('');
 }
@@ -402,7 +394,7 @@ async function registrarPago() {
 }
 
 async function eliminarMovimiento(id) {
-  if (!confirm('¿Eliminar este movimiento?')) return;
+  if (!confirm('¿Eliminar este movimiento? No se puede deshacer.')) return;
   try {
     const res = await eliminarMovimientoApi(id);
     if (res.error) throw new Error(res.error);
