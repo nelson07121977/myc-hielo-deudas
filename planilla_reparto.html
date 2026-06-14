@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (CON EXPORTAR PDF)</title>
+    <title>MYC HIELO – Planilla de Reparto (CON PDF CORREGIDO)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -361,20 +361,44 @@ function actualizarGastos() {
     toast("Gastos actualizados");
 }
 
-// ==================== EXPORTAR PDF ====================
+// ==================== EXPORTAR PDF (MEJORADO) ====================
 async function exportarPDF(elementId, nombreArchivo) {
     const element = document.getElementById(elementId);
     if (!element) { toast("No se encontró la tabla"); return; }
     try {
         toast("Generando PDF...");
-        const canvas = await html2canvas(element, { scale: 2, logging: false });
+        // Forzar un ancho mínimo para que la tabla no se corte
+        const originalWidth = element.style.width;
+        element.style.width = "1000px";
+        
+        const canvas = await html2canvas(element, { 
+            scale: 2, 
+            logging: false,
+            windowWidth: element.scrollWidth,
+            backgroundColor: '#ffffff'
+        });
+        
+        element.style.width = originalWidth;
+        
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 190;
+        // Usar orientación horizontal (landscape) para que entre la tabla completa
+        const pdf = new jsPDF('l', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pdfWidth - 20; // márgenes laterales
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
         let position = 0;
         pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        
+        // Si la imagen es más alta que una página, agregar más páginas
+        while (position + imgHeight > pdfHeight) {
+            position -= pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        }
+        
         pdf.save(`${nombreArchivo}.pdf`);
         toast("PDF generado");
     } catch(e) {
@@ -468,11 +492,11 @@ function renderAdmin() {
         <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
     `;
     let tbody = document.getElementById("adminSalesBody");
-    if (ventasChofer.length === 0) tbody.innerHTML = '<tr><td colspan="10">Sin ventas</div><div>';
+    if (ventasChofer.length === 0) tbody.innerHTML = '<td><td colspan="10">Sin ventas</div><div>';
     else {
         let html = '';
         ventasChofer.slice().reverse().forEach(v => {
-            html += `<tr>
+            html += `<td>
                 <td>${v.fecha}</div><div>
                 <td><strong>${v.cliente}</strong></div><div>
                 <td>${v.cantidades["1,7 KG"]||0}</div><div>
@@ -483,7 +507,7 @@ function renderAdmin() {
                 <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></div><div>
                 <td>${badgePago(v.pago)}</div><div>
                 <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
-            <tr>`;
+            </tr>`;
         });
         tbody.innerHTML = html;
     }
