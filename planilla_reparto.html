@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (CON GASTOS)</title>
+    <title>MYC HIELO – Planilla de Reparto (CON EXPORTAR PDF)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         body { background: #f0f4f8; margin: 0; padding: 16px; }
@@ -36,6 +38,7 @@
         .tab-content.active { display: block; }
         .precio-input, .producto-precio { width: 80px; padding: 4px; margin: 0; }
         .producto-img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+        .btn-export { background: #16a34a; margin-left: 8px; width: auto; padding: 8px 16px; }
     </style>
 </head>
 <body>
@@ -55,8 +58,9 @@
 <div id="driverPanel" class="panel" style="display: none;">
     <div class="panel-header">
         <h2>🚚 CHOFER <span id="driverId"></span></h2>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="syncBtn" style="background:#16a34a; width:auto;">☁️ Sincronizar</button>
+            <button id="exportDriverPdfBtn" class="btn-export" style="background:#f59e0b;">📄 Exportar PDF</button>
             <button id="logoutDriver" style="background:#dc2626; width:auto;">Salir</button>
         </div>
     </div>
@@ -81,7 +85,7 @@
             <div class="card"><strong>🔄 Cobrado hoy</strong><br><span id="totalCobros">0</span></div>
         </div>
 
-        <!-- SECCIÓN DE GASTOS (incluida) -->
+        <!-- SECCIÓN DE GASTOS -->
         <div class="card" style="margin-bottom: 16px;">
             <h4>💸 Gastos del día</h4>
             <div class="gastos-detalle">
@@ -94,7 +98,7 @@
         </div>
 
         <h3>📋 Todas las ventas registradas</h3>
-        <div style="overflow-x: auto;">
+        <div style="overflow-x: auto;" id="driverTableToExport">
             <table id="salesTable">
                 <thead>
                     <tr><th>Fecha</th><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th><th></th></tr>
@@ -106,11 +110,14 @@
     </div>
 </div>
 
-<!-- PANEL ADMIN (sin cambios) -->
+<!-- PANEL ADMIN -->
 <div id="adminPanel" class="panel" style="display: none;">
     <div class="panel-header">
         <h2>🧊 Administrador</h2>
-        <button id="logoutAdmin" style="background:#dc2626; width:auto;">Salir</button>
+        <div style="display: flex; gap: 8px;">
+            <button id="exportAdminPdfBtn" class="btn-export" style="background:#f59e0b;">📄 Exportar PDF</button>
+            <button id="logoutAdmin" style="background:#dc2626; width:auto;">Salir</button>
+        </div>
     </div>
     <div class="panel-body">
         <div class="tabs">
@@ -128,7 +135,9 @@
             </div>
             <div id="adminStats" class="flex-cards"></div>
             <h3>Todas las ventas registradas</h3>
-            <div style="overflow-x: auto;"><table id="adminSalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th></tr></thead><tbody id="adminSalesBody"></tbody></table></div>
+            <div style="overflow-x: auto;" id="adminTableToExport">
+                <table id="adminSalesTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th></tr></thead><tbody id="adminSalesBody"></tbody></table>
+            </div>
         </div>
 
         <div id="tabClientes" class="tab-content">
@@ -280,7 +289,6 @@ async function enviarMovimientoDeuda(venta, tipo) {
         form.append('formaPago', tipo === 'deuda' ? '' : 'Efectivo');
         form.append('detalle', tipo === 'deuda' ? `Venta de hielo: ${JSON.stringify(venta.cantidades)}` : 'Cobro de deuda desde planilla');
         await fetch(API_URL, { method: 'POST', body: form });
-        console.log(`Movimiento ${tipo} enviado para ${venta.cliente}`);
         return true;
     } catch(e) { console.error("Error enviando deuda:", e); return false; }
 }
@@ -349,8 +357,30 @@ function actualizarGastos() {
     gastos = nafta + choferes + otros;
     guardarGastosLocal();
     document.getElementById("totalGastos").innerText = formatMoney(gastos);
-    renderDriver(); // para actualizar neto
+    renderDriver();
     toast("Gastos actualizados");
+}
+
+// ==================== EXPORTAR PDF ====================
+async function exportarPDF(elementId, nombreArchivo) {
+    const element = document.getElementById(elementId);
+    if (!element) { toast("No se encontró la tabla"); return; }
+    try {
+        toast("Generando PDF...");
+        const canvas = await html2canvas(element, { scale: 2, logging: false });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 190;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        pdf.save(`${nombreArchivo}.pdf`);
+        toast("PDF generado");
+    } catch(e) {
+        console.error(e);
+        toast("Error al generar PDF");
+    }
 }
 
 // ==================== RENDER ====================
@@ -359,7 +389,6 @@ function renderDriver() {
     let select = document.getElementById("clienteSelect");
     select.innerHTML = clientes.map(c => `<option value="${c}">${c}</option>`).join("");
     
-    // Mostrar gastos actuales
     document.getElementById("gastoNafta").value = gastosDetalle.nafta;
     document.getElementById("gastoChoferes").value = gastosDetalle.choferes;
     document.getElementById("gastoOtros").value = gastosDetalle.otros;
@@ -379,23 +408,20 @@ function renderDriver() {
     document.getElementById("totalTransf").innerText = formatMoney(totalT);
     document.getElementById("totalCtaCte").innerText = formatMoney(totalC);
     document.getElementById("totalCobros").innerText = formatMoney(totalCob);
-    // También mostrar neto en alguna parte? Lo agregamos como una card extra
+    
+    // Agregar neto si no existe
     let netoCard = document.querySelector("#driverPanel .flex-cards .card:last-child");
-    if (!netoCard || netoCard.innerText.indexOf("Neto") === -1) {
-        // agregar card de neto si no existe
+    if ((!netoCard || netoCard.innerText.indexOf("Neto") === -1) && !document.getElementById("netoCard")) {
         const container = document.querySelector("#driverPanel .flex-cards");
-        if (container && !document.getElementById("netoCard")) {
+        if (container) {
             let netoDiv = document.createElement("div");
             netoDiv.className = "card";
             netoDiv.id = "netoCard";
             netoDiv.innerHTML = `<strong>💰 Neto del día</strong><br><span id="netoValue">${formatMoney(neto)}</span>`;
             container.appendChild(netoDiv);
-        } else if (document.getElementById("netoValue")) {
-            document.getElementById("netoValue").innerText = formatMoney(neto);
         }
-    } else {
-        let netoValueSpan = document.querySelector("#driverPanel .flex-cards .card:last-child span");
-        if (netoValueSpan) netoValueSpan.innerText = formatMoney(neto);
+    } else if (document.getElementById("netoValue")) {
+        document.getElementById("netoValue").innerText = formatMoney(neto);
     }
     
     let tbody = document.getElementById("salesTableBody");
@@ -422,7 +448,6 @@ function renderDriver() {
 }
 window.eliminarVentaHandler = function(id) { eliminarVenta(id); renderDriver(); toast("Venta eliminada"); };
 
-// ==================== RENDER ADMIN (ídem anterior, sin cambios) ====================
 function renderAdmin() {
     let chofer = document.getElementById("adminChoferSelect").value;
     let key = `ventas_${chofer}`;
@@ -443,7 +468,7 @@ function renderAdmin() {
         <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
     `;
     let tbody = document.getElementById("adminSalesBody");
-    if (ventasChofer.length === 0) tbody.innerHTML = '<td><td colspan="10">Sin ventas</div><div>';
+    if (ventasChofer.length === 0) tbody.innerHTML = '<tr><td colspan="10">Sin ventas</div><div>';
     else {
         let html = '';
         ventasChofer.slice().reverse().forEach(v => {
@@ -458,13 +483,14 @@ function renderAdmin() {
                 <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></div><div>
                 <td>${badgePago(v.pago)}</div><div>
                 <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
-            </tr>`;
+            <tr>`;
         });
         tbody.innerHTML = html;
     }
     renderClientesAdmin();
     renderProductosAdmin();
 }
+
 function renderClientesAdmin() {
     let tbody = document.getElementById("clientesTbody");
     tbody.innerHTML = "";
@@ -675,6 +701,11 @@ document.getElementById("sincronizarTodoBtn")?.addEventListener("click", sincron
 document.getElementById("syncBtn")?.addEventListener("click", sincronizarTodoConNube);
 document.getElementById("forzarDeudasBtn")?.addEventListener("click", forzarEnvioDeudas);
 document.getElementById("setGastosDetalleBtn")?.addEventListener("click", actualizarGastos);
+document.getElementById("exportDriverPdfBtn")?.addEventListener("click", () => exportarPDF("driverTableToExport", `ventas_chofer_${currentUser}`));
+document.getElementById("exportAdminPdfBtn")?.addEventListener("click", () => {
+    let chofer = document.getElementById("adminChoferSelect").value;
+    exportarPDF("adminTableToExport", `ventas_chofer_${chofer}_admin`);
+});
 document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
