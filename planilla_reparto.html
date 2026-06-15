@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Planilla de Reparto (CON PDF CORREGIDO)</title>
+    <title>MYC HIELO – Planilla de Reparto (CON PDF CON TOTALES)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -39,6 +39,10 @@
         .precio-input, .producto-precio { width: 80px; padding: 4px; margin: 0; }
         .producto-img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
         .btn-export { background: #16a34a; margin-left: 8px; width: auto; padding: 8px 16px; }
+        .pdf-summary { background: #f0f4f8; padding: 15px; margin-bottom: 20px; border-radius: 10px; border: 1px solid #ccc; }
+        .pdf-summary h3 { margin: 0 0 10px 0; color: #0a3e6d; }
+        .pdf-summary .total-row { display: flex; justify-content: space-between; margin: 5px 0; font-size: 14px; }
+        .pdf-summary .neto { font-weight: bold; font-size: 16px; color: #16a34a; border-top: 1px solid #ccc; padding-top: 8px; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -101,7 +105,7 @@
         <div style="overflow-x: auto;" id="driverTableToExport">
             <table id="salesTable">
                 <thead>
-                    <tr><th>Fecha</th><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th><th></th></tr>
+                    <tr><th>Fecha</th><th>Cliente</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Total $</th><th>Pago</th><th>Cobro deuda</th><th></th><tr>
                 </thead>
                 <tbody id="salesTableBody"></tbody>
             </table>
@@ -361,17 +365,66 @@ function actualizarGastos() {
     toast("Gastos actualizados");
 }
 
-// ==================== EXPORTAR PDF (MEJORADO) ====================
-async function exportarPDF(elementId, nombreArchivo) {
+// ==================== EXPORTAR PDF (con totales incluidos) ====================
+async function exportarPDF(elementId, nombreArchivo, esChofer = true) {
     const element = document.getElementById(elementId);
     if (!element) { toast("No se encontró la tabla"); return; }
     try {
         toast("Generando PDF...");
+        
+        // Calcular totales para el resumen
+        let totalEfectivo = 0, totalTransferencia = 0, totalCobros = 0, totalGastos = 0;
+        if (esChofer && currentUser !== '9999') {
+            // Para chofer, usar los totales de pantalla
+            totalEfectivo = parseFloat(document.getElementById("totalEfectivo").innerText.replace('$', '').replace(/\./g, '')) || 0;
+            totalTransferencia = parseFloat(document.getElementById("totalTransf").innerText.replace('$', '').replace(/\./g, '')) || 0;
+            totalCobros = parseFloat(document.getElementById("totalCobros").innerText.replace('$', '').replace(/\./g, '')) || 0;
+            totalGastos = gastos;
+        } else if (esChofer && currentUser === '9999') {
+            // Si es admin viendo chofer, calcular de las ventas mostradas
+            let ventasMostradas = ventas;
+            ventasMostradas.forEach(v => {
+                if (v.pago === "efectivo") totalEfectivo += v.total;
+                if (v.pago === "transferencia") totalTransferencia += v.total;
+                if (v.pago === "cobrocc") totalCobros += v.cobroDeuda;
+            });
+            totalGastos = gastos;
+        } else {
+            // Admin viendo tabla de admin
+            let chofer = document.getElementById("adminChoferSelect").value;
+            let key = `ventas_${chofer}`;
+            let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
+            ventasChofer.forEach(v => {
+                if (v.pago === "efectivo") totalEfectivo += v.total;
+                if (v.pago === "transferencia") totalTransferencia += v.total;
+                if (v.pago === "cobrocc") totalCobros += v.cobroDeuda;
+            });
+            totalGastos = 0; // No mostramos gastos en admin para no complicar
+        }
+        
+        const neto = totalEfectivo + totalTransferencia + totalCobros - totalGastos;
+        
+        // Crear div de resumen temporal
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'pdf-summary';
+        summaryDiv.innerHTML = `
+            <h3>🧊 MYC HIELO - Resumen de rendición</h3>
+            <div class="total-row"><strong>💵 Efectivo cobrado:</strong> ${formatMoney(totalEfectivo)}</div>
+            <div class="total-row"><strong>💳 Transferencias:</strong> ${formatMoney(totalTransferencia)}</div>
+            <div class="total-row"><strong>🔄 Cobro de deudas:</strong> ${formatMoney(totalCobros)}</div>
+            <div class="total-row"><strong>💸 Gastos del día:</strong> ${formatMoney(totalGastos)}</div>
+            <div class="total-row neto"><strong>💰 TOTAL A ENTREGAR:</strong> ${formatMoney(neto)}</div>
+            <div style="font-size: 12px; color: #666; margin-top: 10px;">*Este comprobante no es fiscal</div>
+        `;
+        
+        // Insertar temporalmente antes de la tabla
+        element.parentNode.insertBefore(summaryDiv, element);
+        
         // Forzar un ancho mínimo para que la tabla no se corte
         const originalWidth = element.style.width;
         element.style.width = "1000px";
         
-        const canvas = await html2canvas(element, { 
+        const canvas = await html2canvas(element.parentNode, { 
             scale: 2, 
             logging: false,
             windowWidth: element.scrollWidth,
@@ -379,20 +432,19 @@ async function exportarPDF(elementId, nombreArchivo) {
         });
         
         element.style.width = originalWidth;
+        summaryDiv.remove(); // Eliminar el div temporal
         
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
-        // Usar orientación horizontal (landscape) para que entre la tabla completa
         const pdf = new jsPDF('l', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = pdfWidth - 20; // márgenes laterales
+        const imgWidth = pdfWidth - 20;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
         let position = 0;
         pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
         
-        // Si la imagen es más alta que una página, agregar más páginas
         while (position + imgHeight > pdfHeight) {
             position -= pdfHeight;
             pdf.addPage();
@@ -400,7 +452,7 @@ async function exportarPDF(elementId, nombreArchivo) {
         }
         
         pdf.save(`${nombreArchivo}.pdf`);
-        toast("PDF generado");
+        toast("PDF generado con resumen de rendición");
     } catch(e) {
         console.error(e);
         toast("Error al generar PDF");
@@ -433,7 +485,6 @@ function renderDriver() {
     document.getElementById("totalCtaCte").innerText = formatMoney(totalC);
     document.getElementById("totalCobros").innerText = formatMoney(totalCob);
     
-    // Agregar neto si no existe
     let netoCard = document.querySelector("#driverPanel .flex-cards .card:last-child");
     if ((!netoCard || netoCard.innerText.indexOf("Neto") === -1) && !document.getElementById("netoCard")) {
         const container = document.querySelector("#driverPanel .flex-cards");
@@ -465,7 +516,7 @@ function renderDriver() {
                 <td>${badgePago(v.pago)}</div><div>
                 <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
                 <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></div><div>
-            </tr>`;
+            </table>`;
         });
         tbody.innerHTML = html;
     }
@@ -492,11 +543,11 @@ function renderAdmin() {
         <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
     `;
     let tbody = document.getElementById("adminSalesBody");
-    if (ventasChofer.length === 0) tbody.innerHTML = '<td><td colspan="10">Sin ventas</div><div>';
+    if (ventasChofer.length === 0) tbody.innerHTML = '<tr><td colspan="10">Sin ventas</div><div>';
     else {
         let html = '';
         ventasChofer.slice().reverse().forEach(v => {
-            html += `<td>
+            html += `<tr>
                 <td>${v.fecha}</div><div>
                 <td><strong>${v.cliente}</strong></div><div>
                 <td>${v.cantidades["1,7 KG"]||0}</div><div>
@@ -725,10 +776,10 @@ document.getElementById("sincronizarTodoBtn")?.addEventListener("click", sincron
 document.getElementById("syncBtn")?.addEventListener("click", sincronizarTodoConNube);
 document.getElementById("forzarDeudasBtn")?.addEventListener("click", forzarEnvioDeudas);
 document.getElementById("setGastosDetalleBtn")?.addEventListener("click", actualizarGastos);
-document.getElementById("exportDriverPdfBtn")?.addEventListener("click", () => exportarPDF("driverTableToExport", `ventas_chofer_${currentUser}`));
+document.getElementById("exportDriverPdfBtn")?.addEventListener("click", () => exportarPDF("driverTableToExport", `ventas_chofer_${currentUser}`, true));
 document.getElementById("exportAdminPdfBtn")?.addEventListener("click", () => {
     let chofer = document.getElementById("adminChoferSelect").value;
-    exportarPDF("adminTableToExport", `ventas_chofer_${chofer}_admin`);
+    exportarPDF("adminTableToExport", `ventas_chofer_${chofer}_admin`, false);
 });
 document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => {
