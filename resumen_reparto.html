@@ -374,21 +374,61 @@ function normalizarNumero(val){ if(val===undefined||val===null)return 0; if(type
 function fechaYMD(fecha){ if(!fecha)return ''; let s=String(fecha).split('T')[0]; if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10); if(/^\d{2}\/\d{2}\/\d{4}/.test(s)){ const p=s.split('/'); return `${p[2]}-${p[1]}-${p[0]}`; } return s; }
 function fechaDMY(fecha){ const ymd=fechaYMD(fecha); const p=ymd.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:ymd; }
 function pesos(n){ return '$' + n.toLocaleString('es-AR', { minimumFractionDigits:0 }); }
-function formatProductos(cant){ if(!cant)return '—'; const mapa={"1,7 KG":"1.7kg","3,5 KG":"3.5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg"}; const items=Object.entries(mapa).filter(([k])=>cant[k]>0).map(([k,v])=>`${v}:${cant[k]}`); return items.length?items.join(' · '):'—'; }
 
+function formatProductos(cant){
+    if(!cant) return '—';
+    const mapa={"1,7 KG":"1.7kg","3,5 KG":"3.5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg"};
+    const items=Object.entries(mapa).filter(([k])=>cant[k]>0).map(([k,v])=>`${v}:${cant[k]}`);
+    return items.length?items.join(' · '):'—';
+}
+
+// ==================== COMBINAR DETALLE (VERSIÓN MEJORADA) ====================
 function combinarProductosDetalle(cantidades, detalle) {
-    let prod = formatProductos(cantidades);
-    if (prod === '—') prod = '';
-    let det = detalle || '';
-    if (det && prod) {
-        if (det.includes('Venta de hielo:') && prod !== '—') {
-            const match = det.match(/Venta de hielo:\s*({.*})/);
-            if (match) return det;
-        }
-        if (det.includes('Cobro de deuda') || det.includes('Pago')) return det;
-        return prod + (det ? ' · ' + det : '');
+    // Si tenemos cantidades, generar el resumen corto
+    if (cantidades && typeof cantidades === 'object') {
+        const mapa = {
+            "1,7 KG": "1.7kg",
+            "3,5 KG": "3.5kg",
+            "14 KG": "14kg",
+            "ESC.20KG": "20kg",
+            "ESC.32KG": "32kg"
+        };
+        const items = Object.entries(mapa)
+            .filter(([k]) => (cantidades[k] || 0) > 0)
+            .map(([k, v]) => `${v}:${cantidades[k]}`);
+        if (items.length > 0) return items.join(' · ');
     }
-    return prod || det || '—';
+
+    // Si no hay cantidades, procesar el detalle texto
+    if (detalle && typeof detalle === 'string') {
+        // Detectar si es la descripción larga con asteriscos
+        if (detalle.includes('Venta de hielo:')) {
+            const match = detalle.match(/Venta de hielo:\s*\(\*([^*]+)\*:(\d+),\*([^*]+)\*:(\d+),\*([^*]+)\*:(\d+),\*([^*]+)\*:(\d+),\*([^*]+)\*:(\d+)\)/);
+            if (match) {
+                const nombres = [match[1], match[3], match[5], match[7], match[9]];
+                const cantidades2 = [parseInt(match[2]), parseInt(match[4]), parseInt(match[6]), parseInt(match[8]), parseInt(match[10])];
+                const mapa = {
+                    "1,7 KG": "1.7kg",
+                    "3,5 KG": "3.5kg",
+                    "14 KG": "14kg",
+                    "ESC.20KG": "20kg",
+                    "ESC.32KG": "32kg"
+                };
+                const items = nombres.map((n, i) => ({ nombre: n.trim(), cant: cantidades2[i] }))
+                    .filter(item => item.cant > 0)
+                    .map(item => `${mapa[item.nombre] || item.nombre}:${item.cant}`);
+                if (items.length > 0) return items.join(' · ');
+            }
+        }
+        // Si es algo como "14kg:6" o "4 bolsas" o "3 hielas", devolverlo directamente
+        if (/^\d+(kg|KG|bolsas|hielas)/.test(detalle.trim())) return detalle.trim();
+        // Si es "Cobro de deuda" o "Pago", devolverlo tal cual
+        if (detalle.includes('Cobro de deuda') || detalle.includes('Pago')) return detalle;
+        // Si no, devolver el detalle original
+        return detalle;
+    }
+
+    return '—';
 }
 
 function badgeTipo(item) {
@@ -697,52 +737,139 @@ async function confirmarEliminarDia(pin, fecha) {
     renderTodo();
 }
 
+// ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN ====================
 function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
+    // -------- 1. Unificar todas las fuentes --------
     let todos = [
-        ...movimientos.map(m => ({ ...m, tipoMov: 'sheets' })),
-        ...ventasLocal.map(v => ({
-            id: v.id,
-            fecha: v.fecha,
-            cliente: v.cliente,
-            tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null),
-            pago: v.pago,
-            forma_pago: (v.pago === "transferencia") ? "Transferencia" : (v.pago === "efectivo" ? "Efectivo" : ""),
-            monto: v.pago === "cobrocc" ? (v.cobroDeuda || v.total) : v.total,
-            detalle: v.detalle,
-            cantidades: v.cantidades,
-            chofer: v.chofer,
-            tipoMov: 'local'
-        }))
+        ...movimientos.map(m => ({
+            ...m,
+            tipoMov: 'sheets',
+            tipoNormalizado: m.tipo === "deuda" ? "deuda" : "pago"
+        })),
+        ...ventasLocal.map(v => {
+            let tipoNormalizado = '';
+            let formaPago = '';
+            if (v.pago === "ctacte") {
+                tipoNormalizado = "deuda";
+                formaPago = "ctacte";
+            } else if (v.pago === "cobrocc") {
+                tipoNormalizado = "pago";
+                formaPago = "cobrocc";
+            } else if (v.pago === "efectivo") {
+                tipoNormalizado = "pago";
+                formaPago = "efectivo";
+            } else if (v.pago === "transferencia") {
+                tipoNormalizado = "pago";
+                formaPago = "transferencia";
+            } else {
+                tipoNormalizado = v.tipo || "pago";
+                formaPago = v.forma_pago || "";
+            }
+            return {
+                ...v,
+                monto: v.total || v.monto || 0,
+                tipo: tipoNormalizado,
+                forma_pago: formaPago,
+                tipoMov: 'local',
+                tipoNormalizado: tipoNormalizado
+            };
+        })
     ];
+
+    // -------- 2. Aplicar filtros (fecha, tipo, cliente) --------
     if (fecha) todos = todos.filter(t => t.fecha === fecha);
     if (tipo) {
-        if (tipo === 'deuda') todos = todos.filter(t => t.tipo === 'deuda' || t.pago === 'ctacte');
-        else if (tipo === 'pago') todos = todos.filter(t => t.tipo === 'pago' || t.pago === 'efectivo' || t.pago === 'transferencia');
-        else if (tipo === 'ctacte') todos = todos.filter(t => t.pago === 'ctacte');
-        else if (tipo === 'cobrocc') todos = todos.filter(t => t.pago === 'cobrocc');
+        if (tipo === 'deuda') todos = todos.filter(t => t.tipoNormalizado === 'deuda');
+        else if (tipo === 'pago') todos = todos.filter(t => t.tipoNormalizado === 'pago');
+        else if (tipo === 'ctacte') todos = todos.filter(t => t.forma_pago === 'ctacte');
+        else if (tipo === 'cobrocc') todos = todos.filter(t => t.forma_pago === 'cobrocc');
     }
     if (clienteFiltro) {
         todos = todos.filter(t => t.cliente && t.cliente.toLowerCase().includes(clienteFiltro.toLowerCase()));
     }
-    todos.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
+    // -------- 3. DEDUPLICAR: agrupar por (fecha, cliente, tipoNormalizado, monto) --------
+    const grupos = new Map();
+    for (const item of todos) {
+        const key = `${item.fecha}|${item.cliente}|${item.tipoNormalizado}|${item.monto}`;
+        if (!grupos.has(key)) {
+            grupos.set(key, {
+                ...item,
+                cantidades: { ...item.cantidades },
+                detalles: [],
+                ids: []
+            });
+        }
+        const grupo = grupos.get(key);
+        // Acumular cantidades
+        if (item.cantidades && typeof item.cantidades === 'object') {
+            for (const [prod, cant] of Object.entries(item.cantidades)) {
+                grupo.cantidades[prod] = (grupo.cantidades[prod] || 0) + cant;
+            }
+        }
+        // Guardar detalles e ids para posible referencia
+        if (item.detalle) grupo.detalles.push(item.detalle);
+        if (item.id) grupo.ids.push(item.id);
+        // Conservar el primero de cada grupo como referencia
+        if (!grupo._original) grupo._original = item;
+    }
+
+    // -------- 4. Convertir grupos a array final --------
+    const finalList = Array.from(grupos.values()).map(grupo => {
+        // Combinar detalles: si hay varios, unirlos con " · "
+        let detalleFinal = '';
+        if (grupo.detalles.length === 1) {
+            detalleFinal = grupo.detalles[0];
+        } else if (grupo.detalles.length > 1) {
+            // Si todos los detalles son iguales, tomar uno
+            const unique = [...new Set(grupo.detalles)];
+            if (unique.length === 1) {
+                detalleFinal = unique[0];
+            } else {
+                // Si son diferentes, unirlos (ej: "14kg:6 · Cobro de deuda")
+                detalleFinal = unique.join(' · ');
+            }
+        }
+        // Usar la función combinadora para obtener el string final
+        const detalleMostrado = combinarProductosDetalle(grupo.cantidades, detalleFinal);
+        // Si no hay detalle, usar '—'
+        const detalleFinal2 = detalleMostrado || '—';
+        return {
+            ...grupo._original,
+            monto: grupo.monto,
+            cantidades: grupo.cantidades,
+            detalle: detalleFinal2,
+            // Para badge y color, usar el primer elemento
+            tipo: grupo.tipoNormalizado,
+            forma_pago: grupo.forma_pago,
+            // Para saber si es de sheets o local (para acciones)
+            tipoMov: grupo._original.tipoMov
+        };
+    });
+
+    // -------- 5. Ordenar por fecha descendente --------
+    finalList.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+    // -------- 6. Renderizar en la tabla --------
     const tbody = document.getElementById("bodyMovimientos");
     if (!tbody) return;
-    if (todos.length === 0) { tbody.innerHTML = emptyRow(6, 'Sin movimientos'); return; }
+    if (finalList.length === 0) {
+        tbody.innerHTML = emptyRow(6, 'Sin movimientos');
+        return;
+    }
 
-    tbody.innerHTML = todos.map(t => {
+    tbody.innerHTML = finalList.map(t => {
         const acciones = t.tipoMov === 'sheets'
             ? `<button class="btn btn-danger btn-xs" onclick="eliminarMovSheet('${t.id}')"><i class="fas fa-trash-alt"></i> Eliminar</button>`
             : `<button class="btn btn-xs" style="background:var(--surface2)" onclick="toast('Editar: use la Planilla de Reparto')"><i class="fas fa-edit"></i></button>
                <button class="btn btn-danger btn-xs" onclick="confirmarEliminarVenta('${t.id}','${t.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
         let rowClass = badgeTipoColor(t);
-        const prodDetalle = combinarProductosDetalle(t.cantidades, t.detalle);
         return `<tr class="${rowClass}">
             <td style="white-space:nowrap">${fechaDMY(t.fecha)}</td>
             <td style="font-weight:600">${t.cliente || '—'}</td>
             <td class="productos-texto">${badgeTipo(t)}</td>
             <td style="white-space:nowrap"><span class="num-neutral">${pesos(t.monto)}</span></td>
-            <td class="productos-texto">${prodDetalle}</td>
+            <td class="productos-texto">${t.detalle}</td>
             <td class="no-print" style="white-space:nowrap">${acciones}</td>
         </tr>`;
     }).join('');
