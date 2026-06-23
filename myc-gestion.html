@@ -603,7 +603,7 @@
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN - URL DE TU API
+//  CONFIGURACIÓN - URL DE TU API (NO CAMBIAR)
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 
@@ -734,7 +734,7 @@ async function cargarDatos() {
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
         }
 
-        // Gastos
+        // GASTOS: usando 'obtenerGastos' (correcto)
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -1007,7 +1007,7 @@ function exportarVentasExcel() {
 }
 
 // ============================================================
-//  GASTOS
+//  GASTOS - CORREGIDO: usa 'guardarGasto' y 'eliminarGasto'
 // ============================================================
 function renderGastos() {
     const filtroFecha = document.getElementById('filtroGastosFecha').value;
@@ -1045,6 +1045,7 @@ async function registrarGasto() {
 
     if (!fecha || !monto || monto <= 0) return toast('Complete campos');
 
+    // ✅ CORREGIDO: usa 'guardarGasto' (coincide con Apps Script)
     const result = await apiCall('guardarGasto', {
         fecha,
         chofer: '',
@@ -1059,12 +1060,13 @@ async function registrarGasto() {
         document.getElementById('gNota').value = '';
         await cargarDatos();
     } else {
-        toast('Error al registrar gasto');
+        toast('Error al registrar gasto: ' + (result.error || ''));
     }
 }
 
 async function eliminarGasto(id) {
     if (!confirm('¿Eliminar este gasto?')) return;
+    // ✅ CORREGIDO: usa 'eliminarGasto' (coincide con Apps Script)
     const result = await apiCall('eliminarGasto', { id }, 'POST');
     if (result && result.exito) {
         toast('Gasto eliminado');
@@ -1549,7 +1551,7 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarDatos();
 });
 
-// Funciones globales para onclick (CORREGIDO)
+// Funciones globales para onclick
 window.copiarTabla = copiarTabla;
 window.eliminarVenta = eliminarVenta;
 window.eliminarGasto = eliminarGasto;
