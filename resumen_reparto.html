@@ -375,33 +375,42 @@ function pesos(n){ return '$' + n.toLocaleString('es-AR', { minimumFractionDigit
 function normalizarCliente(nombre){ return (nombre || '').trim().toUpperCase(); }
 function montoRedondo(monto){ return Math.round(normalizarNumero(monto)); }
 
-// ==================== EXTRAER CANTIDADES DESDE DETALLE ====================
+// ==================== EXTRAER CANTIDADES DE DETALLE ====================
 function extraerCantidadesDeDetalle(detalle) {
     const cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     if (!detalle) return cant;
     const texto = detalle.trim();
-    // Intentar parsear "14kg:6" o "14kg6" o "14 KG:6"
+    // Intentar parsear JSON si existe
+    const jsonMatch = texto.match(/{.*}/);
+    if (jsonMatch) {
+        try {
+            const obj = JSON.parse(jsonMatch[0]);
+            for (const key of Object.keys(cant)) {
+                if (obj[key] !== undefined) cant[key] = Math.round(obj[key]);
+            }
+            return cant;
+        } catch(e) {}
+    }
+    // Buscar patrones: 14kg:6, 14kg6, 1.7kg:10, etc.
     const patrones = [
-        /(?:14\s*KG?|14\s*KG)\s*[:]?\s*(\d+)/i,
-        /(?:1,7\s*KG?|1\.7\s*KG)\s*[:]?\s*(\d+)/i,
-        /(?:3,5\s*KG?|3\.5\s*KG)\s*[:]?\s*(\d+)/i,
-        /(?:20\s*KG?|ESC\.20KG)\s*[:]?\s*(\d+)/i,
-        /(?:32\s*KG?|ESC\.32KG)\s*[:]?\s*(\d+)/i
+        { regex: /(?:14\s*kg|14\s*kg)\s*[:]?\s*(\d+)/i, key: "14 KG" },
+        { regex: /(?:1[,.]7\s*kg|1\.7\s*kg)\s*[:]?\s*(\d+)/i, key: "1,7 KG" },
+        { regex: /(?:3[,.]5\s*kg|3\.5\s*kg)\s*[:]?\s*(\d+)/i, key: "3,5 KG" },
+        { regex: /(?:20\s*kg|esc\.20kg)\s*[:]?\s*(\d+)/i, key: "ESC.20KG" },
+        { regex: /(?:32\s*kg|esc\.32kg)\s*[:]?\s*(\d+)/i, key: "ESC.32KG" }
     ];
-    const claves = ["14 KG", "1,7 KG", "3,5 KG", "ESC.20KG", "ESC.32KG"];
-    for (let i = 0; i < patrones.length; i++) {
-        const match = texto.match(patrones[i]);
+    for (const p of patrones) {
+        const match = texto.match(p.regex);
         if (match) {
-            cant[claves[i]] = parseInt(match[1]) || 0;
+            cant[p.key] = parseInt(match[1]) || 0;
         }
     }
-    // También buscar "4 bolsas" o "3 hielas" – lo dejamos como detalle no estructurado
     return cant;
 }
 
-// ==================== COMBINAR DETALLE UNIFICADO ====================
+// ==================== COMBINAR DETALLE FINAL ====================
 function combinarProductosDetalle(cantidades, detalle) {
-    // Si tenemos cantidades, generar resumen
+    // Si hay cantidades, generar resumen
     if (cantidades && typeof cantidades === 'object') {
         const mapa = {
             "1,7 KG": "1,7kg",
@@ -725,9 +734,9 @@ async function confirmarEliminarDia(pin, fecha) {
     renderTodo();
 }
 
-// ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN MEJORADA ====================
+// ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN DEFINITIVA ====================
 function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
-    // -------- 1. Unificar todas las fuentes --------
+    // 1. Unificar fuentes
     let todos = [
         ...movimientos.map(m => ({
             ...m,
@@ -764,19 +773,18 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         })
     ];
 
-    // -------- 2. Normalizar cliente y monto en todos los items --------
+    // 2. Normalizar cliente y monto
     todos = todos.map(t => ({
         ...t,
         cliente: normalizarCliente(t.cliente),
         monto: montoRedondo(t.monto)
     }));
 
-    // -------- 3. Asegurar que cada item tenga un objeto cantidades --------
+    // 3. Asegurar cantidades
     todos = todos.map(t => {
         if (!t.cantidades || typeof t.cantidades !== 'object') {
             t.cantidades = extraerCantidadesDeDetalle(t.detalle);
         } else {
-            // Asegurar que todas las claves existan
             const claves = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
             for (const k of claves) {
                 if (!(k in t.cantidades)) t.cantidades[k] = 0;
@@ -785,7 +793,7 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         return t;
     });
 
-    // -------- 4. Aplicar filtros (fecha, tipo, cliente) --------
+    // 4. Aplicar filtros
     if (fecha) todos = todos.filter(t => t.fecha === fecha);
     if (tipo) {
         if (tipo === 'deuda') todos = todos.filter(t => t.tipoNormalizado === 'deuda');
@@ -798,48 +806,55 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         todos = todos.filter(t => t.cliente && t.cliente.includes(filtro));
     }
 
-    // -------- 5. DEDUPLICAR: agrupar por (fecha, cliente, tipoNormalizado, monto) --------
+    // 5. DEDUPLICAR: agrupar por (fecha, tipoNormalizado, monto) 
+    // (ignoramos cliente para que TRANSF. sin cliente también se agrupe)
     const grupos = new Map();
     for (const item of todos) {
-        const key = `${item.fecha}|${item.cliente}|${item.tipoNormalizado}|${item.monto}`;
+        // La clave principal es fecha + tipo + monto
+        const key = `${item.fecha}|${item.tipoNormalizado}|${item.monto}`;
         if (!grupos.has(key)) {
             grupos.set(key, {
                 ...item,
                 cantidades: { ...item.cantidades },
+                clientes: new Set(),
                 detalles: [],
                 ids: []
             });
         }
         const grupo = grupos.get(key);
+        // Acumular cliente (si existe)
+        if (item.cliente) grupo.clientes.add(item.cliente);
         // Acumular cantidades
         if (item.cantidades && typeof item.cantidades === 'object') {
             for (const prod of ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"]) {
                 grupo.cantidades[prod] = (grupo.cantidades[prod] || 0) + (item.cantidades[prod] || 0);
             }
         }
-        // Guardar detalles para referencia
+        // Guardar detalles
         if (item.detalle) grupo.detalles.push(item.detalle);
         if (item.id) grupo.ids.push(item.id);
         if (!grupo._original) grupo._original = item;
     }
 
-    // -------- 6. Convertir grupos a array final --------
+    // 6. Convertir grupos a array final
     const finalList = Array.from(grupos.values()).map(grupo => {
-        // Elegir el detalle más representativo: si hay algún detalle que contenga "14kg" o similar, usarlo; sino, combinar
+        // Cliente: si hay más de uno, unirlos con coma
+        const clientesStr = grupo.clientes.size > 0 ? Array.from(grupo.clientes).join(', ') : '—';
+        // Elegir mejor detalle
         let detalleFinal = '';
         if (grupo.detalles.length === 1) {
             detalleFinal = grupo.detalles[0];
         } else if (grupo.detalles.length > 1) {
-            // Preferir el que tenga formato "14kg:6" sobre "14kg6"
-            const preferido = grupo.detalles.find(d => /^\d+kg\s*:\s*\d+$/i.test(d.trim())) ||
-                              grupo.detalles.find(d => /^\d+kg\s*\d+$/i.test(d.trim())) ||
-                              grupo.detalles[0];
-            detalleFinal = preferido;
+            // Priorizar el que tenga formato corto (14kg:6) sobre el JSON largo
+            const corto = grupo.detalles.find(d => /^\d+kg\s*[:]?\s*\d+$/i.test(d.trim())) ||
+                          grupo.detalles.find(d => /^\d+kg\s*\d+$/i.test(d.trim())) ||
+                          grupo.detalles[0];
+            detalleFinal = corto;
         }
-        // Generar el detalle final usando las cantidades acumuladas
         const detalleMostrado = combinarProductosDetalle(grupo.cantidades, detalleFinal);
         return {
             ...grupo._original,
+            cliente: clientesStr,
             monto: grupo.monto,
             cantidades: grupo.cantidades,
             detalle: detalleMostrado || '—',
@@ -849,10 +864,10 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         };
     });
 
-    // -------- 7. Ordenar por fecha descendente --------
+    // 7. Ordenar por fecha descendente
     finalList.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
-    // -------- 8. Renderizar --------
+    // 8. Renderizar
     const tbody = document.getElementById("bodyMovimientos");
     if (!tbody) return;
     if (finalList.length === 0) {
@@ -868,7 +883,7 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         let rowClass = badgeTipoColor(t);
         return `<tr class="${rowClass}">
             <td style="white-space:nowrap">${fechaDMY(t.fecha)}</td>
-            <td style="font-weight:600">${t.cliente || '—'}</td>
+            <td style="font-weight:600">${t.cliente}</td>
             <td class="productos-texto">${badgeTipo(t)}</td>
             <td style="white-space:nowrap"><span class="num-neutral">${pesos(t.monto)}</span></td>
             <td class="productos-texto">${t.detalle}</td>
@@ -1292,10 +1307,22 @@ function exportarClienteExcel(cliente) {
 function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) return;
-    const texto = Array.from(tabla.querySelectorAll("tr"))
+    // Seleccionar solo las filas visibles (no las de empty-row)
+    const filas = tabla.querySelectorAll("tbody tr:not(.empty-row)");
+    if (filas.length === 0) {
+        toast("No hay datos para copiar");
+        return;
+    }
+    const texto = Array.from(filas)
         .map(tr => Array.from(tr.children).filter(td => !td.classList.contains('no-print')).map(td => td.innerText.trim()).join("\t"))
         .join("\n");
-    navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada", 'success'));
+    // Agregar encabezados
+    const encabezados = Array.from(tabla.querySelectorAll("thead th"))
+        .filter(th => !th.classList.contains('no-print'))
+        .map(th => th.innerText.trim())
+        .join("\t");
+    const textoFinal = encabezados + "\n" + texto;
+    navigator.clipboard.writeText(textoFinal).then(() => toast("Tabla copiada", 'success'));
 }
 
 // ==================== BACKUP ====================
