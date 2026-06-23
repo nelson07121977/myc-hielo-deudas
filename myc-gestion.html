@@ -734,7 +734,7 @@ async function cargarDatos() {
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
         }
 
-        // ⭐ GASTOS: VERSIÓN LOCAL (sin API) ⭐
+        // GASTOS: VERSIÓN LOCAL (sin API)
         cargarGastosLocal();
         mostrarDebug(`Gastos cargados desde localStorage: ${gastos.length}`);
 
@@ -757,16 +757,20 @@ async function cargarDatos() {
             localStorage.setItem('myc_productos', JSON.stringify(productos));
         }
 
+        const costosGuardados = localStorage.getItem('myc_costos');
+        if (costosGuardados) {
+            try { costos = JSON.parse(costosGuardados); } catch(e) {}
+        }
         for (const p of productos) {
-            costos[p.clave] = p.costo || 0;
+            if (costos[p.clave] === undefined) costos[p.clave] = p.costo || 0;
         }
 
         actualizarUI();
         toast('Datos sincronizados');
-        mostrarDebug('✅ Carga de datos completada');
+        mostrarDebug('Carga de datos completada');
     } catch(e) {
         console.error('Error al cargar datos:', e);
-        mostrarDebug('❌ ERROR: ' + e.message);
+        mostrarDebug('ERROR: ' + e.message);
         toast('Error al sincronizar');
     }
 }
@@ -830,7 +834,6 @@ async function registrarGasto() {
 
     if (!fecha || !monto || monto <= 0) return toast('Complete campos');
 
-    // Cargar gastos existentes
     cargarGastosLocal();
 
     const nuevo = {
@@ -843,7 +846,7 @@ async function registrarGasto() {
     gastos.push(nuevo);
     guardarGastosLocal();
 
-    toast('✅ Gasto registrado LOCALMENTE');
+    toast('Gasto registrado LOCALMENTE');
     document.getElementById('gMonto').value = '';
     document.getElementById('gNota').value = '';
     renderGastos();
@@ -905,7 +908,10 @@ function renderFabricas() {
     if (fabricas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Sin movimientos de fábricas</td></tr>';
     } else {
-        const ordenadas = [...fabricas].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+        // ✅ CORREGIDO: usar [...fabricas] en lugar de [.fabricas]
+        const ordenadas = [...fabricas].sort((a, b) =>
+            (b.fecha || '').localeCompare(a.fecha || '')
+        );
         tbody.innerHTML = ordenadas.map(f => `
             <tr>
                 <td>${formatearFecha(f.fecha)}</td>
@@ -1132,7 +1138,9 @@ async function registrarVenta() {
 
     const total = cantidades.reduce((acc, q, i) => {
         const claves = ["1.7", "3.5", "14", "20", "32"];
-        return acc + (q || 0) * (costos[claves[i]] || 0);
+        const prod = productos.find(p => p.clave === claves[i]);
+        const precio = prod ? (prod.precio || prod.costo || 0) : 0;
+        return acc + (q || 0) * precio;
     }, 0);
 
     const result = await apiCall('guardarVenta', {
