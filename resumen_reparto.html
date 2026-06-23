@@ -375,6 +375,48 @@ function fechaYMD(fecha){ if(!fecha)return ''; let s=String(fecha).split('T')[0]
 function fechaDMY(fecha){ const ymd=fechaYMD(fecha); const p=ymd.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:ymd; }
 function pesos(n){ return '$' + n.toLocaleString('es-AR', { minimumFractionDigits:0 }); }
 
+// ==================== NORMALIZACIÓN DE DETALLES PARA DEDUPLICACIÓN ====================
+// Esta función extrae las cantidades de productos desde cualquier formato de detalle
+function extraerCantidadesDesdeDetalle(detalle) {
+    if (!detalle) return {};
+    const cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
+    const mapa = {
+        "1,7 KG": ["1,7", "1.7", "1,7kg", "1.7kg"],
+        "3,5 KG": ["3,5", "3.5", "3,5kg", "3.5kg"],
+        "14 KG": ["14", "14kg"],
+        "ESC.20KG": ["20", "20kg"],
+        "ESC.32KG": ["32", "32kg"]
+    };
+    // Intentar extraer patrones como "14kg:6", "14kg6", "14:6", "14-6", "14 kg 6"
+    const patron = /(\d+\.?\d*)\s*(?:kg|k)?\s*[:–\-]?\s*(\d+)/gi;
+    let match;
+    while ((match = patron.exec(detalle)) !== null) {
+        const num = match[1].trim();
+        const cantVal = parseInt(match[2]);
+        if (!isNaN(cantVal) && cantVal > 0) {
+            for (const [key, aliases] of Object.entries(mapa)) {
+                if (aliases.some(alias => num.includes(alias) || num === alias || num === alias.replace(/[^0-9.]/g,''))) {
+                    cant[key] = (cant[key] || 0) + cantVal;
+                    break;
+                }
+            }
+        }
+    }
+    // Si no encontró nada, intentar con "bolsas" o "hielas"
+    if (Object.values(cant).every(v => v === 0)) {
+        const bolsasMatch = detalle.match(/(\d+)\s*bolsas?/i);
+        if (bolsasMatch) {
+            // Asumimos que son bolsas de 14kg (o podríamos dejarlo como detalle general)
+            cant["14 KG"] = parseInt(bolsasMatch[1]);
+        }
+        const hielasMatch = detalle.match(/(\d+)\s*hielas?/i);
+        if (hielasMatch) {
+            cant["14 KG"] = parseInt(hielasMatch[1]);
+        }
+    }
+    return cant;
+}
+
 // ==================== FUNCIÓN MEJORADA PARA COMBINAR DETALLES ====================
 function combinarProductosDetalle(cantidades, detalle) {
     // Si tenemos cantidades, generar el resumen corto
@@ -394,48 +436,24 @@ function combinarProductosDetalle(cantidades, detalle) {
 
     // Si no hay cantidades, procesar el detalle texto
     if (detalle && typeof detalle === 'string') {
-        // Detectar si es la descripción larga con asteriscos
-        if (detalle.includes('Venta de hielo:')) {
-            const match = detalle.match(/Venta de hielo:\s*\(\*([^*]+)\*:(\d+),\*([^*]+)\*:(\d+),\*([^*]+)\*:(\d+),\*([^*]+)\*:(\d+),\*([^*]+)\*:(\d+)\)/);
-            if (match) {
-                const nombres = [match[1], match[3], match[5], match[7], match[9]];
-                const cantidades2 = [parseInt(match[2]), parseInt(match[4]), parseInt(match[6]), parseInt(match[8]), parseInt(match[10])];
-                const mapa = {
-                    "1,7 KG": "1,7kg",
-                    "3,5 KG": "3,5kg",
-                    "14 KG": "14kg",
-                    "ESC.20KG": "20kg",
-                    "ESC.32KG": "32kg"
-                };
-                const items = nombres.map((n, i) => ({ nombre: n.trim(), cant: cantidades2[i] }))
-                    .filter(item => item.cant > 0)
-                    .map(item => `${mapa[item.nombre] || item.nombre}:${item.cant}`);
-                if (items.length > 0) return items.join(' · ');
-            }
-            // Si no coincide con el patrón exacto, intentar extraer con JSON
-            const jsonMatch = detalle.match(/Venta de hielo:\s*({.*})/);
-            if (jsonMatch) {
-                try {
-                    const obj = JSON.parse(jsonMatch[1]);
-                    const mapa = {
-                        "1,7 KG": "1,7kg",
-                        "3,5 KG": "3,5kg",
-                        "14 KG": "14kg",
-                        "ESC.20KG": "20kg",
-                        "ESC.32KG": "32kg"
-                    };
-                    const items = Object.entries(obj)
-                        .filter(([, cant]) => cant > 0)
-                        .map(([k, cant]) => `${mapa[k] || k}:${cant}`);
-                    if (items.length > 0) return items.join(' · ');
-                } catch(e) {}
-            }
-        }
-        // Si es algo como "14kg:6" o "4 bolsas", devolverlo directamente
+        // Si es un detalle que ya es corto (ej: "14kg:6") lo devolvemos tal cual
         if (/^\d+(kg|KG|bolsas|hielas)/.test(detalle)) return detalle;
         // Si es "Cobro de deuda" o "Pago", devolverlo tal cual
         if (detalle.includes('Cobro de deuda') || detalle.includes('Pago')) return detalle;
-        // Si no, devolver el detalle original
+        // Si no, intentar extraer cantidades y formatearlas
+        const cant = extraerCantidadesDesdeDetalle(detalle);
+        const mapa = {
+            "1,7 KG": "1,7kg",
+            "3,5 KG": "3,5kg",
+            "14 KG": "14kg",
+            "ESC.20KG": "20kg",
+            "ESC.32KG": "32kg"
+        };
+        const items = Object.entries(mapa)
+            .filter(([k]) => (cant[k] || 0) > 0)
+            .map(([k, v]) => `${v}:${cant[k]}`);
+        if (items.length > 0) return items.join(' · ');
+        // Si no se pudo extraer nada, devolver el detalle original
         return detalle;
     }
 
@@ -749,14 +767,16 @@ async function confirmarEliminarDia(pin, fecha) {
     renderTodo();
 }
 
-// ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN ====================
+// ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN MEJORADA ====================
 function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
     // -------- 1. Unificar todas las fuentes --------
     let todos = [
         ...movimientos.map(m => ({
             ...m,
             tipoMov: 'sheets',
-            tipoNormalizado: m.tipo === "deuda" ? "deuda" : "pago"
+            tipoNormalizado: m.tipo === "deuda" ? "deuda" : "pago",
+            // Extraer cantidades del detalle para normalizar
+            cantidadesExtraidas: extraerCantidadesDesdeDetalle(m.detalle)
         })),
         ...ventasLocal.map(v => {
             let tipoNormalizado = '';
@@ -777,13 +797,20 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
                 tipoNormalizado = v.tipo || "pago";
                 formaPago = v.forma_pago || "";
             }
+            // Si v.cantidades está vacío, intentar extraer del detalle
+            let cantidades = v.cantidades || {};
+            if (Object.values(cantidades).every(c => c === 0) && v.detalle) {
+                cantidades = extraerCantidadesDesdeDetalle(v.detalle);
+            }
             return {
                 ...v,
                 monto: v.total || v.monto || 0,
                 tipo: tipoNormalizado,
                 forma_pago: formaPago,
                 tipoMov: 'local',
-                tipoNormalizado: tipoNormalizado
+                tipoNormalizado: tipoNormalizado,
+                cantidades: cantidades,
+                cantidadesExtraidas: cantidades
             };
         })
     ];
@@ -800,10 +827,12 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         todos = todos.filter(t => t.cliente && t.cliente.toLowerCase().includes(clienteFiltro.toLowerCase()));
     }
 
-    // -------- 3. DEDUPLICAR: agrupar por (fecha, cliente, tipoNormalizado, monto) --------
+    // -------- 3. DEDUPLICAR: agrupar por (fecha, cliente, tipoNormalizado, monto, y cantidades normalizadas) --------
     const grupos = new Map();
     for (const item of todos) {
-        const key = `${item.fecha}|${item.cliente}|${item.tipoNormalizado}|${item.monto}`;
+        // Crear una clave que incluya las cantidades normalizadas (como string JSON)
+        const cantKey = JSON.stringify(item.cantidadesExtraidas || {});
+        const key = `${item.fecha}|${item.cliente}|${item.tipoNormalizado}|${item.monto}|${cantKey}`;
         if (!grupos.has(key)) {
             grupos.set(key, {
                 ...item,
@@ -1291,8 +1320,13 @@ function exportarClienteExcel(cliente) {
 function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) return;
+    // Extraer solo el contenido visible (sin botones de acción)
     const texto = Array.from(tabla.querySelectorAll("tr"))
-        .map(tr => Array.from(tr.children).filter(td => !td.classList.contains('no-print')).map(td => td.innerText.trim()).join("\t"))
+        .map(tr => Array.from(tr.children)
+            .filter(td => !td.classList.contains('no-print'))
+            .map(td => td.innerText.trim())
+            .join("\t")
+        )
         .join("\n");
     navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada", 'success'));
 }
