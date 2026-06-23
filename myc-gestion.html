@@ -164,6 +164,7 @@
         .badge-efectivo { background: #fef9c3; color: #854d0e; }
         .badge-cobro { background: #f3e8ff; color: #6b21a8; }
         .badge-ctacte { background: #e0e7ff; color: #3730a3; }
+        .badge-gasto { background: #fee2e2; color: var(--rojo); }
 
         .btn {
             display: inline-flex;
@@ -275,6 +276,16 @@
             font-family: monospace;
             white-space: pre-wrap;
         }
+        .total-gastos-dia {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--rojo);
+            background: #fee2e2;
+            padding: 8px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -296,6 +307,7 @@
     <nav class="nav no-print">
         <a class="active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
         <a data-tab="ventas"><i class="fas fa-shopping-cart"></i> Ventas</a>
+        <a data-tab="gastos"><i class="fas fa-coins"></i> Gastos</a>
         <a data-tab="fabricas"><i class="fas fa-industry"></i> Fábricas</a>
         <a data-tab="productos"><i class="fas fa-boxes"></i> Productos</a>
         <a data-tab="costos"><i class="fas fa-tag"></i> Costos</a>
@@ -394,6 +406,52 @@
                     <tbody id="tbodyVentasCompleta"></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB: GASTOS ==================== -->
+    <div id="tab-gastos" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">💸 Registrar Gasto</div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Fecha</label><input type="date" id="gFecha"></div>
+                <div class="form-group"><label>Categoría</label>
+                    <select id="gCategoria">
+                        <option value="Nafta">Nafta</option>
+                        <option value="Chofer">Chofer</option>
+                        <option value="Otros">Otros</option>
+                        <option value="Mantenimiento">Mantenimiento</option>
+                        <option value="Impuestos">Impuestos</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Monto ($)</label><input type="number" id="gMonto" placeholder="0" step="any"></div>
+            <div class="form-group"><label>Nota</label><input type="text" id="gNota" placeholder="Descripción del gasto"></div>
+            <button class="btn btn-danger" id="btnRegistrarGasto"><i class="fas fa-plus"></i> Registrar Gasto</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📋 Gastos registrados</div>
+                <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaGastos')"><i class="fas fa-copy"></i></button>
+                    <button class="btn btn-sm btn-success" onclick="exportarGastosExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                </div>
+            </div>
+            <div class="filtros no-print">
+                <input type="date" id="filtroGastosFecha">
+                <button class="btn btn-sm btn-primary" id="filtrarGastosBtn">Filtrar</button>
+                <button class="btn btn-sm btn-outline" id="resetGastosBtn">Limpiar</button>
+            </div>
+            <div class="table-wrap">
+                <table id="tablaGastos">
+                    <thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead>
+                    <tbody id="tbodyGastos"></tbody>
+                </table>
+            </div>
+            <div class="total-gastos-dia" id="totalGastosDia">Total gastos del día: $0</div>
         </div>
     </div>
 
@@ -546,7 +604,8 @@
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN - URL DE TU API (NO CAMBIAR)
+//  CONFIGURACIÓN - URL DE TU API
+//  Esta es la URL de la planilla de reparto (choferes)
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 
@@ -677,7 +736,7 @@ async function cargarDatos() {
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
         }
 
-        // Gastos (desde la API, para mostrar en Dashboard e Informes)
+        // GASTOS - Conectado a la planilla de reparto
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -725,6 +784,88 @@ async function cargarDatos() {
         mostrarDebug('❌ ERROR: ' + e.message);
         toast('Error al sincronizar');
     }
+}
+
+// ============================================================
+//  GASTOS - Conectado a la API (planilla de reparto)
+// ============================================================
+function renderGastos() {
+    const filtroFecha = document.getElementById('filtroGastosFecha').value;
+    let filtrados = gastos;
+    if (filtroFecha) filtrados = filtrados.filter(g => g.fecha === filtroFecha);
+    filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+    const tbody = document.getElementById('tbodyGastos');
+    if (filtrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos registrados</td></tr>';
+    } else {
+        tbody.innerHTML = filtrados.map(g => `
+            <tr>
+                <td>${formatearFecha(g.fecha)}</td>
+                <td><span class="badge badge-gasto">${g.categoria || '—'}</span></td>
+                <td>${pesos(g.monto || 0)}</td>
+                <td>${g.nota || ''}</td>
+                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join('');
+    }
+
+    // Total de gastos del día
+    const hoyStr = hoy();
+    const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
+    const totalHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
+    document.getElementById('totalGastosDia').textContent = `Total gastos del día: ${pesos(totalHoy)}`;
+}
+
+async function registrarGasto() {
+    const fecha = document.getElementById('gFecha').value;
+    const categoria = document.getElementById('gCategoria').value;
+    const monto = parseFloat(document.getElementById('gMonto').value);
+    const nota = document.getElementById('gNota').value;
+
+    if (!fecha || !monto || monto <= 0) return toast('Complete campos');
+
+    const result = await apiCall('guardarGasto', {
+        fecha,
+        chofer: '',
+        categoria,
+        monto,
+        nota
+    }, 'POST');
+
+    if (result && result.exito) {
+        toast('✅ Gasto registrado');
+        document.getElementById('gMonto').value = '';
+        document.getElementById('gNota').value = '';
+        await cargarDatos();
+    } else {
+        toast('Error al registrar gasto');
+    }
+}
+
+async function eliminarGasto(id) {
+    if (!confirm('¿Eliminar este gasto?')) return;
+    const result = await apiCall('eliminarGasto', { id }, 'POST');
+    if (result && result.exito) {
+        toast('Gasto eliminado');
+        await cargarDatos();
+    } else {
+        toast('Error al eliminar gasto');
+    }
+}
+
+function exportarGastosExcel() {
+    const data = [
+        ['Fecha', 'Categoría', 'Monto', 'Nota']
+    ];
+    for (const g of gastos) {
+        data.push([g.fecha, g.categoria || '', g.monto || 0, g.nota || '']);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
+    XLSX.writeFile(wb, `gastos_${hoy()}.xlsx`);
+    toast('Excel exportado');
 }
 
 // ============================================================
@@ -857,6 +998,7 @@ function actualizarUI() {
     actualizarSelectores();
     renderDashboard();
     renderVentas();
+    renderGastos();
     renderFabricas();
     renderProductos();
     renderCostos();
@@ -1352,6 +1494,7 @@ document.querySelectorAll('.nav a').forEach(el => {
         document.getElementById('tab-' + tab).classList.add('active');
         if (tab === 'dashboard') renderDashboard();
         if (tab === 'ventas') renderVentas();
+        if (tab === 'gastos') renderGastos();
         if (tab === 'fabricas') renderFabricas();
         if (tab === 'productos') renderProductos();
         if (tab === 'costos') renderCostos();
@@ -1365,6 +1508,7 @@ document.querySelectorAll('.nav a').forEach(el => {
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('vFecha').value = hoy();
+    document.getElementById('gFecha').value = hoy();
     document.getElementById('fFecha').value = hoy();
 
     document.getElementById('syncBtn').addEventListener('click', cargarDatos);
@@ -1383,7 +1527,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('btnRegistrarVenta').addEventListener('click', registrarVenta);
+    document.getElementById('btnRegistrarGasto').addEventListener('click', registrarGasto);
     document.getElementById('btnRegistrarFabrica').addEventListener('click', registrarFabrica);
+
+    document.getElementById('filtrarGastosBtn').addEventListener('click', function() {
+        renderGastos();
+    });
+    document.getElementById('resetGastosBtn').addEventListener('click', function() {
+        document.getElementById('filtroGastosFecha').value = '';
+        renderGastos();
+    });
 
     document.getElementById('agregarProductoBtn').addEventListener('click', agregarProducto);
     document.getElementById('guardarNuevoProductoBtn').addEventListener('click', guardarNuevoProducto);
@@ -1406,11 +1559,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // Funciones globales para onclick
 window.copiarTabla = copiarTabla;
 window.eliminarVenta = eliminarVenta;
+window.eliminarGasto = eliminarGasto;
 window.eliminarFabricaLocal = eliminarFabricaLocal;
 window.eliminarCliente = eliminarCliente;
 window.eliminarProducto = eliminarProducto;
 window.editarProducto = editarProducto;
 window.exportarVentasExcel = exportarVentasExcel;
+window.exportarGastosExcel = exportarGastosExcel;
 window.exportarFabricasExcel = exportarFabricasExcel;
 window.exportarInformeExcel = exportarInformeExcel;
 window.generarInformeDiario = generarInformeDiario;
