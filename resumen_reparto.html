@@ -375,20 +375,13 @@ function fechaYMD(fecha){ if(!fecha)return ''; let s=String(fecha).split('T')[0]
 function fechaDMY(fecha){ const ymd=fechaYMD(fecha); const p=ymd.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:ymd; }
 function pesos(n){ return '$' + n.toLocaleString('es-AR', { minimumFractionDigits:0 }); }
 
-function formatProductos(cant){
-    if(!cant) return '—';
-    const mapa={"1,7 KG":"1.7kg","3,5 KG":"3.5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg"};
-    const items=Object.entries(mapa).filter(([k])=>cant[k]>0).map(([k,v])=>`${v}:${cant[k]}`);
-    return items.length?items.join(' · '):'—';
-}
-
-// ==================== COMBINAR DETALLE (VERSIÓN MEJORADA) ====================
+// ==================== FUNCIÓN MEJORADA PARA COMBINAR DETALLES ====================
 function combinarProductosDetalle(cantidades, detalle) {
     // Si tenemos cantidades, generar el resumen corto
     if (cantidades && typeof cantidades === 'object') {
         const mapa = {
-            "1,7 KG": "1.7kg",
-            "3,5 KG": "3.5kg",
+            "1,7 KG": "1,7kg",
+            "3,5 KG": "3,5kg",
             "14 KG": "14kg",
             "ESC.20KG": "20kg",
             "ESC.32KG": "32kg"
@@ -408,8 +401,8 @@ function combinarProductosDetalle(cantidades, detalle) {
                 const nombres = [match[1], match[3], match[5], match[7], match[9]];
                 const cantidades2 = [parseInt(match[2]), parseInt(match[4]), parseInt(match[6]), parseInt(match[8]), parseInt(match[10])];
                 const mapa = {
-                    "1,7 KG": "1.7kg",
-                    "3,5 KG": "3.5kg",
+                    "1,7 KG": "1,7kg",
+                    "3,5 KG": "3,5kg",
                     "14 KG": "14kg",
                     "ESC.20KG": "20kg",
                     "ESC.32KG": "32kg"
@@ -419,9 +412,27 @@ function combinarProductosDetalle(cantidades, detalle) {
                     .map(item => `${mapa[item.nombre] || item.nombre}:${item.cant}`);
                 if (items.length > 0) return items.join(' · ');
             }
+            // Si no coincide con el patrón exacto, intentar extraer con JSON
+            const jsonMatch = detalle.match(/Venta de hielo:\s*({.*})/);
+            if (jsonMatch) {
+                try {
+                    const obj = JSON.parse(jsonMatch[1]);
+                    const mapa = {
+                        "1,7 KG": "1,7kg",
+                        "3,5 KG": "3,5kg",
+                        "14 KG": "14kg",
+                        "ESC.20KG": "20kg",
+                        "ESC.32KG": "32kg"
+                    };
+                    const items = Object.entries(obj)
+                        .filter(([, cant]) => cant > 0)
+                        .map(([k, cant]) => `${mapa[k] || k}:${cant}`);
+                    if (items.length > 0) return items.join(' · ');
+                } catch(e) {}
+            }
         }
-        // Si es algo como "14kg:6" o "4 bolsas" o "3 hielas", devolverlo directamente
-        if (/^\d+(kg|KG|bolsas|hielas)/.test(detalle.trim())) return detalle.trim();
+        // Si es algo como "14kg:6" o "4 bolsas", devolverlo directamente
+        if (/^\d+(kg|KG|bolsas|hielas)/.test(detalle)) return detalle;
         // Si es "Cobro de deuda" o "Pago", devolverlo tal cual
         if (detalle.includes('Cobro de deuda') || detalle.includes('Pago')) return detalle;
         // Si no, devolver el detalle original
@@ -430,6 +441,8 @@ function combinarProductosDetalle(cantidades, detalle) {
 
     return '—';
 }
+
+function formatProductos(cant){ if(!cant)return '—'; const mapa={"1,7 KG":"1,7kg","3,5 KG":"3,5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg"}; const items=Object.entries(mapa).filter(([k])=>cant[k]>0).map(([k,v])=>`${v}:${cant[k]}`); return items.length?items.join(' · '):'—'; }
 
 function badgeTipo(item) {
     if (item.tipo === "deuda") return `<span class="badge badge-deuda">➕ DEUDA</span>`;
@@ -655,7 +668,6 @@ function renderResumen() {
     document.getElementById("totalGastos").textContent = pesos(totalGastosHoy);
     document.getElementById("netoTotal").textContent = pesos(neto);
     document.getElementById("clientesHoy").textContent = clientesAtendidosHoy.size;
-    // También para pestaña deudas
     document.getElementById("deudaTotal").textContent = pesos(totalDeuda);
     document.getElementById("cobroTotal").textContent = pesos(totalCobros);
 }
@@ -839,10 +851,8 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
             monto: grupo.monto,
             cantidades: grupo.cantidades,
             detalle: detalleFinal2,
-            // Para badge y color, usar el primer elemento
             tipo: grupo.tipoNormalizado,
             forma_pago: grupo.forma_pago,
-            // Para saber si es de sheets o local (para acciones)
             tipoMov: grupo._original.tipoMov
         };
     });
@@ -1369,10 +1379,8 @@ async function actualizarTodo() {
 
 // ==================== EVENTOS ====================
 document.addEventListener("DOMContentLoaded", function() {
-    // Inicializar
     actualizarTodo();
 
-    // Tabs
     document.querySelectorAll(".tab").forEach(tab => {
         tab.addEventListener("click", function() {
             document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -1382,13 +1390,9 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Sincronizar
     document.getElementById("syncAllBtn").addEventListener("click", actualizarTodo);
-
-    // Exportar Excel
     document.getElementById("exportExcelBtn").addEventListener("click", exportarExcelCompleto);
 
-    // Movimientos
     document.getElementById("verFechaMovBtn").addEventListener("click", () => {
         const f = document.getElementById("fechaMovimientos").value;
         const tipo = document.getElementById("filtroTipoMov").value;
@@ -1404,7 +1408,6 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("exportMovExcelBtn").addEventListener("click", exportarMovimientosExcel);
     document.getElementById("exportMovCsvBtn").addEventListener("click", exportarMovimientosCSV);
 
-    // Choferes
     document.getElementById("filtrar1234Btn").addEventListener("click", () => {
         const f = document.getElementById("fecha1234").value;
         if (!f) { toast("Seleccioná una fecha"); return; }
@@ -1432,7 +1435,6 @@ document.addEventListener("DOMContentLoaded", function() {
         else renderRendicionChofer("5678", "body5678", null);
     });
 
-    // Buscar cliente
     document.getElementById("buscarClienteBtn").addEventListener("click", () => {
         const nom = document.getElementById("buscarClienteSelect").value;
         if (nom) verHistorialCliente(nom);
@@ -1446,27 +1448,23 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("clienteResultado").innerHTML = "";
     });
 
-    // Clientes
     document.getElementById("agregarClienteBtn").addEventListener("click", () => {
         const nombre = document.getElementById("nuevoCliente").value;
         agregarClienteGlobal(nombre);
         document.getElementById("nuevoCliente").value = "";
     });
-    // Guardar precios en clientes (cambios en inputs se guardan automáticamente)
     document.addEventListener("change", function(e) {
         if (e.target.classList.contains("precio-input")) {
             guardarPreciosClientes();
         }
     });
 
-    // Deudas
     document.getElementById("btnDeuda").addEventListener("click", registrarDeuda);
     document.getElementById("btnPago").addEventListener("click", registrarPago);
     const hoy = getHoy();
     document.getElementById("dFecha").value = hoy;
     document.getElementById("pFecha").value = hoy;
 
-    // Configuración
     document.getElementById("exportFullBackupBtn").addEventListener("click", exportFullBackup);
     document.getElementById("importFullBackupInput").addEventListener("change", e => {
         if (e.target.files.length) importFullBackup(e.target.files[0]);
@@ -1474,13 +1472,12 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     document.getElementById("limpiarLocalStorageBtn").addEventListener("click", limpiarLocalStorage);
 
-    // Modal
     document.getElementById("modal").addEventListener("click", e => {
         if (e.target === document.getElementById("modal")) document.getElementById("modal").classList.remove("open");
     });
 });
 
-// Función para eliminar cliente (global)
+// Funciones globales para onclick
 window.eliminarClienteGlobal = eliminarClienteGlobal;
 window.eliminarMovSheet = eliminarMovSheet;
 window.confirmarEliminarVenta = confirmarEliminarVenta;
