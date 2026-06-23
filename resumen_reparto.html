@@ -368,7 +368,6 @@ function extraerCantidadesDeDetalle(detalle) {
     const cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     if (!detalle) return cant;
     const texto = detalle.trim();
-    // Intentar parsear "14kg:6" o "14kg6" o "14 KG:6"
     const patrones = [
         /(?:14\s*KG?|14\s*KG)\s*[:]?\s*(\d+)/i,
         /(?:1,7\s*KG?|1\.7\s*KG)\s*[:]?\s*(\d+)/i,
@@ -402,6 +401,30 @@ function combinarProductosDetalle(cantidades, detalle) {
         if (items.length > 0) return items.join(' · ');
     }
     return detalle || '—';
+}
+
+// ==================== LIMPIAR DETALLE (extraer cantidades de JSON) ====================
+function limpiarDetalleItem(item) {
+    // Esta función toma un item (con detalle y cantidades) y:
+    // - Si el detalle es un JSON de "Venta de hielo: {...}", lo parsea y lo asigna a item.cantidades
+    // - Retorna el detalle "limpio" (sin el JSON) para que no se muestre duplicado
+    let detalleUsable = item.detalle || '';
+    if (detalleUsable.includes('Venta de hielo:') || detalleUsable.includes('"') || detalleUsable.includes('{')) {
+        // Si ya tiene cantidades y son >0, no necesitamos parsear
+        const hasCant = item.cantidades && Object.values(item.cantidades).some(v => v > 0);
+        if (!hasCant) {
+            try {
+                const jsonStr = detalleUsable.replace(/^Venta de hielo:\s*/, '');
+                const parsed = JSON.parse(jsonStr);
+                item.cantidades = parsed;
+            } catch(e) {
+                // Si falla, no hacemos nada
+            }
+        }
+        // Retornamos vacío para que use las cantidades en su lugar
+        return '';
+    }
+    return detalleUsable;
 }
 
 // ==================== BADGES Y COLORES ====================
@@ -622,7 +645,6 @@ function renderResumen() {
         if (v.cobroDeuda > 0) cobrosHoy += v.cobroDeuda;
         if (v.cliente) clientesAtendidosHoy.add(v.cliente);
     }
-    for (const m of movimientos) if (m.fecha === hoy && m.tipo === "pago") cobrosHoy += m.monto;
     const neto = efectivoHoy + transferHoy + cobrosHoy - totalGastosHoy;
     document.getElementById("totalDeudas").textContent = pesos(totalDeuda);
     document.getElementById("totalCobros").textContent = pesos(totalCobros);
@@ -649,7 +671,6 @@ function calcRendicionFecha(pin, fecha) {
         }
         if (v.cliente) clientesAtendidos.add(v.cliente);
     }
-    for (const m of movimientos) if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
     const neto = efectivo + transfer + cobros;
     return { efectivo, transfer, cobros, neto, cantidades, clientesAtendidos: clientesAtendidos.size };
 }
@@ -767,7 +788,6 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
 
     // -------- 2. Asegurar que cada item tenga cantidades extraídas desde detalle si es necesario --------
     for (const item of todos) {
-        // Si no tiene cantidades o todas son cero, intentar extraer del detalle
         const hasCant = Object.values(item.cantidades).some(v => v > 0);
         if (!hasCant && item.detalle) {
             const extraidas = extraerCantidadesDeDetalle(item.detalle);
@@ -775,7 +795,6 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
                 item.cantidades = extraidas;
             }
         }
-        // Asegurar que todas las claves existan
         const claves = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
         for (const k of claves) {
             if (!(k in item.cantidades)) item.cantidades[k] = 0;
@@ -802,59 +821,31 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
     for (const item of todos) {
         const key = `${item.fecha}|${item.cliente}|${item.tipo}|${item.monto}`;
         if (!grupos.has(key)) {
-            grupos.set(key, {
-                ...item,
-                cantidades: { ...item.cantidades },
-                detalles: [],
-                ids: []
-            });
-        }
-        const grupo = grupos.get(key);
-        // Acumular cantidades
-        for (const prod of ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"]) {
-            grupo.cantidades[prod] = (grupo.cantidades[prod] || 0) + (item.cantidades[prod] || 0);
-        }
-        // Guardar detalles para elegir el mejor después
-        if (item.detalle) grupo.detalles.push(item.detalle);
-        if (item.id) grupo.ids.push(item.id);
-        if (!grupo._original) grupo._original = item;
-    }
-
-    // -------- 5. Generar lista final con detalle unificado --------
-    const finalList = Array.from(grupos.values()).map(grupo => {
-        // Elegir el detalle más representativo:
-        // - Si hay un detalle que contenga "14kg" o similar, usarlo
-        // - Si no, usar el que no sea JSON
-        // - Si todos son JSON, convertirlos a formato corto
-        let mejorDetalle = '';
-        const detalles = grupo.detalles.filter(d => d && d.length > 0);
-        if (detalles.length === 0) {
-            mejorDetalle = '';
+            grupos.set(key, item);
         } else {
-            // Preferir el que tenga formato "14kg:6" sobre "14kg6"
-            const preferidos = detalles.filter(d => /^\d+kg\s*:\s*\d+$/i.test(d.trim()));
-            if (preferidos.length > 0) {
-                mejorDetalle = preferidos[0];
-            } else {
-                // Buscar el que no sea JSON
-                const noJson = detalles.filter(d => !d.includes('Venta de hielo:') && !d.includes('{'));
-                if (noJson.length > 0) {
-                    mejorDetalle = noJson[0];
-                } else {
-                    mejorDetalle = detalles[0];
-                }
+            // Si el nuevo item es local y el guardado es de sheets, reemplazar
+            const guardado = grupos.get(key);
+            if (item.tipoMov === 'local' && guardado.tipoMov === 'sheets') {
+                grupos.set(key, item);
             }
         }
-        // Generar el detalle final a partir de las cantidades acumuladas
-        const detalleFinal = combinarProductosDetalle(grupo.cantidades, mejorDetalle);
+    }
+
+    // -------- 5. Generar lista final con detalle limpio --------
+    const finalList = Array.from(grupos.values()).map(item => {
+        let detalleUsable = item.detalle || '';
+        // Usamos la función limpiarDetalleItem para parsear JSON y extraer cantidades
+        const limpio = limpiarDetalleItem(item);
+        // Si limpio es vacío, significa que el detalle era un JSON y ya se asignaron las cantidades
+        if (limpio === '') {
+            detalleUsable = '';
+        } else {
+            detalleUsable = limpio;
+        }
+        const detalleFinal = combinarProductosDetalle(item.cantidades, detalleUsable);
         return {
-            ...grupo._original,
-            monto: grupo.monto,
-            cantidades: grupo.cantidades,
-            detalle: detalleFinal || '—',
-            tipo: grupo.tipo,
-            forma_pago: grupo.forma_pago,
-            tipoMov: grupo._original.tipoMov
+            ...item,
+            detalle: detalleFinal || '—'
         };
     });
 
@@ -997,10 +988,14 @@ function guardarPreciosClientes() {
 // ==================== HISTORIAL CLIENTE ====================
 function verHistorialCliente(cliente, desde = null, hasta = null) {
     const clienteNorm = normalizarCliente(cliente);
-    const todos = [
-        ...movimientos.filter(m => m.cliente === clienteNorm).map(m => ({ ...m, tipoMov:'sheets' })),
-        ...ventasLocal.filter(v => v.cliente === clienteNorm).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
-    ];
+    const sheetsItems = movimientos.filter(m => m.cliente === clienteNorm).map(m => ({ ...m, tipoMov:'sheets' }));
+    const localItems  = ventasLocal.filter(v => v.cliente === clienteNorm).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }));
+    const dedupMap = new Map();
+    for (const item of [...sheetsItems, ...localItems]) {
+        const key = `${item.fecha}|${item.tipo}|${item.monto || 0}`;
+        if (!dedupMap.has(key) || item.tipoMov === 'local') dedupMap.set(key, item);
+    }
+    const todos = Array.from(dedupMap.values());
     let filtrados = todos;
     if (desde && hasta) {
         filtrados = todos.filter(t => t.fecha >= desde && t.fecha <= hasta);
@@ -1021,7 +1016,8 @@ function verHistorialCliente(cliente, desde = null, hasta = null) {
     } else {
         const filas = filtrados.map(t => {
             let rowClass = badgeTipoColor(t);
-            const prodDetalle = combinarProductosDetalle(t.cantidades, t.detalle);
+            const detalleBase = limpiarDetalleItem(t);
+            const prodDetalle = combinarProductosDetalle(t.cantidades, detalleBase);
             return `<tr class="${rowClass}">
                 <td>${fechaDMY(t.fecha)}</td>
                 <td class="productos-texto">${badgeTipo(t)}</td>
@@ -1083,10 +1079,14 @@ function verHistorialCliente(cliente, desde = null, hasta = null) {
 
 function copiarHistorialCliente(cliente) {
     const clienteNorm = normalizarCliente(cliente);
-    const todos = [
-        ...movimientos.filter(m => m.cliente === clienteNorm).map(m => ({ ...m, tipoMov:'sheets' })),
-        ...ventasLocal.filter(v => v.cliente === clienteNorm).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
-    ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    const sheetsItems = movimientos.filter(m => m.cliente === clienteNorm).map(m => ({ ...m, tipoMov:'sheets' }));
+    const localItems  = ventasLocal.filter(v => v.cliente === clienteNorm).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }));
+    const dedupMap = new Map();
+    for (const item of [...sheetsItems, ...localItems]) {
+        const key = `${item.fecha}|${item.tipo}|${item.monto || 0}`;
+        if (!dedupMap.has(key) || item.tipoMov === 'local') dedupMap.set(key, item);
+    }
+    const todos = Array.from(dedupMap.values()).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
     if (todos.length === 0) { toast("No hay movimientos para este cliente"); return; }
 
     const colWidths = { fecha: 12, tipo: 14, monto: 12, prodDetalle: 40 };
@@ -1103,7 +1103,8 @@ function copiarHistorialCliente(cliente) {
         if (t.forma_pago && t.forma_pago === "Transferencia") tipo = "Transf.";
         let fechaStr = fechaDMY(t.fecha);
         let montoStr = pesos(t.monto || 0);
-        let prodDetalle = combinarProductosDetalle(t.cantidades, t.detalle);
+        const detalleBase = limpiarDetalleItem(t);
+        let prodDetalle = combinarProductosDetalle(t.cantidades, detalleBase);
         if (prodDetalle.length > colWidths.prodDetalle - 3) prodDetalle = prodDetalle.substring(0, colWidths.prodDetalle - 3) + "…";
         texto += fechaStr.padEnd(colWidths.fecha) + ` | `;
         texto += tipo.padEnd(colWidths.tipo) + ` | `;
@@ -1301,7 +1302,6 @@ function exportarClienteExcel(cliente) {
 function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) return;
-    // Copiar solo las filas visibles (sin botones de acción)
     const texto = Array.from(tabla.querySelectorAll("tr"))
         .map(tr => Array.from(tr.children).filter(td => !td.classList.contains('no-print')).map(td => td.innerText.trim()).join("\t"))
         .join("\n");
