@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Resumen de Reparto</title>
+    <title>MYC HIELO – Resumen de Reparto (corregido)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -297,6 +297,7 @@ async function cargarDatosChoferes() {
     gastos = [];
     ventasLocal = [];
     for (const pin of ["1234","5678"]) {
+        // Cargar ventas
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerVentas&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
@@ -337,6 +338,7 @@ async function cargarDatosChoferes() {
             }
         } catch(e) { console.error(`Error al obtener ventas de ${pin}:`, e); }
 
+        // Cargar gastos
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerGastos&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
@@ -352,10 +354,21 @@ async function cargarDatosChoferes() {
                     });
                 }
             } else {
-                const key = `myc_${pin}_gastosDetallados`;
-                const stored = localStorage.getItem(key);
-                if (stored) {
-                    const gastosDet = JSON.parse(stored);
+                // Intentar con gastosDetalle (objeto simple)
+                const keySimple = `myc_${pin}_gastosDetalle`;
+                const storedSimple = localStorage.getItem(keySimple);
+                if (storedSimple) {
+                    const gs = JSON.parse(storedSimple);
+                    const hoy = getHoy();
+                    if (gs.nafta)    gastos.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gs.nafta), nota: "", chofer: pin });
+                    if (gs.choferes) gastos.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gs.choferes), nota: "", chofer: pin });
+                    if (gs.otros)    gastos.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gs.otros), nota: "", chofer: pin });
+                }
+                // También intentar con gastosDetallados (por si hay datos antiguos)
+                const keyDet = `myc_${pin}_gastosDetallados`;
+                const storedDet = localStorage.getItem(keyDet);
+                if (storedDet) {
+                    const gastosDet = JSON.parse(storedDet);
                     for (const g of gastosDet) {
                         gastos.push({
                             fecha: fechaYMD(g.fecha),
@@ -365,15 +378,6 @@ async function cargarDatosChoferes() {
                             chofer: pin
                         });
                     }
-                }
-                const keySimple = `myc_${pin}_gastosDetalle`;
-                const storedSimple = localStorage.getItem(keySimple);
-                if (storedSimple) {
-                    const gs = JSON.parse(storedSimple);
-                    const hoy = getHoy();
-                    if (gs.nafta)    gastos.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gs.nafta), nota: "", chofer: pin });
-                    if (gs.choferes) gastos.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gs.choferes), nota: "", chofer: pin });
-                    if (gs.otros)    gastos.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gs.otros), nota: "", chofer: pin });
                 }
             }
         } catch(e) { console.error(`Error al obtener gastos de ${pin}:`, e); }
@@ -469,21 +473,33 @@ function renderRendicionChofer(pin, tbodyId, filtroFecha = null) {
 async function confirmarEliminarDia(pin, fecha) {
     const ok = await confirmar('Eliminar día', `¿Eliminar TODOS los registros del ${fechaDMY(fecha)} para Chofer ${pin}?`);
     if (!ok) return;
+
+    // 1. Eliminar ventas de ese día desde la API
+    const ventasAEliminar = ventasLocal.filter(v => v.chofer === pin && v.fecha === fecha);
+    if (ventasAEliminar.length > 0) {
+        toast(`Eliminando ${ventasAEliminar.length} ventas de la nube...`);
+        for (const v of ventasAEliminar) {
+            try {
+                const form = new URLSearchParams();
+                form.append('ruta', 'eliminarVenta');
+                form.append('id', v.id);
+                await fetch(API_URL, { method: 'POST', body: form });
+            } catch(e) { console.error('Error eliminando venta', e); }
+        }
+    }
+
+    // 2. Eliminar ventas de localStorage
     const pref = `myc_${pin}_`;
     let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
     ventas = ventas.filter(v => fechaYMD(v.fecha) !== fecha);
     localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
+
+    // 3. Eliminar gastos de ese día de localStorage (si existen)
     let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
     gastosDet = gastosDet.filter(g => fechaYMD(g.fecha) !== fecha);
     localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
-    // También eliminar gastos simples de ese día (si existen)
-    const keySimple = pref + "gastosDetalle";
-    const storedSimple = localStorage.getItem(keySimple);
-    if (storedSimple) {
-        let gs = JSON.parse(storedSimple);
-        // No podemos eliminar un día específico de gastos simples, solo se guardan totales acumulados por día.
-        // Como los gastos simples se guardan sin fecha, no se pueden eliminar fácilmente. Mejor omitimos.
-    }
+
+    // 4. Recargar datos desde la API y actualizar vista
     toast(`Día ${fechaDMY(fecha)} eliminado`, 'success');
     await cargarDatosChoferes();
     renderTodo();
@@ -588,7 +604,10 @@ function verHistorialCliente(cliente) {
     const saldos = calcSaldos();
     const saldo = saldos[cliente] || 0;
     const saldoHtml = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);"><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Saldo actual</span><span class="${numClass(saldo)}" style="font-size:1.1rem">${pesos(saldo)}</span></div>`;
-    if (todos.length === 0) { document.getElementById("clienteResultado").innerHTML = saldoHtml + `<p style="color:var(--text-muted);text-align:center;padding:20px">Sin movimientos registrados.</p>`; return; }
+    if (todos.length === 0) { 
+        document.getElementById("clienteResultado").innerHTML = saldoHtml + `<p style="color:var(--text-muted);text-align:center;padding:20px">Sin movimientos registrados para este cliente.</p>`;
+        return; 
+    }
     const filas = todos.map(t => {
         let rowClass = badgeTipoColor(t);
         return `<tr class="${rowClass}">
