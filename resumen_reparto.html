@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Resumen de Reparto (con filtro de historial)</title>
+    <title>MYC HIELO – Resumen de Reparto (con rango de fechas y gastos)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -297,7 +297,7 @@ async function cargarDatosChoferes() {
     gastos = [];
     ventasLocal = [];
     for (const pin of ["1234","5678"]) {
-        // Cargar ventas desde API o localStorage
+        // Cargar ventas
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerVentas&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
@@ -338,48 +338,16 @@ async function cargarDatosChoferes() {
             }
         } catch(e) { console.error(`Error al obtener ventas de ${pin}:`, e); }
 
-        // === GASTOS: primero leer desde localStorage (ambos formatos) y luego desde API para sobreescribir con datos más actuales ===
-        // 1. Leer desde localStorage (formato simple)
-        const keySimple = `myc_${pin}_gastosDetalle`;
-        const storedSimple = localStorage.getItem(keySimple);
-        if (storedSimple) {
-            const gs = JSON.parse(storedSimple);
-            const hoy = getHoy();
-            if (gs.nafta)    gastos.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gs.nafta), nota: "", chofer: pin });
-            if (gs.choferes) gastos.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gs.choferes), nota: "", chofer: pin });
-            if (gs.otros)    gastos.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gs.otros), nota: "", chofer: pin });
-        }
-        // 2. Leer desde localStorage (formato detallado)
-        const keyDet = `myc_${pin}_gastosDetallados`;
-        const storedDet = localStorage.getItem(keyDet);
-        if (storedDet) {
-            const gastosDet = JSON.parse(storedDet);
-            for (const g of gastosDet) {
-                // Evitar duplicados: si ya existe un gasto con misma fecha, categoría, monto y chofer, no lo agregamos
-                const exist = gastos.some(ex => ex.fecha === fechaYMD(g.fecha) && ex.categoria === g.categoria && ex.monto === normalizarNumero(g.monto) && ex.chofer === pin);
-                if (!exist) {
-                    gastos.push({
-                        fecha: fechaYMD(g.fecha),
-                        categoria: g.categoria,
-                        monto: normalizarNumero(g.monto),
-                        nota: g.nota || '',
-                        chofer: pin
-                    });
-                }
-            }
-        }
-
-        // 3. Sobreescribir con datos de API (si existen) para tener la versión más actualizada
+        // === GASTOS: prioridad API, luego localStorage ===
+        let gastosTemp = [];
+        // 1. Intentar desde API
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerGastos&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-                // Guardar en localStorage
                 localStorage.setItem(`myc_${pin}_gastosDetallados`, JSON.stringify(data));
-                // Eliminar gastos antiguos de este chofer para evitar duplicados y agregar los nuevos
-                gastos = gastos.filter(g => g.chofer !== pin);
                 for (const g of data) {
-                    gastos.push({
+                    gastosTemp.push({
                         fecha: fechaYMD(g.fecha),
                         categoria: g.categoria,
                         monto: normalizarNumero(g.monto),
@@ -389,6 +357,47 @@ async function cargarDatosChoferes() {
                 }
             }
         } catch(e) { console.error(`Error al obtener gastos de ${pin} desde API:`, e); }
+
+        // 2. Si no hay datos en API, usar localStorage
+        if (gastosTemp.length === 0) {
+            // Formato simple (gastosDetalle)
+            const keySimple = `myc_${pin}_gastosDetalle`;
+            const storedSimple = localStorage.getItem(keySimple);
+            if (storedSimple) {
+                const gs = JSON.parse(storedSimple);
+                const hoy = getHoy();
+                if (gs.nafta)    gastosTemp.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gs.nafta), nota: "", chofer: pin });
+                if (gs.choferes) gastosTemp.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gs.choferes), nota: "", chofer: pin });
+                if (gs.otros)    gastosTemp.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gs.otros), nota: "", chofer: pin });
+            }
+            // Formato detallado (gastosDetallados)
+            const keyDet = `myc_${pin}_gastosDetallados`;
+            const storedDet = localStorage.getItem(keyDet);
+            if (storedDet) {
+                const gastosDet = JSON.parse(storedDet);
+                for (const g of gastosDet) {
+                    const exist = gastosTemp.some(ex => ex.fecha === fechaYMD(g.fecha) && ex.categoria === g.categoria && ex.monto === normalizarNumero(g.monto) && ex.chofer === pin);
+                    if (!exist) {
+                        gastosTemp.push({
+                            fecha: fechaYMD(g.fecha),
+                            categoria: g.categoria,
+                            monto: normalizarNumero(g.monto),
+                            nota: g.nota || '',
+                            chofer: pin
+                        });
+                    }
+                }
+            }
+        }
+
+        // Agregar al array global
+        for (const g of gastosTemp) {
+            // Evitar duplicados exactos
+            const exist = gastos.some(ex => ex.fecha === g.fecha && ex.categoria === g.categoria && ex.monto === g.monto && ex.chofer === pin);
+            if (!exist) {
+                gastos.push(g);
+            }
+        }
     }
     toast("Datos de choferes cargados", 'success');
 }
@@ -443,6 +452,7 @@ function calcRendicionFecha(pin, fecha) {
         }
     }
     for (const m of movimientos) if (m.fecha === fecha && m.tipo === "pago") cobros += m.monto;
+    // Gastos: filtrar por chofer y fecha
     const gastosChofer = gastos.filter(g => g.chofer === pin && g.fecha === fecha).reduce((a, g) => a + g.monto, 0);
     const neto = efectivo + transfer + cobros - gastosChofer;
     return { efectivo, transfer, cobros, gastosChofer, neto, cantidades };
@@ -482,7 +492,6 @@ async function confirmarEliminarDia(pin, fecha) {
     const ok = await confirmar('Eliminar día', `¿Eliminar TODOS los registros del ${fechaDMY(fecha)} para Chofer ${pin}?`);
     if (!ok) return;
 
-    // Eliminar ventas de la API
     const ventasAEliminar = ventasLocal.filter(v => v.chofer === pin && v.fecha === fecha);
     if (ventasAEliminar.length > 0) {
         toast(`Eliminando ${ventasAEliminar.length} ventas de la nube...`);
@@ -496,7 +505,6 @@ async function confirmarEliminarDia(pin, fecha) {
         }
     }
 
-    // Eliminar locales
     const pref = `myc_${pin}_`;
     let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
     ventas = ventas.filter(v => fechaYMD(v.fecha) !== fecha);
@@ -602,29 +610,35 @@ function renderDeudores() {
     </tr>`).join('');
 }
 
-// Variables para el filtro de historial del cliente
+// === FILTRO DE HISTORIAL CON RANGO DE FECHAS ===
 let clienteActual = "";
-let fechaFiltroHistorial = null;
+let filtroDesde = null;
+let filtroHasta = null;
 
-function verHistorialCliente(cliente, fechaFiltro = null) {
+function verHistorialCliente(cliente, desde = null, hasta = null) {
     clienteActual = cliente;
     const todos = [
         ...movimientos.filter(m => m.cliente === cliente).map(m => ({ ...m, tipoMov:'sheets' })),
         ...ventasLocal.filter(v => v.cliente === cliente).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
     ];
-    // Aplicar filtro de fecha si está presente
+    // Aplicar filtro de rango
     let filtrados = todos;
-    if (fechaFiltro) {
-        filtrados = todos.filter(t => t.fecha === fechaFiltro);
+    if (desde && hasta) {
+        filtrados = todos.filter(t => t.fecha >= desde && t.fecha <= hasta);
+    } else if (desde) {
+        filtrados = todos.filter(t => t.fecha >= desde);
+    } else if (hasta) {
+        filtrados = todos.filter(t => t.fecha <= hasta);
     }
     filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
     const saldos = calcSaldos();
     const saldo = saldos[cliente] || 0;
     const saldoHtml = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);"><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Saldo actual</span><span class="${numClass(saldo)}" style="font-size:1.1rem">${pesos(saldo)}</span></div>`;
-    // Mostrar los movimientos filtrados
+
     let filasHtml = '';
     if (filtrados.length === 0) {
-        filasHtml = `<p style="color:var(--text-muted);text-align:center;padding:20px">No hay movimientos para la fecha seleccionada.</p>`;
+        filasHtml = `<p style="color:var(--text-muted);text-align:center;padding:20px">No hay movimientos en el rango seleccionado.</p>`;
     } else {
         const filas = filtrados.map(t => {
             let rowClass = badgeTipoColor(t);
@@ -639,52 +653,57 @@ function verHistorialCliente(cliente, fechaFiltro = null) {
         filasHtml = `<div class="scroll-table" style="max-height:380px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></tr></thead><tbody>${filas}</tbody></table></div>`;
     }
 
-    // Botones de filtro por fecha
-    const filtroFechaHtml = `
+    const filtroHtml = `
         <div class="filtro" style="margin-top:12px;">
-            <input type="date" id="filtroFechaCliente" style="width:auto; flex:1;">
-            <button id="aplicarFiltroFechaCliente" class="btn btn-primary btn-sm">Filtrar</button>
-            <button id="quitarFiltroFechaCliente" class="btn btn-ghost btn-sm">Quitar filtro</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; width:100%;">
+                <label style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted);">Desde</label>
+                <input type="date" id="filtroDesde" style="width:auto; flex:1;">
+                <label style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted);">Hasta</label>
+                <input type="date" id="filtroHasta" style="width:auto; flex:1;">
+                <button id="aplicarFiltroFechaCliente" class="btn btn-primary btn-sm">Filtrar</button>
+                <button id="quitarFiltroFechaCliente" class="btn btn-ghost btn-sm">Quitar filtro</button>
+            </div>
         </div>
     `;
 
-    // Botón para copiar historial (copia todos los movimientos, no solo los filtrados)
     const botonCopiar = `<button class="btn btn-ghost btn-sm" onclick="copiarHistorialCliente('${cliente}')"><i class="fas fa-copy"></i> Copiar historial</button>`;
 
     document.getElementById("clienteResultado").innerHTML = `
         ${saldoHtml}
-        ${filtroFechaHtml}
+        ${filtroHtml}
         ${filasHtml}
         <div class="no-print" style="display:flex;gap:8px;margin-top:12px">
             ${botonCopiar}
             <button class="btn btn-success btn-sm" onclick="exportarClienteExcel('${cliente}')"><i class="fas fa-file-excel"></i> Excel</button>
         </div>
     `;
+
     // Asignar eventos de los botones de filtro
-    const inputFecha = document.getElementById("filtroFechaCliente");
+    const inputDesde = document.getElementById("filtroDesde");
+    const inputHasta = document.getElementById("filtroHasta");
     const btnFiltrar = document.getElementById("aplicarFiltroFechaCliente");
     const btnQuitar = document.getElementById("quitarFiltroFechaCliente");
-    if (inputFecha && btnFiltrar && btnQuitar) {
-        // Si ya hay una fecha de filtro, ponerla en el input
-        if (fechaFiltro) {
-            inputFecha.value = fechaFiltro;
-        }
+
+    if (inputDesde && inputHasta && btnFiltrar && btnQuitar) {
+        if (desde) inputDesde.value = desde;
+        if (hasta) inputHasta.value = hasta;
         btnFiltrar.onclick = () => {
-            const f = inputFecha.value;
-            if (f) {
-                verHistorialCliente(cliente, f);
+            const d = inputDesde.value;
+            const h = inputHasta.value;
+            if (d || h) {
+                verHistorialCliente(cliente, d || null, h || null);
             } else {
-                toast("Seleccioná una fecha");
+                toast("Seleccioná al menos una fecha");
             }
         };
         btnQuitar.onclick = () => {
-            inputFecha.value = "";
-            verHistorialCliente(cliente, null);
+            inputDesde.value = "";
+            inputHasta.value = "";
+            verHistorialCliente(cliente, null, null);
         };
     }
 }
 
-// Función para copiar todo el historial del cliente (sin filtro)
 function copiarHistorialCliente(cliente) {
     const todos = [
         ...movimientos.filter(m => m.cliente === cliente).map(m => ({ ...m, tipoMov:'sheets' })),
@@ -701,7 +720,6 @@ function copiarHistorialCliente(cliente) {
         let detalle = t.detalle || '';
         texto += `${fechaDMY(t.fecha)}\t${tipo}\t${monto}\t${productos}\t${detalle}\n`;
     });
-    // Saldo actual
     const saldos = calcSaldos();
     const saldo = saldos[cliente] || 0;
     texto += `\nSaldo actual: ${pesos(saldo)}\n`;
