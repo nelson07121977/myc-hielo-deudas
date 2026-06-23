@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Resumen de Reparto (con rango de fechas y gastos)</title>
+    <title>MYC HIELO – Resumen de Reparto (gastos fijos + copiado mejorado)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
+        /* (mismo estilo que antes, no cambio nada) */
         :root {
             --bg:        #0d1b2e;
             --surface:   #132238;
@@ -269,7 +270,7 @@ function badgeTipoColor(item) {
 function numClass(n){ return n >= 0 ? 'num-positive' : 'num-negative'; }
 function emptyRow(cols, msg){ return `<tr class="empty-row"><td colspan="${cols}">${msg}</td></tr>`; }
 
-// ==================== CARGA DE DATOS ====================
+// ==================== CARGA DE DATOS (GASTOS CON PRIORIDAD LOCAL) ====================
 async function cargarSheets() {
     try {
         const [r1, r2] = await Promise.all([
@@ -293,11 +294,41 @@ async function cargarSheets() {
     } catch(e) { console.error(e); toast("Error al cargar Google Sheets", 'error'); clientes = []; movimientos = []; }
 }
 
+function cargarGastosLocales(pin) {
+    const gastosTemp = [];
+    // 1. Formato simple (gastosDetalle)
+    const keySimple = `myc_${pin}_gastosDetalle`;
+    const storedSimple = localStorage.getItem(keySimple);
+    if (storedSimple) {
+        const gs = JSON.parse(storedSimple);
+        const hoy = getHoy();
+        if (gs.nafta)    gastosTemp.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gs.nafta), nota: "", chofer: pin });
+        if (gs.choferes) gastosTemp.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gs.choferes), nota: "", chofer: pin });
+        if (gs.otros)    gastosTemp.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gs.otros), nota: "", chofer: pin });
+    }
+    // 2. Formato detallado (gastosDetallados)
+    const keyDet = `myc_${pin}_gastosDetallados`;
+    const storedDet = localStorage.getItem(keyDet);
+    if (storedDet) {
+        const gastosDet = JSON.parse(storedDet);
+        for (const g of gastosDet) {
+            gastosTemp.push({
+                fecha: fechaYMD(g.fecha),
+                categoria: g.categoria,
+                monto: normalizarNumero(g.monto),
+                nota: g.nota || '',
+                chofer: pin
+            });
+        }
+    }
+    return gastosTemp;
+}
+
 async function cargarDatosChoferes() {
     gastos = [];
     ventasLocal = [];
     for (const pin of ["1234","5678"]) {
-        // Cargar ventas
+        // --- VENTAS ---
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerVentas&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
@@ -338,48 +369,23 @@ async function cargarDatosChoferes() {
             }
         } catch(e) { console.error(`Error al obtener ventas de ${pin}:`, e); }
 
-        // === GASTOS: prioridad API, luego localStorage ===
-        let gastosTemp = [];
-        // 1. Intentar desde API
+        // --- GASTOS (prioridad local) ---
+        // Primero, cargar desde localStorage
+        let gastosLocales = cargarGastosLocales(pin);
+        // Luego, intentar obtener desde API para complementar (si hay más datos)
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerGastos&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
+                // Guardar en localStorage para futuras cargas
                 localStorage.setItem(`myc_${pin}_gastosDetallados`, JSON.stringify(data));
+                // Agregar los gastos de la API que no existan en locales
                 for (const g of data) {
-                    gastosTemp.push({
-                        fecha: fechaYMD(g.fecha),
-                        categoria: g.categoria,
-                        monto: normalizarNumero(g.monto),
-                        nota: g.nota || '',
-                        chofer: pin
-                    });
-                }
-            }
-        } catch(e) { console.error(`Error al obtener gastos de ${pin} desde API:`, e); }
-
-        // 2. Si no hay datos en API, usar localStorage
-        if (gastosTemp.length === 0) {
-            // Formato simple (gastosDetalle)
-            const keySimple = `myc_${pin}_gastosDetalle`;
-            const storedSimple = localStorage.getItem(keySimple);
-            if (storedSimple) {
-                const gs = JSON.parse(storedSimple);
-                const hoy = getHoy();
-                if (gs.nafta)    gastosTemp.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gs.nafta), nota: "", chofer: pin });
-                if (gs.choferes) gastosTemp.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gs.choferes), nota: "", chofer: pin });
-                if (gs.otros)    gastosTemp.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gs.otros), nota: "", chofer: pin });
-            }
-            // Formato detallado (gastosDetallados)
-            const keyDet = `myc_${pin}_gastosDetallados`;
-            const storedDet = localStorage.getItem(keyDet);
-            if (storedDet) {
-                const gastosDet = JSON.parse(storedDet);
-                for (const g of gastosDet) {
-                    const exist = gastosTemp.some(ex => ex.fecha === fechaYMD(g.fecha) && ex.categoria === g.categoria && ex.monto === normalizarNumero(g.monto) && ex.chofer === pin);
+                    const gFecha = fechaYMD(g.fecha);
+                    const exist = gastosLocales.some(ex => ex.fecha === gFecha && ex.categoria === g.categoria && ex.monto === normalizarNumero(g.monto));
                     if (!exist) {
-                        gastosTemp.push({
-                            fecha: fechaYMD(g.fecha),
+                        gastosLocales.push({
+                            fecha: gFecha,
                             categoria: g.categoria,
                             monto: normalizarNumero(g.monto),
                             nota: g.nota || '',
@@ -388,17 +394,18 @@ async function cargarDatosChoferes() {
                     }
                 }
             }
-        }
+        } catch(e) { console.error(`Error al obtener gastos de ${pin} desde API (se usan datos locales):`, e); }
 
-        // Agregar al array global
-        for (const g of gastosTemp) {
-            // Evitar duplicados exactos
+        // Agregar los gastos locales al array global
+        for (const g of gastosLocales) {
+            // Evitar duplicados exactos en el array global
             const exist = gastos.some(ex => ex.fecha === g.fecha && ex.categoria === g.categoria && ex.monto === g.monto && ex.chofer === pin);
             if (!exist) {
                 gastos.push(g);
             }
         }
     }
+    console.log(`Gastos cargados: ${gastos.length} registros`);
     toast("Datos de choferes cargados", 'success');
 }
 
@@ -666,7 +673,8 @@ function verHistorialCliente(cliente, desde = null, hasta = null) {
         </div>
     `;
 
-    const botonCopiar = `<button class="btn btn-ghost btn-sm" onclick="copiarHistorialCliente('${cliente}')"><i class="fas fa-copy"></i> Copiar historial</button>`;
+    // Botón para copiar historial con formato de tabla
+    const botonCopiar = `<button class="btn btn-ghost btn-sm" onclick="copiarHistorialCliente('${cliente}')"><i class="fas fa-copy"></i> Copiar historial (tabla)</button>`;
 
     document.getElementById("clienteResultado").innerHTML = `
         ${saldoHtml}
@@ -704,26 +712,59 @@ function verHistorialCliente(cliente, desde = null, hasta = null) {
     }
 }
 
+// --- NUEVA FUNCIÓN: copiar historial con formato de tabla (alineado) ---
 function copiarHistorialCliente(cliente) {
     const todos = [
         ...movimientos.filter(m => m.cliente === cliente).map(m => ({ ...m, tipoMov:'sheets' })),
         ...ventasLocal.filter(v => v.cliente === cliente).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
     ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
     if (todos.length === 0) { toast("No hay movimientos para este cliente"); return; }
-    let texto = `🧊 Historial de ${cliente}\n${new Date().toLocaleString('es-AR')}\n\n`;
-    texto += `Fecha\tTipo\tMonto\tProductos\tDetalle\n`;
-    texto += `─`.repeat(60) + `\n`;
-    todos.forEach(t => {
+
+    // Definir anchos de columnas (en caracteres)
+    const colWidths = {
+        fecha: 12,
+        tipo: 14,
+        monto: 12,
+        productos: 18,
+        detalle: 30
+    };
+    const totalWidth = colWidths.fecha + colWidths.tipo + colWidths.monto + colWidths.productos + colWidths.detalle + 6; // +6 por separadores
+
+    // Construir encabezado
+    let texto = `🧊 Historial de ${cliente}\n`;
+    texto += `${new Date().toLocaleString('es-AR')}\n`;
+    texto += `\n`;
+    texto += `Fecha`.padEnd(colWidths.fecha) + ` | `;
+    texto += `Tipo`.padEnd(colWidths.tipo) + ` | `;
+    texto += `Monto`.padEnd(colWidths.monto) + ` | `;
+    texto += `Productos`.padEnd(colWidths.productos) + ` | `;
+    texto += `Detalle`.padEnd(colWidths.detalle) + `\n`;
+    texto += `─`.repeat(totalWidth) + `\n`;
+
+    // Cuerpo
+    for (const t of todos) {
         let tipo = t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || ''));
-        let monto = pesos(t.monto || 0);
-        let productos = formatProductos(t.cantidades);
-        let detalle = t.detalle || '';
-        texto += `${fechaDMY(t.fecha)}\t${tipo}\t${monto}\t${productos}\t${detalle}\n`;
-    });
+        if (t.forma_pago && t.forma_pago === "Transferencia") tipo = "Transf.";
+        let fechaStr = fechaDMY(t.fecha);
+        let montoStr = pesos(t.monto || 0);
+        let productosStr = formatProductos(t.cantidades) || "—";
+        let detalleStr = t.detalle || "";
+        // Truncar si es muy largo
+        if (productosStr.length > colWidths.productos - 3) productosStr = productosStr.substring(0, colWidths.productos - 3) + "…";
+        if (detalleStr.length > colWidths.detalle - 3) detalleStr = detalleStr.substring(0, colWidths.detalle - 3) + "…";
+        texto += fechaStr.padEnd(colWidths.fecha) + ` | `;
+        texto += tipo.padEnd(colWidths.tipo) + ` | `;
+        texto += montoStr.padEnd(colWidths.monto) + ` | `;
+        texto += productosStr.padEnd(colWidths.productos) + ` | `;
+        texto += detalleStr.padEnd(colWidths.detalle) + `\n`;
+    }
+
+    // Saldo actual
     const saldos = calcSaldos();
     const saldo = saldos[cliente] || 0;
     texto += `\nSaldo actual: ${pesos(saldo)}\n`;
-    navigator.clipboard.writeText(texto).then(() => toast("Historial copiado al portapapeles"));
+
+    navigator.clipboard.writeText(texto).then(() => toast("Historial copiado (formato tabla)"));
 }
 
 // ==================== EXPORTAR ====================
