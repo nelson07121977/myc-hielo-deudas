@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Resumen de Reparto (corregido)</title>
+    <title>MYC HIELO – Resumen de Reparto</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -297,7 +297,7 @@ async function cargarDatosChoferes() {
     gastos = [];
     ventasLocal = [];
     for (const pin of ["1234","5678"]) {
-        // Cargar ventas
+        // Cargar ventas desde API o localStorage
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerVentas&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
@@ -338,7 +338,7 @@ async function cargarDatosChoferes() {
             }
         } catch(e) { console.error(`Error al obtener ventas de ${pin}:`, e); }
 
-        // Cargar gastos
+        // Cargar gastos: primero intentar desde API, luego desde localStorage en ambos formatos
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerGastos&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
@@ -364,19 +364,22 @@ async function cargarDatosChoferes() {
                     if (gs.choferes) gastos.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gs.choferes), nota: "", chofer: pin });
                     if (gs.otros)    gastos.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gs.otros), nota: "", chofer: pin });
                 }
-                // También intentar con gastosDetallados (por si hay datos antiguos)
+                // Intentar con gastosDetallados (array)
                 const keyDet = `myc_${pin}_gastosDetallados`;
                 const storedDet = localStorage.getItem(keyDet);
                 if (storedDet) {
                     const gastosDet = JSON.parse(storedDet);
                     for (const g of gastosDet) {
-                        gastos.push({
-                            fecha: fechaYMD(g.fecha),
-                            categoria: g.categoria,
-                            monto: normalizarNumero(g.monto),
-                            nota: g.nota || '',
-                            chofer: pin
-                        });
+                        // evitar duplicados si ya se agregaron desde la API
+                        if (!gastos.some(ex => ex.fecha === fechaYMD(g.fecha) && ex.categoria === g.categoria && ex.monto === normalizarNumero(g.monto) && ex.chofer === pin)) {
+                            gastos.push({
+                                fecha: fechaYMD(g.fecha),
+                                categoria: g.categoria,
+                                monto: normalizarNumero(g.monto),
+                                nota: g.nota || '',
+                                chofer: pin
+                            });
+                        }
                     }
                 }
             }
@@ -474,7 +477,7 @@ async function confirmarEliminarDia(pin, fecha) {
     const ok = await confirmar('Eliminar día', `¿Eliminar TODOS los registros del ${fechaDMY(fecha)} para Chofer ${pin}?`);
     if (!ok) return;
 
-    // 1. Eliminar ventas de ese día desde la API
+    // Eliminar ventas de la API
     const ventasAEliminar = ventasLocal.filter(v => v.chofer === pin && v.fecha === fecha);
     if (ventasAEliminar.length > 0) {
         toast(`Eliminando ${ventasAEliminar.length} ventas de la nube...`);
@@ -488,18 +491,16 @@ async function confirmarEliminarDia(pin, fecha) {
         }
     }
 
-    // 2. Eliminar ventas de localStorage
+    // Eliminar locales
     const pref = `myc_${pin}_`;
     let ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
     ventas = ventas.filter(v => fechaYMD(v.fecha) !== fecha);
     localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
 
-    // 3. Eliminar gastos de ese día de localStorage (si existen)
     let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
     gastosDet = gastosDet.filter(g => fechaYMD(g.fecha) !== fecha);
     localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
 
-    // 4. Recargar datos desde la API y actualizar vista
     toast(`Día ${fechaDMY(fecha)} eliminado`, 'success');
     await cargarDatosChoferes();
     renderTodo();
@@ -618,7 +619,35 @@ function verHistorialCliente(cliente) {
             <td style="color:var(--text-muted)">${t.detalle || ''}</td>
         </tr>`;
     }).join('');
-    document.getElementById("clienteResultado").innerHTML = `${saldoHtml}<div class="scroll-table" style="max-height:380px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></tr></thead><tbody>${filas}</tbody></table></div><div class="no-print" style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${cliente}').then(()=>toast('Copiado'))"><i class="fas fa-copy"></i> Copiar nombre</button><button class="btn btn-success btn-sm" onclick="exportarClienteExcel('${cliente}')"><i class="fas fa-file-excel"></i> Excel</button></div>`;
+    
+    // Botón para copiar todo el historial (no solo el nombre)
+    const botonCopiar = `<button class="btn btn-ghost btn-sm" onclick="copiarHistorialCliente('${cliente}')"><i class="fas fa-copy"></i> Copiar historial</button>`;
+    
+    document.getElementById("clienteResultado").innerHTML = `${saldoHtml}<div class="scroll-table" style="max-height:380px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></tr></thead><tbody>${filas}</tbody></table></div><div class="no-print" style="display:flex;gap:8px;margin-top:12px">${botonCopiar}<button class="btn btn-success btn-sm" onclick="exportarClienteExcel('${cliente}')"><i class="fas fa-file-excel"></i> Excel</button></div>`;
+}
+
+// Función para copiar todo el historial del cliente en texto
+function copiarHistorialCliente(cliente) {
+    const todos = [
+        ...movimientos.filter(m => m.cliente === cliente).map(m => ({ ...m, tipoMov:'sheets' })),
+        ...ventasLocal.filter(v => v.cliente === cliente).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
+    ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    if (todos.length === 0) { toast("No hay movimientos para este cliente"); return; }
+    let texto = `🧊 Historial de ${cliente}\n${new Date().toLocaleString('es-AR')}\n\n`;
+    texto += `Fecha\tTipo\tMonto\tProductos\tDetalle\n`;
+    texto += `─`.repeat(60) + `\n`;
+    todos.forEach(t => {
+        let tipo = t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || ''));
+        let monto = pesos(t.monto || 0);
+        let productos = formatProductos(t.cantidades);
+        let detalle = t.detalle || '';
+        texto += `${fechaDMY(t.fecha)}\t${tipo}\t${monto}\t${productos}\t${detalle}\n`;
+    });
+    // Saldo actual
+    const saldos = calcSaldos();
+    const saldo = saldos[cliente] || 0;
+    texto += `\nSaldo actual: ${pesos(saldo)}\n`;
+    navigator.clipboard.writeText(texto).then(() => toast("Historial copiado al portapapeles"));
 }
 
 // ==================== EXPORTAR ====================
