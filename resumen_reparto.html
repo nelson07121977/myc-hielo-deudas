@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Resumen de Reparto (con detalle de bolsas)</title>
+    <title>MYC HIELO – Resumen de Reparto (con buscador de clientes)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -120,6 +120,10 @@
             .kpi-value { font-size: 1.4rem; }
             .grid-2 { grid-template-columns: 1fr; }
         }
+        /* Estilos para datalist personalizado (se ve como un select) */
+        input[list]::-webkit-calendar-picker-indicator {
+            filter: invert(0.6);
+        }
     </style>
 </head>
 <body>
@@ -144,13 +148,15 @@
         <div class="kpi-card neto"><div class="kpi-label">💰 Neto General Hoy</div><div class="kpi-value" id="netoTotal">$0</div></div>
     </div>
 
+    <!-- BÚSQUEDA DE CLIENTES CON DATALIST -->
     <div class="card">
         <div class="card-header">
             <div class="card-title"><span class="icon">🔍</span> Buscar Cliente</div>
             <button id="limpiarBusquedaBtn" class="btn btn-warning btn-sm no-print"><i class="fas fa-times"></i> Limpiar</button>
         </div>
         <div class="filtro">
-            <input type="text" id="buscarClienteInput" placeholder="Nombre del cliente..." style="flex:1; min-width:160px;">
+            <input type="text" id="buscarClienteInput" list="clientesList" placeholder="Escribí el nombre del cliente..." style="flex:1; min-width:160px;">
+            <datalist id="clientesList"></datalist>
             <button id="buscarClienteBtn" class="btn btn-primary"><i class="fas fa-search"></i> Buscar</button>
         </div>
         <div id="clienteResultado"></div>
@@ -271,13 +277,11 @@ function pesos(n){ return '$' + n.toLocaleString('es-AR', { minimumFractionDigit
 function formatProductos(cant){ if(!cant)return '—'; const mapa={"1,7 KG":"1.7kg","3,5 KG":"3.5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg"}; const items=Object.entries(mapa).filter(([k])=>cant[k]>0).map(([k,v])=>`${v}:${cant[k]}`); return items.length?items.join(' · '):'—'; }
 
 function badgeTipo(item) {
-    // Para movimientos de deuda y pago
     if (item.tipo === "deuda") return `<span class="badge badge-deuda">➕ DEUDA</span>`;
     if (item.tipo === "pago") {
         if (item.forma_pago === "Transferencia") return `<span class="badge badge-transferencia">💳 TRANSF.</span>`;
         return `<span class="badge badge-pago">✅ PAGO</span>`;
     }
-    // Para ventas locales
     if (item.pago === "efectivo") return `<span class="badge badge-efectivo">💵 EFECTIVO</span>`;
     if (item.pago === "transferencia") return `<span class="badge badge-transferencia">💳 TRANSF.</span>`;
     if (item.pago === "ctacte") return `<span class="badge badge-credito">📘 CRÉDITO</span>`;
@@ -286,7 +290,6 @@ function badgeTipo(item) {
 }
 
 function badgeTipoColor(item) {
-    // Devuelve una clase CSS para colorear la fila
     if (item.tipo === "deuda") return "mov-deuda";
     if (item.tipo === "pago") {
         if (item.forma_pago === "Transferencia") return "mov-pago-transf";
@@ -321,6 +324,8 @@ async function cargarSheets() {
             forma_pago: m.forma_pago,
             detalle: m.detalle || ''
         }));
+        // Actualizar el datalist de clientes
+        actualizarDatalistClientes();
         toast("Datos de Sheets cargados", 'success');
     } catch(e) { console.error(e); toast("Error al cargar Google Sheets", 'error'); clientes = []; movimientos = []; }
 }
@@ -355,6 +360,17 @@ function cargarLocalStorage() {
     toast("Datos locales cargados", 'success');
 }
 
+function actualizarDatalistClientes() {
+    const datalist = document.getElementById('clientesList');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    clientes.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c;
+        datalist.appendChild(option);
+    });
+}
+
 // ==================== RENDER ====================
 function renderResumen() {
     let totalDeuda = 0, totalCobros = 0, totalGastosHoy = 0;
@@ -387,7 +403,6 @@ function calcRendicionFecha(pin, fecha) {
         if (v.pago === "transferencia") transfer += v.total;
         if (v.cobroDeuda > 0) cobros += v.cobroDeuda;
         else if (v.pago === "cobrocc") cobros += v.total;
-        // Sumar cantidades
         if (v.cantidades) {
             for (const prod of ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"]) {
                 cantidades[prod] += v.cantidades[prod] || 0;
@@ -410,7 +425,10 @@ function renderRendicionChofer(pin, tbodyId, filtroFecha = null) {
     if (filtroFecha) {
         fechasArray = fechasArray.filter(f => f === filtroFecha);
     }
-    if (fechasArray.length === 0) { tbody.innerHTML = emptyRow(12, 'Sin datos'); return; }
+    if (fechasArray.length === 0) {
+        tbody.innerHTML = emptyRow(12, 'No hay registros para esta fecha o el chofer no tiene datos');
+        return;
+    }
     tbody.innerHTML = fechasArray.map(fecha => {
         const r = calcRendicionFecha(pin, fecha);
         return `<tr>
@@ -474,7 +492,6 @@ function renderMovimientos(fecha = null) {
             ? `<button class="btn btn-danger btn-xs" onclick="eliminarMovSheet('${t.id}')"><i class="fas fa-trash-alt"></i> Eliminar</button>`
             : `<button class="btn btn-xs" style="background:var(--surface2)" onclick="toast('Editar: use la Planilla de Reparto')"><i class="fas fa-edit"></i></button>
                <button class="btn btn-danger btn-xs" onclick="confirmarEliminarVenta('${t.id}','${t.chofer}')"><i class="fas fa-trash-alt"></i></button>`;
-        // Determinar clase de color
         let rowClass = badgeTipoColor(t);
         return `<tr class="${rowClass}">
             <td style="white-space:nowrap">${fechaDMY(t.fecha)}</td>
@@ -676,7 +693,6 @@ function copiarTabla(tablaId) {
 // ==================== RENDER PRINCIPAL ====================
 function renderTodo() {
     renderResumen();
-    // Filtros de fecha para los choferes (si el input tiene valor, se filtra, sino todas)
     const fecha1234 = document.getElementById("fecha1234").value;
     const fecha5678 = document.getElementById("fecha5678").value;
     renderRendicionChofer("1234", "body1234", fecha1234 || null);
@@ -715,7 +731,6 @@ document.getElementById("verFechaMovBtn").addEventListener("click", () => {
 document.getElementById("verTodosMovBtn").addEventListener("click", () => renderMovimientos());
 document.getElementById("exportMovExcelBtn").addEventListener("click", exportarMovimientosExcel);
 
-// Eventos para filtros de fecha de choferes
 document.getElementById("filtrar1234Btn").addEventListener("click", () => {
     const f = document.getElementById("fecha1234").value;
     if (!f) { toast("Seleccioná una fecha"); return; }
@@ -734,7 +749,6 @@ document.getElementById("mostrarTodas5678Btn").addEventListener("click", () => {
     document.getElementById("fecha5678").value = "";
     renderRendicionChofer("5678", "body5678", null);
 });
-// También al cambiar el input de fecha se puede filtrar automáticamente (opcional)
 document.getElementById("fecha1234").addEventListener("change", function() {
     if (this.value) renderRendicionChofer("1234", "body1234", this.value);
     else renderRendicionChofer("1234", "body1234", null);
@@ -751,7 +765,8 @@ document.getElementById("todosGastos5678Btn").addEventListener("click", () => re
 
 document.getElementById("buscarClienteBtn").addEventListener("click", () => {
     const nom = document.getElementById("buscarClienteInput").value.trim();
-    nom ? verHistorialCliente(nom) : toast("Ingresá un nombre");
+    if (!nom) { toast("Escribí o seleccioná un cliente"); return; }
+    verHistorialCliente(nom);
 });
 document.getElementById("buscarClienteInput").addEventListener("keydown", e => {
     if (e.key === "Enter") document.getElementById("buscarClienteBtn").click();
@@ -766,7 +781,6 @@ document.getElementById("modal").addEventListener("click", e => {
 
 // ==================== INICIO ====================
 actualizarTodo();
-// Actualización automática cada 60 segundos (opcional)
 setInterval(() => { actualizarTodo(); }, 60000);
 </script>
 </body>
