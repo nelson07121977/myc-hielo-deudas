@@ -701,7 +701,7 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 }
 
 // ============================================================
-//  CARGA DE DATOS
+//  CARGA DE DATOS (GASTOS LOCALES)
 // ============================================================
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
@@ -734,18 +734,9 @@ async function cargarDatos() {
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
         }
 
-        // GASTOS: usando 'obtenerGastos' (correcto)
-        const gastosData = await apiCall('obtenerGastos');
-        if (gastosData && Array.isArray(gastosData)) {
-            gastos = gastosData.map(g => ({
-                id: g.id,
-                fecha: formatearFechaInput(g.fecha),
-                categoria: g.categoria || 'Otros',
-                monto: num(g.monto),
-                nota: g.nota || ''
-            }));
-            mostrarDebug(`Gastos cargados: ${gastos.length}`);
-        }
+        // ⭐ GASTOS: VERSIÓN LOCAL (sin API) ⭐
+        cargarGastosLocal();
+        mostrarDebug(`Gastos cargados desde localStorage: ${gastos.length}`);
 
         // Fábricas (local)
         cargarFabricasLocal();
@@ -781,6 +772,110 @@ async function cargarDatos() {
 }
 
 // ============================================================
+//  GASTOS - VERSIÓN LOCAL (sin API)
+// ============================================================
+function cargarGastosLocal() {
+    const data = localStorage.getItem('myc_gastos_local');
+    if (data) {
+        try {
+            gastos = JSON.parse(data);
+        } catch(e) {
+            gastos = [];
+        }
+    } else {
+        gastos = [];
+    }
+    return gastos;
+}
+
+function guardarGastosLocal() {
+    localStorage.setItem('myc_gastos_local', JSON.stringify(gastos));
+}
+
+function renderGastos() {
+    cargarGastosLocal();
+    
+    const filtroFecha = document.getElementById('filtroGastosFecha').value;
+    let filtrados = gastos;
+    if (filtroFecha) filtrados = filtrados.filter(g => g.fecha === filtroFecha);
+    filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+    const tbody = document.getElementById('tbodyGastos');
+    if (filtrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos registrados</td></tr>';
+    } else {
+        tbody.innerHTML = filtrados.map(g => `
+            <tr>
+                <td>${formatearFecha(g.fecha)}</td>
+                <td>${g.categoria || '—'}</td>
+                <td>${pesos(g.monto || 0)}</td>
+                <td>${g.nota || ''}</td>
+                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join('');
+    }
+
+    // Total de gastos del día
+    const hoyStr = hoy();
+    const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
+    const totalHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
+    document.getElementById('totalGastosDia').textContent = `Total gastos del día: ${pesos(totalHoy)}`;
+}
+
+async function registrarGasto() {
+    const fecha = document.getElementById('gFecha').value;
+    const categoria = document.getElementById('gCategoria').value;
+    const monto = parseFloat(document.getElementById('gMonto').value);
+    const nota = document.getElementById('gNota').value;
+
+    if (!fecha || !monto || monto <= 0) return toast('Complete campos');
+
+    // Cargar gastos existentes
+    cargarGastosLocal();
+
+    const nuevo = {
+        id: 'g' + Date.now(),
+        fecha,
+        categoria,
+        monto,
+        nota
+    };
+    gastos.push(nuevo);
+    guardarGastosLocal();
+
+    toast('✅ Gasto registrado LOCALMENTE');
+    document.getElementById('gMonto').value = '';
+    document.getElementById('gNota').value = '';
+    renderGastos();
+    renderDashboard();
+}
+
+function eliminarGasto(id) {
+    if (!confirm('¿Eliminar este gasto?')) return;
+    cargarGastosLocal();
+    gastos = gastos.filter(g => g.id !== id);
+    guardarGastosLocal();
+    renderGastos();
+    renderDashboard();
+    toast('Gasto eliminado');
+}
+
+function exportarGastosExcel() {
+    cargarGastosLocal();
+    const data = [
+        ['Fecha', 'Categoría', 'Monto', 'Nota']
+    ];
+    for (const g of gastos) {
+        data.push([g.fecha, g.categoria || '', g.monto || 0, g.nota || '']);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
+    XLSX.writeFile(wb, `gastos_${hoy()}.xlsx`);
+    toast('Excel exportado');
+}
+
+// ============================================================
 //  FÁBRICAS - LOCAL
 // ============================================================
 function cargarFabricasLocal() {
@@ -799,6 +894,106 @@ function cargarFabricasLocal() {
 
 function guardarFabricasLocal() {
     localStorage.setItem('myc_fabricas_local', JSON.stringify(fabricas));
+}
+
+function renderFabricas() {
+    cargarFabricasLocal();
+    
+    const tbody = document.getElementById('tbodyFabricas');
+    if (!tbody) return;
+    
+    if (fabricas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Sin movimientos de fábricas</td></tr>';
+    } else {
+        const ordenadas = [...fabricas].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+        tbody.innerHTML = ordenadas.map(f => `
+            <tr>
+                <td>${formatearFecha(f.fecha)}</td>
+                <td>${f.fabrica || '—'}</td>
+                <td>${f.tipo || '—'}</td>
+                <td style="text-align:center;font-weight:700;color:var(--verde);">${f.cargada || 0}</td>
+                <td style="text-align:center;font-weight:700;color:var(--rojo);">${f.devuelta || 0}</td>
+                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarFabricaLocal('${f.id}')"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join('');
+    }
+
+    // Resumen
+    const resumen = {};
+    for (const f of fabricas) {
+        const key = f.fabrica + '|' + f.tipo;
+        if (!resumen[key]) resumen[key] = { cargada: 0, devuelta: 0 };
+        resumen[key].cargada += f.cargada || 0;
+        resumen[key].devuelta += f.devuelta || 0;
+    }
+    const cont = document.getElementById('resumenFabricas');
+    if (!cont) return;
+    const entries = Object.entries(resumen);
+    if (entries.length === 0) {
+        cont.innerHTML = '<p style="color:var(--texto-claro);">Sin datos para resumen</p>';
+    } else {
+        cont.innerHTML = entries.map(([key, val]) => {
+            const [fabrica, tipo] = key.split('|');
+            const saldo = val.cargada - val.devuelta;
+            return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;">
+                <span><strong>${fabrica}</strong> · ${tipo}</span>
+                <span>Cargadas: <strong style="color:var(--verde);">${val.cargada}</strong> | Devueltas: <strong style="color:var(--rojo);">${val.devuelta}</strong> | Saldo: <strong style="color:${saldo>=0?'var(--verde)':'var(--rojo)'};">${saldo}</strong></span>
+            </div>`;
+        }).join('');
+    }
+}
+
+async function registrarFabrica() {
+    const fecha = document.getElementById('fFecha').value;
+    const fabrica = document.getElementById('fFabrica').value;
+    const tipo = document.getElementById('fTipo').value;
+    const cargada = parseInt(document.getElementById('fCargada').value) || 0;
+    const devuelta = parseInt(document.getElementById('fDevuelta').value) || 0;
+
+    if (!fecha) return toast('Seleccione fecha');
+    if (cargada === 0 && devuelta === 0) return toast('Ingrese al menos una cantidad');
+
+    cargarFabricasLocal();
+
+    const nuevo = {
+        id: 'f' + Date.now(),
+        fecha,
+        fabrica,
+        tipo,
+        cargada,
+        devuelta
+    };
+    fabricas.push(nuevo);
+    guardarFabricasLocal();
+    
+    toast('Registro de fábrica guardado localmente');
+    document.getElementById('fCargada').value = 0;
+    document.getElementById('fDevuelta').value = 0;
+    renderFabricas();
+}
+
+function eliminarFabricaLocal(id) {
+    if (!confirm('¿Eliminar este registro?')) return;
+    cargarFabricasLocal();
+    fabricas = fabricas.filter(f => f.id !== id);
+    guardarFabricasLocal();
+    renderFabricas();
+    toast('Registro eliminado');
+}
+
+function exportarFabricasExcel() {
+    cargarFabricasLocal();
+    const data = [
+        ['Fecha', 'Fábrica', 'Tipo', 'Cargada', 'Devuelta']
+    ];
+    for (const f of fabricas) {
+        data.push([f.fecha, f.fabrica || '', f.tipo || '', f.cargada || 0, f.devuelta || 0]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Fabricas');
+    XLSX.writeFile(wb, `fabricas_${hoy()}.xlsx`);
+    toast('Excel exportado');
 }
 
 // ============================================================
@@ -1003,193 +1198,6 @@ function exportarVentasExcel() {
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
     XLSX.writeFile(wb, `ventas_${hoy()}.xlsx`);
-    toast('Excel exportado');
-}
-
-// ============================================================
-//  GASTOS - CORREGIDO: usa 'guardarGasto' y 'eliminarGasto'
-// ============================================================
-function renderGastos() {
-    const filtroFecha = document.getElementById('filtroGastosFecha').value;
-    let filtrados = gastos;
-    if (filtroFecha) filtrados = filtrados.filter(g => g.fecha === filtroFecha);
-    filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-
-    const tbody = document.getElementById('tbodyGastos');
-    if (filtrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos registrados</td></tr>';
-    } else {
-        tbody.innerHTML = filtrados.map(g => `
-            <tr>
-                <td>${formatearFecha(g.fecha)}</td>
-                <td>${g.categoria || '—'}</td>
-                <td>${pesos(g.monto || 0)}</td>
-                <td>${g.nota || ''}</td>
-                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td>
-            </tr>
-        `).join('');
-    }
-
-    // Total de gastos del día
-    const hoyStr = hoy();
-    const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
-    const totalHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
-    document.getElementById('totalGastosDia').textContent = `Total gastos del día: ${pesos(totalHoy)}`;
-}
-
-async function registrarGasto() {
-    const fecha = document.getElementById('gFecha').value;
-    const categoria = document.getElementById('gCategoria').value;
-    const monto = parseFloat(document.getElementById('gMonto').value);
-    const nota = document.getElementById('gNota').value;
-
-    if (!fecha || !monto || monto <= 0) return toast('Complete campos');
-
-    // ✅ CORREGIDO: usa 'guardarGasto' (coincide con Apps Script)
-    const result = await apiCall('guardarGasto', {
-        fecha,
-        chofer: '',
-        categoria,
-        monto,
-        nota
-    }, 'POST');
-
-    if (result && result.exito) {
-        toast('Gasto registrado');
-        document.getElementById('gMonto').value = '';
-        document.getElementById('gNota').value = '';
-        await cargarDatos();
-    } else {
-        toast('Error al registrar gasto: ' + (result.error || ''));
-    }
-}
-
-async function eliminarGasto(id) {
-    if (!confirm('¿Eliminar este gasto?')) return;
-    // ✅ CORREGIDO: usa 'eliminarGasto' (coincide con Apps Script)
-    const result = await apiCall('eliminarGasto', { id }, 'POST');
-    if (result && result.exito) {
-        toast('Gasto eliminado');
-        await cargarDatos();
-    } else {
-        toast('Error al eliminar gasto');
-    }
-}
-
-function exportarGastosExcel() {
-    const data = [
-        ['Fecha', 'Categoría', 'Monto', 'Nota']
-    ];
-    for (const g of gastos) {
-        data.push([g.fecha, g.categoria || '', g.monto || 0, g.nota || '']);
-    }
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
-    XLSX.writeFile(wb, `gastos_${hoy()}.xlsx`);
-    toast('Excel exportado');
-}
-
-// ============================================================
-//  FÁBRICAS - LOCAL
-// ============================================================
-function renderFabricas() {
-    cargarFabricasLocal();
-    
-    const tbody = document.getElementById('tbodyFabricas');
-    if (!tbody) return;
-    
-    if (fabricas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Sin movimientos de fábricas</td></tr>';
-    } else {
-        const ordenadas = [...fabricas].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-        tbody.innerHTML = ordenadas.map(f => `
-            <tr>
-                <td>${formatearFecha(f.fecha)}</td>
-                <td>${f.fabrica || '—'}</td>
-                <td>${f.tipo || '—'}</td>
-                <td style="text-align:center;font-weight:700;color:var(--verde);">${f.cargada || 0}</td>
-                <td style="text-align:center;font-weight:700;color:var(--rojo);">${f.devuelta || 0}</td>
-                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarFabricaLocal('${f.id}')"><i class="fas fa-trash"></i></button></td>
-            </tr>
-        `).join('');
-    }
-
-    // Resumen
-    const resumen = {};
-    for (const f of fabricas) {
-        const key = f.fabrica + '|' + f.tipo;
-        if (!resumen[key]) resumen[key] = { cargada: 0, devuelta: 0 };
-        resumen[key].cargada += f.cargada || 0;
-        resumen[key].devuelta += f.devuelta || 0;
-    }
-    const cont = document.getElementById('resumenFabricas');
-    if (!cont) return;
-    const entries = Object.entries(resumen);
-    if (entries.length === 0) {
-        cont.innerHTML = '<p style="color:var(--texto-claro);">Sin datos para resumen</p>';
-    } else {
-        cont.innerHTML = entries.map(([key, val]) => {
-            const [fabrica, tipo] = key.split('|');
-            const saldo = val.cargada - val.devuelta;
-            return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;">
-                <span><strong>${fabrica}</strong> · ${tipo}</span>
-                <span>Cargadas: <strong style="color:var(--verde);">${val.cargada}</strong> | Devueltas: <strong style="color:var(--rojo);">${val.devuelta}</strong> | Saldo: <strong style="color:${saldo>=0?'var(--verde)':'var(--rojo)'};">${saldo}</strong></span>
-            </div>`;
-        }).join('');
-    }
-}
-
-async function registrarFabrica() {
-    const fecha = document.getElementById('fFecha').value;
-    const fabrica = document.getElementById('fFabrica').value;
-    const tipo = document.getElementById('fTipo').value;
-    const cargada = parseInt(document.getElementById('fCargada').value) || 0;
-    const devuelta = parseInt(document.getElementById('fDevuelta').value) || 0;
-
-    if (!fecha) return toast('Seleccione fecha');
-    if (cargada === 0 && devuelta === 0) return toast('Ingrese al menos una cantidad');
-
-    cargarFabricasLocal();
-
-    const nuevo = {
-        id: 'f' + Date.now(),
-        fecha,
-        fabrica,
-        tipo,
-        cargada,
-        devuelta
-    };
-    fabricas.push(nuevo);
-    guardarFabricasLocal();
-    
-    toast('Registro de fábrica guardado localmente');
-    document.getElementById('fCargada').value = 0;
-    document.getElementById('fDevuelta').value = 0;
-    renderFabricas();
-}
-
-function eliminarFabricaLocal(id) {
-    if (!confirm('¿Eliminar este registro?')) return;
-    cargarFabricasLocal();
-    fabricas = fabricas.filter(f => f.id !== id);
-    guardarFabricasLocal();
-    renderFabricas();
-    toast('Registro eliminado');
-}
-
-function exportarFabricasExcel() {
-    cargarFabricasLocal();
-    const data = [
-        ['Fecha', 'Fábrica', 'Tipo', 'Cargada', 'Devuelta']
-    ];
-    for (const f of fabricas) {
-        data.push([f.fecha, f.fabrica || '', f.tipo || '', f.cargada || 0, f.devuelta || 0]);
-    }
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Fabricas');
-    XLSX.writeFile(wb, `fabricas_${hoy()}.xlsx`);
     toast('Excel exportado');
 }
 
