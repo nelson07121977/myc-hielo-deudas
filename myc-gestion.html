@@ -206,7 +206,6 @@
         .form-group input:focus, .form-group select:focus { border-color: var(--azul); }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-        .form-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
 
         .tag {
             background: var(--azul-claro);
@@ -250,7 +249,7 @@
         @media (max-width: 700px) {
             .header h1 { font-size: 1.2rem; }
             .kpi-grid { grid-template-columns: 1fr 1fr; }
-            .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+            .form-row, .form-row-3 { grid-template-columns: 1fr; }
             .nav a { font-size: 0.7rem; padding: 6px 12px; }
             .card { padding: 14px; }
             table { font-size: 0.7rem; }
@@ -260,6 +259,16 @@
             .no-print { display: none !important; }
             .header { background: var(--azul) !important; -webkit-print-color-adjust: exact; }
             .card { border: 1px solid #ccc; box-shadow: none; }
+        }
+        .debug-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 0.8rem;
+            color: #991b1b;
+            display: none;
         }
     </style>
 </head>
@@ -289,6 +298,9 @@
         <a data-tab="clientes"><i class="fas fa-users"></i> Clientes</a>
         <a data-tab="informes"><i class="fas fa-file-alt"></i> Informes</a>
     </nav>
+
+    <!-- DEBUG -->
+    <div id="debugBox" class="debug-box"></div>
 
     <!-- ==================== TAB: DASHBOARD ==================== -->
     <div id="tab-dashboard" class="tab-content active">
@@ -472,13 +484,6 @@
                 </table>
             </div>
         </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">📊 Resumen de existencias en fábricas</div>
-            </div>
-            <div id="resumenFabricas"></div>
-        </div>
     </div>
 
     <!-- ==================== TAB: PRODUCTOS ==================== -->
@@ -575,7 +580,7 @@
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN - URL CORRECTA DE TU API
+//  CONFIGURACIÓN - URL DE TU API
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 
@@ -583,13 +588,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5
 //  ESTADO GLOBAL
 // ============================================================
 let clientes = [];
-let movimientos = [];
 let ventas = [];
 let gastos = [];
 let fabricas = [];
 let productos = [];
 let costos = {};
-let margenGanancia = 30;
 let fechaInicio = '';
 let fechaFin = '';
 
@@ -624,6 +627,12 @@ function copiarTabla(tablaId) {
     navigator.clipboard.writeText(texto).then(() => toast('Tabla copiada'));
 }
 
+function mostrarDebug(msg) {
+    const box = document.getElementById('debugBox');
+    box.style.display = 'block';
+    box.innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '<br>';
+}
+
 // ============================================================
 //  API CALLS
 // ============================================================
@@ -644,10 +653,14 @@ async function apiCall(ruta, params = {}, method = 'GET') {
         }
     }
     try {
+        mostrarDebug(`Llamando a API: ${ruta}`);
         const res = await fetch(url.toString(), options);
-        return await res.json();
+        const data = await res.json();
+        mostrarDebug(`Respuesta de ${ruta}: ${JSON.stringify(data).substring(0, 200)}...`);
+        return data;
     } catch(e) {
         console.error('API Error:', e);
+        mostrarDebug(`ERROR en ${ruta}: ${e.message}`);
         toast('Error de conexión con la API');
         return { error: 'Error de conexión' };
     }
@@ -657,25 +670,13 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 //  CARGA DE DATOS
 // ============================================================
 async function cargarDatos() {
+    mostrarDebug('Iniciando carga de datos...');
     try {
         // Cargar clientes
         const clientesData = await apiCall('clientes');
         if (clientesData && Array.isArray(clientesData)) {
             clientes = clientesData.map(c => normalizarNombre(c)).filter(Boolean);
-        }
-
-        // Cargar movimientos
-        const movData = await apiCall('movimientos');
-        if (movData && Array.isArray(movData)) {
-            movimientos = movData.map(m => ({
-                id: m.id,
-                fecha: m.fecha,
-                cliente: normalizarNombre(m.cliente_nombre || m.cliente),
-                tipo: m.tipo,
-                monto: num(m.monto),
-                forma_pago: m.forma_pago,
-                detalle: m.detalle || ''
-            }));
+            mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
         // Cargar ventas
@@ -690,6 +691,9 @@ async function cargarDatos() {
                 pago: v.pago,
                 detalle: v.detalle || ''
             }));
+            mostrarDebug(`Ventas cargadas: ${ventas.length}`);
+        } else {
+            mostrarDebug('No se recibieron ventas o el formato es incorrecto');
         }
 
         // Cargar gastos
@@ -702,6 +706,7 @@ async function cargarDatos() {
                 monto: num(g.monto),
                 nota: g.nota || ''
             }));
+            mostrarDebug(`Gastos cargados: ${gastos.length}`);
         }
 
         // Cargar fábricas
@@ -715,9 +720,10 @@ async function cargarDatos() {
                 cargada: num(f.cargada),
                 devuelta: num(f.devuelta)
             }));
+            mostrarDebug(`Fábricas cargadas: ${fabricas.length}`);
         }
 
-        // Cargar productos y costos desde localStorage
+        // Cargar productos desde localStorage
         const prodGuardados = localStorage.getItem('myc_productos');
         if (prodGuardados) {
             productos = JSON.parse(prodGuardados);
@@ -732,32 +738,19 @@ async function cargarDatos() {
             localStorage.setItem('myc_productos', JSON.stringify(productos));
         }
 
-        // Actualizar costos desde productos
+        // Actualizar costos
         for (const p of productos) {
             costos[p.clave] = p.costo || 0;
         }
 
-        // Cargar margen
-        const margenGuardado = localStorage.getItem('myc_margen');
-        if (margenGuardado) margenGanancia = num(margenGuardado) || 30;
-
         actualizarUI();
         toast('Datos sincronizados');
+        mostrarDebug('✅ Carga de datos completada');
     } catch(e) {
         console.error('Error al cargar datos:', e);
+        mostrarDebug('❌ ERROR: ' + e.message);
         toast('Error al sincronizar');
     }
-}
-
-// ============================================================
-//  GUARDAR DATOS
-// ============================================================
-function guardarProductosLocal() {
-    localStorage.setItem('myc_productos', JSON.stringify(productos));
-    for (const p of productos) {
-        costos[p.clave] = p.costo || 0;
-    }
-    localStorage.setItem('myc_costos', JSON.stringify(costos));
 }
 
 // ============================================================
@@ -1221,7 +1214,7 @@ function renderCostos() {
     for (const p of productos) {
         labels[p.clave] = p.nombre;
     }
-    grid.innerHTML = Object.entries(costos).map(([key, val]) => `
+    grid.innerHTML = Object.entries(costos).filter(([key]) => labels[key] || productos.some(p => p.clave === key)).map(([key, val]) => `
         <div class="form-group">
             <label>${labels[key] || key}</label>
             <input type="number" class="costo-input" data-clave="${key}" value="${val}" step="100" min="0">
@@ -1266,6 +1259,14 @@ function calcularPreciosSugeridos() {
     }
     html += '</div>';
     container.innerHTML = html;
+}
+
+function guardarProductosLocal() {
+    localStorage.setItem('myc_productos', JSON.stringify(productos));
+    for (const p of productos) {
+        costos[p.clave] = p.costo || 0;
+    }
+    localStorage.setItem('myc_costos', JSON.stringify(costos));
 }
 
 // ============================================================
