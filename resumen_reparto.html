@@ -36,7 +36,6 @@
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-        /* ==================== LAYOUT ==================== */
         .container { max-width: 1600px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
         .header { background: linear-gradient(135deg, #0d2d52 0%, #0a1e35 60%, #061529 100%); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; overflow: hidden; }
         .header::before { content: '🧊'; position: absolute; right: -10px; top: -20px; font-size: 120px; opacity: 0.04; pointer-events: none; }
@@ -55,7 +54,6 @@
         .card-title { font-weight: 700; font-size: 0.95rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
         .card-title .icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; background: var(--surface2); flex-shrink: 0; }
 
-        /* ==================== TABS ==================== */
         .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; background: var(--surface); border-radius: var(--radius); padding: 6px; border: 1px solid var(--border); }
         .tab { padding: 8px 18px; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); transition: var(--transition); border: none; background: transparent; font-family: inherit; }
         .tab:hover { background: var(--surface2); color: var(--text); }
@@ -64,7 +62,6 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ==================== KPI ==================== */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .kpi-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; position: relative; overflow: hidden; }
         .kpi-card::after { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--kpi-color, var(--accent)); border-radius: 3px 0 0 3px; }
@@ -76,13 +73,11 @@
         .kpi-card.neto    { --kpi-color: var(--accent); }
         .kpi-card.clientes{ --kpi-color: #8b5cf6; }
 
-        /* ==================== FILTROS ==================== */
         .filtro { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
         .filtro input, .filtro select { padding: 6px 12px; border-radius: 40px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 0.8rem; font-family: inherit; outline: none; min-height: 36px; }
         .filtro input:focus, .filtro select:focus { border-color: var(--accent); }
         .filtro label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
 
-        /* ==================== TABLAS ==================== */
         .scroll-table { overflow-x: auto; overflow-y: auto; max-height: 450px; border-radius: var(--radius-sm); }
         table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
         thead th { background: var(--bg); color: var(--text-muted); font-weight: 600; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; position: sticky; top: 0; z-index: 2; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -91,7 +86,6 @@
         tbody td { padding: 9px 12px; vertical-align: middle; }
         .empty-row td { text-align: center; color: var(--text-muted); padding: 28px; }
 
-        /* ==================== BADGES ==================== */
         .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 20px; font-size: 0.65rem; font-weight: 600; white-space: nowrap; }
         .badge-deuda         { background: rgba(255,77,109,0.15); color: #ff8099; }
         .badge-pago          { background: rgba(0,224,150,0.15); color: #00e096; }
@@ -102,14 +96,12 @@
         .badge-pago-efectivo { background: rgba(0,224,150,0.15); color: #00e096; }
         .badge-pago-transf   { background: rgba(0,196,255,0.15); color: #00c4ff; }
 
-        /* ==================== MOVIMIENTOS COLORES ==================== */
         .mov-deuda { background: rgba(255,77,109,0.08) !important; }
         .mov-pago-efectivo { background: rgba(0,224,150,0.08) !important; }
         .mov-pago-transf { background: rgba(0,196,255,0.08) !important; }
         .mov-cobrocc { background: rgba(255,181,71,0.10) !important; }
         .mov-ctacte { background: rgba(180,120,255,0.08) !important; }
 
-        /* ==================== BOTONES ==================== */
         .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 40px; font-size: 0.72rem; font-weight: 600; cursor: pointer; border: none; transition: var(--transition); font-family: inherit; }
         .btn:active { transform: scale(0.96); }
         .btn:hover { opacity: 0.88; }
@@ -121,7 +113,6 @@
         .btn-sm        { padding: 4px 10px; font-size: 0.68rem; }
         .btn-xs        { padding: 3px 7px; font-size: 0.62rem; gap: 3px; }
 
-        /* ==================== TOAST Y MODAL ==================== */
         #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; backdrop-filter: blur(10px); }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 8000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
@@ -130,7 +121,6 @@
         .modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 20px; }
         .modal-footer { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
 
-        /* ==================== RESPONSIVE ==================== */
         @media (max-width: 700px) {
             body { padding: 10px; }
             .header { padding: 16px; }
@@ -209,7 +199,6 @@
 
         <!-- Choferes -->
         <div class="grid-2" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:16px;">
-            <!-- Chofer 1234 -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><span class="icon">🚚</span> Chofer 1234</div>
@@ -224,7 +213,6 @@
                     <table id="tabla1234"><thead><tr><th>Fecha</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Efectivo</th><th>Transf.</th><th>Cobros</th><th>Clientes</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="body1234"></tbody></table>
                 </div>
             </div>
-            <!-- Chofer 5678 -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-title"><span class="icon">🚚</span> Chofer 5678</div>
@@ -301,7 +289,7 @@
         </div>
     </div>
 
-    <!-- TAB: DEUDAS (Control de Deudas simplificado) -->
+    <!-- TAB: DEUDAS -->
     <div id="tabDeudas" class="tab-content">
         <div class="kpi-grid" style="margin-bottom:16px;">
             <div class="kpi-card deuda"><div class="kpi-label">🔴 Total Deuda</div><div class="kpi-value" id="deudaTotal">$0</div></div>
@@ -328,7 +316,7 @@
         </div>
     </div>
 
-    <!-- TAB: CONFIGURACIÓN -->
+    <!-- TAB: CONFIG -->
     <div id="tabConfig" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -372,45 +360,34 @@ function normalizarNumero(val){ if(val===undefined||val===null)return 0; if(type
 function fechaYMD(fecha){ if(!fecha)return ''; let s=String(fecha).split('T')[0]; if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10); if(/^\d{2}\/\d{2}\/\d{4}/.test(s)){ const p=s.split('/'); return `${p[2]}-${p[1]}-${p[0]}`; } return s; }
 function fechaDMY(fecha){ const ymd=fechaYMD(fecha); const p=ymd.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:ymd; }
 function pesos(n){ return '$' + n.toLocaleString('es-AR', { minimumFractionDigits:0 }); }
-function normalizarCliente(nombre){ return (nombre || '').trim().toUpperCase(); }
+function normalizarCliente(nombre){ return (nombre || '').trim().toUpperCase() || 'SIN CLIENTE'; }
 function montoRedondo(monto){ return Math.round(normalizarNumero(monto)); }
 
-// ==================== EXTRAER CANTIDADES DE DETALLE ====================
+// ==================== EXTRAER CANTIDADES DESDE DETALLE ====================
 function extraerCantidadesDeDetalle(detalle) {
     const cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
     if (!detalle) return cant;
     const texto = detalle.trim();
-    // Intentar parsear JSON si existe
-    const jsonMatch = texto.match(/{.*}/);
-    if (jsonMatch) {
-        try {
-            const obj = JSON.parse(jsonMatch[0]);
-            for (const key of Object.keys(cant)) {
-                if (obj[key] !== undefined) cant[key] = Math.round(obj[key]);
-            }
-            return cant;
-        } catch(e) {}
-    }
-    // Buscar patrones: 14kg:6, 14kg6, 1.7kg:10, etc.
+    // Intentar parsear "14kg:6" o "14kg6" o "14 KG:6"
     const patrones = [
-        { regex: /(?:14\s*kg|14\s*kg)\s*[:]?\s*(\d+)/i, key: "14 KG" },
-        { regex: /(?:1[,.]7\s*kg|1\.7\s*kg)\s*[:]?\s*(\d+)/i, key: "1,7 KG" },
-        { regex: /(?:3[,.]5\s*kg|3\.5\s*kg)\s*[:]?\s*(\d+)/i, key: "3,5 KG" },
-        { regex: /(?:20\s*kg|esc\.20kg)\s*[:]?\s*(\d+)/i, key: "ESC.20KG" },
-        { regex: /(?:32\s*kg|esc\.32kg)\s*[:]?\s*(\d+)/i, key: "ESC.32KG" }
+        /(?:14\s*KG?|14\s*KG)\s*[:]?\s*(\d+)/i,
+        /(?:1,7\s*KG?|1\.7\s*KG)\s*[:]?\s*(\d+)/i,
+        /(?:3,5\s*KG?|3\.5\s*KG)\s*[:]?\s*(\d+)/i,
+        /(?:20\s*KG?|ESC\.20KG)\s*[:]?\s*(\d+)/i,
+        /(?:32\s*KG?|ESC\.32KG)\s*[:]?\s*(\d+)/i
     ];
-    for (const p of patrones) {
-        const match = texto.match(p.regex);
+    const claves = ["14 KG", "1,7 KG", "3,5 KG", "ESC.20KG", "ESC.32KG"];
+    for (let i = 0; i < patrones.length; i++) {
+        const match = texto.match(patrones[i]);
         if (match) {
-            cant[p.key] = parseInt(match[1]) || 0;
+            cant[claves[i]] = parseInt(match[1]) || 0;
         }
     }
     return cant;
 }
 
-// ==================== COMBINAR DETALLE FINAL ====================
+// ==================== COMBINAR DETALLE UNIFICADO ====================
 function combinarProductosDetalle(cantidades, detalle) {
-    // Si hay cantidades, generar resumen
     if (cantidades && typeof cantidades === 'object') {
         const mapa = {
             "1,7 KG": "1,7kg",
@@ -424,7 +401,6 @@ function combinarProductosDetalle(cantidades, detalle) {
             .map(([k, v]) => `${v}:${cantidades[k]}`);
         if (items.length > 0) return items.join(' · ');
     }
-    // Si no hay cantidades, devolver detalle original o '—'
     return detalle || '—';
 }
 
@@ -736,138 +712,156 @@ async function confirmarEliminarDia(pin, fecha) {
 
 // ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN DEFINITIVA ====================
 function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
-    // 1. Unificar fuentes
-    let todos = [
-        ...movimientos.map(m => ({
-            ...m,
+    // -------- 1. Unificar todas las fuentes --------
+    let todos = [];
+
+    // Movimientos de Sheets
+    for (const m of movimientos) {
+        todos.push({
+            id: m.id,
+            fecha: m.fecha,
+            cliente: normalizarCliente(m.cliente),
+            tipo: m.tipo === "deuda" ? "deuda" : "pago",
+            monto: montoRedondo(m.monto),
+            forma_pago: m.forma_pago || "",
+            detalle: m.detalle || "",
+            cantidades: m.cantidades || {},
             tipoMov: 'sheets',
-            tipoNormalizado: m.tipo === "deuda" ? "deuda" : "pago"
-        })),
-        ...ventasLocal.map(v => {
-            let tipoNormalizado = '';
-            let formaPago = '';
-            if (v.pago === "ctacte") {
-                tipoNormalizado = "deuda";
-                formaPago = "ctacte";
-            } else if (v.pago === "cobrocc") {
-                tipoNormalizado = "pago";
-                formaPago = "cobrocc";
-            } else if (v.pago === "efectivo") {
-                tipoNormalizado = "pago";
-                formaPago = "efectivo";
-            } else if (v.pago === "transferencia") {
-                tipoNormalizado = "pago";
-                formaPago = "transferencia";
-            } else {
-                tipoNormalizado = v.tipo || "pago";
-                formaPago = v.forma_pago || "";
-            }
-            return {
-                ...v,
-                monto: v.total || v.monto || 0,
-                tipo: tipoNormalizado,
-                forma_pago: formaPago,
-                tipoMov: 'local',
-                tipoNormalizado: tipoNormalizado
-            };
-        })
-    ];
+            chofer: ''
+        });
+    }
 
-    // 2. Normalizar cliente y monto
-    todos = todos.map(t => ({
-        ...t,
-        cliente: normalizarCliente(t.cliente),
-        monto: montoRedondo(t.monto)
-    }));
-
-    // 3. Asegurar cantidades
-    todos = todos.map(t => {
-        if (!t.cantidades || typeof t.cantidades !== 'object') {
-            t.cantidades = extraerCantidadesDeDetalle(t.detalle);
+    // Ventas locales
+    for (const v of ventasLocal) {
+        let tipoNormalizado = '';
+        let formaPago = '';
+        if (v.pago === "ctacte") {
+            tipoNormalizado = "deuda";
+            formaPago = "ctacte";
+        } else if (v.pago === "cobrocc") {
+            tipoNormalizado = "pago";
+            formaPago = "cobrocc";
+        } else if (v.pago === "efectivo") {
+            tipoNormalizado = "pago";
+            formaPago = "efectivo";
+        } else if (v.pago === "transferencia") {
+            tipoNormalizado = "pago";
+            formaPago = "transferencia";
         } else {
-            const claves = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
-            for (const k of claves) {
-                if (!(k in t.cantidades)) t.cantidades[k] = 0;
+            tipoNormalizado = v.tipo || "pago";
+            formaPago = v.forma_pago || "";
+        }
+        todos.push({
+            id: v.id,
+            fecha: v.fecha,
+            cliente: normalizarCliente(v.cliente),
+            tipo: tipoNormalizado,
+            monto: montoRedondo(v.total || v.monto || 0),
+            forma_pago: formaPago,
+            detalle: v.detalle || "",
+            cantidades: v.cantidades || {},
+            tipoMov: 'local',
+            chofer: v.chofer || ''
+        });
+    }
+
+    // -------- 2. Asegurar que cada item tenga cantidades extraídas desde detalle si es necesario --------
+    for (const item of todos) {
+        // Si no tiene cantidades o todas son cero, intentar extraer del detalle
+        const hasCant = Object.values(item.cantidades).some(v => v > 0);
+        if (!hasCant && item.detalle) {
+            const extraidas = extraerCantidadesDeDetalle(item.detalle);
+            if (Object.values(extraidas).some(v => v > 0)) {
+                item.cantidades = extraidas;
             }
         }
-        return t;
-    });
+        // Asegurar que todas las claves existan
+        const claves = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
+        for (const k of claves) {
+            if (!(k in item.cantidades)) item.cantidades[k] = 0;
+        }
+    }
 
-    // 4. Aplicar filtros
-    if (fecha) todos = todos.filter(t => t.fecha === fecha);
+    // -------- 3. Aplicar filtros --------
+    if (fecha) {
+        todos = todos.filter(t => t.fecha === fecha);
+    }
     if (tipo) {
-        if (tipo === 'deuda') todos = todos.filter(t => t.tipoNormalizado === 'deuda');
-        else if (tipo === 'pago') todos = todos.filter(t => t.tipoNormalizado === 'pago');
+        if (tipo === 'deuda') todos = todos.filter(t => t.tipo === 'deuda');
+        else if (tipo === 'pago') todos = todos.filter(t => t.tipo === 'pago');
         else if (tipo === 'ctacte') todos = todos.filter(t => t.forma_pago === 'ctacte');
         else if (tipo === 'cobrocc') todos = todos.filter(t => t.forma_pago === 'cobrocc');
     }
     if (clienteFiltro) {
         const filtro = normalizarCliente(clienteFiltro);
-        todos = todos.filter(t => t.cliente && t.cliente.includes(filtro));
+        todos = todos.filter(t => t.cliente.includes(filtro));
     }
 
-    // 5. DEDUPLICAR: agrupar por (fecha, tipoNormalizado, monto) 
-    // (ignoramos cliente para que TRANSF. sin cliente también se agrupe)
+    // -------- 4. DEDUPLICAR: agrupar por (fecha, cliente, tipo, monto) --------
     const grupos = new Map();
     for (const item of todos) {
-        // La clave principal es fecha + tipo + monto
-        const key = `${item.fecha}|${item.tipoNormalizado}|${item.monto}`;
+        const key = `${item.fecha}|${item.cliente}|${item.tipo}|${item.monto}`;
         if (!grupos.has(key)) {
             grupos.set(key, {
                 ...item,
                 cantidades: { ...item.cantidades },
-                clientes: new Set(),
                 detalles: [],
                 ids: []
             });
         }
         const grupo = grupos.get(key);
-        // Acumular cliente (si existe)
-        if (item.cliente) grupo.clientes.add(item.cliente);
         // Acumular cantidades
-        if (item.cantidades && typeof item.cantidades === 'object') {
-            for (const prod of ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"]) {
-                grupo.cantidades[prod] = (grupo.cantidades[prod] || 0) + (item.cantidades[prod] || 0);
-            }
+        for (const prod of ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"]) {
+            grupo.cantidades[prod] = (grupo.cantidades[prod] || 0) + (item.cantidades[prod] || 0);
         }
-        // Guardar detalles
+        // Guardar detalles para elegir el mejor después
         if (item.detalle) grupo.detalles.push(item.detalle);
         if (item.id) grupo.ids.push(item.id);
         if (!grupo._original) grupo._original = item;
     }
 
-    // 6. Convertir grupos a array final
+    // -------- 5. Generar lista final con detalle unificado --------
     const finalList = Array.from(grupos.values()).map(grupo => {
-        // Cliente: si hay más de uno, unirlos con coma
-        const clientesStr = grupo.clientes.size > 0 ? Array.from(grupo.clientes).join(', ') : '—';
-        // Elegir mejor detalle
-        let detalleFinal = '';
-        if (grupo.detalles.length === 1) {
-            detalleFinal = grupo.detalles[0];
-        } else if (grupo.detalles.length > 1) {
-            // Priorizar el que tenga formato corto (14kg:6) sobre el JSON largo
-            const corto = grupo.detalles.find(d => /^\d+kg\s*[:]?\s*\d+$/i.test(d.trim())) ||
-                          grupo.detalles.find(d => /^\d+kg\s*\d+$/i.test(d.trim())) ||
-                          grupo.detalles[0];
-            detalleFinal = corto;
+        // Elegir el detalle más representativo:
+        // - Si hay un detalle que contenga "14kg" o similar, usarlo
+        // - Si no, usar el que no sea JSON
+        // - Si todos son JSON, convertirlos a formato corto
+        let mejorDetalle = '';
+        const detalles = grupo.detalles.filter(d => d && d.length > 0);
+        if (detalles.length === 0) {
+            mejorDetalle = '';
+        } else {
+            // Preferir el que tenga formato "14kg:6" sobre "14kg6"
+            const preferidos = detalles.filter(d => /^\d+kg\s*:\s*\d+$/i.test(d.trim()));
+            if (preferidos.length > 0) {
+                mejorDetalle = preferidos[0];
+            } else {
+                // Buscar el que no sea JSON
+                const noJson = detalles.filter(d => !d.includes('Venta de hielo:') && !d.includes('{'));
+                if (noJson.length > 0) {
+                    mejorDetalle = noJson[0];
+                } else {
+                    mejorDetalle = detalles[0];
+                }
+            }
         }
-        const detalleMostrado = combinarProductosDetalle(grupo.cantidades, detalleFinal);
+        // Generar el detalle final a partir de las cantidades acumuladas
+        const detalleFinal = combinarProductosDetalle(grupo.cantidades, mejorDetalle);
         return {
             ...grupo._original,
-            cliente: clientesStr,
             monto: grupo.monto,
             cantidades: grupo.cantidades,
-            detalle: detalleMostrado || '—',
-            tipo: grupo.tipoNormalizado,
+            detalle: detalleFinal || '—',
+            tipo: grupo.tipo,
             forma_pago: grupo.forma_pago,
             tipoMov: grupo._original.tipoMov
         };
     });
 
-    // 7. Ordenar por fecha descendente
+    // -------- 6. Ordenar por fecha descendente --------
     finalList.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
-    // 8. Renderizar
+    // -------- 7. Renderizar --------
     const tbody = document.getElementById("bodyMovimientos");
     if (!tbody) return;
     if (finalList.length === 0) {
@@ -883,7 +877,7 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         let rowClass = badgeTipoColor(t);
         return `<tr class="${rowClass}">
             <td style="white-space:nowrap">${fechaDMY(t.fecha)}</td>
-            <td style="font-weight:600">${t.cliente}</td>
+            <td style="font-weight:600">${t.cliente || '—'}</td>
             <td class="productos-texto">${badgeTipo(t)}</td>
             <td style="white-space:nowrap"><span class="num-neutral">${pesos(t.monto)}</span></td>
             <td class="productos-texto">${t.detalle}</td>
@@ -1307,22 +1301,11 @@ function exportarClienteExcel(cliente) {
 function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) return;
-    // Seleccionar solo las filas visibles (no las de empty-row)
-    const filas = tabla.querySelectorAll("tbody tr:not(.empty-row)");
-    if (filas.length === 0) {
-        toast("No hay datos para copiar");
-        return;
-    }
-    const texto = Array.from(filas)
+    // Copiar solo las filas visibles (sin botones de acción)
+    const texto = Array.from(tabla.querySelectorAll("tr"))
         .map(tr => Array.from(tr.children).filter(td => !td.classList.contains('no-print')).map(td => td.innerText.trim()).join("\t"))
         .join("\n");
-    // Agregar encabezados
-    const encabezados = Array.from(tabla.querySelectorAll("thead th"))
-        .filter(th => !th.classList.contains('no-print'))
-        .map(th => th.innerText.trim())
-        .join("\t");
-    const textoFinal = encabezados + "\n" + texto;
-    navigator.clipboard.writeText(textoFinal).then(() => toast("Tabla copiada", 'success'));
+    navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada", 'success'));
 }
 
 // ==================== BACKUP ====================
