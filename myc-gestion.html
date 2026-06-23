@@ -270,6 +270,20 @@
             font-size: 0.8rem;
             color: #991b1b;
             display: none;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .total-gastos-dia {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--rojo);
+            background: #fee2e2;
+            padding: 8px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -436,6 +450,7 @@
                     <tbody id="tbodyGastos"></tbody>
                 </table>
             </div>
+            <div class="total-gastos-dia" id="totalGastosDia">Total gastos del día: $0</div>
         </div>
     </div>
 
@@ -588,7 +603,7 @@
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN - URL DE TU API (NO CAMBIES NADA)
+//  CONFIGURACIÓN - URL DE TU API
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 
@@ -610,9 +625,20 @@ let fechaFin = '';
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
     if (!f) return '';
+    // Si la fecha viene con T (formato ISO), tomar solo la parte de fecha
+    if (f.includes('T')) {
+        f = f.split('T')[0];
+    }
     const d = new Date(f);
-    if (isNaN(d)) return f;
+    if (isNaN(d.getTime())) return f;
     return d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+}
+function formatearFechaInput(f) {
+    if (!f) return '';
+    if (f.includes('T')) {
+        f = f.split('T')[0];
+    }
+    return f;
 }
 function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 }); }
 function normalizarNombre(n) { return (n || '').trim().toUpperCase().replace(/\s+/g, ' '); }
@@ -638,11 +664,12 @@ function copiarTabla(tablaId) {
 function mostrarDebug(msg) {
     const box = document.getElementById('debugBox');
     box.style.display = 'block';
-    box.innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '<br>';
+    box.innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '\n';
+    box.scrollTop = box.scrollHeight;
 }
 
 // ============================================================
-//  API CALLS - USANDO LOS NOMBRES CORRECTOS DE TU API
+//  API CALLS
 // ============================================================
 async function apiCall(ruta, params = {}, method = 'GET') {
     const url = new URL(API_URL);
@@ -664,7 +691,7 @@ async function apiCall(ruta, params = {}, method = 'GET') {
         mostrarDebug(`Llamando a API: ${ruta}`);
         const res = await fetch(url.toString(), options);
         const data = await res.json();
-        mostrarDebug(`Respuesta de ${ruta}: ${JSON.stringify(data).substring(0, 200)}...`);
+        mostrarDebug(`Respuesta de ${ruta}: ${JSON.stringify(data).substring(0, 150)}...`);
         return data;
     } catch(e) {
         console.error('API Error:', e);
@@ -675,63 +702,57 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 }
 
 // ============================================================
-//  CARGA DE DATOS - USANDO LAS RUTAS CORRECTAS
+//  CARGA DE DATOS
 // ============================================================
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
-        // Clientes (sin cambios)
+        // Clientes
         const clientesData = await apiCall('clientes');
         if (clientesData && Array.isArray(clientesData)) {
             clientes = clientesData.map(c => normalizarNombre(c)).filter(Boolean);
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
-        // VENTAS: usa 'obtenerVentas' en lugar de 'ventas'
+        // Ventas
         const ventasData = await apiCall('obtenerVentas');
         if (ventasData && Array.isArray(ventasData)) {
             ventas = ventasData.map(v => ({
                 id: v.id,
-                fecha: v.fecha,
+                fecha: formatearFechaInput(v.fecha),
                 cliente: normalizarNombre(v.cliente),
-                cantidades: [num(v.c17), num(v.c35), num(v.c14), num(v.c20), num(v.c32)],
+                cantidades: [
+                    num(v.cantidades?.["1,7 KG"] || v.c17 || 0),
+                    num(v.cantidades?.["3,5 KG"] || v.c35 || 0),
+                    num(v.cantidades?.["14 KG"] || v.c14 || 0),
+                    num(v.cantidades?.["ESC.20KG"] || v.c20 || 0),
+                    num(v.cantidades?.["ESC.32KG"] || v.c32 || 0)
+                ],
                 total: num(v.total),
-                pago: v.pago,
+                pago: v.pago || 'efectivo',
                 detalle: v.detalle || ''
             }));
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
-        } else {
-            mostrarDebug('No se recibieron ventas o el formato es incorrecto');
         }
 
-        // GASTOS: usa 'obtenerGastos' en lugar de 'gastos'
+        // Gastos
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
                 id: g.id,
-                fecha: g.fecha,
-                categoria: g.categoria,
+                fecha: formatearFechaInput(g.fecha),
+                categoria: g.categoria || 'Otros',
                 monto: num(g.monto),
                 nota: g.nota || ''
             }));
             mostrarDebug(`Gastos cargados: ${gastos.length}`);
         }
 
-        // FÁBRICAS: usa 'obtenerFabricas'
-        const fabricasData = await apiCall('obtenerFabricas');
-        if (fabricasData && Array.isArray(fabricasData)) {
-            fabricas = fabricasData.map(f => ({
-                id: f.id,
-                fecha: f.fecha,
-                fabrica: f.fabrica,
-                tipo: f.tipo,
-                cargada: num(f.cargada),
-                devuelta: num(f.devuelta)
-            }));
-            mostrarDebug(`Fábricas cargadas: ${fabricas.length}`);
-        }
+        // Fábricas (local)
+        cargarFabricasLocal();
+        mostrarDebug(`Fábricas cargadas desde localStorage: ${fabricas.length}`);
 
-        // Productos y costos (locales)
+        // Productos y costos
         const prodGuardados = localStorage.getItem('myc_productos');
         if (prodGuardados) {
             productos = JSON.parse(prodGuardados);
@@ -761,8 +782,142 @@ async function cargarDatos() {
 }
 
 // ============================================================
-//  REGISTRAR VENTA - usa 'guardarVenta'
+//  FÁBRICAS - LOCAL
 // ============================================================
+function cargarFabricasLocal() {
+    const data = localStorage.getItem('myc_fabricas_local');
+    if (data) {
+        try {
+            fabricas = JSON.parse(data);
+        } catch(e) {
+            fabricas = [];
+        }
+    } else {
+        fabricas = [];
+    }
+    return fabricas;
+}
+
+function guardarFabricasLocal() {
+    localStorage.setItem('myc_fabricas_local', JSON.stringify(fabricas));
+}
+
+// ============================================================
+//  ACTUALIZAR UI
+// ============================================================
+function actualizarUI() {
+    actualizarSelectores();
+    renderDashboard();
+    renderVentas();
+    renderGastos();
+    renderFabricas();
+    renderProductos();
+    renderCostos();
+    renderClientes();
+    generarInformeDiario();
+}
+
+function actualizarSelectores() {
+    const select = document.getElementById('vClienteSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccionar cliente...</option>' + 
+        clientes.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+// ============================================================
+//  DASHBOARD
+// ============================================================
+function renderDashboard() {
+    const desde = fechaInicio || '2024-01-01';
+    const hasta = fechaFin || hoy();
+
+    const ventasFiltradas = ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
+    const gastosFiltrados = gastos.filter(g => g.fecha >= desde && g.fecha <= hasta);
+
+    let totalVentas = 0, totalCosto = 0, totalGastos = 0;
+    let bolsasVendidas = { "1.7": 0, "3.5": 0, "14": 0, "20": 0, "32": 0 };
+    const clientesSet = new Set();
+
+    for (const v of ventasFiltradas) {
+        totalVentas += v.total || 0;
+        const claves = ["1.7", "3.5", "14", "20", "32"];
+        const cant = v.cantidades || [];
+        for (let i = 0; i < claves.length; i++) {
+            const q = cant[i] || 0;
+            bolsasVendidas[claves[i]] += q;
+            totalCosto += q * (costos[claves[i]] || 0);
+        }
+        if (v.cliente) clientesSet.add(v.cliente);
+    }
+    for (const g of gastosFiltrados) totalGastos += g.monto || 0;
+
+    const gananciaBruta = totalVentas - totalCosto;
+    const gananciaNeta = gananciaBruta - totalGastos;
+    const totalBolsas = Object.values(bolsasVendidas).reduce((a, b) => a + b, 0);
+
+    document.getElementById('kpiGananciaHoy').textContent = pesos(gananciaNeta);
+    document.getElementById('kpiGananciaHoy').className = 'value ' + (gananciaNeta >= 0 ? 'positive' : 'negative');
+    document.getElementById('kpiGananciaSemana').textContent = pesos(gananciaNeta);
+    document.getElementById('kpiGananciaMes').textContent = pesos(gananciaNeta);
+    document.getElementById('kpiBolsas').textContent = totalBolsas;
+    document.getElementById('kpiClientes').textContent = clientesSet.size;
+    document.getElementById('kpiGastos').textContent = pesos(totalGastos);
+
+    const tbody = document.getElementById('tbodyVentasPeriodo');
+    if (ventasFiltradas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin ventas en este período</td></tr>';
+    } else {
+        tbody.innerHTML = ventasFiltradas.slice().reverse().map(v => `
+            <tr>
+                <td>${formatearFecha(v.fecha)}</td>
+                <td>${v.cliente || '—'}</td>
+                <td>${v.cantidades ? v.cantidades[0] || 0 : 0}</td>
+                <td>${v.cantidades ? v.cantidades[1] || 0 : 0}</td>
+                <td>${v.cantidades ? v.cantidades[2] || 0 : 0}</td>
+                <td>${v.cantidades ? v.cantidades[3] || 0 : 0}</td>
+                <td>${v.cantidades ? v.cantidades[4] || 0 : 0}</td>
+                <td>${pesos(v.total || 0)}</td>
+                <td><span class="badge badge-${v.pago || 'efectivo'}">${v.pago || 'efectivo'}</span></td>
+            </tr>
+        `).join('');
+    }
+}
+
+// ============================================================
+//  VENTAS
+// ============================================================
+function renderVentas() {
+    const filtro = document.getElementById('filtroVentas').value.toLowerCase();
+    const filtroFecha = document.getElementById('filtroVentasFecha').value;
+    let filtradas = ventas.filter(v => {
+        let ok = true;
+        if (filtro && !(v.cliente && v.cliente.toLowerCase().includes(filtro))) ok = false;
+        if (filtroFecha && v.fecha !== filtroFecha) ok = false;
+        return ok;
+    });
+    filtradas.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+    const tbody = document.getElementById('tbodyVentasCompleta');
+    if (filtradas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--texto-claro);">Sin ventas registradas</td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtradas.map(v => `
+        <tr>
+            <td>${formatearFecha(v.fecha)}</td>
+            <td>${v.cliente || '—'}</td>
+            <td>${v.cantidades ? v.cantidades[0] || 0 : 0}</td>
+            <td>${v.cantidades ? v.cantidades[1] || 0 : 0}</td>
+            <td>${v.cantidades ? v.cantidades[2] || 0 : 0}</td>
+            <td>${v.cantidades ? v.cantidades[3] || 0 : 0}</td>
+            <td>${v.cantidades ? v.cantidades[4] || 0 : 0}</td>
+            <td>${pesos(v.total || 0)}</td>
+            <td><span class="badge badge-${v.pago || 'efectivo'}">${v.pago || 'efectivo'}</span></td>
+            <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarVenta('${v.id}')"><i class="fas fa-trash"></i></button></td>
+        </tr>
+    `).join('');
+}
+
 async function registrarVenta() {
     const fecha = document.getElementById('vFecha').value;
     const clienteSelect = document.getElementById('vClienteSelect').value;
@@ -781,13 +936,11 @@ async function registrarVenta() {
     if (!fecha || !cliente) return toast('Complete fecha y cliente');
     if (cantidades.every(c => c === 0)) return toast('Ingrese al menos una cantidad');
 
-    // Calcular total con costos
     const total = cantidades.reduce((acc, q, i) => {
         const claves = ["1.7", "3.5", "14", "20", "32"];
         return acc + (q || 0) * (costos[claves[i]] || 0);
     }, 0);
 
-    // USAR 'guardarVenta' en lugar de 'agregarVenta'
     const result = await apiCall('guardarVenta', {
         fecha,
         cliente,
@@ -819,9 +972,72 @@ async function registrarVenta() {
     }
 }
 
+async function eliminarVenta(id) {
+    if (!confirm('¿Eliminar esta venta?')) return;
+    const result = await apiCall('eliminarVenta', { id }, 'POST');
+    if (result && result.exito) {
+        toast('Venta eliminada');
+        await cargarDatos();
+    } else {
+        toast('Error al eliminar venta');
+    }
+}
+
+function exportarVentasExcel() {
+    const data = [
+        ['Fecha', 'Cliente', '1.7kg', '3.5kg', '14kg', '20kg', '32kg', 'Total', 'Pago', 'Detalle']
+    ];
+    for (const v of ventas) {
+        data.push([
+            v.fecha, v.cliente || '',
+            v.cantidades ? v.cantidades[0] || 0 : 0,
+            v.cantidades ? v.cantidades[1] || 0 : 0,
+            v.cantidades ? v.cantidades[2] || 0 : 0,
+            v.cantidades ? v.cantidades[3] || 0 : 0,
+            v.cantidades ? v.cantidades[4] || 0 : 0,
+            v.total || 0,
+            v.pago || '',
+            v.detalle || ''
+        ]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
+    XLSX.writeFile(wb, `ventas_${hoy()}.xlsx`);
+    toast('Excel exportado');
+}
+
 // ============================================================
-//  REGISTRAR GASTO - usa 'guardarGasto'
+//  GASTOS
 // ============================================================
+function renderGastos() {
+    const filtroFecha = document.getElementById('filtroGastosFecha').value;
+    let filtrados = gastos;
+    if (filtroFecha) filtrados = filtrados.filter(g => g.fecha === filtroFecha);
+    filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+    const tbody = document.getElementById('tbodyGastos');
+    if (filtrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos registrados</td></tr>';
+    } else {
+        tbody.innerHTML = filtrados.map(g => `
+            <tr>
+                <td>${formatearFecha(g.fecha)}</td>
+                <td>${g.categoria || '—'}</td>
+                <td>${pesos(g.monto || 0)}</td>
+                <td>${g.nota || ''}</td>
+                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join('');
+    }
+
+    // Total de gastos del día
+    const hoyStr = hoy();
+    const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
+    const totalHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
+    document.getElementById('totalGastosDia').textContent = `Total gastos del día: ${pesos(totalHoy)}`;
+}
+
 async function registrarGasto() {
     const fecha = document.getElementById('gFecha').value;
     const categoria = document.getElementById('gCategoria').value;
@@ -830,7 +1046,6 @@ async function registrarGasto() {
 
     if (!fecha || !monto || monto <= 0) return toast('Complete campos');
 
-    // USAR 'guardarGasto' en lugar de 'agregarGasto'
     const result = await apiCall('guardarGasto', {
         fecha,
         chofer: '',
@@ -849,51 +1064,6 @@ async function registrarGasto() {
     }
 }
 
-// ============================================================
-//  REGISTRAR FÁBRICA - usa 'guardarFabrica'
-// ============================================================
-async function registrarFabrica() {
-    const fecha = document.getElementById('fFecha').value;
-    const fabrica = document.getElementById('fFabrica').value;
-    const tipo = document.getElementById('fTipo').value;
-    const cargada = parseInt(document.getElementById('fCargada').value) || 0;
-    const devuelta = parseInt(document.getElementById('fDevuelta').value) || 0;
-
-    if (!fecha) return toast('Seleccione fecha');
-    if (cargada === 0 && devuelta === 0) return toast('Ingrese al menos una cantidad');
-
-    const result = await apiCall('guardarFabrica', {
-        fecha,
-        fabrica,
-        tipo,
-        cargada,
-        devuelta
-    }, 'POST');
-
-    if (result && result.exito) {
-        toast('Registro de fábrica guardado');
-        document.getElementById('fCargada').value = 0;
-        document.getElementById('fDevuelta').value = 0;
-        await cargarDatos();
-    } else {
-        toast('Error al registrar');
-    }
-}
-
-// ============================================================
-//  ELIMINAR - usa 'eliminarVenta', 'eliminarGasto', 'eliminarFabrica'
-// ============================================================
-async function eliminarVenta(id) {
-    if (!confirm('¿Eliminar esta venta?')) return;
-    const result = await apiCall('eliminarVenta', { id }, 'POST');
-    if (result && result.exito) {
-        toast('Venta eliminada');
-        await cargarDatos();
-    } else {
-        toast('Error al eliminar venta');
-    }
-}
-
 async function eliminarGasto(id) {
     if (!confirm('¿Eliminar este gasto?')) return;
     const result = await apiCall('eliminarGasto', { id }, 'POST');
@@ -905,47 +1075,125 @@ async function eliminarGasto(id) {
     }
 }
 
-async function eliminarFabrica(id) {
+function exportarGastosExcel() {
+    const data = [
+        ['Fecha', 'Categoría', 'Monto', 'Nota']
+    ];
+    for (const g of gastos) {
+        data.push([g.fecha, g.categoria || '', g.monto || 0, g.nota || '']);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
+    XLSX.writeFile(wb, `gastos_${hoy()}.xlsx`);
+    toast('Excel exportado');
+}
+
+// ============================================================
+//  FÁBRICAS - LOCAL
+// ============================================================
+function renderFabricas() {
+    cargarFabricasLocal();
+    
+    const tbody = document.getElementById('tbodyFabricas');
+    if (!tbody) return;
+    
+    if (fabricas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Sin movimientos de fábricas</td></tr>';
+    } else {
+        const ordenadas = [...fabricas].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+        tbody.innerHTML = ordenadas.map(f => `
+            <tr>
+                <td>${formatearFecha(f.fecha)}</td>
+                <td>${f.fabrica || '—'}</td>
+                <td>${f.tipo || '—'}</td>
+                <td style="text-align:center;font-weight:700;color:var(--verde);">${f.cargada || 0}</td>
+                <td style="text-align:center;font-weight:700;color:var(--rojo);">${f.devuelta || 0}</td>
+                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarFabricaLocal('${f.id}')"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join('');
+    }
+
+    // Resumen
+    const resumen = {};
+    for (const f of fabricas) {
+        const key = f.fabrica + '|' + f.tipo;
+        if (!resumen[key]) resumen[key] = { cargada: 0, devuelta: 0 };
+        resumen[key].cargada += f.cargada || 0;
+        resumen[key].devuelta += f.devuelta || 0;
+    }
+    const cont = document.getElementById('resumenFabricas');
+    if (!cont) return;
+    const entries = Object.entries(resumen);
+    if (entries.length === 0) {
+        cont.innerHTML = '<p style="color:var(--texto-claro);">Sin datos para resumen</p>';
+    } else {
+        cont.innerHTML = entries.map(([key, val]) => {
+            const [fabrica, tipo] = key.split('|');
+            const saldo = val.cargada - val.devuelta;
+            return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;">
+                <span><strong>${fabrica}</strong> · ${tipo}</span>
+                <span>Cargadas: <strong style="color:var(--verde);">${val.cargada}</strong> | Devueltas: <strong style="color:var(--rojo);">${val.devuelta}</strong> | Saldo: <strong style="color:${saldo>=0?'var(--verde)':'var(--rojo)'};">${saldo}</strong></span>
+            </div>`;
+        }).join('');
+    }
+}
+
+async function registrarFabrica() {
+    const fecha = document.getElementById('fFecha').value;
+    const fabrica = document.getElementById('fFabrica').value;
+    const tipo = document.getElementById('fTipo').value;
+    const cargada = parseInt(document.getElementById('fCargada').value) || 0;
+    const devuelta = parseInt(document.getElementById('fDevuelta').value) || 0;
+
+    if (!fecha) return toast('Seleccione fecha');
+    if (cargada === 0 && devuelta === 0) return toast('Ingrese al menos una cantidad');
+
+    cargarFabricasLocal();
+
+    const nuevo = {
+        id: 'f' + Date.now(),
+        fecha,
+        fabrica,
+        tipo,
+        cargada,
+        devuelta
+    };
+    fabricas.push(nuevo);
+    guardarFabricasLocal();
+    
+    toast('Registro de fábrica guardado localmente');
+    document.getElementById('fCargada').value = 0;
+    document.getElementById('fDevuelta').value = 0;
+    renderFabricas();
+}
+
+function eliminarFabricaLocal(id) {
     if (!confirm('¿Eliminar este registro?')) return;
-    const result = await apiCall('eliminarFabrica', { id }, 'POST');
-    if (result && result.exito) {
-        toast('Registro eliminado');
-        await cargarDatos();
-    } else {
-        toast('Error al eliminar');
+    cargarFabricasLocal();
+    fabricas = fabricas.filter(f => f.id !== id);
+    guardarFabricasLocal();
+    renderFabricas();
+    toast('Registro eliminado');
+}
+
+function exportarFabricasExcel() {
+    cargarFabricasLocal();
+    const data = [
+        ['Fecha', 'Fábrica', 'Tipo', 'Cargada', 'Devuelta']
+    ];
+    for (const f of fabricas) {
+        data.push([f.fecha, f.fabrica || '', f.tipo || '', f.cargada || 0, f.devuelta || 0]);
     }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Fabricas');
+    XLSX.writeFile(wb, `fabricas_${hoy()}.xlsx`);
+    toast('Excel exportado');
 }
 
 // ============================================================
-//  CLIENTES
-// ============================================================
-async function agregarCliente() {
-    const nombre = normalizarNombre(document.getElementById('nuevoCliente').value);
-    if (!nombre) return toast('Escribí un nombre');
-    if (clientes.includes(nombre)) return toast('Ya existe');
-    const result = await apiCall('agregarCliente', { nombre }, 'POST');
-    if (result && result.exito) {
-        toast('Cliente agregado');
-        document.getElementById('nuevoCliente').value = '';
-        await cargarDatos();
-    } else {
-        toast('Error al agregar cliente');
-    }
-}
-
-async function eliminarCliente(nombre) {
-    if (!confirm(`¿Eliminar cliente "${nombre}" y todos sus movimientos?`)) return;
-    const result = await apiCall('eliminarCliente', { nombre }, 'POST');
-    if (result && result.exito) {
-        toast('Cliente eliminado');
-        await cargarDatos();
-    } else {
-        toast('Error al eliminar cliente');
-    }
-}
-
-// ============================================================
-//  PRODUCTOS Y COSTOS (sin cambios)
+//  PRODUCTOS
 // ============================================================
 function renderProductos() {
     const container = document.getElementById('listaProductos');
@@ -1085,177 +1333,8 @@ function guardarProductosLocal() {
 }
 
 // ============================================================
-//  RENDERIZADO (igual que antes)
+//  CLIENTES
 // ============================================================
-function actualizarUI() {
-    actualizarSelectores();
-    renderDashboard();
-    renderVentas();
-    renderGastos();
-    renderFabricas();
-    renderProductos();
-    renderCostos();
-    renderClientes();
-    generarInformeDiario();
-}
-
-function actualizarSelectores() {
-    const select = document.getElementById('vClienteSelect');
-    if (!select) return;
-    select.innerHTML = '<option value="">Seleccionar cliente...</option>' + 
-        clientes.map(c => `<option value="${c}">${c}</option>`).join('');
-}
-
-function renderDashboard() {
-    const desde = fechaInicio || '2024-01-01';
-    const hasta = fechaFin || hoy();
-
-    const ventasFiltradas = ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
-    const gastosFiltrados = gastos.filter(g => g.fecha >= desde && g.fecha <= hasta);
-
-    let totalVentas = 0, totalCosto = 0, totalGastos = 0;
-    let bolsasVendidas = { "1.7": 0, "3.5": 0, "14": 0, "20": 0, "32": 0 };
-    const clientesSet = new Set();
-
-    for (const v of ventasFiltradas) {
-        totalVentas += v.total || 0;
-        const claves = ["1.7", "3.5", "14", "20", "32"];
-        const cant = v.cantidades || [];
-        for (let i = 0; i < claves.length; i++) {
-            const q = cant[i] || 0;
-            bolsasVendidas[claves[i]] += q;
-            totalCosto += q * (costos[claves[i]] || 0);
-        }
-        if (v.cliente) clientesSet.add(v.cliente);
-    }
-    for (const g of gastosFiltrados) totalGastos += g.monto || 0;
-
-    const gananciaBruta = totalVentas - totalCosto;
-    const gananciaNeta = gananciaBruta - totalGastos;
-    const totalBolsas = Object.values(bolsasVendidas).reduce((a, b) => a + b, 0);
-
-    document.getElementById('kpiGananciaHoy').textContent = pesos(gananciaNeta);
-    document.getElementById('kpiGananciaHoy').className = 'value ' + (gananciaNeta >= 0 ? 'positive' : 'negative');
-    document.getElementById('kpiGananciaSemana').textContent = pesos(gananciaNeta);
-    document.getElementById('kpiGananciaMes').textContent = pesos(gananciaNeta);
-    document.getElementById('kpiBolsas').textContent = totalBolsas;
-    document.getElementById('kpiClientes').textContent = clientesSet.size;
-    document.getElementById('kpiGastos').textContent = pesos(totalGastos);
-
-    const tbody = document.getElementById('tbodyVentasPeriodo');
-    if (ventasFiltradas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin ventas en este período</td></tr>';
-    } else {
-        tbody.innerHTML = ventasFiltradas.slice().reverse().map(v => `
-            <tr>
-                <td>${formatearFecha(v.fecha)}</td>
-                <td>${v.cliente || '—'}</td>
-                <td>${v.cantidades ? v.cantidades[0] || 0 : 0}</td>
-                <td>${v.cantidades ? v.cantidades[1] || 0 : 0}</td>
-                <td>${v.cantidades ? v.cantidades[2] || 0 : 0}</td>
-                <td>${v.cantidades ? v.cantidades[3] || 0 : 0}</td>
-                <td>${v.cantidades ? v.cantidades[4] || 0 : 0}</td>
-                <td>${pesos(v.total || 0)}</td>
-                <td><span class="badge badge-${v.pago || 'efectivo'}">${v.pago || 'efectivo'}</span></td>
-            </tr>
-        `).join('');
-    }
-}
-
-function renderVentas() {
-    const filtro = document.getElementById('filtroVentas').value.toLowerCase();
-    const filtroFecha = document.getElementById('filtroVentasFecha').value;
-    let filtradas = ventas.filter(v => {
-        let ok = true;
-        if (filtro && !(v.cliente && v.cliente.toLowerCase().includes(filtro))) ok = false;
-        if (filtroFecha && v.fecha !== filtroFecha) ok = false;
-        return ok;
-    });
-    filtradas.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-
-    const tbody = document.getElementById('tbodyVentasCompleta');
-    if (filtradas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--texto-claro);">Sin ventas registradas</td></tr>';
-        return;
-    }
-    tbody.innerHTML = filtradas.map(v => `
-        <tr>
-            <td>${formatearFecha(v.fecha)}</td>
-            <td>${v.cliente || '—'}</td>
-            <td>${v.cantidades ? v.cantidades[0] || 0 : 0}</td>
-            <td>${v.cantidades ? v.cantidades[1] || 0 : 0}</td>
-            <td>${v.cantidades ? v.cantidades[2] || 0 : 0}</td>
-            <td>${v.cantidades ? v.cantidades[3] || 0 : 0}</td>
-            <td>${v.cantidades ? v.cantidades[4] || 0 : 0}</td>
-            <td>${pesos(v.total || 0)}</td>
-            <td><span class="badge badge-${v.pago || 'efectivo'}">${v.pago || 'efectivo'}</span></td>
-            <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarVenta('${v.id}')"><i class="fas fa-trash"></i></button></td>
-        </tr>
-    `).join('');
-}
-
-function renderGastos() {
-    const filtroFecha = document.getElementById('filtroGastosFecha').value;
-    let filtrados = gastos;
-    if (filtroFecha) filtrados = filtrados.filter(g => g.fecha === filtroFecha);
-    filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-
-    const tbody = document.getElementById('tbodyGastos');
-    if (filtrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos registrados</td></tr>';
-        return;
-    }
-    tbody.innerHTML = filtrados.map(g => `
-        <tr>
-            <td>${formatearFecha(g.fecha)}</td>
-            <td>${g.categoria || '—'}</td>
-            <td>${pesos(g.monto || 0)}</td>
-            <td>${g.nota || ''}</td>
-            <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td>
-        </tr>
-    `).join('');
-}
-
-function renderFabricas() {
-    const tbody = document.getElementById('tbodyFabricas');
-    if (fabricas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Sin movimientos de fábricas</td></tr>';
-        return;
-    }
-    const ordenadas = [...fabricas].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-    tbody.innerHTML = ordenadas.map(f => `
-        <tr>
-            <td>${formatearFecha(f.fecha)}</td>
-            <td>${f.fabrica || '—'}</td>
-            <td>${f.tipo || '—'}</td>
-            <td>${f.cargada || 0}</td>
-            <td>${f.devuelta || 0}</td>
-            <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarFabrica('${f.id}')"><i class="fas fa-trash"></i></button></td>
-        </tr>
-    `).join('');
-
-    const resumen = {};
-    for (const f of fabricas) {
-        const key = f.fabrica + '|' + f.tipo;
-        if (!resumen[key]) resumen[key] = { cargada: 0, devuelta: 0 };
-        resumen[key].cargada += f.cargada || 0;
-        resumen[key].devuelta += f.devuelta || 0;
-    }
-    const cont = document.getElementById('resumenFabricas');
-    const entries = Object.entries(resumen);
-    if (entries.length === 0) {
-        cont.innerHTML = '<p style="color:var(--texto-claro);">Sin datos para resumen</p>';
-    } else {
-        cont.innerHTML = entries.map(([key, val]) => {
-            const [fabrica, tipo] = key.split('|');
-            return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;">
-                <span><strong>${fabrica}</strong> · ${tipo}</span>
-                <span>Cargadas: ${val.cargada} | Devueltas: ${val.devuelta} | Saldo: ${val.cargada - val.devuelta}</span>
-            </div>`;
-        }).join('');
-    }
-}
-
 function renderClientes() {
     const container = document.getElementById('listaClientes');
     if (!clientes.length) {
@@ -1270,6 +1349,34 @@ function renderClientes() {
     `).join('');
 }
 
+async function agregarCliente() {
+    const nombre = normalizarNombre(document.getElementById('nuevoCliente').value);
+    if (!nombre) return toast('Escribí un nombre');
+    if (clientes.includes(nombre)) return toast('Ya existe');
+    const result = await apiCall('agregarCliente', { nombre }, 'POST');
+    if (result && result.exito) {
+        toast('Cliente agregado');
+        document.getElementById('nuevoCliente').value = '';
+        await cargarDatos();
+    } else {
+        toast('Error al agregar cliente');
+    }
+}
+
+async function eliminarCliente(nombre) {
+    if (!confirm(`¿Eliminar cliente "${nombre}" y todos sus movimientos?`)) return;
+    const result = await apiCall('eliminarCliente', { nombre }, 'POST');
+    if (result && result.exito) {
+        toast('Cliente eliminado');
+        await cargarDatos();
+    } else {
+        toast('Error al eliminar cliente');
+    }
+}
+
+// ============================================================
+//  INFORME DIARIO
+// ============================================================
 function generarInformeDiario() {
     const container = document.getElementById('informeDiarioContainer');
     const hoyStr = hoy();
@@ -1298,13 +1405,14 @@ function generarInformeDiario() {
             <div><strong>👥 Clientes</strong><br>${clientesHoy.size}</div>
             <div><strong>🧊 Bolsas vendidas</strong><br>${ventasHoy.reduce((acc,v) => acc + (v.cantidades||[]).reduce((a,b) => a + (b||0), 0), 0)}</div>
         </div>
+    `;
+
+    if (ventasHoy.length > 0) {
+        html += `
         <div style="border-top:1px solid var(--borde);padding-top:12px;">
             <strong>Detalle de ventas:</strong>
             <ul style="list-style:none;padding:0;margin-top:8px;">
-    `;
-    if (ventasHoy.length === 0) {
-        html += '<li style="color:var(--texto-claro);">Sin ventas hoy</li>';
-    } else {
+        `;
         for (const v of ventasHoy) {
             const detalle = v.cantidades ? v.cantidades.map((q, i) => {
                 const claves = ["1.7", "3.5", "14", "20", "32"];
@@ -1312,78 +1420,26 @@ function generarInformeDiario() {
             }).filter(Boolean).join(', ') : '';
             html += `<li>${v.cliente || '—'} · ${detalle || 'sin detalle'} · ${pesos(v.total)} (${v.pago})</li>`;
         }
+        html += `</ul></div>`;
     }
-    html += `
-            </ul>
-        </div>
+
+    if (gastosHoy.length > 0) {
+        html += `
         <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
             <strong>Gastos:</strong>
             <ul style="list-style:none;padding:0;margin-top:8px;">
-    `;
-    if (gastosHoy.length === 0) {
-        html += '<li style="color:var(--texto-claro);">Sin gastos hoy</li>';
-    } else {
+        `;
         for (const g of gastosHoy) {
             html += `<li>${g.categoria} · ${pesos(g.monto)} · ${g.nota || ''}</li>`;
         }
+        html += `</ul></div>`;
     }
-    html += `
-            </ul>
-        </div>
-    `;
+
+    if (ventasHoy.length === 0 && gastosHoy.length === 0) {
+        html += `<p style="color:var(--texto-claro);text-align:center;padding:20px;">No hay movimientos hoy</p>`;
+    }
+
     container.innerHTML = html;
-}
-
-function exportarVentasExcel() {
-    const data = [
-        ['Fecha', 'Cliente', '1.7kg', '3.5kg', '14kg', '20kg', '32kg', 'Total', 'Pago', 'Detalle']
-    ];
-    for (const v of ventas) {
-        data.push([
-            v.fecha, v.cliente || '',
-            v.cantidades ? v.cantidades[0] || 0 : 0,
-            v.cantidades ? v.cantidades[1] || 0 : 0,
-            v.cantidades ? v.cantidades[2] || 0 : 0,
-            v.cantidades ? v.cantidades[3] || 0 : 0,
-            v.cantidades ? v.cantidades[4] || 0 : 0,
-            v.total || 0,
-            v.pago || '',
-            v.detalle || ''
-        ]);
-    }
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
-    XLSX.writeFile(wb, `ventas_${hoy()}.xlsx`);
-    toast('Excel exportado');
-}
-
-function exportarGastosExcel() {
-    const data = [
-        ['Fecha', 'Categoría', 'Monto', 'Nota']
-    ];
-    for (const g of gastos) {
-        data.push([g.fecha, g.categoria || '', g.monto || 0, g.nota || '']);
-    }
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
-    XLSX.writeFile(wb, `gastos_${hoy()}.xlsx`);
-    toast('Excel exportado');
-}
-
-function exportarFabricasExcel() {
-    const data = [
-        ['Fecha', 'Fábrica', 'Tipo', 'Cargada', 'Devuelta']
-    ];
-    for (const f of fabricas) {
-        data.push([f.fecha, f.fabrica || '', f.tipo || '', f.cargada || 0, f.devuelta || 0]);
-    }
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Fabricas');
-    XLSX.writeFile(wb, `fabricas_${hoy()}.xlsx`);
-    toast('Excel exportado');
 }
 
 function exportarInformeExcel() {
@@ -1468,7 +1524,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btnRegistrarGasto').addEventListener('click', registrarGasto);
     document.getElementById('btnRegistrarFabrica').addEventListener('click', registrarFabrica);
 
-    document.getElementById('filtrarGastosBtn').addEventListener('click', renderGastos);
+    document.getElementById('filtrarGastosBtn').addEventListener('click', function() {
+        renderGastos();
+    });
     document.getElementById('resetGastosBtn').addEventListener('click', function() {
         document.getElementById('filtroGastosFecha').value = '';
         renderGastos();
@@ -1496,6 +1554,7 @@ window.copiarTabla = copiarTabla;
 window.eliminarVenta = eliminarVenta;
 window.eliminarGasto = eliminarGasto;
 window.eliminarFabrica = eliminarFabrica;
+window.eliminarFabricaLocal = eliminarFabricaLocal;
 window.eliminarCliente = eliminarCliente;
 window.eliminarProducto = eliminarProducto;
 window.editarProducto = editarProducto;
