@@ -362,8 +362,6 @@ let movimientos = [];
 let gastos = [];
 let ventasLocal = [];
 let preciosClientes = {};
-let productos = [];
-let productosFactura = [];
 let syncStatus = 'online';
 
 // ==================== UTILIDADES ====================
@@ -374,52 +372,36 @@ function normalizarNumero(val){ if(val===undefined||val===null)return 0; if(type
 function fechaYMD(fecha){ if(!fecha)return ''; let s=String(fecha).split('T')[0]; if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10); if(/^\d{2}\/\d{2}\/\d{4}/.test(s)){ const p=s.split('/'); return `${p[2]}-${p[1]}-${p[0]}`; } return s; }
 function fechaDMY(fecha){ const ymd=fechaYMD(fecha); const p=ymd.split('-'); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:ymd; }
 function pesos(n){ return '$' + n.toLocaleString('es-AR', { minimumFractionDigits:0 }); }
+function normalizarCliente(nombre){ return (nombre || '').trim().toUpperCase(); }
+function montoRedondo(monto){ return Math.round(normalizarNumero(monto)); }
 
-// ==================== NORMALIZACIÓN DE DETALLES PARA DEDUPLICACIÓN ====================
-// Esta función extrae las cantidades de productos desde cualquier formato de detalle
-function extraerCantidadesDesdeDetalle(detalle) {
-    if (!detalle) return {};
+// ==================== EXTRAER CANTIDADES DESDE DETALLE ====================
+function extraerCantidadesDeDetalle(detalle) {
     const cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
-    const mapa = {
-        "1,7 KG": ["1,7", "1.7", "1,7kg", "1.7kg"],
-        "3,5 KG": ["3,5", "3.5", "3,5kg", "3.5kg"],
-        "14 KG": ["14", "14kg"],
-        "ESC.20KG": ["20", "20kg"],
-        "ESC.32KG": ["32", "32kg"]
-    };
-    // Intentar extraer patrones como "14kg:6", "14kg6", "14:6", "14-6", "14 kg 6"
-    const patron = /(\d+\.?\d*)\s*(?:kg|k)?\s*[:–\-]?\s*(\d+)/gi;
-    let match;
-    while ((match = patron.exec(detalle)) !== null) {
-        const num = match[1].trim();
-        const cantVal = parseInt(match[2]);
-        if (!isNaN(cantVal) && cantVal > 0) {
-            for (const [key, aliases] of Object.entries(mapa)) {
-                if (aliases.some(alias => num.includes(alias) || num === alias || num === alias.replace(/[^0-9.]/g,''))) {
-                    cant[key] = (cant[key] || 0) + cantVal;
-                    break;
-                }
-            }
+    if (!detalle) return cant;
+    const texto = detalle.trim();
+    // Intentar parsear "14kg:6" o "14kg6" o "14 KG:6"
+    const patrones = [
+        /(?:14\s*KG?|14\s*KG)\s*[:]?\s*(\d+)/i,
+        /(?:1,7\s*KG?|1\.7\s*KG)\s*[:]?\s*(\d+)/i,
+        /(?:3,5\s*KG?|3\.5\s*KG)\s*[:]?\s*(\d+)/i,
+        /(?:20\s*KG?|ESC\.20KG)\s*[:]?\s*(\d+)/i,
+        /(?:32\s*KG?|ESC\.32KG)\s*[:]?\s*(\d+)/i
+    ];
+    const claves = ["14 KG", "1,7 KG", "3,5 KG", "ESC.20KG", "ESC.32KG"];
+    for (let i = 0; i < patrones.length; i++) {
+        const match = texto.match(patrones[i]);
+        if (match) {
+            cant[claves[i]] = parseInt(match[1]) || 0;
         }
     }
-    // Si no encontró nada, intentar con "bolsas" o "hielas"
-    if (Object.values(cant).every(v => v === 0)) {
-        const bolsasMatch = detalle.match(/(\d+)\s*bolsas?/i);
-        if (bolsasMatch) {
-            // Asumimos que son bolsas de 14kg (o podríamos dejarlo como detalle general)
-            cant["14 KG"] = parseInt(bolsasMatch[1]);
-        }
-        const hielasMatch = detalle.match(/(\d+)\s*hielas?/i);
-        if (hielasMatch) {
-            cant["14 KG"] = parseInt(hielasMatch[1]);
-        }
-    }
+    // También buscar "4 bolsas" o "3 hielas" – lo dejamos como detalle no estructurado
     return cant;
 }
 
-// ==================== FUNCIÓN MEJORADA PARA COMBINAR DETALLES ====================
+// ==================== COMBINAR DETALLE UNIFICADO ====================
 function combinarProductosDetalle(cantidades, detalle) {
-    // Si tenemos cantidades, generar el resumen corto
+    // Si tenemos cantidades, generar resumen
     if (cantidades && typeof cantidades === 'object') {
         const mapa = {
             "1,7 KG": "1,7kg",
@@ -433,35 +415,11 @@ function combinarProductosDetalle(cantidades, detalle) {
             .map(([k, v]) => `${v}:${cantidades[k]}`);
         if (items.length > 0) return items.join(' · ');
     }
-
-    // Si no hay cantidades, procesar el detalle texto
-    if (detalle && typeof detalle === 'string') {
-        // Si es un detalle que ya es corto (ej: "14kg:6") lo devolvemos tal cual
-        if (/^\d+(kg|KG|bolsas|hielas)/.test(detalle)) return detalle;
-        // Si es "Cobro de deuda" o "Pago", devolverlo tal cual
-        if (detalle.includes('Cobro de deuda') || detalle.includes('Pago')) return detalle;
-        // Si no, intentar extraer cantidades y formatearlas
-        const cant = extraerCantidadesDesdeDetalle(detalle);
-        const mapa = {
-            "1,7 KG": "1,7kg",
-            "3,5 KG": "3,5kg",
-            "14 KG": "14kg",
-            "ESC.20KG": "20kg",
-            "ESC.32KG": "32kg"
-        };
-        const items = Object.entries(mapa)
-            .filter(([k]) => (cant[k] || 0) > 0)
-            .map(([k, v]) => `${v}:${cant[k]}`);
-        if (items.length > 0) return items.join(' · ');
-        // Si no se pudo extraer nada, devolver el detalle original
-        return detalle;
-    }
-
-    return '—';
+    // Si no hay cantidades, devolver detalle original o '—'
+    return detalle || '—';
 }
 
-function formatProductos(cant){ if(!cant)return '—'; const mapa={"1,7 KG":"1,7kg","3,5 KG":"3,5kg","14 KG":"14kg","ESC.20KG":"20kg","ESC.32KG":"32kg"}; const items=Object.entries(mapa).filter(([k])=>cant[k]>0).map(([k,v])=>`${v}:${cant[k]}`); return items.length?items.join(' · '):'—'; }
-
+// ==================== BADGES Y COLORES ====================
 function badgeTipo(item) {
     if (item.tipo === "deuda") return `<span class="badge badge-deuda">➕ DEUDA</span>`;
     if (item.tipo === "pago") {
@@ -505,9 +463,9 @@ async function cargarSheets() {
         movimientos = (raw || []).map(m => ({
             id: m.id,
             fecha: fechaYMD(m.fecha),
-            cliente: m.cliente_nombre || m.cliente,
+            cliente: normalizarCliente(m.cliente_nombre || m.cliente),
             tipo: m.tipo,
-            monto: normalizarNumero(m.monto),
+            monto: montoRedondo(m.monto),
             forma_pago: m.forma_pago,
             detalle: m.detalle || ''
         }));
@@ -565,10 +523,10 @@ async function cargarDatosChoferes() {
                     ventasLocal.push({
                         id: v.id,
                         fecha: fechaYMD(v.fecha),
-                        cliente: v.cliente,
+                        cliente: normalizarCliente(v.cliente),
                         pago: v.pago,
-                        total: normalizarNumero(v.total),
-                        cobroDeuda: normalizarNumero(v.cobroDeuda),
+                        total: montoRedondo(v.total),
+                        cobroDeuda: montoRedondo(v.cobroDeuda),
                         cantidades: v.cantidades || {},
                         detalle: v.detalle || '',
                         chofer: pin
@@ -583,10 +541,10 @@ async function cargarDatosChoferes() {
                         ventasLocal.push({
                             id: v.id,
                             fecha: fechaYMD(v.fecha),
-                            cliente: v.cliente,
+                            cliente: normalizarCliente(v.cliente),
                             pago: v.pago,
-                            total: normalizarNumero(v.total),
-                            cobroDeuda: normalizarNumero(v.cobroDeuda),
+                            total: montoRedondo(v.total),
+                            cobroDeuda: montoRedondo(v.cobroDeuda),
                             cantidades: v.cantidades || {},
                             detalle: v.detalle || '',
                             chofer: pin
@@ -774,9 +732,7 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         ...movimientos.map(m => ({
             ...m,
             tipoMov: 'sheets',
-            tipoNormalizado: m.tipo === "deuda" ? "deuda" : "pago",
-            // Extraer cantidades del detalle para normalizar
-            cantidadesExtraidas: extraerCantidadesDesdeDetalle(m.detalle)
+            tipoNormalizado: m.tipo === "deuda" ? "deuda" : "pago"
         })),
         ...ventasLocal.map(v => {
             let tipoNormalizado = '';
@@ -797,25 +753,39 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
                 tipoNormalizado = v.tipo || "pago";
                 formaPago = v.forma_pago || "";
             }
-            // Si v.cantidades está vacío, intentar extraer del detalle
-            let cantidades = v.cantidades || {};
-            if (Object.values(cantidades).every(c => c === 0) && v.detalle) {
-                cantidades = extraerCantidadesDesdeDetalle(v.detalle);
-            }
             return {
                 ...v,
                 monto: v.total || v.monto || 0,
                 tipo: tipoNormalizado,
                 forma_pago: formaPago,
                 tipoMov: 'local',
-                tipoNormalizado: tipoNormalizado,
-                cantidades: cantidades,
-                cantidadesExtraidas: cantidades
+                tipoNormalizado: tipoNormalizado
             };
         })
     ];
 
-    // -------- 2. Aplicar filtros (fecha, tipo, cliente) --------
+    // -------- 2. Normalizar cliente y monto en todos los items --------
+    todos = todos.map(t => ({
+        ...t,
+        cliente: normalizarCliente(t.cliente),
+        monto: montoRedondo(t.monto)
+    }));
+
+    // -------- 3. Asegurar que cada item tenga un objeto cantidades --------
+    todos = todos.map(t => {
+        if (!t.cantidades || typeof t.cantidades !== 'object') {
+            t.cantidades = extraerCantidadesDeDetalle(t.detalle);
+        } else {
+            // Asegurar que todas las claves existan
+            const claves = ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"];
+            for (const k of claves) {
+                if (!(k in t.cantidades)) t.cantidades[k] = 0;
+            }
+        }
+        return t;
+    });
+
+    // -------- 4. Aplicar filtros (fecha, tipo, cliente) --------
     if (fecha) todos = todos.filter(t => t.fecha === fecha);
     if (tipo) {
         if (tipo === 'deuda') todos = todos.filter(t => t.tipoNormalizado === 'deuda');
@@ -824,15 +794,14 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         else if (tipo === 'cobrocc') todos = todos.filter(t => t.forma_pago === 'cobrocc');
     }
     if (clienteFiltro) {
-        todos = todos.filter(t => t.cliente && t.cliente.toLowerCase().includes(clienteFiltro.toLowerCase()));
+        const filtro = normalizarCliente(clienteFiltro);
+        todos = todos.filter(t => t.cliente && t.cliente.includes(filtro));
     }
 
-    // -------- 3. DEDUPLICAR: agrupar por (fecha, cliente, tipoNormalizado, monto, y cantidades normalizadas) --------
+    // -------- 5. DEDUPLICAR: agrupar por (fecha, cliente, tipoNormalizado, monto) --------
     const grupos = new Map();
     for (const item of todos) {
-        // Crear una clave que incluya las cantidades normalizadas (como string JSON)
-        const cantKey = JSON.stringify(item.cantidadesExtraidas || {});
-        const key = `${item.fecha}|${item.cliente}|${item.tipoNormalizado}|${item.monto}|${cantKey}`;
+        const key = `${item.fecha}|${item.cliente}|${item.tipoNormalizado}|${item.monto}`;
         if (!grupos.has(key)) {
             grupos.set(key, {
                 ...item,
@@ -844,52 +813,46 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         const grupo = grupos.get(key);
         // Acumular cantidades
         if (item.cantidades && typeof item.cantidades === 'object') {
-            for (const [prod, cant] of Object.entries(item.cantidades)) {
-                grupo.cantidades[prod] = (grupo.cantidades[prod] || 0) + cant;
+            for (const prod of ["1,7 KG","3,5 KG","14 KG","ESC.20KG","ESC.32KG"]) {
+                grupo.cantidades[prod] = (grupo.cantidades[prod] || 0) + (item.cantidades[prod] || 0);
             }
         }
-        // Guardar detalles e ids para posible referencia
+        // Guardar detalles para referencia
         if (item.detalle) grupo.detalles.push(item.detalle);
         if (item.id) grupo.ids.push(item.id);
-        // Conservar el primero de cada grupo como referencia
         if (!grupo._original) grupo._original = item;
     }
 
-    // -------- 4. Convertir grupos a array final --------
+    // -------- 6. Convertir grupos a array final --------
     const finalList = Array.from(grupos.values()).map(grupo => {
-        // Combinar detalles: si hay varios, unirlos con " · "
+        // Elegir el detalle más representativo: si hay algún detalle que contenga "14kg" o similar, usarlo; sino, combinar
         let detalleFinal = '';
         if (grupo.detalles.length === 1) {
             detalleFinal = grupo.detalles[0];
         } else if (grupo.detalles.length > 1) {
-            // Si todos los detalles son iguales, tomar uno
-            const unique = [...new Set(grupo.detalles)];
-            if (unique.length === 1) {
-                detalleFinal = unique[0];
-            } else {
-                // Si son diferentes, unirlos (ej: "14kg:6 · Cobro de deuda")
-                detalleFinal = unique.join(' · ');
-            }
+            // Preferir el que tenga formato "14kg:6" sobre "14kg6"
+            const preferido = grupo.detalles.find(d => /^\d+kg\s*:\s*\d+$/i.test(d.trim())) ||
+                              grupo.detalles.find(d => /^\d+kg\s*\d+$/i.test(d.trim())) ||
+                              grupo.detalles[0];
+            detalleFinal = preferido;
         }
-        // Usar la función combinadora para obtener el string final
+        // Generar el detalle final usando las cantidades acumuladas
         const detalleMostrado = combinarProductosDetalle(grupo.cantidades, detalleFinal);
-        // Si no hay detalle, usar '—'
-        const detalleFinal2 = detalleMostrado || '—';
         return {
             ...grupo._original,
             monto: grupo.monto,
             cantidades: grupo.cantidades,
-            detalle: detalleFinal2,
+            detalle: detalleMostrado || '—',
             tipo: grupo.tipoNormalizado,
             forma_pago: grupo.forma_pago,
             tipoMov: grupo._original.tipoMov
         };
     });
 
-    // -------- 5. Ordenar por fecha descendente --------
+    // -------- 7. Ordenar por fecha descendente --------
     finalList.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
-    // -------- 6. Renderizar en la tabla --------
+    // -------- 8. Renderizar --------
     const tbody = document.getElementById("bodyMovimientos");
     if (!tbody) return;
     if (finalList.length === 0) {
@@ -1024,9 +987,10 @@ function guardarPreciosClientes() {
 
 // ==================== HISTORIAL CLIENTE ====================
 function verHistorialCliente(cliente, desde = null, hasta = null) {
+    const clienteNorm = normalizarCliente(cliente);
     const todos = [
-        ...movimientos.filter(m => m.cliente === cliente).map(m => ({ ...m, tipoMov:'sheets' })),
-        ...ventasLocal.filter(v => v.cliente === cliente).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
+        ...movimientos.filter(m => m.cliente === clienteNorm).map(m => ({ ...m, tipoMov:'sheets' })),
+        ...ventasLocal.filter(v => v.cliente === clienteNorm).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
     ];
     let filtrados = todos;
     if (desde && hasta) {
@@ -1039,7 +1003,7 @@ function verHistorialCliente(cliente, desde = null, hasta = null) {
     filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
     const saldos = calcSaldos();
-    const saldo = saldos[cliente] || 0;
+    const saldo = saldos[clienteNorm] || 0;
     const saldoHtml = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 16px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);"><span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Saldo actual</span><span class="${numClass(saldo)}" style="font-size:1.1rem">${pesos(saldo)}</span></div>`;
 
     let filasHtml = '';
@@ -1109,9 +1073,10 @@ function verHistorialCliente(cliente, desde = null, hasta = null) {
 }
 
 function copiarHistorialCliente(cliente) {
+    const clienteNorm = normalizarCliente(cliente);
     const todos = [
-        ...movimientos.filter(m => m.cliente === cliente).map(m => ({ ...m, tipoMov:'sheets' })),
-        ...ventasLocal.filter(v => v.cliente === cliente).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
+        ...movimientos.filter(m => m.cliente === clienteNorm).map(m => ({ ...m, tipoMov:'sheets' })),
+        ...ventasLocal.filter(v => v.cliente === clienteNorm).map(v => ({ ...v, monto: v.total, tipoMov:'local', tipo: v.pago === "ctacte" ? "deuda" : (v.pago === "cobrocc" ? "pago" : null) }))
     ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
     if (todos.length === 0) { toast("No hay movimientos para este cliente"); return; }
 
@@ -1138,7 +1103,7 @@ function copiarHistorialCliente(cliente) {
     }
 
     const saldos = calcSaldos();
-    const saldo = saldos[cliente] || 0;
+    const saldo = saldos[clienteNorm] || 0;
     texto += `\nSaldo actual: ${pesos(saldo)}\n`;
     navigator.clipboard.writeText(texto).then(() => toast("Historial copiado"));
 }
@@ -1146,8 +1111,8 @@ function copiarHistorialCliente(cliente) {
 // ==================== DEUDAS (registro desde panel) ====================
 async function registrarDeuda() {
     const fecha = document.getElementById("dFecha").value;
-    const cliente = document.getElementById("dCliente").value;
-    const monto = parseFloat(document.getElementById("dMonto").value);
+    const cliente = normalizarCliente(document.getElementById("dCliente").value);
+    const monto = montoRedondo(document.getElementById("dMonto").value);
     const detalle = document.getElementById("dDetalle").value;
     if (!fecha || !cliente || !monto || monto<=0) return toast("Complete campos");
     const btn = document.getElementById("btnDeuda");
@@ -1172,8 +1137,8 @@ async function registrarDeuda() {
 
 async function registrarPago() {
     const fecha = document.getElementById("pFecha").value;
-    const cliente = document.getElementById("pCliente").value;
-    const monto = parseFloat(document.getElementById("pMonto").value);
+    const cliente = normalizarCliente(document.getElementById("pCliente").value);
+    const monto = montoRedondo(document.getElementById("pMonto").value);
     const forma = document.getElementById("pForma").value;
     const detalle = document.getElementById("pDetalle").value;
     if (!fecha || !cliente || !monto || monto<=0) return toast("Complete campos");
@@ -1242,7 +1207,10 @@ function exportarMovimientosExcel() {
         else if (tipo === 'ctacte') todos = todos.filter(t => t.pago === 'ctacte');
         else if (tipo === 'cobrocc') todos = todos.filter(t => t.pago === 'cobrocc');
     }
-    if (clienteFiltro) todos = todos.filter(t => t.cliente && t.cliente.toLowerCase().includes(clienteFiltro.toLowerCase()));
+    if (clienteFiltro) {
+        const filtro = normalizarCliente(clienteFiltro);
+        todos = todos.filter(t => t.cliente && t.cliente.includes(filtro));
+    }
     todos.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
     const data = [
         ["Fecha", "Cliente", "Tipo", "Monto", "Productos / Detalle"],
@@ -1272,7 +1240,10 @@ function exportarMovimientosCSV() {
         else if (tipo === 'ctacte') todos = todos.filter(t => t.pago === 'ctacte');
         else if (tipo === 'cobrocc') todos = todos.filter(t => t.pago === 'cobrocc');
     }
-    if (clienteFiltro) todos = todos.filter(t => t.cliente && t.cliente.toLowerCase().includes(clienteFiltro.toLowerCase()));
+    if (clienteFiltro) {
+        const filtro = normalizarCliente(clienteFiltro);
+        todos = todos.filter(t => t.cliente && t.cliente.includes(filtro));
+    }
     todos.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
     let csv = "Fecha,Cliente,Tipo,Monto,Productos/Detalle\n";
     todos.forEach(t => {
@@ -1299,9 +1270,10 @@ function exportarDeudoresExcel() {
 }
 
 function exportarClienteExcel(cliente) {
+    const clienteNorm = normalizarCliente(cliente);
     const todos = [
-        ...movimientos.filter(m => m.cliente === cliente),
-        ...ventasLocal.filter(v => v.cliente === cliente)
+        ...movimientos.filter(m => m.cliente === clienteNorm),
+        ...ventasLocal.filter(v => v.cliente === clienteNorm)
     ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
     const data = [
         ["Historial", cliente, new Date().toLocaleString('es-AR')], [],
@@ -1320,13 +1292,8 @@ function exportarClienteExcel(cliente) {
 function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) return;
-    // Extraer solo el contenido visible (sin botones de acción)
     const texto = Array.from(tabla.querySelectorAll("tr"))
-        .map(tr => Array.from(tr.children)
-            .filter(td => !td.classList.contains('no-print'))
-            .map(td => td.innerText.trim())
-            .join("\t")
-        )
+        .map(tr => Array.from(tr.children).filter(td => !td.classList.contains('no-print')).map(td => td.innerText.trim()).join("\t"))
         .join("\n");
     navigator.clipboard.writeText(texto).then(() => toast("Tabla copiada", 'success'));
 }
