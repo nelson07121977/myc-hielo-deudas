@@ -625,7 +625,6 @@ let fechaFin = '';
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
     if (!f) return '';
-    // Si la fecha viene con T (formato ISO), tomar solo la parte de fecha
     if (f.includes('T')) {
         f = f.split('T')[0];
     }
@@ -1550,10 +1549,10 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarDatos();
 });
 
+// Funciones globales para onclick (CORREGIDO)
 window.copiarTabla = copiarTabla;
 window.eliminarVenta = eliminarVenta;
 window.eliminarGasto = eliminarGasto;
-window.eliminarFabrica = eliminarFabrica;
 window.eliminarFabricaLocal = eliminarFabricaLocal;
 window.eliminarCliente = eliminarCliente;
 window.eliminarProducto = eliminarProducto;
