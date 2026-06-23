@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Resumen de Reparto (con buscador de clientes)</title>
+    <title>MYC HIELO – Resumen de Reparto (con selector de clientes y datos de nube)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -87,7 +87,6 @@
         .badge-cobrocc       { background: rgba(255,181,71,0.25);  color: #ffb547; }
         .badge-pago-efectivo { background: rgba(0,224,150,0.15);   color: #00e096; }
         .badge-pago-transf   { background: rgba(0,196,255,0.15);   color: #00c4ff; }
-        /* Clases para colores de movimiento en la tabla */
         .mov-deuda { background: rgba(255,77,109,0.12) !important; }
         .mov-pago-efectivo { background: rgba(0,224,150,0.12) !important; }
         .mov-pago-transf { background: rgba(0,196,255,0.12) !important; }
@@ -120,10 +119,6 @@
             .kpi-value { font-size: 1.4rem; }
             .grid-2 { grid-template-columns: 1fr; }
         }
-        /* Estilos para datalist personalizado (se ve como un select) */
-        input[list]::-webkit-calendar-picker-indicator {
-            filter: invert(0.6);
-        }
     </style>
 </head>
 <body>
@@ -148,15 +143,15 @@
         <div class="kpi-card neto"><div class="kpi-label">💰 Neto General Hoy</div><div class="kpi-value" id="netoTotal">$0</div></div>
     </div>
 
-    <!-- BÚSQUEDA DE CLIENTES CON DATALIST -->
     <div class="card">
         <div class="card-header">
             <div class="card-title"><span class="icon">🔍</span> Buscar Cliente</div>
             <button id="limpiarBusquedaBtn" class="btn btn-warning btn-sm no-print"><i class="fas fa-times"></i> Limpiar</button>
         </div>
         <div class="filtro">
-            <input type="text" id="buscarClienteInput" list="clientesList" placeholder="Escribí el nombre del cliente..." style="flex:1; min-width:160px;">
-            <datalist id="clientesList"></datalist>
+            <select id="buscarClienteSelect" style="flex:1; min-width:160px;">
+                <option value="">Seleccionar cliente...</option>
+            </select>
             <button id="buscarClienteBtn" class="btn btn-primary"><i class="fas fa-search"></i> Buscar</button>
         </div>
         <div id="clienteResultado"></div>
@@ -305,7 +300,7 @@ function badgeTipoColor(item) {
 function numClass(n){ return n >= 0 ? 'num-positive' : 'num-negative'; }
 function emptyRow(cols, msg){ return `<tr class="empty-row"><td colspan="${cols}">${msg}</td></tr>`; }
 
-// ==================== CARGA DE DATOS ====================
+// ==================== CARGA DE DATOS DESDE API ====================
 async function cargarSheets() {
     try {
         const [r1, r2] = await Promise.all([
@@ -324,50 +319,117 @@ async function cargarSheets() {
             forma_pago: m.forma_pago,
             detalle: m.detalle || ''
         }));
-        // Actualizar el datalist de clientes
-        actualizarDatalistClientes();
+        // Actualizar selector de clientes
+        actualizarSelectorClientes();
         toast("Datos de Sheets cargados", 'success');
     } catch(e) { console.error(e); toast("Error al cargar Google Sheets", 'error'); clientes = []; movimientos = []; }
 }
 
-function cargarLocalStorage() {
+async function cargarDatosChoferes() {
+    // Obtener ventas y gastos de ambos choferes desde la API y fusionar con localStorage
     gastos = [];
     ventasLocal = [];
     for (const pin of ["1234","5678"]) {
-        const pref = `myc_${pin}_`;
-        const ventas = JSON.parse(localStorage.getItem(pref + "ventas") || "[]");
-        for (const v of ventas) {
-            ventasLocal.push({
-                id: v.id,
-                fecha: fechaYMD(v.fecha),
-                cliente: v.cliente,
-                pago: v.pago,
-                total: normalizarNumero(v.total),
-                cobroDeuda: normalizarNumero(v.cobroDeuda),
-                cantidades: v.cantidades || {},
-                detalle: v.detalle || '',
-                chofer: pin
-            });
-        }
-        const gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
-        for (const g of gastosDet) gastos.push({ ...g, fecha: fechaYMD(g.fecha), chofer: pin });
-        const gastosSimp = JSON.parse(localStorage.getItem(pref + "gastosDetalle") || "{}");
-        const hoy = getHoy();
-        if (gastosSimp.nafta)    gastos.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gastosSimp.nafta), nota: "", chofer: pin });
-        if (gastosSimp.choferes) gastos.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gastosSimp.choferes), nota: "", chofer: pin });
-        if (gastosSimp.otros)    gastos.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gastosSimp.otros), nota: "", chofer: pin });
+        // Obtener ventas de la API
+        try {
+            const res = await fetch(`${API_URL}?ruta=obtenerVentas&chofer=${pin}&_=${Date.now()}`);
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+                // Guardar en localStorage para futuras cargas
+                localStorage.setItem(`myc_${pin}_ventas`, JSON.stringify(data));
+                // Agregar a ventasLocal
+                for (const v of data) {
+                    ventasLocal.push({
+                        id: v.id,
+                        fecha: fechaYMD(v.fecha),
+                        cliente: v.cliente,
+                        pago: v.pago,
+                        total: normalizarNumero(v.total),
+                        cobroDeuda: normalizarNumero(v.cobroDeuda),
+                        cantidades: v.cantidades || {},
+                        detalle: v.detalle || '',
+                        chofer: pin
+                    });
+                }
+            } else {
+                // Si no hay datos en API, usar localStorage
+                const key = `myc_${pin}_ventas`;
+                const stored = localStorage.getItem(key);
+                if (stored) {
+                    const ventas = JSON.parse(stored);
+                    for (const v of ventas) {
+                        ventasLocal.push({
+                            id: v.id,
+                            fecha: fechaYMD(v.fecha),
+                            cliente: v.cliente,
+                            pago: v.pago,
+                            total: normalizarNumero(v.total),
+                            cobroDeuda: normalizarNumero(v.cobroDeuda),
+                            cantidades: v.cantidades || {},
+                            detalle: v.detalle || '',
+                            chofer: pin
+                        });
+                    }
+                }
+            }
+        } catch(e) { console.error(`Error al obtener ventas de ${pin}:`, e); }
+
+        // Obtener gastos de la API
+        try {
+            const res = await fetch(`${API_URL}?ruta=obtenerGastos&chofer=${pin}&_=${Date.now()}`);
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+                // Guardar en localStorage
+                localStorage.setItem(`myc_${pin}_gastosDetallados`, JSON.stringify(data));
+                for (const g of data) {
+                    gastos.push({
+                        fecha: fechaYMD(g.fecha),
+                        categoria: g.categoria,
+                        monto: normalizarNumero(g.monto),
+                        nota: g.nota || '',
+                        chofer: pin
+                    });
+                }
+            } else {
+                // Si no hay datos en API, usar localStorage
+                const key = `myc_${pin}_gastosDetallados`;
+                const stored = localStorage.getItem(key);
+                if (stored) {
+                    const gastosDet = JSON.parse(stored);
+                    for (const g of gastosDet) {
+                        gastos.push({
+                            fecha: fechaYMD(g.fecha),
+                            categoria: g.categoria,
+                            monto: normalizarNumero(g.monto),
+                            nota: g.nota || '',
+                            chofer: pin
+                        });
+                    }
+                }
+                // También leer gastos simples (del formato antiguo)
+                const keySimple = `myc_${pin}_gastosDetalle`;
+                const storedSimple = localStorage.getItem(keySimple);
+                if (storedSimple) {
+                    const gs = JSON.parse(storedSimple);
+                    const hoy = getHoy();
+                    if (gs.nafta)    gastos.push({ fecha: hoy, categoria: "Nafta", monto: normalizarNumero(gs.nafta), nota: "", chofer: pin });
+                    if (gs.choferes) gastos.push({ fecha: hoy, categoria: "Chofer", monto: normalizarNumero(gs.choferes), nota: "", chofer: pin });
+                    if (gs.otros)    gastos.push({ fecha: hoy, categoria: "Otros", monto: normalizarNumero(gs.otros), nota: "", chofer: pin });
+                }
+            }
+        } catch(e) { console.error(`Error al obtener gastos de ${pin}:`, e); }
     }
-    toast("Datos locales cargados", 'success');
+    toast("Datos de choferes cargados", 'success');
 }
 
-function actualizarDatalistClientes() {
-    const datalist = document.getElementById('clientesList');
-    if (!datalist) return;
-    datalist.innerHTML = '';
+function actualizarSelectorClientes() {
+    const select = document.getElementById("buscarClienteSelect");
+    select.innerHTML = '<option value="">Seleccionar cliente...</option>';
     clientes.forEach(c => {
-        const option = document.createElement('option');
-        option.value = c;
-        datalist.appendChild(option);
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        select.appendChild(opt);
     });
 }
 
@@ -425,10 +487,7 @@ function renderRendicionChofer(pin, tbodyId, filtroFecha = null) {
     if (filtroFecha) {
         fechasArray = fechasArray.filter(f => f === filtroFecha);
     }
-    if (fechasArray.length === 0) {
-        tbody.innerHTML = emptyRow(12, 'No hay registros para esta fecha o el chofer no tiene datos');
-        return;
-    }
+    if (fechasArray.length === 0) { tbody.innerHTML = emptyRow(12, 'Sin datos'); return; }
     tbody.innerHTML = fechasArray.map(fecha => {
         const r = calcRendicionFecha(pin, fecha);
         return `<tr>
@@ -459,7 +518,7 @@ async function confirmarEliminarDia(pin, fecha) {
     gastosDet = gastosDet.filter(g => fechaYMD(g.fecha) !== fecha);
     localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
     toast(`Día ${fechaDMY(fecha)} eliminado`, 'success');
-    cargarLocalStorage();
+    await cargarDatosChoferes();
     renderTodo();
 }
 
@@ -512,7 +571,7 @@ async function eliminarMovSheet(id) {
         await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'eliminarMovimiento', id }) });
         toast("Eliminado de Sheets", 'success');
         await cargarSheets();
-        cargarLocalStorage();
+        await cargarDatosChoferes();
         renderTodo();
     } catch { toast("Error al eliminar", 'error'); }
 }
@@ -525,7 +584,7 @@ async function confirmarEliminarVenta(id, chofer) {
     ventas = ventas.filter(v => v.id !== id);
     localStorage.setItem(pref + "ventas", JSON.stringify(ventas));
     toast("Venta eliminada", 'success');
-    cargarLocalStorage();
+    await cargarDatosChoferes();
     renderTodo();
 }
 
@@ -601,7 +660,7 @@ async function confirmarEliminarGasto(pin, fecha, categoria, monto) {
     gastosDet = gastosDet.filter(g => !(g.fecha === fecha && g.categoria === categoria && g.monto === monto));
     localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
     toast("Gasto eliminado", 'success');
-    cargarLocalStorage();
+    await cargarDatosChoferes();
     renderTodo();
 }
 
@@ -709,7 +768,7 @@ async function actualizarTodo() {
     btn.disabled = true;
     try {
         await cargarSheets();
-        cargarLocalStorage();
+        await cargarDatosChoferes();
         renderTodo();
         toast("Datos actualizados correctamente", 'success');
     } catch (e) {
@@ -731,6 +790,7 @@ document.getElementById("verFechaMovBtn").addEventListener("click", () => {
 document.getElementById("verTodosMovBtn").addEventListener("click", () => renderMovimientos());
 document.getElementById("exportMovExcelBtn").addEventListener("click", exportarMovimientosExcel);
 
+// Filtros de choferes
 document.getElementById("filtrar1234Btn").addEventListener("click", () => {
     const f = document.getElementById("fecha1234").value;
     if (!f) { toast("Seleccioná una fecha"); return; }
@@ -763,18 +823,20 @@ document.getElementById("todosGastos1234Btn").addEventListener("click", () => re
 document.getElementById("verGastos5678Btn").addEventListener("click", () => renderGastos("5678", document.getElementById("gastosFecha5678").value, false));
 document.getElementById("todosGastos5678Btn").addEventListener("click", () => renderGastos("5678", null, true));
 
+// Búsqueda de cliente con selector
 document.getElementById("buscarClienteBtn").addEventListener("click", () => {
-    const nom = document.getElementById("buscarClienteInput").value.trim();
-    if (!nom) { toast("Escribí o seleccioná un cliente"); return; }
-    verHistorialCliente(nom);
+    const nom = document.getElementById("buscarClienteSelect").value;
+    if (nom) verHistorialCliente(nom);
+    else toast("Seleccioná un cliente");
 });
-document.getElementById("buscarClienteInput").addEventListener("keydown", e => {
-    if (e.key === "Enter") document.getElementById("buscarClienteBtn").click();
+document.getElementById("buscarClienteSelect").addEventListener("change", function() {
+    if (this.value) verHistorialCliente(this.value);
 });
 document.getElementById("limpiarBusquedaBtn").addEventListener("click", () => {
-    document.getElementById("buscarClienteInput").value = "";
+    document.getElementById("buscarClienteSelect").value = "";
     document.getElementById("clienteResultado").innerHTML = "";
 });
+
 document.getElementById("modal").addEventListener("click", e => {
     if (e.target === document.getElementById("modal")) document.getElementById("modal").classList.remove("open");
 });
