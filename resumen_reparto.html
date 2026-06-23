@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO – Resumen de Reparto (con selector de clientes y datos de nube)</title>
+    <title>MYC HIELO – Resumen de Reparto</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -218,37 +218,6 @@
             <table id="tablaDeudores"><thead><tr><th>Cliente</th><th>Saldo Deudor</th><th>Estado</th><th class="no-print">Acción</th></tr></thead><tbody id="bodyDeudores"></tbody></table>
         </div>
     </div>
-
-    <div class="grid-2">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title"><span class="icon">💸</span> Gastos Chofer 1234</div>
-                <div class="no-print" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                    <input type="date" id="gastosFecha1234" style="width:140px;">
-                    <button id="verGastos1234Btn" class="btn btn-primary btn-sm">Ver</button>
-                    <button id="todosGastos1234Btn" class="btn btn-success btn-sm">Todos</button>
-                    <button onclick="copiarTabla('tablaGastos1234')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button>
-                </div>
-            </div>
-            <div class="scroll-table">
-                <table id="tablaGastos1234"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print"></th></tr></thead><tbody id="bodyGastos1234"></tbody></table>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title"><span class="icon">💸</span> Gastos Chofer 5678</div>
-                <div class="no-print" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                    <input type="date" id="gastosFecha5678" style="width:140px;">
-                    <button id="verGastos5678Btn" class="btn btn-primary btn-sm">Ver</button>
-                    <button id="todosGastos5678Btn" class="btn btn-success btn-sm">Todos</button>
-                    <button onclick="copiarTabla('tablaGastos5678')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button>
-                </div>
-            </div>
-            <div class="scroll-table">
-                <table id="tablaGastos5678"><thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print"></th></tr></thead><tbody id="bodyGastos5678"></tbody></table>
-            </div>
-        </div>
-    </div>
 </div>
 <div id="toast"></div>
 <div id="modal" class="modal"><div class="modal-content"><div class="modal-title" id="modalTitulo">Confirmar</div><div id="modalBody"></div><div class="modal-footer"><button id="modalCancelar" class="btn btn-ghost">Cancelar</button><button id="modalConfirmar" class="btn btn-danger">Confirmar</button></div></div></div>
@@ -300,7 +269,7 @@ function badgeTipoColor(item) {
 function numClass(n){ return n >= 0 ? 'num-positive' : 'num-negative'; }
 function emptyRow(cols, msg){ return `<tr class="empty-row"><td colspan="${cols}">${msg}</td></tr>`; }
 
-// ==================== CARGA DE DATOS DESDE API ====================
+// ==================== CARGA DE DATOS ====================
 async function cargarSheets() {
     try {
         const [r1, r2] = await Promise.all([
@@ -319,25 +288,20 @@ async function cargarSheets() {
             forma_pago: m.forma_pago,
             detalle: m.detalle || ''
         }));
-        // Actualizar selector de clientes
         actualizarSelectorClientes();
         toast("Datos de Sheets cargados", 'success');
     } catch(e) { console.error(e); toast("Error al cargar Google Sheets", 'error'); clientes = []; movimientos = []; }
 }
 
 async function cargarDatosChoferes() {
-    // Obtener ventas y gastos de ambos choferes desde la API y fusionar con localStorage
     gastos = [];
     ventasLocal = [];
     for (const pin of ["1234","5678"]) {
-        // Obtener ventas de la API
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerVentas&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-                // Guardar en localStorage para futuras cargas
                 localStorage.setItem(`myc_${pin}_ventas`, JSON.stringify(data));
-                // Agregar a ventasLocal
                 for (const v of data) {
                     ventasLocal.push({
                         id: v.id,
@@ -352,7 +316,6 @@ async function cargarDatosChoferes() {
                     });
                 }
             } else {
-                // Si no hay datos en API, usar localStorage
                 const key = `myc_${pin}_ventas`;
                 const stored = localStorage.getItem(key);
                 if (stored) {
@@ -374,12 +337,10 @@ async function cargarDatosChoferes() {
             }
         } catch(e) { console.error(`Error al obtener ventas de ${pin}:`, e); }
 
-        // Obtener gastos de la API
         try {
             const res = await fetch(`${API_URL}?ruta=obtenerGastos&chofer=${pin}&_=${Date.now()}`);
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-                // Guardar en localStorage
                 localStorage.setItem(`myc_${pin}_gastosDetallados`, JSON.stringify(data));
                 for (const g of data) {
                     gastos.push({
@@ -391,7 +352,6 @@ async function cargarDatosChoferes() {
                     });
                 }
             } else {
-                // Si no hay datos en API, usar localStorage
                 const key = `myc_${pin}_gastosDetallados`;
                 const stored = localStorage.getItem(key);
                 if (stored) {
@@ -406,7 +366,6 @@ async function cargarDatosChoferes() {
                         });
                     }
                 }
-                // También leer gastos simples (del formato antiguo)
                 const keySimple = `myc_${pin}_gastosDetalle`;
                 const storedSimple = localStorage.getItem(keySimple);
                 if (storedSimple) {
@@ -517,6 +476,14 @@ async function confirmarEliminarDia(pin, fecha) {
     let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
     gastosDet = gastosDet.filter(g => fechaYMD(g.fecha) !== fecha);
     localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
+    // También eliminar gastos simples de ese día (si existen)
+    const keySimple = pref + "gastosDetalle";
+    const storedSimple = localStorage.getItem(keySimple);
+    if (storedSimple) {
+        let gs = JSON.parse(storedSimple);
+        // No podemos eliminar un día específico de gastos simples, solo se guardan totales acumulados por día.
+        // Como los gastos simples se guardan sin fecha, no se pueden eliminar fácilmente. Mejor omitimos.
+    }
     toast(`Día ${fechaDMY(fecha)} eliminado`, 'success');
     await cargarDatosChoferes();
     renderTodo();
@@ -635,35 +602,6 @@ function verHistorialCliente(cliente) {
     document.getElementById("clienteResultado").innerHTML = `${saldoHtml}<div class="scroll-table" style="max-height:380px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Productos</th><th>Detalle</th></tr></thead><tbody>${filas}</tbody></table></div><div class="no-print" style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('${cliente}').then(()=>toast('Copiado'))"><i class="fas fa-copy"></i> Copiar nombre</button><button class="btn btn-success btn-sm" onclick="exportarClienteExcel('${cliente}')"><i class="fas fa-file-excel"></i> Excel</button></div>`;
 }
 
-function renderGastos(pin, fecha = null, todos = false) {
-    const tbodyId = pin === "1234" ? "bodyGastos1234" : "bodyGastos5678";
-    const tbody = document.getElementById(tbodyId);
-    if (!tbody) return;
-    let filtrados = gastos.filter(g => g.chofer === pin);
-    if (!todos && fecha) filtrados = filtrados.filter(g => g.fecha === fecha);
-    filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-    if (filtrados.length === 0) { tbody.innerHTML = emptyRow(5, 'Sin gastos registrados'); return; }
-    tbody.innerHTML = filtrados.map(g => `<tr>
-        <td style="white-space:nowrap">${fechaDMY(g.fecha)}</td>
-        <td>${g.categoria}</td>
-        <td><span style="color:var(--warning);font-weight:600">${pesos(g.monto)}</span></td>
-        <td style="color:var(--text-muted)">${g.nota || ''}</td>
-        <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarGasto('${pin}','${g.fecha}','${g.categoria}',${g.monto})"><i class="fas fa-trash-alt"></i></button></td>
-    </tr>`).join('');
-}
-
-async function confirmarEliminarGasto(pin, fecha, categoria, monto) {
-    const ok = await confirmar('Eliminar gasto', `¿Eliminar ${categoria} — ${pesos(monto)} del ${fechaDMY(fecha)}?`);
-    if (!ok) return;
-    const pref = `myc_${pin}_`;
-    let gastosDet = JSON.parse(localStorage.getItem(pref + "gastosDetallados") || "[]");
-    gastosDet = gastosDet.filter(g => !(g.fecha === fecha && g.categoria === categoria && g.monto === monto));
-    localStorage.setItem(pref + "gastosDetallados", JSON.stringify(gastosDet));
-    toast("Gasto eliminado", 'success');
-    await cargarDatosChoferes();
-    renderTodo();
-}
-
 // ==================== EXPORTAR ====================
 function buildWorkbook(sheets) { const wb = XLSX.utils.book_new(); for (const [nombre, data] of sheets) { const ws = XLSX.utils.aoa_to_sheet(data); XLSX.utils.book_append_sheet(wb, ws, nombre); } return wb; }
 function exportarExcelCompleto() {
@@ -758,8 +696,6 @@ function renderTodo() {
     renderRendicionChofer("5678", "body5678", fecha5678 || null);
     renderMovimientos();
     renderDeudores();
-    renderGastos("1234", null, true);
-    renderGastos("5678", null, true);
 }
 
 async function actualizarTodo() {
@@ -818,12 +754,7 @@ document.getElementById("fecha5678").addEventListener("change", function() {
     else renderRendicionChofer("5678", "body5678", null);
 });
 
-document.getElementById("verGastos1234Btn").addEventListener("click", () => renderGastos("1234", document.getElementById("gastosFecha1234").value, false));
-document.getElementById("todosGastos1234Btn").addEventListener("click", () => renderGastos("1234", null, true));
-document.getElementById("verGastos5678Btn").addEventListener("click", () => renderGastos("5678", document.getElementById("gastosFecha5678").value, false));
-document.getElementById("todosGastos5678Btn").addEventListener("click", () => renderGastos("5678", null, true));
-
-// Búsqueda de cliente con selector
+// Búsqueda de cliente
 document.getElementById("buscarClienteBtn").addEventListener("click", () => {
     const nom = document.getElementById("buscarClienteSelect").value;
     if (nom) verHistorialCliente(nom);
