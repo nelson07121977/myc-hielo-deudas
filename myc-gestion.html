@@ -164,6 +164,7 @@
         .badge-efectivo { background: #fef9c3; color: #854d0e; }
         .badge-cobro { background: #f3e8ff; color: #6b21a8; }
         .badge-ctacte { background: #e0e7ff; color: #3730a3; }
+        .badge-gasto { background: #fee2e2; color: #b91c1c; }
 
         .btn {
             display: inline-flex;
@@ -734,7 +735,7 @@ async function cargarDatos() {
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
         }
 
-        // GASTOS - Conectado a la nueva implementación
+        // GASTOS
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -800,7 +801,7 @@ function renderGastos() {
         tbody.innerHTML = filtrados.map(g => `
             <tr>
                 <td>${formatearFecha(g.fecha)}</td>
-                <td><span class="badge badge-gasto" style="background:#fee2e2;color:#b91c1c;">${g.categoria || '—'}</span></td>
+                <td><span class="badge badge-gasto">${g.categoria || '—'}</span></td>
                 <td>${pesos(g.monto || 0)}</td>
                 <td>${g.nota || ''}</td>
                 <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td>
