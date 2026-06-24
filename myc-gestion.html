@@ -262,6 +262,8 @@
             .header { background: var(--azul) !important; -webkit-print-color-adjust: exact; }
             .card { border: 1px solid #ccc; box-shadow: none; }
         }
+
+        /* ===== DEBUG ===== */
         .debug-box {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -276,6 +278,17 @@
             font-family: monospace;
             white-space: pre-wrap;
         }
+        .debug-toggle {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+        .debug-toggle .btn {
+            width: auto;
+            padding: 4px 14px;
+            font-size: 0.7rem;
+        }
+
         .total-gastos-dia {
             font-size: 1.2rem;
             font-weight: 800;
@@ -315,7 +328,10 @@
         <a data-tab="informes"><i class="fas fa-file-alt"></i> Informes</a>
     </nav>
 
-    <!-- DEBUG -->
+    <!-- DEBUG (oculto por defecto) -->
+    <div class="debug-toggle no-print">
+        <button onclick="toggleDebug()" class="btn btn-sm btn-outline">🐛 Mostrar Debug</button>
+    </div>
     <div id="debugBox" class="debug-box"></div>
 
     <!-- ==================== TAB: DASHBOARD ==================== -->
@@ -661,11 +677,26 @@ function copiarTabla(tablaId) {
     navigator.clipboard.writeText(texto).then(() => toast('Tabla copiada'));
 }
 
+function toggleDebug() {
+    const box = document.getElementById('debugBox');
+    const btn = document.querySelector('.debug-toggle .btn');
+    if (box.style.display === 'none' || box.style.display === '') {
+        box.style.display = 'block';
+        btn.innerHTML = '🐛 Ocultar Debug';
+    } else {
+        box.style.display = 'none';
+        btn.innerHTML = '🐛 Mostrar Debug';
+    }
+}
+
 function mostrarDebug(msg) {
     const box = document.getElementById('debugBox');
     box.style.display = 'block';
     box.innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '\n';
     box.scrollTop = box.scrollHeight;
+    // Cambiar el texto del botón si está oculto
+    const btn = document.querySelector('.debug-toggle .btn');
+    if (btn) btn.innerHTML = '🐛 Ocultar Debug';
 }
 
 // ============================================================
@@ -1569,6 +1600,7 @@ window.exportarFabricasExcel = exportarFabricasExcel;
 window.exportarInformeExcel = exportarInformeExcel;
 window.generarInformeDiario = generarInformeDiario;
 window.agregarProducto = agregarProducto;
+window.toggleDebug = toggleDebug;
 </script>
 </body>
 </html>
