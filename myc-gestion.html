@@ -164,7 +164,6 @@
         .badge-efectivo { background: #fef9c3; color: #854d0e; }
         .badge-cobro { background: #f3e8ff; color: #6b21a8; }
         .badge-ctacte { background: #e0e7ff; color: #3730a3; }
-        .badge-gasto { background: #fee2e2; color: var(--rojo); }
 
         .btn {
             display: inline-flex;
@@ -604,10 +603,9 @@
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN - URL DE TU API
-//  Esta es la URL de la planilla de reparto (choferes)
+//  CONFIGURACIÓN - URL DE TU API (ACTUALIZADA)
 // ============================================================
-const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbweYEFbsUem2xeiyMxd5n8-ceqie_T-TW0wbMAkisTy7iVAj4MgFxcd5Y4C2QZJ1FCM/exec";
 
 // ============================================================
 //  ESTADO GLOBAL
@@ -736,7 +734,7 @@ async function cargarDatos() {
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
         }
 
-        // GASTOS - Conectado a la planilla de reparto
+        // GASTOS - Conectado a la nueva implementación
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -787,7 +785,7 @@ async function cargarDatos() {
 }
 
 // ============================================================
-//  GASTOS - Conectado a la API (planilla de reparto)
+//  GASTOS
 // ============================================================
 function renderGastos() {
     const filtroFecha = document.getElementById('filtroGastosFecha').value;
@@ -802,7 +800,7 @@ function renderGastos() {
         tbody.innerHTML = filtrados.map(g => `
             <tr>
                 <td>${formatearFecha(g.fecha)}</td>
-                <td><span class="badge badge-gasto">${g.categoria || '—'}</span></td>
+                <td><span class="badge badge-gasto" style="background:#fee2e2;color:#b91c1c;">${g.categoria || '—'}</span></td>
                 <td>${pesos(g.monto || 0)}</td>
                 <td>${g.nota || ''}</td>
                 <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td>
