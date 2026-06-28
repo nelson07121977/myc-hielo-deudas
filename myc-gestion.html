@@ -11,6 +11,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        /* ===== ESTILOS COMPLETOS (MANTENER IGUAL QUE ANTES) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -273,7 +274,6 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ===== FINANZAS ===== */
         .finanzas-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -558,7 +558,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v3.1 · 30/06/2026 · 💰 Finanzas + Calendario</div>
+            <div class="version-info">v3.2 · 01/07/2026 · 💰 Acumulados corregidos</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -586,9 +586,8 @@
     </div>
     <div id="debugBox" class="debug-box"></div>
 
-    <!-- ==================== TAB: DASHBOARD ==================== -->
+    <!-- ===== DASHBOARD ===== -->
     <div id="tab-dashboard" class="tab-content active">
-        <!-- (Mismo contenido que antes) -->
         <div class="fecha-selector-dashboard no-print">
             <label>📅 Ver día:</label>
             <input type="date" id="dashboardFecha">
@@ -644,9 +643,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: VENTAS ==================== -->
+    <!-- ===== VENTAS ===== -->
     <div id="tab-ventas" class="tab-content">
-        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📦 Registrar Venta</div>
@@ -700,9 +698,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: GASTOS ==================== -->
+    <!-- ===== GASTOS ===== -->
     <div id="tab-gastos" class="tab-content">
-        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title rojo">💸 Registrar Gasto</div>
@@ -747,9 +744,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: FÁBRICAS ==================== -->
+    <!-- ===== FÁBRICAS ===== -->
     <div id="tab-fabricas" class="tab-content">
-        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">🏭 Carga / Devolución en Fábrica</div>
@@ -803,9 +799,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: PRODUCTOS ==================== -->
+    <!-- ===== PRODUCTOS ===== -->
     <div id="tab-productos" class="tab-content">
-        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📦 Gestionar Productos</div>
@@ -829,9 +824,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: COSTOS ==================== -->
+    <!-- ===== COSTOS ===== -->
     <div id="tab-costos" class="tab-content">
-        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title dorado">💰 Costos de Productos (unitarios)</div>
@@ -857,9 +851,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: CLIENTES ==================== -->
+    <!-- ===== CLIENTES ===== -->
     <div id="tab-clientes" class="tab-content">
-        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title morado">➕ Agregar Cliente</div>
@@ -878,9 +871,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: INFORMES ==================== -->
+    <!-- ===== INFORMES ===== -->
     <div id="tab-informes" class="tab-content">
-        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📄 Informe Diario Resumido</div>
@@ -899,9 +891,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: HISTORIAL ==================== -->
+    <!-- ===== HISTORIAL ===== -->
     <div id="tab-historial" class="tab-content">
-        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📅 Historial de Informes Diarios</div>
@@ -928,10 +919,10 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: FINANZAS (NUEVO - CORREGIDO) ==================== -->
+    <!-- ===== FINANZAS (CORREGIDO) ===== -->
     <div id="tab-finanzas" class="tab-content">
 
-        <!-- Resumen de Deudas, Transferencias y Ganancia por Cliente -->
+        <!-- Resumen -->
         <div class="finanzas-grid">
             <div class="finanzas-card deudas">
                 <div class="titulo"><i class="fas fa-hand-holding-usd" style="color:var(--rojo);"></i> 💰 Deudas Activas</div>
@@ -950,7 +941,7 @@
             </div>
         </div>
 
-        <!-- GANANCIA REAL TOTAL -->
+        <!-- Ganancia Real Total -->
         <div class="ganancia-real-box">
             <div class="item">
                 <div class="label">💵 Efectivo Cobrado</div>
@@ -970,7 +961,7 @@
             </div>
         </div>
 
-        <!-- Tabla de detalle por cliente -->
+        <!-- Tabla por cliente -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title dorado">📊 Detalle de Ganancia Real por Cliente</div>
@@ -1009,7 +1000,7 @@
                 </div>
             </div>
             
-            <!-- Selector de período -->
+            <!-- Selector -->
             <div class="filtros no-print" style="margin-bottom:12px;">
                 <label style="font-weight:600;font-size:0.8rem;">📅 Ver:</label>
                 <select id="periodoGanancia" style="width:auto;">
@@ -1023,7 +1014,7 @@
                 <button class="btn btn-sm btn-outline" id="hoyGanancia"><i class="fas fa-calendar-day"></i> Hoy</button>
             </div>
 
-            <!-- Rango de fechas -->
+            <!-- Rango -->
             <div class="rango-fechas" id="rangoFechasGanancia">
                 📅 Mostrando: <span id="fechaInicioGanancia">-</span> al <span id="fechaFinGanancia">-</span>
             </div>
@@ -1038,28 +1029,28 @@
                 <div id="calendarioGananciaGrid" class="calendario-ganancias"></div>
             </div>
 
-            <!-- Detalle del día seleccionado -->
+            <!-- Detalle del día -->
             <div id="detalleDiaGanancia" class="detalle-dia-ganancia" style="display:none;">
                 <div class="fecha" id="detalleDiaFecha">📅 Fecha</div>
                 <div class="monto" id="detalleDiaMonto">$0</div>
                 <div style="font-size:0.7rem;color:var(--texto-claro);" id="detalleDiaInfo">Sin información</div>
             </div>
 
-            <!-- Totales acumulados -->
+            <!-- ACUMULADOS - CORREGIDO -->
             <div class="acumulados-grid" id="acumuladosGrid">
-                <div class="acumulado-item">
+                <div class="acumulado-item" id="acumuladoHoyItem">
                     <div class="label">📅 Hoy</div>
                     <div class="valor verde" id="acumuladoHoy">$0</div>
                 </div>
-                <div class="acumulado-item">
+                <div class="acumulado-item" id="acumuladoSemanaItem">
                     <div class="label">📊 Esta Semana</div>
                     <div class="valor azul" id="acumuladoSemana">$0</div>
                 </div>
-                <div class="acumulado-item">
+                <div class="acumulado-item" id="acumuladoMesItem">
                     <div class="label">📈 Este Mes</div>
                     <div class="valor dorado" id="acumuladoMes">$0</div>
                 </div>
-                <div class="acumulado-item">
+                <div class="acumulado-item" id="acumuladoAnioItem">
                     <div class="label">📅 Este Año</div>
                     <div class="valor morado" id="acumuladoAnio">$0</div>
                 </div>
@@ -1077,7 +1068,7 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v3.1-20260630";
+const VERSION = "v3.2-20260701";
 console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
@@ -1336,6 +1327,8 @@ function cargarGananciasCalendario() {
     } else {
         gananciasCalendario = {};
     }
+    // Forzar actualización de los acumulados
+    setTimeout(() => calcularAcumulados(), 100);
 }
 
 function guardarGananciasCalendario() {
@@ -1348,6 +1341,8 @@ function guardarGananciaDia(fecha, ganancia) {
     }
     gananciasCalendario[fecha].ganancia = ganancia;
     guardarGananciasCalendario();
+    // Actualizar acumulados después de guardar
+    setTimeout(() => calcularAcumulados(), 50);
 }
 
 // ============================================================
@@ -2413,10 +2408,9 @@ function exportarInformeExcel() {
 }
 
 // ============================================================
-//  FINANZAS - NUEVO MÓDULO CORREGIDO
+//  FINANZAS
 // ============================================================
 function renderFinanzas() {
-    // Calcular deudas, transferencias y ganancias por cliente
     const deudasPorCliente = {};
     const transferenciasPorCliente = {};
     const gananciaPorCliente = {};
@@ -2426,7 +2420,6 @@ function renderFinanzas() {
     let totalGananciaReal = 0;
     let totalCobros = 0;
 
-    // Inicializar estructuras
     const clientesUnicos = new Set(ventas.map(v => v.cliente).filter(Boolean));
     clientesUnicos.forEach(c => {
         deudasPorCliente[c] = 0;
@@ -2434,7 +2427,6 @@ function renderFinanzas() {
         gananciaPorCliente[c] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
     });
 
-    // Procesar ventas
     for (const v of ventas) {
         const cliente = v.cliente;
         if (!cliente) continue;
@@ -2443,10 +2435,8 @@ function renderFinanzas() {
             gananciaPorCliente[cliente] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
         }
         
-        // Total ventas
         gananciaPorCliente[cliente].ventas += v.total || 0;
         
-        // Costo
         const claves = ["1.7", "3.5", "14", "20", "32"];
         let costo = 0;
         for (let i = 0; i < claves.length; i++) {
@@ -2454,7 +2444,6 @@ function renderFinanzas() {
         }
         gananciaPorCliente[cliente].costo += costo;
         
-        // Según tipo de pago
         if (v.pago === 'efectivo') {
             gananciaPorCliente[cliente].efectivo += v.total || 0;
             totalEfectivo += v.total || 0;
@@ -2469,24 +2458,20 @@ function renderFinanzas() {
         } else if (v.pago === 'cobrocc') {
             gananciaPorCliente[cliente].cobros += v.total || 0;
             totalCobros += v.total || 0;
-            // Restar de la deuda
             deudasPorCliente[cliente] = Math.max(0, (deudasPorCliente[cliente] || 0) - (v.total || 0));
         }
     }
 
-    // Calcular ganancia bruta y real por cliente
     for (const [cliente, data] of Object.entries(gananciaPorCliente)) {
         data.gananciaBruta = data.ventas - data.costo;
         data.gananciaReal = data.gananciaBruta + data.cobros;
         totalGananciaReal += data.gananciaReal;
     }
 
-    // Actualizar UI
     document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudas);
     document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
     document.getElementById('totalGananciaClienteFinanzas').textContent = pesos(totalGananciaReal);
 
-    // Detalles
     const deudores = Object.entries(deudasPorCliente).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     document.getElementById('detalleDeudas').textContent = deudores.length > 0 
         ? `${deudores.length} clientes · ${deudores.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v)}`).join(' · ')}`
@@ -2502,14 +2487,12 @@ function renderFinanzas() {
         ? `${gananciaTop.length} clientes · ${gananciaTop.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v.gananciaReal)}`).join(' · ')}`
         : 'Sin ganancias registradas';
 
-    // GANANCIA REAL TOTAL
     const gananciaNetaReal = totalEfectivo + totalTransferencias + totalCobros - Object.values(gananciaPorCliente).reduce((acc, v) => acc + v.costo, 0);
     document.getElementById('gananciaEfectivo').textContent = pesos(totalEfectivo);
     document.getElementById('gananciaTransferencias').textContent = pesos(totalTransferencias);
     document.getElementById('gananciaDeuda').textContent = pesos(totalDeudas);
     document.getElementById('gananciaNetaReal').textContent = pesos(gananciaNetaReal);
 
-    // Tabla de ganancia por cliente
     renderTablaGananciaCliente(gananciaPorCliente);
 }
 
@@ -2609,7 +2592,6 @@ function renderCalendarioGanancias() {
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     mesLabel.textContent = `${meses[month]} ${year}`;
 
-    // Calcular rango de fechas
     const primerDiaStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
     const ultimoDiaStr = `${year}-${String(month+1).padStart(2,'0')}-${String(diasEnMes).padStart(2,'0')}`;
     document.getElementById('fechaInicioGanancia').textContent = formatearFecha(primerDiaStr);
@@ -2625,7 +2607,6 @@ function renderCalendarioGanancias() {
     }
 
     const hoyStr = hoy();
-    let totalGananciaMes = 0;
     
     for (let d = 1; d <= diasEnMes; d++) {
         const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -2636,7 +2617,6 @@ function renderCalendarioGanancias() {
         let color = '';
         if (gananciasCalendario[fecha]) {
             gananciaDia = gananciasCalendario[fecha].ganancia || 0;
-            totalGananciaMes += gananciaDia;
             if (gananciaDia > 0) color = 'verde';
             else if (gananciaDia < 0) color = 'rojo';
             else color = 'dorado';
@@ -2656,13 +2636,12 @@ function renderCalendarioGanancias() {
 
     grid.innerHTML = html;
     
-    // Si hay un día seleccionado, mostrar su detalle
     if (diaSeleccionadoGanancia) {
         mostrarDetalleDiaGanancia(diaSeleccionadoGanancia);
     }
     
-    // Calcular acumulados
-    calcularAcumulados();
+    // 🔥 FORZAR ACTUALIZACIÓN DE ACUMULADOS
+    setTimeout(() => calcularAcumulados(), 100);
 }
 
 function seleccionarDiaGanancia(fecha) {
@@ -2691,14 +2670,22 @@ function mostrarDetalleDiaGanancia(fecha) {
     container.style.display = 'block';
 }
 
+// ============================================================
+//  🚀 ACUMULADOS - CORREGIDO
+// ============================================================
 function calcularAcumulados() {
+    console.log('🔄 Calculando acumulados...');
+    
     const hoyStr = hoy();
     
-    // Calcular hoy
-    let gananciaHoy = gananciasCalendario[hoyStr] ? gananciasCalendario[hoyStr].ganancia : 0;
+    // 🔥 1. GANANCIA DE HOY
+    let gananciaHoy = 0;
+    if (gananciasCalendario[hoyStr]) {
+        gananciaHoy = gananciasCalendario[hoyStr].ganancia || 0;
+    }
     document.getElementById('acumuladoHoy').textContent = pesos(gananciaHoy);
     
-    // Calcular semana (últimos 7 días)
+    // 🔥 2. GANANCIA DE LA SEMANA (últimos 7 días)
     let gananciaSemana = 0;
     for (let i = 0; i < 7; i++) {
         const d = new Date();
@@ -2710,7 +2697,7 @@ function calcularAcumulados() {
     }
     document.getElementById('acumuladoSemana').textContent = pesos(gananciaSemana);
     
-    // Calcular mes actual
+    // 🔥 3. GANANCIA DEL MES ACTUAL
     let gananciaMes = 0;
     const mesActualStr = hoyStr.slice(0, 7);
     for (const [fecha, data] of Object.entries(gananciasCalendario)) {
@@ -2720,7 +2707,7 @@ function calcularAcumulados() {
     }
     document.getElementById('acumuladoMes').textContent = pesos(gananciaMes);
     
-    // Calcular año actual
+    // 🔥 4. GANANCIA DEL AÑO ACTUAL
     let gananciaAnio = 0;
     const anioActual = hoyStr.slice(0, 4);
     for (const [fecha, data] of Object.entries(gananciasCalendario)) {
@@ -2729,6 +2716,13 @@ function calcularAcumulados() {
         }
     }
     document.getElementById('acumuladoAnio').textContent = pesos(gananciaAnio);
+    
+    console.log('✅ Acumulados calculados:', {
+        hoy: gananciaHoy,
+        semana: gananciaSemana,
+        mes: gananciaMes,
+        anio: gananciaAnia
+    });
 }
 
 function exportarGananciaCalendarioExcel() {
@@ -2762,6 +2756,8 @@ function actualizarUI() {
     renderCalendarioGanancias();
     renderFinanzas();
     generarInformeDiario();
+    // 🔥 Forzar actualización de acumulados
+    setTimeout(() => calcularAcumulados(), 200);
 }
 
 function actualizarSelectores() {
@@ -2874,7 +2870,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('informeFecha').addEventListener('change', generarInformeDiario);
 
-    // Calendario de informes
     document.getElementById('mesAnterior').addEventListener('click', function() {
         mesActual.setMonth(mesActual.getMonth() - 1);
         renderCalendario();
@@ -2884,16 +2879,18 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCalendario();
     });
 
-    // Calendario de ganancias - CORREGIDO
+    // 🔥 CALENDARIO DE GANANCIAS - CORREGIDO
     document.getElementById('mesGananciaAnterior').addEventListener('click', function() {
         mesGanancia.setMonth(mesGanancia.getMonth() - 1);
         diaSeleccionadoGanancia = null;
         renderCalendarioGanancias();
+        setTimeout(() => calcularAcumulados(), 100);
     });
     document.getElementById('mesGananciaSiguiente').addEventListener('click', function() {
         mesGanancia.setMonth(mesGanancia.getMonth() + 1);
         diaSeleccionadoGanancia = null;
         renderCalendarioGanancias();
+        setTimeout(() => calcularAcumulados(), 100);
     });
 
     document.getElementById('aplicarFechaGanancia').addEventListener('click', function() {
@@ -2903,6 +2900,7 @@ document.addEventListener('DOMContentLoaded', function() {
             mesGanancia = new Date(d.getFullYear(), d.getMonth(), 1);
             diaSeleccionadoGanancia = fecha;
             renderCalendarioGanancias();
+            setTimeout(() => calcularAcumulados(), 100);
             toast(`📅 Mostrando ${meses[d.getMonth()]} ${d.getFullYear()}`);
         } else {
             toast('Seleccione una fecha');
@@ -2915,18 +2913,25 @@ document.addEventListener('DOMContentLoaded', function() {
         mesGanancia = new Date(d.getFullYear(), d.getMonth(), 1);
         diaSeleccionadoGanancia = hoyStr;
         renderCalendarioGanancias();
+        setTimeout(() => calcularAcumulados(), 100);
         toast('📅 Mostrando mes actual');
     });
 
-    // Selector de período
     document.getElementById('periodoGanancia').addEventListener('change', function() {
         renderCalendarioGanancias();
+        setTimeout(() => calcularAcumulados(), 100);
+    });
+
+    // 🔥 BOTÓN ACTUALIZAR ACUMULADOS
+    document.querySelector('#tab-finanzas .btn-dorado')?.addEventListener('click', function() {
+        calcularAcumulados();
+        toast('✅ Acumulados actualizados');
     });
 
     cargarDatos();
 });
 
-// Funciones globales
+// Variables globales
 const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 window.copiarTabla = copiarTabla;
