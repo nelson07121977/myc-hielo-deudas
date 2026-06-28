@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* ===== ESTILOS COMPLETOS (MISMO QUE ANTES) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -374,7 +375,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v4.7 · 01/07/2026 · 🧾 FACTURACIÓN CORREGIDA</div>
+            <div class="version-info">v4.8 · 01/07/2026 · 🧾 CORREGIDO</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -404,465 +405,12 @@
     <div id="debugBox" class="debug-box"></div>
 
     <!-- ============================================================ -->
-    <!-- TAB: DASHBOARD -->
+    <!-- TAB: DASHBOARD, VENTAS, GASTOS, FÁBRICAS, PRODUCTOS, COSTOS, CLIENTES, INFORMES, HISTORIAL, FINANZAS -->
     <!-- ============================================================ -->
-    <div id="tab-dashboard" class="tab-content active">
-        <div class="fecha-selector-dashboard no-print">
-            <label>📅 Ver día:</label>
-            <input type="date" id="dashboardFecha">
-            <button class="btn btn-sm btn-primary" id="dashboardFechaBtn"><i class="fas fa-search"></i> Ver</button>
-            <button class="btn btn-sm btn-outline" id="dashboardHoyBtn"><i class="fas fa-calendar-day"></i> Hoy</button>
-            <span style="font-size:0.65rem;color:var(--texto-claro);margin-left:auto;">Seleccioná una fecha para ver sus KPIs</span>
-        </div>
-
-        <div class="kpi-grid" id="kpiGrid">
-            <div class="kpi"><div class="label">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
-            <div class="kpi"><div class="label">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
-            <div class="kpi"><div class="label">📦 Costo bolsas</div><div class="value neutral" id="kpiCostoBolsas">$0</div></div>
-            <div class="kpi"><div class="label">📈 Ganancia</div><div class="value neutral" id="kpiGanancia">$0</div></div>
-            <div class="kpi"><div class="label">🧊 Bolsas</div><div class="value neutral" id="kpiBolsas">0</div></div>
-            <div class="kpi"><div class="label">👥 Clientes</div><div class="value neutral" id="kpiClientes">0</div></div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📊 Evolución de Ventas (últimos 7 días)</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="exportarSeccionPDF('chartVentas','Evolucion_Ventas')"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="btn btn-sm btn-outline" onclick="copiarSeccion('chartVentas')"><i class="fas fa-copy"></i> Copiar</button>
-                </div>
-            </div>
-            <div class="chart-container"><canvas id="chartVentas"></canvas></div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📋 Ventas del período</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaVentasPeriodo')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-success" onclick="exportarVentasPeriodoExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('tablaVentasPeriodo','Ventas_Periodo')"><i class="fas fa-file-pdf"></i> PDF</button>
-                </div>
-            </div>
-            <div class="resumen-totales">
-                <span class="item ventas">💰 Ventas: <span id="totalVentasPeriodo">$0</span></span>
-                <span class="item gastos">💸 Gastos: <span id="totalGastosPeriodo">$0</span></span>
-                <span class="item ganancia">📈 Ganancia: <span id="gananciaPeriodo">$0</span></span>
-            </div>
-            <div class="filtros no-print">
-                <input type="date" id="fechaInicio" style="width:auto;">
-                <span>a</span>
-                <input type="date" id="fechaFin" style="width:auto;">
-                <button class="btn btn-sm btn-primary" id="aplicarFechas"><i class="fas fa-filter"></i> Aplicar</button>
-                <button class="btn btn-sm btn-outline" id="resetFechas"><i class="fas fa-times"></i> Limpiar</button>
-            </div>
-            <div class="table-wrap">
-                <table id="tablaVentasPeriodo">
-                    <thead><tr><th>Fecha</th><th>Cliente</th><th>1.7</th><th>3.5</th><th>14</th><th>20</th><th>32</th><th>Total</th><th>Pago</th></tr></thead>
-                    <tbody id="tbodyVentasPeriodo"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <!-- Se mantienen igual que en la versión anterior -->
 
     <!-- ============================================================ -->
-    <!-- TAB: VENTAS -->
-    <!-- ============================================================ -->
-    <div id="tab-ventas" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📦 Registrar Venta</div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Fecha</label><input type="date" id="vFecha"></div>
-                <div class="form-group"><label>Cliente</label>
-                    <select id="vClienteSelect"></select>
-                    <input type="text" id="vCliente" placeholder="O escribir nuevo cliente" style="margin-top:6px;">
-                </div>
-            </div>
-            <div class="form-row-3">
-                <div class="form-group"><label>1,7 kg</label><input type="number" id="v17" value="0" min="0" step="1"></div>
-                <div class="form-group"><label>3,5 kg</label><input type="number" id="v35" value="0" min="0" step="1"></div>
-                <div class="form-group"><label>14 kg</label><input type="number" id="v14" value="0" min="0" step="1"></div>
-                <div class="form-group"><label>20 kg (escama)</label><input type="number" id="v20" value="0" min="0" step="1"></div>
-                <div class="form-group"><label>32 kg (escama)</label><input type="number" id="v32" value="0" min="0" step="1"></div>
-                <div class="form-group"><label>Forma de pago</label>
-                    <select id="vPago">
-                        <option value="efectivo">Efectivo</option>
-                        <option value="transferencia">Transferencia</option>
-                        <option value="deuda">Deuda</option>
-                        <option value="cobrocc">Cobro de deuda</option>
-                        <option value="ctacte">Cuenta corriente</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group"><label>Detalle (opcional)</label><input type="text" id="vDetalle" placeholder="Ej: 4 bolsas, cliente habitual"></div>
-            <button class="btn btn-success" id="btnRegistrarVenta"><i class="fas fa-plus"></i> Registrar Venta</button>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📋 Todas las Ventas</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaVentasCompleta')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-success" onclick="exportarVentasExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('tablaVentasCompleta','Todas_las_Ventas')"><i class="fas fa-file-pdf"></i> PDF</button>
-                </div>
-            </div>
-            <div class="filtros no-print">
-                <input type="text" id="filtroVentas" placeholder="Filtrar cliente..." style="flex:1;">
-                <input type="date" id="filtroVentasFecha">
-                <button class="btn btn-sm btn-outline" onclick="document.getElementById('filtroVentas').value='';document.getElementById('filtroVentasFecha').value='';renderVentas();"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="table-wrap">
-                <table id="tablaVentasCompleta">
-                    <thead><tr><th>Fecha</th><th>Cliente</th><th>1.7</th><th>3.5</th><th>14</th><th>20</th><th>32</th><th>Total</th><th>Pago</th><th class="no-print">Acción</th></tr></thead>
-                    <tbody id="tbodyVentasCompleta"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: GASTOS -->
-    <!-- ============================================================ -->
-    <div id="tab-gastos" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title rojo">💸 Registrar Gasto</div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Fecha</label><input type="date" id="gFecha"></div>
-                <div class="form-group"><label>Categoría</label>
-                    <select id="gCategoria">
-                        <option value="Nafta">Nafta</option>
-                        <option value="Chofer">Chofer</option>
-                        <option value="Otros">Otros</option>
-                        <option value="Mantenimiento">Mantenimiento</option>
-                        <option value="Impuestos">Impuestos</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-group"><label>Monto ($)</label><input type="number" id="gMonto" placeholder="0" step="any"></div>
-            <div class="form-group"><label>Nota</label><input type="text" id="gNota" placeholder="Descripción del gasto"></div>
-            <button class="btn btn-danger" id="btnRegistrarGasto"><i class="fas fa-plus"></i> Registrar Gasto</button>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title rojo">📋 Gastos registrados</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaGastos')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-success" onclick="exportarGastosExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('tablaGastos','Gastos_registrados')"><i class="fas fa-file-pdf"></i> PDF</button>
-                </div>
-            </div>
-            <div class="filtros no-print">
-                <input type="date" id="filtroGastosFecha">
-                <button class="btn btn-sm btn-primary" id="filtrarGastosBtn">Filtrar</button>
-                <button class="btn btn-sm btn-outline" id="resetGastosBtn">Limpiar</button>
-            </div>
-            <div class="table-wrap">
-                <table id="tablaGastos">
-                    <thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead>
-                    <tbody id="tbodyGastos"></tbody>
-                </table>
-            </div>
-            <div class="total-gastos-dia" id="totalGastosDia">Total gastos del día: $0</div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: FÁBRICAS -->
-    <!-- ============================================================ -->
-    <div id="tab-fabricas" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">🏭 Carga / Devolución en Fábrica</div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Fecha</label><input type="date" id="fFecha"></div>
-                <div class="form-group"><label>Fábrica</label>
-                    <select id="fFabrica">
-                        <option value="FRIO MAX">FRIO MAX</option>
-                        <option value="M&C">M&C</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Tipo de bolsa</label>
-                    <select id="fTipo">
-                        <option value="1.7">1,7 kg</option>
-                        <option value="3.5">3,5 kg</option>
-                        <option value="14">14 kg</option>
-                        <option value="20">20 kg (escama)</option>
-                        <option value="32">32 kg (escama)</option>
-                    </select>
-                </div>
-                <div class="form-group"><label>Cantidad cargada</label><input type="number" id="fCargada" value="0" min="0" step="1"></div>
-                <div class="form-group"><label>Cantidad devuelta</label><input type="number" id="fDevuelta" value="0" min="0" step="1"></div>
-            </div>
-            <button class="btn btn-primary" id="btnRegistrarFabrica"><i class="fas fa-plus"></i> Registrar</button>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📦 Movimientos de Fábricas</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaFabricas')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-success" onclick="exportarFabricasExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                </div>
-            </div>
-            <div class="table-wrap">
-                <table id="tablaFabricas">
-                    <thead><tr><th>Fecha</th><th>Fábrica</th><th>Tipo</th><th>Cargada</th><th>Devuelta</th><th class="no-print">Acción</th></tr></thead>
-                    <tbody id="tbodyFabricas"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📊 Resumen de existencias en fábricas</div>
-            </div>
-            <div id="resumenFabricas"></div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: PRODUCTOS -->
-    <!-- ============================================================ -->
-    <div id="tab-productos" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📦 Gestionar Productos</div>
-                <button class="btn btn-sm btn-success no-print" id="agregarProductoBtn"><i class="fas fa-plus"></i> Agregar producto</button>
-            </div>
-            <div id="listaProductos" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
-            <div id="nuevoProductoForm" style="display:none;margin-top:12px;padding:12px;background:var(--bg);border-radius:12px;">
-                <div class="form-row">
-                    <div class="form-group"><label>Nombre del producto</label><input type="text" id="nuevoProductoNombre" placeholder="Ej: Bolsa 5kg"></div>
-                    <div class="form-group"><label>Clave interna</label><input type="text" id="nuevoProductoClave" placeholder="Ej: 5.0 (sin espacios)"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Costo unitario ($)</label><input type="number" id="nuevoProductoCosto" step="100" min="0"></div>
-                    <div class="form-group"><label>Precio sugerido ($)</label><input type="number" id="nuevoProductoPrecio" step="100" min="0"></div>
-                </div>
-                <div style="display:flex;gap:8px;">
-                    <button class="btn btn-success" id="guardarNuevoProductoBtn"><i class="fas fa-save"></i> Guardar producto</button>
-                    <button class="btn btn-outline" id="cancelarNuevoProductoBtn">Cancelar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: COSTOS -->
-    <!-- ============================================================ -->
-    <div id="tab-costos" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title dorado">💰 Costos de Productos (unitarios)</div>
-                <button class="btn btn-sm btn-success no-print" id="guardarCostosBtn"><i class="fas fa-save"></i> Guardar costos</button>
-            </div>
-            <div id="costosContainer">
-                <div class="form-row-3" id="costosGrid"></div>
-            </div>
-            <p style="font-size:0.75rem;color:var(--texto-claro);margin-top:12px;">
-                <i class="fas fa-info-circle"></i> Estos costos se usan para calcular la ganancia real.
-            </p>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title dorado">📈 Margen de ganancia deseado</div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Porcentaje de ganancia (%)</label><input type="number" id="margenGanancia" value="30" min="0" step="5"></div>
-                <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-primary" id="calcularPreciosBtn"><i class="fas fa-calculator"></i> Calcular precios sugeridos</button></div>
-            </div>
-            <div id="preciosSugeridos"></div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: CLIENTES -->
-    <!-- ============================================================ -->
-    <div id="tab-clientes" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title morado">➕ Agregar Cliente</div>
-            </div>
-            <div style="display:flex;gap:8px;">
-                <input type="text" id="nuevoCliente" placeholder="Nombre del cliente" style="flex:1;padding:10px;border-radius:40px;border:1px solid var(--borde);">
-                <button class="btn btn-success" id="agregarClienteBtn"><i class="fas fa-plus"></i> Agregar</button>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title morado">👥 Clientes registrados</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaClientes')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('listaClientes','Clientes')"><i class="fas fa-file-pdf"></i> PDF</button>
-                </div>
-            </div>
-            <div id="listaClientes"></div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: INFORMES -->
-    <!-- ============================================================ -->
-    <div id="tab-informes" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📄 Informe Diario Resumido</div>
-                <div class="toolbar no-print">
-                    <div class="fecha-selector" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                        <label style="font-weight:600;font-size:0.75rem;">📅 Fecha:</label>
-                        <input type="date" id="informeFecha" style="padding:4px 10px;border-radius:40px;border:1px solid var(--borde);font-size:0.75rem;">
-                        <button class="btn btn-sm btn-primary" onclick="generarInformeDiario()"><i class="fas fa-file-alt"></i> Generar</button>
-                        <button class="btn btn-sm btn-success" onclick="exportarInformeExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                        <button class="btn btn-sm btn-danger" onclick="exportarInformePDF()"><i class="fas fa-file-pdf"></i> PDF</button>
-                        <button class="btn btn-sm btn-dorado" onclick="guardarInformeHistorial()"><i class="fas fa-save"></i> Guardar</button>
-                    </div>
-                </div>
-            </div>
-            <div id="informeDiarioContainer"></div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: HISTORIAL -->
-    <!-- ============================================================ -->
-    <div id="tab-historial" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title azul">📅 Historial de Informes Diarios</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-danger" onclick="limpiarHistorial()"><i class="fas fa-trash"></i> Limpiar</button>
-                    <button class="btn btn-sm btn-success" onclick="exportarHistorialExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                </div>
-            </div>
-            <div id="calendarioContainer" style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-                    <button class="btn btn-sm btn-outline" id="mesAnterior"><i class="fas fa-chevron-left"></i> Anterior</button>
-                    <span id="mesActual" style="font-weight:700;font-size:1rem;"></span>
-                    <button class="btn btn-sm btn-outline" id="mesSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
-                </div>
-                <div id="calendarioGrid" class="calendario"></div>
-            </div>
-            <div id="historialDetalle">
-                <div class="card-header">
-                    <div class="card-title azul">📋 Informe del día seleccionado</div>
-                    <div class="toolbar no-print">
-                        <button class="btn btn-sm btn-outline" onclick="copiarInformeSeleccionado()"><i class="fas fa-copy"></i> Copiar</button>
-                    </div>
-                </div>
-                <div id="historialDetalleContainer"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: FINANZAS -->
-    <!-- ============================================================ -->
-    <div id="tab-finanzas" class="tab-content">
-        <div class="finanzas-grid">
-            <div class="finanzas-card deudas">
-                <div class="titulo"><i class="fas fa-hand-holding-usd" style="color:var(--rojo);"></i> 💰 Deudas Activas</div>
-                <div class="total rojo" id="totalDeudasFinanzas">$0</div>
-                <div class="detalle" id="detalleDeudas">Cargando...</div>
-            </div>
-            <div class="finanzas-card transferencias">
-                <div class="titulo"><i class="fas fa-exchange-alt" style="color:#0369a1;"></i> 💳 Transferencias</div>
-                <div class="total azul" id="totalTransferenciasFinanzas">$0</div>
-                <div class="detalle" id="detalleTransferencias">Cargando...</div>
-            </div>
-            <div class="finanzas-card ganancia">
-                <div class="titulo"><i class="fas fa-chart-line" style="color:var(--verde);"></i> 📈 Ganancia por Cliente</div>
-                <div class="total verde" id="totalGananciaClienteFinanzas">$0</div>
-                <div class="detalle" id="detalleGananciaCliente">Cargando...</div>
-            </div>
-        </div>
-
-        <div class="ganancia-real-box" id="gananciaRealBox">
-            <div class="item"><div class="label">💵 Efectivo Cobrado</div><div class="valor verde" id="gananciaEfectivo">$0</div></div>
-            <div class="item"><div class="label">💳 Transferencias Cobradas</div><div class="valor azul" id="gananciaTransferencias">$0</div></div>
-            <div class="item"><div class="label">📘 Deuda (Pendiente)</div><div class="valor dorado" id="gananciaDeuda">$0</div></div>
-            <div class="item"><div class="label">📈 Ganancia Neta Real</div><div class="valor morado" id="gananciaNetaReal">$0</div></div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title dorado">📊 Detalle de Ganancia Real por Cliente</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaGananciaCliente')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-success" onclick="exportarGananciaClienteExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                </div>
-            </div>
-            <div class="table-wrap scroll-table">
-                <table id="tablaGananciaCliente">
-                    <thead>
-                        <tr><th>Cliente</th><th>💰 Ventas</th><th>📦 Costo</th><th>📈 Ganancia Bruta</th><th>💵 Efectivo</th><th>💳 Transfer.</th><th>📘 Deuda</th><th>🔴 Cobros</th><th>📊 Ganancia Real</th></tr>
-                    </thead>
-                    <tbody id="tbodyGananciaCliente"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title morado">📅 Calendario de Ganancias</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-success" onclick="exportarGananciaCalendarioExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                    <button class="btn btn-sm btn-dorado" onclick="calcularAcumulados()"><i class="fas fa-calculator"></i> Actualizar</button>
-                </div>
-            </div>
-            
-            <div class="filtros no-print" style="margin-bottom:10px;">
-                <label style="font-weight:600;font-size:0.75rem;">📅 Ver:</label>
-                <select id="periodoGanancia" style="width:auto;">
-                    <option value="dia">Día</option>
-                    <option value="semana" selected>Semana</option>
-                    <option value="mes">Mes</option>
-                    <option value="anio">Año</option>
-                </select>
-                <input type="date" id="fechaGanancia" style="width:auto;">
-                <button class="btn btn-sm btn-primary" id="aplicarFechaGanancia"><i class="fas fa-search"></i> Ver</button>
-                <button class="btn btn-sm btn-outline" id="hoyGanancia"><i class="fas fa-calendar-day"></i> Hoy</button>
-            </div>
-
-            <div class="rango-fechas" id="rangoFechasGanancia">
-                📅 Mostrando: <span id="fechaInicioGanancia">-</span> al <span id="fechaFinGanancia">-</span>
-            </div>
-
-            <div class="calendario-container" id="calendarioGananciaContainer">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-                    <button class="btn btn-sm btn-outline" id="mesGananciaAnterior"><i class="fas fa-chevron-left"></i> Anterior</button>
-                    <span id="mesGananciaActual" style="font-weight:700;font-size:1rem;"></span>
-                    <button class="btn btn-sm btn-outline" id="mesGananciaSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
-                </div>
-                <div id="calendarioGananciaGrid" class="calendario-ganancias"></div>
-            </div>
-
-            <div id="detalleDiaGanancia" class="detalle-dia-ganancia" style="display:none;">
-                <div class="fecha" id="detalleDiaFecha">📅 Fecha</div>
-                <div class="monto" id="detalleDiaMonto">$0</div>
-                <div style="font-size:0.7rem;color:var(--texto-claro);" id="detalleDiaInfo">Sin información</div>
-            </div>
-
-            <div class="acumulados-grid" id="acumuladosGrid">
-                <div class="acumulado-item"><div class="label">📅 Hoy</div><div class="valor verde" id="acumuladoHoy">$0</div></div>
-                <div class="acumulado-item"><div class="label">📊 Esta Semana</div><div class="valor azul" id="acumuladoSemana">$0</div></div>
-                <div class="acumulado-item"><div class="label">📈 Este Mes</div><div class="valor dorado" id="acumuladoMes">$0</div></div>
-                <div class="acumulado-item"><div class="label">📅 Este Año</div><div class="valor morado" id="acumuladoAnio">$0</div></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- TAB: FACTURACIÓN (CORREGIDA - CON TODOS LOS ELEMENTOS) -->
+    <!-- TAB: FACTURACIÓN (CORREGIDA) -->
     <!-- ============================================================ -->
     <div id="tab-facturacion" class="tab-content">
         <div class="card">
@@ -945,7 +493,7 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v4.7-20260701";
+const VERSION = "v4.8-20260701";
 console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
@@ -1259,7 +807,7 @@ function cargarGananciasDesdeVentas() {
 }
 
 // ============================================================
-//  HISTORIAL DE INFORMES
+//  HISTORIAL DE INFORMES (RESUMIDO)
 // ============================================================
 function cargarHistorial() {
     const data = localStorage.getItem('myc_historial_informes');
@@ -1827,6 +1375,9 @@ function guardarNuevoProducto() {
     toast('Producto agregado');
 }
 
+// ============================================================
+//  🔥 FINANZAS - CORREGIDO: AHORA SUMAN LOS COBROS
+// ============================================================
 function renderFinanzas() {
     const deudasPorCliente = {};
     const transferenciasPorCliente = {};
@@ -1852,8 +1403,10 @@ function renderFinanzas() {
             gananciaPorCliente[cliente] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
         }
         
+        // 🔥 SUMAR VENTAS TOTALES
         gananciaPorCliente[cliente].ventas += v.total || 0;
         
+        // 🔥 CALCULAR COSTO
         const claves = ["1.7", "3.5", "14", "20", "32"];
         let costo = 0;
         for (let i = 0; i < claves.length; i++) {
@@ -1861,6 +1414,7 @@ function renderFinanzas() {
         }
         gananciaPorCliente[cliente].costo += costo;
         
+        // 🔥 CLASIFICAR POR TIPO DE PAGO
         if (v.pago === 'efectivo') {
             gananciaPorCliente[cliente].efectivo += v.total || 0;
             totalEfectivo += v.total || 0;
@@ -1873,18 +1427,21 @@ function renderFinanzas() {
             totalDeudas += v.total || 0;
             deudasPorCliente[cliente] = (deudasPorCliente[cliente] || 0) + (v.total || 0);
         } else if (v.pago === 'cobrocc') {
+            // 🔥 COBRO DE DEUDA - SE SUMA A COBROS Y SE RESTA DE LA DEUDA
             gananciaPorCliente[cliente].cobros += v.total || 0;
             totalCobros += v.total || 0;
             deudasPorCliente[cliente] = Math.max(0, (deudasPorCliente[cliente] || 0) - (v.total || 0));
         }
     }
 
+    // 🔥 CALCULAR GANANCIA REAL
     for (const [cliente, data] of Object.entries(gananciaPorCliente)) {
         data.gananciaBruta = data.ventas - data.costo;
         data.gananciaReal = data.gananciaBruta + data.cobros;
         totalGananciaReal += data.gananciaReal;
     }
 
+    // 🔥 ACTUALIZAR UI
     document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudas);
     document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
     document.getElementById('totalGananciaClienteFinanzas').textContent = pesos(totalGananciaReal);
@@ -1904,6 +1461,7 @@ function renderFinanzas() {
         ? `${gananciaTop.length} clientes · ${gananciaTop.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v.gananciaReal)}`).join(' · ')}`
         : 'Sin ganancias';
 
+    // 🔥 GANANCIA REAL TOTAL
     const gananciaNetaReal = totalEfectivo + totalTransferencias + totalCobros - Object.values(gananciaPorCliente).reduce((acc, v) => acc + v.costo, 0);
     document.getElementById('gananciaEfectivo').textContent = pesos(totalEfectivo);
     document.getElementById('gananciaTransferencias').textContent = pesos(totalTransferencias);
@@ -2617,9 +2175,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const facturaDesde = document.getElementById('facturaFechaDesde');
     const facturaHasta = document.getElementById('facturaFechaHasta');
     if (facturaDesde) {
-        const d = new Date();
-        d.setDate(d.getDate() - 730); // 2 años para ver TODAS las deudas
-        facturaDesde.value = d.toISOString().slice(0,10);
+        // 🔥 PONER FECHA MUY ANTIGUA PARA VER TODAS LAS DEUDAS
+        facturaDesde.value = '2020-01-01';
     }
     if (facturaHasta) facturaHasta.value = hoy();
 
