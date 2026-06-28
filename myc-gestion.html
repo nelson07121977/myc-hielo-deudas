@@ -1415,7 +1415,7 @@ function exportarFabricasExcel() {
 }
 
 // ============================================================
-//  DASHBOARD
+//  DASHBOARD - CORREGIDO: AHORA CALCULA EL COSTO DE BOLSAS
 // ============================================================
 function renderDashboard(fecha = null) {
     const fechaStr = fecha || dashboardFecha || hoy();
@@ -1427,14 +1427,25 @@ function renderDashboard(fecha = null) {
     let bolsasVendidas = { "1.7": 0, "3.5": 0, "14": 0, "20": 0, "32": 0 };
     const clientesSet = new Set();
 
+    // Mapeo de claves de productos (coinciden con las claves en costos)
+    const clavesMap = {
+        "1.7": "1.7",
+        "3.5": "3.5",
+        "14": "14",
+        "20": "20",
+        "32": "32"
+    };
+
     for (const v of ventasFiltradas) {
         totalVentas += v.total || 0;
         const claves = ["1.7", "3.5", "14", "20", "32"];
         const cant = v.cantidades || [];
         for (let i = 0; i < claves.length; i++) {
             const q = cant[i] || 0;
+            const clave = clavesMap[claves[i]] || claves[i];
             bolsasVendidas[claves[i]] += q;
-            totalCosto += q * (costos[claves[i]] || 0);
+            // 🔥 CALCULAR COSTO usando costos[clave]
+            totalCosto += q * (costos[clave] || 0);
         }
         if (v.cliente) clientesSet.add(v.cliente);
     }
@@ -1443,6 +1454,7 @@ function renderDashboard(fecha = null) {
     const ganancia = totalVentas - totalCosto - totalGastos;
     const totalBolsas = Object.values(bolsasVendidas).reduce((a, b) => a + b, 0);
 
+    // Mostrar en KPIs
     document.getElementById('kpiVentas').textContent = pesos(totalVentas);
     document.getElementById('kpiVentas').className = 'value neutral';
     document.getElementById('kpiGastos').textContent = pesos(totalGastos);
@@ -1465,12 +1477,21 @@ function renderTablaVentasPeriodo(desde, hasta) {
     const gastosFiltrados = gastos.filter(g => g.fecha >= desde && g.fecha <= hasta);
 
     let totalVentas = 0, totalGastos = 0, totalCosto = 0;
+    const clavesMap = {
+        "1.7": "1.7",
+        "3.5": "3.5",
+        "14": "14",
+        "20": "20",
+        "32": "32"
+    };
+
     for (const v of ventasFiltradas) {
         totalVentas += v.total || 0;
         const claves = ["1.7", "3.5", "14", "20", "32"];
         const cant = v.cantidades || [];
         for (let i = 0; i < claves.length; i++) {
-            totalCosto += (cant[i] || 0) * (costos[claves[i]] || 0);
+            const clave = clavesMap[claves[i]] || claves[i];
+            totalCosto += (cant[i] || 0) * (costos[clave] || 0);
         }
     }
     for (const g of gastosFiltrados) totalGastos += g.monto || 0;
@@ -1888,17 +1909,29 @@ function generarInformeDiario() {
         return;
     }
 
-    // 🔥 FILTRAR POR FECHA CORRECTAMENTE
     const ventasDia = ventas.filter(v => v.fecha === fechaStr);
     const gastosDia = gastos.filter(g => g.fecha === fechaStr);
-
+    
     const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
     const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
+    
+    // 🔥 CALCULAR COSTO DE BOLSAS
+    const clavesMap = {
+        "1.7": "1.7",
+        "3.5": "3.5",
+        "14": "14",
+        "20": "20",
+        "32": "32"
+    };
     const totalCosto = ventasDia.reduce((acc, v) => {
         const claves = ["1.7", "3.5", "14", "20", "32"];
         const cant = v.cantidades || [];
-        return acc + cant.reduce((a, q, i) => a + (q || 0) * (costos[claves[i]] || 0), 0);
+        return acc + cant.reduce((a, q, i) => {
+            const clave = clavesMap[claves[i]] || claves[i];
+            return a + (q || 0) * (costos[clave] || 0);
+        }, 0);
     }, 0);
+    
     const ganancia = totalVentas - totalCosto - totalGastos;
     const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
 
@@ -1917,7 +1950,6 @@ function generarInformeDiario() {
         </div>
     `;
 
-    // 🔥 DETALLE DE GASTOS
     if (gastosDia.length > 0) {
         html += `
         <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
@@ -1934,7 +1966,6 @@ function generarInformeDiario() {
         html += `</ul></div>`;
     }
 
-    // 🔥 DETALLE DE VENTAS
     if (ventasDia.length > 0) {
         html += `
         <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
