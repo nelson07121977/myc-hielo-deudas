@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO · Gestión Integral (DEFINITIVA v6.1)</title>
+    <title>MYC HIELO · Gestión Integral (v6.2 FINAL)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* ===== ESTILOS COMPLETOS (sin cambios) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -374,7 +375,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v6.1 · DEFINITIVA CON DEBUG · 01/07/2026</div>
+            <div class="version-info">v6.2 · CORREGIDO (FINANZAS) · 01/07/2026</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -838,7 +839,7 @@
 //  CONFIGURACIÓN Y UTILIDADES
 // ======================================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v6.1-definitiva";
+const VERSION = "v6.2-corregido";
 
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
@@ -865,7 +866,6 @@ function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFrac
 function normalizarNombre(n) { return (n || '').trim().toUpperCase().replace(/\s+/g, ' '); }
 function num(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 
-// NORMALIZACIÓN DE PAGO - COBERTURA AMPLIA
 function normalizarPago(pago) {
     if (!pago) return '';
     const p = String(pago).trim().toLowerCase();
@@ -1050,7 +1050,6 @@ async function cargarDatos() {
                 };
             });
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
-            // Muestra todos los tipos de pago que hay
             const pagosUnicos = [...new Set(ventas.map(v => v.pago))];
             mostrarDebug(`TIPOS DE PAGO ENCONTRADOS: ${pagosUnicos.join(', ')}`);
         }
@@ -1560,70 +1559,85 @@ function guardarNuevoProducto() {
 }
 
 // ======================================================================
-//  🔥 FINANZAS - DEFINITIVO (con debug y normalización)
+//  🔥 FINANZAS - CORREGIDO (distingue transferencias con/sin producto)
 // ======================================================================
+function tieneProductos(v) {
+    return (v.cantidades || []).some(q => (q || 0) > 0);
+}
+
 function renderFinanzas() {
     // Inicializar acumuladores por cliente
     const deudaBruta = {};
     const cobros = {};
-    const transferencias = {};
     const efectivo = {};
+    const transferencias = {};
     const ganancia = {};
 
     for (const c of clientes) {
         deudaBruta[c] = 0;
         cobros[c] = 0;
-        transferencias[c] = 0;
         efectivo[c] = 0;
-        ganancia[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+        transferencias[c] = 0;
+        ganancia[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, cobros: 0, deuda: 0 };
     }
 
     for (const v of ventas) {
         const cliente = v.cliente;
         if (!cliente) continue;
         if (!ganancia[cliente]) {
-            ganancia[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+            ganancia[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, cobros: 0, deuda: 0 };
             deudaBruta[cliente] = 0;
             cobros[cliente] = 0;
-            transferencias[cliente] = 0;
             efectivo[cliente] = 0;
+            transferencias[cliente] = 0;
         }
-
-        ganancia[cliente].ventas += v.total || 0;
-
-        const claves = ["1.7", "3.5", "14", "20", "32"];
-        let costo = 0;
-        for (let i = 0; i < claves.length; i++) {
-            costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
-        }
-        ganancia[cliente].costo += costo;
 
         const pago = v.pago || '';
-        // DEBUG: mostrar qué pago se procesa
-        // console.log(`Procesando venta ${v.id} - pago: ${pago}, total: ${v.total}`);
+        const tieneProd = tieneProductos(v);
+        const monto = v.total || 0;
 
         if (pago === 'efectivo') {
-            ganancia[cliente].efectivo += v.total || 0;
-            efectivo[cliente] = (efectivo[cliente] || 0) + (v.total || 0);
-        } else if (pago === 'transferencia') {
-            ganancia[cliente].transferencias += v.total || 0;
-            transferencias[cliente] = (transferencias[cliente] || 0) + (v.total || 0);
+            ganancia[cliente].ventas += monto;
+            ganancia[cliente].efectivo += monto;
+            efectivo[cliente] = (efectivo[cliente] || 0) + monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
+        } else if (pago === 'transferencia' && tieneProd) {
+            ganancia[cliente].ventas += monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
+            transferencias[cliente] = (transferencias[cliente] || 0) + monto;
+        } else if (pago === 'transferencia' && !tieneProd) {
+            cobros[cliente] = (cobros[cliente] || 0) + monto;
+            ganancia[cliente].cobros += monto;
+            transferencias[cliente] = (transferencias[cliente] || 0) + monto;
         } else if (pago === 'ctacte' || pago === 'deuda') {
-            deudaBruta[cliente] += v.total || 0;
-            ganancia[cliente].deuda += v.total || 0;
+            deudaBruta[cliente] = (deudaBruta[cliente] || 0) + monto;
+            ganancia[cliente].deuda += monto;
         } else if (pago === 'cobrocc') {
-            cobros[cliente] += v.total || 0;
-            ganancia[cliente].cobros += v.total || 0;
+            cobros[cliente] = (cobros[cliente] || 0) + monto;
+            ganancia[cliente].cobros += monto;
         } else {
-            // Si no coincide, lo tratamos como efectivo por defecto?
-            // Mejor lo mostramos en debug para que el usuario vea qué pago no reconoce.
-            mostrarDebug(`⚠️ Pago no reconocido: "${pago}" para cliente ${cliente}. Se tratará como efectivo.`);
-            ganancia[cliente].efectivo += v.total || 0;
-            efectivo[cliente] = (efectivo[cliente] || 0) + (v.total || 0);
+            ganancia[cliente].ventas += monto;
+            ganancia[cliente].efectivo += monto;
+            efectivo[cliente] = (efectivo[cliente] || 0) + monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
         }
     }
 
-    // Calcular deuda neta = bruta - (cobros + transferencias)
     const deudaNeta = {};
     let totalDeudaNeta = 0;
     let totalTransferencias = 0;
@@ -1633,25 +1647,22 @@ function renderFinanzas() {
     for (const c of Object.keys(ganancia)) {
         const bruta = deudaBruta[c] || 0;
         const cob = cobros[c] || 0;
-        const transf = transferencias[c] || 0;
-        const neta = Math.max(0, bruta - cob - transf);
+        const neta = Math.max(0, bruta - cob);
         deudaNeta[c] = neta;
         totalDeudaNeta += neta;
-        totalTransferencias += transf;
+        totalTransferencias += transferencias[c] || 0;
         totalEfectivo += efectivo[c] || 0;
         ganancia[c].gananciaBruta = ganancia[c].ventas - ganancia[c].costo;
         ganancia[c].gananciaReal = ganancia[c].gananciaBruta + ganancia[c].cobros;
         totalGananciaReal += ganancia[c].gananciaReal;
     }
 
-    // Mostrar en consola para depuración
-    console.log('🔍 RESULTADOS FINANZAS:');
+    console.log('🔍 RESULTADOS FINANZAS (CORREGIDO):');
     console.log('Total Efectivo:', totalEfectivo);
     console.log('Total Transferencias:', totalTransferencias);
     console.log('Total Deuda Neta:', totalDeudaNeta);
     console.log('Total Ganancia Real:', totalGananciaReal);
 
-    // Actualizar KPIs
     document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudaNeta);
     document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
     document.getElementById('totalGananciaClienteFinanzas').textContent = pesos(totalGananciaReal);
@@ -1688,13 +1699,18 @@ function renderTablaGananciaCliente(ganancia, deudaNeta) {
     if (sorted.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin datos</td></tr>'; return; }
     tbody.innerHTML = sorted.map(([cliente, data]) => {
         const neta = deudaNeta[cliente] || 0;
+        // Transferencias totales del cliente (con y sin producto)
+        let transfTotal = 0;
+        for (const v of ventas) {
+            if (v.cliente === cliente && v.pago === 'transferencia') transfTotal += v.total || 0;
+        }
         return `<tr>
             <td><strong>${cliente}</strong></td>
             <td>${pesos(data.ventas)}</td>
             <td>${pesos(data.costo)}</td>
             <td style="color:${data.gananciaBruta >= 0 ? 'var(--verde)' : 'var(--rojo)'}">${pesos(data.gananciaBruta)}</td>
             <td>${pesos(data.efectivo)}</td>
-            <td>${pesos(data.transferencias)}</td>
+            <td>${pesos(transfTotal)}</td>
             <td style="color:var(--dorado)">${pesos(neta)}</td>
             <td style="color:var(--morado)">${pesos(data.cobros)}</td>
             <td style="color:${data.gananciaReal >= 0 ? 'var(--verde)' : 'var(--rojo)'};font-weight:800;">${pesos(data.gananciaReal)}</td>
@@ -1706,68 +1722,93 @@ function exportarGananciaClienteExcel() {
     // Recalcular con la misma lógica
     const deudaBruta = {};
     const cobros = {};
-    const transferencias = {};
     const efectivo = {};
+    const transferencias = {};
     const ganancia = {};
     for (const c of clientes) {
         deudaBruta[c] = 0;
         cobros[c] = 0;
-        transferencias[c] = 0;
         efectivo[c] = 0;
-        ganancia[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+        transferencias[c] = 0;
+        ganancia[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, cobros: 0, deuda: 0 };
     }
     for (const v of ventas) {
         const cliente = v.cliente;
         if (!cliente) continue;
         if (!ganancia[cliente]) {
-            ganancia[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+            ganancia[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, cobros: 0, deuda: 0 };
             deudaBruta[cliente] = 0;
             cobros[cliente] = 0;
-            transferencias[cliente] = 0;
             efectivo[cliente] = 0;
+            transferencias[cliente] = 0;
         }
-        ganancia[cliente].ventas += v.total || 0;
-        const claves = ["1.7", "3.5", "14", "20", "32"];
-        let costo = 0;
-        for (let i = 0; i < claves.length; i++) {
-            costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
-        }
-        ganancia[cliente].costo += costo;
         const pago = v.pago || '';
+        const tieneProd = tieneProductos(v);
+        const monto = v.total || 0;
+
         if (pago === 'efectivo') {
-            ganancia[cliente].efectivo += v.total || 0;
-            efectivo[cliente] = (efectivo[cliente] || 0) + (v.total || 0);
-        } else if (pago === 'transferencia') {
-            ganancia[cliente].transferencias += v.total || 0;
-            transferencias[cliente] = (transferencias[cliente] || 0) + (v.total || 0);
+            ganancia[cliente].ventas += monto;
+            ganancia[cliente].efectivo += monto;
+            efectivo[cliente] = (efectivo[cliente] || 0) + monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
+        } else if (pago === 'transferencia' && tieneProd) {
+            ganancia[cliente].ventas += monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
+            transferencias[cliente] = (transferencias[cliente] || 0) + monto;
+        } else if (pago === 'transferencia' && !tieneProd) {
+            cobros[cliente] = (cobros[cliente] || 0) + monto;
+            ganancia[cliente].cobros += monto;
+            transferencias[cliente] = (transferencias[cliente] || 0) + monto;
         } else if (pago === 'ctacte' || pago === 'deuda') {
-            deudaBruta[cliente] += v.total || 0;
-            ganancia[cliente].deuda += v.total || 0;
+            deudaBruta[cliente] = (deudaBruta[cliente] || 0) + monto;
+            ganancia[cliente].deuda += monto;
         } else if (pago === 'cobrocc') {
-            cobros[cliente] += v.total || 0;
-            ganancia[cliente].cobros += v.total || 0;
+            cobros[cliente] = (cobros[cliente] || 0) + monto;
+            ganancia[cliente].cobros += monto;
         } else {
-            ganancia[cliente].efectivo += v.total || 0;
-            efectivo[cliente] = (efectivo[cliente] || 0) + (v.total || 0);
+            ganancia[cliente].ventas += monto;
+            ganancia[cliente].efectivo += monto;
+            efectivo[cliente] = (efectivo[cliente] || 0) + monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
         }
     }
+
     const deudaNeta = {};
     for (const c of Object.keys(ganancia)) {
         const bruta = deudaBruta[c] || 0;
         const cob = cobros[c] || 0;
-        const transf = transferencias[c] || 0;
-        deudaNeta[c] = Math.max(0, bruta - cob - transf);
+        deudaNeta[c] = Math.max(0, bruta - cob);
         ganancia[c].gananciaBruta = ganancia[c].ventas - ganancia[c].costo;
         ganancia[c].gananciaReal = ganancia[c].gananciaBruta + ganancia[c].cobros;
     }
+
     const data = [
         ['MYC HIELO · Ganancia Real por Cliente'],
         [],
         ['Cliente', 'Total Ventas', 'Costo', 'Ganancia Bruta', 'Efectivo', 'Transferencias', 'Deuda Neta', 'Cobros', 'Ganancia Real']
     ];
     for (const [cliente, d] of Object.entries(ganancia)) {
+        let transfTotal = 0;
+        for (const v of ventas) {
+            if (v.cliente === cliente && v.pago === 'transferencia') transfTotal += v.total || 0;
+        }
         data.push([
-            cliente, d.ventas, d.costo, d.gananciaBruta, d.efectivo, d.transferencias,
+            cliente, d.ventas, d.costo, d.gananciaBruta, d.efectivo, transfTotal,
             deudaNeta[cliente] || 0, d.cobros, d.gananciaReal
         ]);
     }
@@ -1906,17 +1947,33 @@ function generarFactura() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
+    // Ventas del período (para calcular deudas) y todas las ventas del cliente (para cobros históricos)
     const ventasCliente = ventas.filter(v => v.cliente === cliente && v.fecha >= desde && v.fecha <= hasta);
+    const todasVentasCliente = ventas.filter(v => v.cliente === cliente);
 
+    // Deudas del período seleccionado
     const deudas = ventasCliente.filter(v => v.pago === 'ctacte' || v.pago === 'deuda');
-    const pagos = ventasCliente.filter(v => v.pago === 'cobrocc' || v.pago === 'transferencia');
+
+    // Cobros de deuda: cobrocc en cualquier fecha (pueden haberse registrado fuera del período)
+    const cobrosDeuda = todasVentasCliente.filter(v => v.pago === 'cobrocc');
+
+    // Transferencias que son pago de deuda (sin mercadería) vs ventas al contado (con mercadería)
+    const transfersPagoDeuda = todasVentasCliente.filter(v => {
+        if (v.pago !== 'transferencia') return false;
+        const tieneMercaderia = (v.cantidades || []).some(q => (q || 0) > 0);
+        return !tieneMercaderia; // sin producto = es pago de deuda
+    });
 
     const totalDeudas = deudas.reduce((acc, v) => acc + (v.total || 0), 0);
-    const totalPagos = pagos.reduce((acc, v) => acc + (v.total || 0), 0);
-    const deudaNeta = totalDeudas - totalPagos;
+    const totalCobros = cobrosDeuda.reduce((acc, v) => acc + (v.total || 0), 0);
+    const totalTransfPago = transfersPagoDeuda.reduce((acc, v) => acc + (v.total || 0), 0);
+    const totalPagos = totalCobros + totalTransfPago;
+    const deudaNeta = Math.max(0, totalDeudas - totalPagos);
 
-    if (deudaNeta <= 0) {
-        toast('❌ El cliente no tiene deuda neta en este período');
+    const pagos = [...cobrosDeuda, ...transfersPagoDeuda].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+
+    if (totalDeudas <= 0) {
+        toast('❌ El cliente no tiene deudas registradas en este período');
         document.getElementById('facturaBox').style.display = 'none';
         document.getElementById('facturaVacia').style.display = 'block';
         return;
