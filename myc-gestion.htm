@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -118,6 +119,7 @@
         .kpi .value.positive { color: var(--verde); }
         .kpi .value.negative { color: var(--rojo); }
         .kpi .value.neutral { color: var(--azul); }
+        .kpi .value.warning { color: #d97706; }
 
         .filtros {
             display: flex;
@@ -248,6 +250,54 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Calendario */
+        .calendario {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .calendario .dia {
+            background: var(--white);
+            border: 1px solid var(--borde);
+            border-radius: 8px;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .calendario .dia:hover { background: var(--azul-claro); }
+        .calendario .dia .num { font-weight: 700; font-size: 0.9rem; }
+        .calendario .dia .indicador { 
+            display: block; 
+            width: 6px; 
+            height: 6px; 
+            border-radius: 50%; 
+            margin: 2px auto 0;
+        }
+        .calendario .dia .indicador.verde { background: var(--verde); }
+        .calendario .dia .indicador.rojo { background: var(--rojo); }
+        .calendario .dia .indicador.azul { background: var(--azul); }
+        .calendario .dia.hoy { border-color: var(--azul); border-width: 2px; }
+        .calendario .dia.otro-mes { opacity: 0.3; }
+        .calendario .dia-header {
+            font-weight: 600;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: var(--texto-claro);
+            padding: 4px 0;
+            text-align: center;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 12px;
+        }
+
         @media (max-width: 700px) {
             .header h1 { font-size: 1.2rem; }
             .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -256,6 +306,7 @@
             .card { padding: 14px; }
             table { font-size: 0.7rem; }
             th, td { padding: 6px 8px; }
+            .calendario { max-width: 100%; }
         }
         @media print {
             .no-print { display: none !important; }
@@ -263,7 +314,6 @@
             .card { border: 1px solid #ccc; box-shadow: none; }
         }
 
-        /* ===== DEBUG ===== */
         .debug-box {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -283,11 +333,7 @@
             justify-content: flex-end;
             margin-bottom: 8px;
         }
-        .debug-toggle .btn {
-            width: auto;
-            padding: 4px 14px;
-            font-size: 0.7rem;
-        }
+        .debug-toggle .btn { width: auto; padding: 4px 14px; font-size: 0.7rem; }
 
         .total-gastos-dia {
             font-size: 1.2rem;
@@ -299,29 +345,19 @@
             display: inline-block;
             margin-top: 8px;
         }
-        .fecha-selector {
+
+        .alerta-deuda {
+            background: #fee2e2;
+            border-left: 4px solid var(--rojo);
+            padding: 8px 14px;
+            border-radius: 8px;
+            margin: 4px 0;
+            font-size: 0.8rem;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
         }
-        .fecha-selector label {
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: var(--texto-claro);
-        }
-        .fecha-selector input[type="date"] {
-            padding: 6px 12px;
-            border-radius: 40px;
-            border: 1px solid var(--borde);
-            font-size: 0.8rem;
-            font-family: inherit;
-            background: var(--white);
-            outline: none;
-        }
-        .fecha-selector input[type="date"]:focus {
-            border-color: var(--azul);
-        }
+        .alerta-deuda .monto { font-weight: 800; color: var(--rojo); }
     </style>
 </head>
 <body>
@@ -349,9 +385,10 @@
         <a data-tab="costos"><i class="fas fa-tag"></i> Costos</a>
         <a data-tab="clientes"><i class="fas fa-users"></i> Clientes</a>
         <a data-tab="informes"><i class="fas fa-file-alt"></i> Informes</a>
+        <a data-tab="historial"><i class="fas fa-calendar-alt"></i> Historial</a>
     </nav>
 
-    <!-- DEBUG (oculto por defecto) -->
+    <!-- DEBUG -->
     <div class="debug-toggle no-print">
         <button onclick="toggleDebug()" class="btn btn-sm btn-outline">🐛 Mostrar Debug</button>
     </div>
@@ -366,6 +403,24 @@
             <div class="kpi"><div class="label">🧊 Bolsas Vendidas</div><div class="value neutral" id="kpiBolsas">0</div></div>
             <div class="kpi"><div class="label">👥 Clientes Atendidos</div><div class="value neutral" id="kpiClientes">0</div></div>
             <div class="kpi"><div class="label">💸 Gastos Hoy</div><div class="value negative" id="kpiGastos">$0</div></div>
+        </div>
+
+        <!-- Alertas de deudores -->
+        <div class="card" id="alertasDeudores">
+            <div class="card-header">
+                <div class="card-title">⚠️ Alertas de Deudores</div>
+            </div>
+            <div id="listaAlertas"></div>
+        </div>
+
+        <!-- Gráfico -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📊 Evolución de Ventas (últimos 7 días)</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartVentas"></canvas>
+            </div>
         </div>
 
         <div class="card no-print">
@@ -627,16 +682,45 @@
             <div class="card-header">
                 <div class="card-title">📄 Informe Diario Resumido</div>
                 <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                    <div class="fecha-selector">
-                        <label>📅 Fecha:</label>
-                        <input type="date" id="informeFecha">
+                    <div class="fecha-selector" style="display:flex;gap:6px;align-items:center;">
+                        <label style="font-weight:600;font-size:0.8rem;">📅 Fecha:</label>
+                        <input type="date" id="informeFecha" style="padding:6px 12px;border-radius:40px;border:1px solid var(--borde);font-size:0.8rem;">
                         <button class="btn btn-sm btn-primary" onclick="generarInformeDiario()"><i class="fas fa-file-alt"></i> Generar</button>
                         <button class="btn btn-sm btn-success" onclick="exportarInformeExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                        <button class="btn btn-sm btn-success" onclick="guardarInformeHistorial()"><i class="fas fa-save"></i> Guardar</button>
                         <button class="btn btn-sm btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
                     </div>
                 </div>
             </div>
             <div id="informeDiarioContainer"></div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB: HISTORIAL ==================== -->
+    <div id="tab-historial" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📅 Historial de Informes Diarios</div>
+                <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-danger" onclick="limpiarHistorial()"><i class="fas fa-trash"></i> Limpiar historial</button>
+                    <button class="btn btn-sm btn-success" onclick="exportarHistorialExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                </div>
+            </div>
+            <div id="calendarioContainer" style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-sm btn-outline" id="mesAnterior"><i class="fas fa-chevron-left"></i> Anterior</button>
+                    <span id="mesActual" style="font-weight:700;font-size:1.1rem;"></span>
+                    <button class="btn btn-sm btn-outline" id="mesSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div id="calendarioGrid" class="calendario"></div>
+            </div>
+            <div id="historialDetalle">
+                <div class="card-header">
+                    <div class="card-title">📋 Informe del día seleccionado</div>
+                    <button class="btn btn-sm btn-outline no-print" onclick="copiarInformeSeleccionado()"><i class="fas fa-copy"></i> Copiar</button>
+                </div>
+                <div id="historialDetalleContainer"></div>
+            </div>
         </div>
     </div>
 
@@ -647,7 +731,7 @@
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN - URL CORREGIDA (USANDO LA MISMA QUE planilla_reparto.html)
+//  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 
@@ -662,6 +746,10 @@ let productos = [];
 let costos = {};
 let fechaInicio = '';
 let fechaFin = '';
+let historial = [];
+let mesActual = new Date();
+let diaSeleccionado = null;
+let chartInstance = null;
 
 // ============================================================
 //  UTILIDADES
@@ -669,30 +757,32 @@ let fechaFin = '';
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
     if (!f) return '';
-    if (f.includes('T')) {
-        f = f.split('T')[0];
-    }
+    if (f.includes('T')) { f = f.split('T')[0]; }
     const d = new Date(f);
     if (isNaN(d.getTime())) return f;
     return d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
 }
 function formatearFechaInput(f) {
     if (!f) return '';
-    if (f.includes('T')) {
-        f = f.split('T')[0];
-    }
+    if (f.includes('T')) { f = f.split('T')[0]; }
     return f;
 }
 function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 }); }
 function normalizarNombre(n) { return (n || '').trim().toUpperCase().replace(/\s+/g, ' '); }
 function num(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function fechaYMD(f) {
+    if (!f) return '';
+    const d = new Date(f);
+    if (isNaN(d.getTime())) return f;
+    return d.toISOString().slice(0,10);
+}
 
 function toast(msg) {
     const el = document.getElementById('toast');
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(el._timer);
-    el._timer = setTimeout(() => el.classList.remove('show'), 2500);
+    el._timer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
 function copiarTabla(tablaId) {
@@ -764,14 +854,12 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
-        // Clientes
         const clientesData = await apiCall('clientes');
         if (clientesData && Array.isArray(clientesData)) {
             clientes = clientesData.map(c => normalizarNombre(c)).filter(Boolean);
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
-        // Ventas
         const ventasData = await apiCall('obtenerVentas');
         if (ventasData && Array.isArray(ventasData)) {
             ventas = ventasData.map(v => ({
@@ -792,7 +880,6 @@ async function cargarDatos() {
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
         }
 
-        // GASTOS - Lee desde la misma API que la planilla de reparto
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -803,15 +890,11 @@ async function cargarDatos() {
                 nota: g.nota || ''
             }));
             mostrarDebug(`Gastos cargados: ${gastos.length}`);
-        } else {
-            mostrarDebug('No se recibieron gastos o el formato es incorrecto');
         }
 
-        // Fábricas (local)
         cargarFabricasLocal();
         mostrarDebug(`Fábricas cargadas desde localStorage: ${fabricas.length}`);
 
-        // Productos y costos
         const prodGuardados = localStorage.getItem('myc_productos');
         if (prodGuardados) {
             productos = JSON.parse(prodGuardados);
@@ -830,20 +913,11 @@ async function cargarDatos() {
         if (costosGuardados) {
             try { costos = JSON.parse(costosGuardados); } catch(e) {}
         }
-        const costosGlobales = localStorage.getItem('myc_costos_globales');
-        if (costosGlobales) {
-            try {
-                const cg = JSON.parse(costosGlobales);
-                for (const [k, v] of Object.entries(cg)) {
-                    if (costos[k] === undefined) costos[k] = v;
-                }
-            } catch(e) {}
-        }
         for (const p of productos) {
             if (costos[p.clave] === undefined) costos[p.clave] = p.costo || 0;
         }
 
-        localStorage.setItem('myc_clientes_list', JSON.stringify(clientes));
+        cargarHistorial();
 
         actualizarUI();
         toast('Datos sincronizados');
@@ -853,6 +927,290 @@ async function cargarDatos() {
         mostrarDebug('❌ ERROR: ' + e.message);
         toast('Error al sincronizar');
     }
+}
+
+// ============================================================
+//  HISTORIAL DE INFORMES
+// ============================================================
+function cargarHistorial() {
+    const data = localStorage.getItem('myc_historial_informes');
+    if (data) {
+        try { historial = JSON.parse(data); } catch(e) { historial = []; }
+    } else {
+        historial = [];
+    }
+}
+
+function guardarHistorial() {
+    localStorage.setItem('myc_historial_informes', JSON.stringify(historial));
+}
+
+function guardarInformeHistorial() {
+    const fecha = document.getElementById('informeFecha').value || hoy();
+    if (!fecha) { toast('Seleccione una fecha'); return; }
+
+    const ventasDia = ventas.filter(v => v.fecha === fecha);
+    const gastosDia = gastos.filter(g => g.fecha === fecha);
+    const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
+    const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
+    const totalCosto = ventasDia.reduce((acc, v) => {
+        const claves = ["1.7", "3.5", "14", "20", "32"];
+        const cant = v.cantidades || [];
+        return acc + cant.reduce((a, q, i) => a + (q || 0) * (costos[claves[i]] || 0), 0);
+    }, 0);
+    const ganancia = totalVentas - totalCosto - totalGastos;
+    const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
+
+    const informe = {
+        fecha: fecha,
+        ventas: totalVentas,
+        gastos: totalGastos,
+        costoBolsas: totalCosto,
+        ganancia: ganancia,
+        clientes: clientesDia.size,
+        bolsasVendidas: ventasDia.reduce((acc, v) => acc + (v.cantidades || []).reduce((a, b) => a + (b || 0), 0), 0),
+        detalleVentas: ventasDia.map(v => ({
+            cliente: v.cliente || '—',
+            cantidades: (v.cantidades || []).map((q, i) => {
+                const claves = ["1.7", "3.5", "14", "20", "32"];
+                return q > 0 ? `${claves[i]}kg:${q}` : null;
+            }).filter(Boolean).join(', ') || 'sin detalle',
+            total: v.total || 0,
+            pago: v.pago || 'efectivo'
+        })),
+        detalleGastos: gastosDia.map(g => ({
+            categoria: g.categoria || 'Otros',
+            monto: g.monto || 0,
+            nota: g.nota || ''
+        }))
+    };
+
+    // Verificar si ya existe
+    const idx = historial.findIndex(h => h.fecha === fecha);
+    if (idx !== -1) {
+        historial[idx] = informe;
+    } else {
+        historial.push(informe);
+    }
+    guardarHistorial();
+    toast(`Informe del ${formatearFecha(fecha)} guardado en el historial`);
+    renderCalendario();
+}
+
+function obtenerInformeHistorial(fecha) {
+    return historial.find(h => h.fecha === fecha) || null;
+}
+
+function eliminarInformeHistorial(fecha) {
+    historial = historial.filter(h => h.fecha !== fecha);
+    guardarHistorial();
+    renderCalendario();
+    toast('Informe eliminado del historial');
+}
+
+function limpiarHistorial() {
+    if (!confirm('¿Eliminar TODO el historial de informes?')) return;
+    historial = [];
+    guardarHistorial();
+    renderCalendario();
+    toast('Historial limpiado');
+}
+
+// ============================================================
+//  CALENDARIO
+// ============================================================
+function renderCalendario() {
+    const grid = document.getElementById('calendarioGrid');
+    const mesLabel = document.getElementById('mesActual');
+    if (!grid) return;
+
+    const year = mesActual.getFullYear();
+    const month = mesActual.getMonth();
+    const primerDia = new Date(year, month, 1);
+    const ultimoDia = new Date(year, month + 1, 0);
+    const diasEnMes = ultimoDia.getDate();
+    const diaInicio = primerDia.getDay(); // 0=domingo
+
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    mesLabel.textContent = `${meses[month]} ${year}`;
+
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    let html = diasSemana.map(d => `<div class="dia-header">${d}</div>`).join('');
+
+    // Días del mes anterior
+    const diasMesAnterior = new Date(year, month, 0).getDate();
+    for (let i = diaInicio - 1; i >= 0; i--) {
+        const dia = diasMesAnterior - i;
+        html += `<div class="dia otro-mes"><span class="num">${dia}</span></div>`;
+    }
+
+    // Días del mes actual
+    const hoyStr = hoy();
+    for (let d = 1; d <= diasEnMes; d++) {
+        const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const tieneInforme = historial.some(h => h.fecha === fecha);
+        const esHoy = fecha === hoyStr;
+        const clase = `dia${esHoy ? ' hoy' : ''}`;
+        let indicador = '';
+        if (tieneInforme) {
+            const informe = obtenerInformeHistorial(fecha);
+            if (informe) {
+                const color = informe.ganancia >= 0 ? 'verde' : 'rojo';
+                indicador = `<span class="indicador ${color}"></span>`;
+            }
+        }
+        html += `<div class="${clase}" data-fecha="${fecha}" onclick="verInformeHistorial('${fecha}')">
+            <span class="num">${d}</span>
+            ${indicador}
+        </div>`;
+    }
+
+    // Días del mes siguiente
+    const totalDias = diaInicio + diasEnMes;
+    const diasRestantes = (7 - (totalDias % 7)) % 7;
+    for (let d = 1; d <= diasRestantes; d++) {
+        html += `<div class="dia otro-mes"><span class="num">${d}</span></div>`;
+    }
+
+    grid.innerHTML = html;
+
+    // Si hay un día seleccionado, mostrarlo
+    if (diaSeleccionado) {
+        verInformeHistorial(diaSeleccionado);
+    } else {
+        // Mostrar hoy por defecto si tiene informe
+        const informeHoy = obtenerInformeHistorial(hoyStr);
+        if (informeHoy) {
+            verInformeHistorial(hoyStr);
+        } else {
+            document.getElementById('historialDetalleContainer').innerHTML = '<p style="color:var(--texto-claro);text-align:center;padding:20px;">Seleccione un día del calendario para ver el informe</p>';
+        }
+    }
+}
+
+function verInformeHistorial(fecha) {
+    diaSeleccionado = fecha;
+    const informe = obtenerInformeHistorial(fecha);
+    const container = document.getElementById('historialDetalleContainer');
+    if (!informe) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:20px;color:var(--texto-claro);">
+                <p>No hay informe guardado para el ${formatearFecha(fecha)}</p>
+                <button class="btn btn-sm btn-primary" onclick="generarYGuardarInforme('${fecha}')">Generar y guardar ahora</button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div style="background:var(--azul-claro);padding:16px;border-radius:12px;margin-bottom:16px;">
+            <h3 style="color:var(--azul);">🧊 MYC HIELO · Informe Diario</h3>
+            <p style="color:var(--texto-claro);">${formatearFecha(informe.fecha)}</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;">
+            <div><strong>💰 Ventas</strong><br>${pesos(informe.ventas)}</div>
+            <div><strong>💸 Gastos</strong><br>${pesos(informe.gastos)}</div>
+            <div><strong>📦 Costo bolsas</strong><br>${pesos(informe.costoBolsas)}</div>
+            <div><strong>📈 Ganancia</strong><br><span style="color:${informe.ganancia>=0?'var(--verde)':'var(--rojo)'};font-weight:800;">${pesos(informe.ganancia)}</span></div>
+            <div><strong>👥 Clientes</strong><br>${informe.clientes}</div>
+            <div><strong>🧊 Bolsas vendidas</strong><br>${informe.bolsasVendidas}</div>
+        </div>
+    `;
+
+    if (informe.detalleVentas && informe.detalleVentas.length > 0) {
+        html += `<div style="border-top:1px solid var(--borde);padding-top:12px;"><strong>Detalle de ventas:</strong><ul style="list-style:none;padding:0;margin-top:8px;">`;
+        for (const v of informe.detalleVentas) {
+            html += `<li>${v.cliente} · ${v.cantidades} · ${pesos(v.total)} (${v.pago})</li>`;
+        }
+        html += `</ul></div>`;
+    }
+
+    if (informe.detalleGastos && informe.detalleGastos.length > 0) {
+        html += `<div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;"><strong>Gastos:</strong><ul style="list-style:none;padding:0;margin-top:8px;">`;
+        for (const g of informe.detalleGastos) {
+            html += `<li>${g.categoria} · ${pesos(g.monto)} · ${g.nota || ''}</li>`;
+        }
+        html += `</ul></div>`;
+    }
+
+    html += `
+        <div class="no-print" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-danger" onclick="eliminarInformeHistorial('${fecha}')"><i class="fas fa-trash"></i> Eliminar</button>
+            <button class="btn btn-sm btn-success" onclick="exportarInformeHistorialExcel('${fecha}')"><i class="fas fa-file-excel"></i> Excel</button>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function generarYGuardarInforme(fecha) {
+    document.getElementById('informeFecha').value = fecha;
+    guardarInformeHistorial();
+    renderCalendario();
+}
+
+function copiarInformeSeleccionado() {
+    const container = document.getElementById('historialDetalleContainer');
+    const texto = container.textContent.trim();
+    if (texto) {
+        navigator.clipboard.writeText(texto).then(() => toast('Informe copiado'));
+    }
+}
+
+function exportarInformeHistorialExcel(fecha) {
+    const informe = obtenerInformeHistorial(fecha);
+    if (!informe) { toast('No hay informe para esa fecha'); return; }
+    const data = [
+        ['MYC HIELO · Informe Diario', formatearFecha(fecha)],
+        [],
+        ['Ventas', informe.ventas],
+        ['Gastos', informe.gastos],
+        ['Costo bolsas', informe.costoBolsas],
+        ['Ganancia', informe.ganancia],
+        ['Clientes', informe.clientes],
+        ['Bolsas vendidas', informe.bolsasVendidas],
+        [],
+        ['Detalle de ventas'],
+        ['Cliente', 'Productos', 'Total', 'Pago']
+    ];
+    for (const v of informe.detalleVentas || []) {
+        data.push([v.cliente, v.cantidades, v.total, v.pago]);
+    }
+    data.push([], ['Gastos']);
+    data.push(['Categoría', 'Monto', 'Nota']);
+    for (const g of informe.detalleGastos || []) {
+        data.push([g.categoria, g.monto, g.nota]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Informe');
+    XLSX.writeFile(wb, `informe_${fecha}.xlsx`);
+    toast('Excel exportado');
+}
+
+function exportarHistorialExcel() {
+    if (historial.length === 0) { toast('No hay informes guardados'); return; }
+    const data = [
+        ['MYC HIELO · Historial de Informes'],
+        [],
+        ['Fecha', 'Ventas', 'Gastos', 'Costo Bolsas', 'Ganancia', 'Clientes', 'Bolsas Vendidas']
+    ];
+    for (const h of historial.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
+        data.push([
+            formatearFecha(h.fecha),
+            h.ventas || 0,
+            h.gastos || 0,
+            h.costoBolsas || 0,
+            h.ganancia || 0,
+            h.clientes || 0,
+            h.bolsasVendidas || 0
+        ]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Historial');
+    XLSX.writeFile(wb, `historial_informes_${hoy()}.xlsx`);
+    toast('Excel exportado');
 }
 
 // ============================================================
@@ -879,7 +1237,6 @@ function renderGastos() {
         `).join('');
     }
 
-    // Total de gastos del día
     const hoyStr = hoy();
     const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
     const totalHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
@@ -982,7 +1339,6 @@ function renderFabricas() {
         `).join('');
     }
 
-    // Resumen
     const resumen = {};
     for (const f of fabricas) {
         const key = f.fabrica + '|' + f.tipo;
@@ -1072,12 +1428,9 @@ function actualizarUI() {
     renderProductos();
     renderCostos();
     renderClientes();
-    // Cargar informe con fecha de hoy por defecto
-    const fechaInput = document.getElementById('informeFecha');
-    if (fechaInput && !fechaInput.value) {
-        fechaInput.value = hoy();
-    }
+    renderCalendario();
     generarInformeDiario();
+    renderAlertasDeudores();
 }
 
 function actualizarSelectores() {
@@ -1118,31 +1471,14 @@ function renderDashboard() {
     const gananciaNeta = gananciaBruta - totalGastos;
     const totalBolsas = Object.values(bolsasVendidas).reduce((a, b) => a + b, 0);
 
-    // KPIs
     document.getElementById('kpiGananciaHoy').textContent = pesos(gananciaNeta);
     document.getElementById('kpiGananciaHoy').className = 'value ' + (gananciaNeta >= 0 ? 'positive' : 'negative');
-    
-    // Calcular semana
-    const ahora = new Date();
-    const diaSemana = ahora.getDay() === 0 ? 6 : ahora.getDay() - 1;
-    const lunesDate = new Date(ahora);
-    lunesDate.setDate(ahora.getDate() - diaSemana);
-    const inicioSemana = lunesDate.toISOString().slice(0, 10);
-    const ganSemana = calcularGananciaRango(inicioSemana, hoy());
-    document.getElementById('kpiGananciaSemana').textContent = pesos(ganSemana);
-    document.getElementById('kpiGananciaSemana').className = 'value ' + (ganSemana >= 0 ? 'positive' : 'negative');
-
-    // Calcular mes
-    const inicioMes = hoy().slice(0, 7) + '-01';
-    const ganMes = calcularGananciaRango(inicioMes, hoy());
-    document.getElementById('kpiGananciaMes').textContent = pesos(ganMes);
-    document.getElementById('kpiGananciaMes').className = 'value ' + (ganMes >= 0 ? 'positive' : 'negative');
-
+    document.getElementById('kpiGananciaSemana').textContent = pesos(gananciaNeta);
+    document.getElementById('kpiGananciaMes').textContent = pesos(gananciaNeta);
     document.getElementById('kpiBolsas').textContent = totalBolsas;
     document.getElementById('kpiClientes').textContent = clientesSet.size;
-    document.getElementById('kpiGastos').textContent = pesos(gastosFiltrados.reduce((acc, g) => acc + g.monto, 0));
+    document.getElementById('kpiGastos').textContent = pesos(totalGastos);
 
-    // Tabla del período
     const tbody = document.getElementById('tbodyVentasPeriodo');
     if (ventasFiltradas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin ventas en este período</td></tr>';
@@ -1161,22 +1497,109 @@ function renderDashboard() {
             </tr>
         `).join('');
     }
+
+    // Gráfico
+    renderGrafico(ventasFiltradas);
 }
 
-function calcularGananciaRango(desde, hasta) {
-    const vF = ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
-    const gF = gastos.filter(g => g.fecha >= desde && g.fecha <= hasta);
-    let totalVentas = 0, totalCosto = 0, totalGastos = 0;
-    for (const v of vF) {
-        totalVentas += v.total || 0;
-        const claves = ["1.7", "3.5", "14", "20", "32"];
-        const cant = v.cantidades || [];
-        for (let i = 0; i < claves.length; i++) {
-            totalCosto += (cant[i] || 0) * (costos[claves[i]] || 0);
+function renderGrafico(ventasData) {
+    const ctx = document.getElementById('chartVentas');
+    if (!ctx) return;
+
+    // Agrupar por fecha
+    const grupos = {};
+    const hoyStr = hoy();
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0,10);
+        grupos[key] = 0;
+    }
+    for (const v of ventasData) {
+        if (grupos[v.fecha] !== undefined) {
+            grupos[v.fecha] += v.total || 0;
         }
     }
-    for (const g of gF) totalGastos += g.monto || 0;
-    return totalVentas - totalCosto - totalGastos;
+
+    const labels = Object.keys(grupos).map(f => formatearFecha(f));
+    const values = Object.values(grupos);
+
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ventas ($)',
+                data: values,
+                backgroundColor: 'rgba(15, 42, 110, 0.6)',
+                borderColor: 'rgba(15, 42, 110, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return '$' + value.toLocaleString('es-AR'); }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ============================================================
+//  ALERTAS DE DEUDORES
+// ============================================================
+function renderAlertasDeudores() {
+    const container = document.getElementById('listaAlertas');
+    if (!container) return;
+
+    // Calcular saldos desde los movimientos (deudas - pagos)
+    const saldos = {};
+    for (const c of clientes) saldos[c] = 0;
+    
+    // Obtener movimientos desde la API (deudas y pagos)
+    // Usamos los datos que ya tenemos: ventas con pago ctacte = deuda, y cobros de deuda = pago
+    for (const v of ventas) {
+        if (v.pago === 'ctacte') {
+            if (!saldos[v.cliente]) saldos[v.cliente] = 0;
+            saldos[v.cliente] += v.total || 0;
+        }
+        if (v.pago === 'cobrocc') {
+            if (!saldos[v.cliente]) saldos[v.cliente] = 0;
+            saldos[v.cliente] -= v.total || 0;
+        }
+    }
+
+    const deudores = Object.entries(saldos).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]);
+
+    if (deudores.length === 0) {
+        container.innerHTML = '<p style="color:var(--verde);text-align:center;padding:8px;">🎉 No hay deudores pendientes</p>';
+        return;
+    }
+
+    container.innerHTML = deudores.slice(0, 5).map(([cliente, saldo]) => `
+        <div class="alerta-deuda">
+            <span><strong>${cliente}</strong> debe ${pesos(saldo)}</span>
+            <span class="monto">🔴 ${pesos(saldo)}</span>
+        </div>
+    `).join('');
+
+    if (deudores.length > 5) {
+        container.innerHTML += `<p style="color:var(--texto-claro);font-size:0.8rem;text-align:center;margin-top:4px;">+ ${deudores.length - 5} deudores más</p>`;
+    }
 }
 
 // ============================================================
@@ -1235,7 +1658,7 @@ async function registrarVenta() {
     const total = cantidades.reduce((acc, q, i) => {
         const claves = ["1.7", "3.5", "14", "20", "32"];
         const prod = productos.find(p => p.clave === claves[i]);
-        const precio = prod ? (prod.precio > 0 ? prod.precio : prod.costo || 0) : 0;
+        const precio = prod ? (prod.precio || prod.costo || 0) : 0;
         return acc + (q || 0) * precio;
     }, 0);
 
@@ -1443,15 +1866,6 @@ function guardarProductosLocal() {
         costos[p.clave] = p.costo || 0;
     }
     localStorage.setItem('myc_costos', JSON.stringify(costos));
-
-    const preciosGlobales = {};
-    const costosGlobales = {};
-    for (const p of productos) {
-        preciosGlobales[p.clave] = p.precio || 0;
-        costosGlobales[p.clave] = p.costo || 0;
-    }
-    localStorage.setItem('myc_precios_globales', JSON.stringify(preciosGlobales));
-    localStorage.setItem('myc_costos_globales', JSON.stringify(costosGlobales));
 }
 
 // ============================================================
@@ -1622,7 +2036,7 @@ document.querySelectorAll('.nav a').forEach(el => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         const tab = this.dataset.tab;
         document.getElementById('tab-' + tab).classList.add('active');
-        if (tab === 'dashboard') renderDashboard();
+        if (tab === 'dashboard') { renderDashboard(); renderAlertasDeudores(); }
         if (tab === 'ventas') renderVentas();
         if (tab === 'gastos') renderGastos();
         if (tab === 'fabricas') renderFabricas();
@@ -1630,6 +2044,7 @@ document.querySelectorAll('.nav a').forEach(el => {
         if (tab === 'costos') renderCostos();
         if (tab === 'clientes') renderClientes();
         if (tab === 'informes') generarInformeDiario();
+        if (tab === 'historial') renderCalendario();
     });
 });
 
@@ -1685,11 +2100,17 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('filtroVentas').addEventListener('input', renderVentas);
     document.getElementById('filtroVentasFecha').addEventListener('change', renderVentas);
 
-    // Evento para el informe con selector de fecha
-    const informeFechaEvent = document.getElementById('informeFecha');
-    if (informeFechaEvent) {
-        informeFechaEvent.addEventListener('change', generarInformeDiario);
-    }
+    document.getElementById('informeFecha').addEventListener('change', generarInformeDiario);
+
+    // Calendario
+    document.getElementById('mesAnterior').addEventListener('click', function() {
+        mesActual.setMonth(mesActual.getMonth() - 1);
+        renderCalendario();
+    });
+    document.getElementById('mesSiguiente').addEventListener('click', function() {
+        mesActual.setMonth(mesActual.getMonth() + 1);
+        renderCalendario();
+    });
 
     cargarDatos();
 });
@@ -1707,6 +2128,14 @@ window.exportarGastosExcel = exportarGastosExcel;
 window.exportarFabricasExcel = exportarFabricasExcel;
 window.exportarInformeExcel = exportarInformeExcel;
 window.generarInformeDiario = generarInformeDiario;
+window.guardarInformeHistorial = guardarInformeHistorial;
+window.verInformeHistorial = verInformeHistorial;
+window.eliminarInformeHistorial = eliminarInformeHistorial;
+window.limpiarHistorial = limpiarHistorial;
+window.exportarHistorialExcel = exportarHistorialExcel;
+window.exportarInformeHistorialExcel = exportarInformeHistorialExcel;
+window.copiarInformeSeleccionado = copiarInformeSeleccionado;
+window.generarYGuardarInforme = generarYGuardarInforme;
 window.agregarProducto = agregarProducto;
 window.toggleDebug = toggleDebug;
 </script>
