@@ -17,7 +17,13 @@
             --azul-med: #1a3d9e;
             --azul-claro: #e8eeff;
             --verde: #0a7c4a;
+            --verde-claro: #d1fae5;
             --rojo: #b91c1c;
+            --rojo-claro: #fee2e2;
+            --dorado: #d97706;
+            --dorado-claro: #fef3c7;
+            --morado: #6b21a8;
+            --morado-claro: #f3e8ff;
             --bg: #f1f5fb;
             --white: #fff;
             --borde: #cbd5e1;
@@ -50,6 +56,7 @@
         .header h1 { font-size: 1.6rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header h1 span { color: #94b8ff; }
         .header .sub { font-size: 0.8rem; opacity: 0.8; }
+        .version-info { font-size: 0.6rem; opacity: 0.5; margin-top: 2px; }
         .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         .header-actions .btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2); }
         .header-actions .btn:hover { background: rgba(255,255,255,0.25); }
@@ -99,7 +106,12 @@
             padding-bottom: 10px;
             border-bottom: 1px solid #e2e8f0;
         }
-        .card-title { font-weight: 700; font-size: 1rem; color: var(--azul); display: flex; align-items: center; gap: 8px; }
+        .card-title { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .card-title.azul { color: var(--azul); }
+        .card-title.verde { color: var(--verde); }
+        .card-title.rojo { color: var(--rojo); }
+        .card-title.dorado { color: var(--dorado); }
+        .card-title.morado { color: var(--morado); }
 
         .kpi-grid {
             display: grid;
@@ -115,11 +127,18 @@
             box-shadow: var(--shadow);
             text-align: center;
         }
-        .kpi .label { font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); font-weight: 600; letter-spacing: 0.5px; }
+        .kpi .label { font-size: 0.6rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .kpi .label.azul { color: var(--azul); }
+        .kpi .label.verde { color: var(--verde); }
+        .kpi .label.rojo { color: var(--rojo); }
+        .kpi .label.dorado { color: var(--dorado); }
+        .kpi .label.morado { color: var(--morado); }
         .kpi .value { font-size: 1.4rem; font-weight: 800; margin-top: 4px; }
         .kpi .value.positive { color: var(--verde); }
         .kpi .value.negative { color: var(--rojo); }
         .kpi .value.neutral { color: var(--azul); }
+        .kpi .value.dorado { color: var(--dorado); }
+        .kpi .value.morado { color: var(--morado); }
 
         .filtros {
             display: flex;
@@ -160,13 +179,13 @@
             font-size: 0.65rem;
             font-weight: 600;
         }
-        .badge-deuda { background: #fee2e2; color: var(--rojo); }
-        .badge-pago { background: #d1fae5; color: var(--verde); }
+        .badge-deuda { background: var(--rojo-claro); color: var(--rojo); }
+        .badge-pago { background: var(--verde-claro); color: var(--verde); }
         .badge-transf { background: #e0f2fe; color: #0369a1; }
         .badge-efectivo { background: #fef9c3; color: #854d0e; }
-        .badge-cobro { background: #f3e8ff; color: #6b21a8; }
+        .badge-cobro { background: var(--morado-claro); color: var(--morado); }
         .badge-ctacte { background: #e0e7ff; color: #3730a3; }
-        .badge-gasto { background: #fee2e2; color: #b91c1c; }
+        .badge-gasto { background: var(--rojo-claro); color: var(--rojo); }
 
         .btn {
             display: inline-flex;
@@ -189,6 +208,8 @@
         .btn-success:hover { background: #0a6b3e; }
         .btn-danger { background: var(--rojo); color: white; }
         .btn-danger:hover { background: #991b1b; }
+        .btn-dorado { background: var(--dorado); color: white; }
+        .btn-dorado:hover { background: #b45309; }
         .btn-outline { background: transparent; border: 1px solid var(--borde); color: var(--texto); }
         .btn-outline:hover { background: var(--bg); }
         .btn-sm { padding: 4px 12px; font-size: 0.7rem; }
@@ -250,43 +271,171 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* ===== FINANZAS ===== */
+        .finanzas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .finanzas-card {
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            border: 1px solid var(--borde);
+            box-shadow: var(--shadow);
+        }
+        .finanzas-card.deudas { background: var(--rojo-claro); border-left: 4px solid var(--rojo); }
+        .finanzas-card.transferencias { background: #e0f2fe; border-left: 4px solid #0369a1; }
+        .finanzas-card.ganancia { background: var(--verde-claro); border-left: 4px solid var(--verde); }
+        .finanzas-card .titulo { font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; }
+        .finanzas-card .total { font-size: 1.8rem; font-weight: 800; margin-top: 4px; }
+        .finanzas-card .total.rojo { color: var(--rojo); }
+        .finanzas-card .total.verde { color: var(--verde); }
+        .finanzas-card .total.azul { color: var(--azul); }
+        .finanzas-card .total.dorado { color: var(--dorado); }
+        .finanzas-card .detalle { font-size: 0.7rem; color: var(--texto-claro); margin-top: 4px; }
+
+        .ganancia-real-box {
+            background: linear-gradient(135deg, #0a3e6d, #1a5a9e);
+            color: white;
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            text-align: center;
+        }
+        .ganancia-real-box .item .label { font-size: 0.6rem; text-transform: uppercase; opacity: 0.7; }
+        .ganancia-real-box .item .valor { font-size: 1.6rem; font-weight: 800; }
+        .ganancia-real-box .item .valor.verde { color: #4ade80; }
+        .ganancia-real-box .item .valor.azul { color: #93c5fd; }
+        .ganancia-real-box .item .valor.dorado { color: #fcd34d; }
+        .ganancia-real-box .item .valor.rojo { color: #f87171; }
+        .ganancia-real-box .item .valor.morado { color: #c4b5fd; }
+
+        .calendario-ganancias {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .calendario-ganancias .dia {
+            background: var(--white);
+            border: 1px solid var(--borde);
+            border-radius: 8px;
+            padding: 6px 2px;
+            text-align: center;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+            min-height: 50px;
+        }
+        .calendario-ganancias .dia:hover { background: var(--azul-claro); }
+        .calendario-ganancias .dia .num { font-weight: 700; font-size: 0.8rem; }
+        .calendario-ganancias .dia .ganancia-dia { 
+            font-size: 0.55rem; 
+            font-weight: 600;
+            display: block;
+            margin-top: 2px;
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+        .calendario-ganancias .dia .ganancia-dia.verde { background: var(--verde-claro); color: var(--verde); }
+        .calendario-ganancias .dia .ganancia-dia.rojo { background: var(--rojo-claro); color: var(--rojo); }
+        .calendario-ganancias .dia .ganancia-dia.dorado { background: var(--dorado-claro); color: var(--dorado); }
+        .calendario-ganancias .dia.hoy { border-color: var(--azul); border-width: 2px; }
+        .calendario-ganancias .dia.otro-mes { opacity: 0.3; }
+        .calendario-ganancias .dia-header {
+            font-weight: 600;
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            color: var(--texto-claro);
+            padding: 4px 0;
+            text-align: center;
+        }
+
+        /* ===== TOTALES ACUMULADOS ===== */
+        .acumulados-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .acumulado-item {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .acumulado-item .label { font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); }
+        .acumulado-item .valor { font-size: 1.1rem; font-weight: 800; }
+        .acumulado-item .valor.verde { color: var(--verde); }
+        .acumulado-item .valor.rojo { color: var(--rojo); }
+        .acumulado-item .valor.azul { color: var(--azul); }
+        .acumulado-item .valor.dorado { color: var(--dorado); }
+        .acumulado-item .valor.morado { color: var(--morado); }
+
+        .calendario-container {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 16px;
+            border: 1px solid var(--borde);
+        }
+
+        @media (max-width: 700px) {
+            .header h1 { font-size: 1.2rem; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .finanzas-grid { grid-template-columns: 1fr; }
+            .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+            .nav a { font-size: 0.7rem; padding: 6px 12px; }
+            .card { padding: 14px; }
+            table { font-size: 0.7rem; }
+            th, td { padding: 6px 8px; }
+            .ganancia-real-box { grid-template-columns: 1fr 1fr; padding: 16px; }
+            .ganancia-real-box .item .valor { font-size: 1.2rem; }
+            .calendario-ganancias .dia { min-height: 40px; font-size: 0.6rem; }
+            .calendario-ganancias .dia .ganancia-dia { font-size: 0.5rem; }
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .header { background: var(--azul) !important; -webkit-print-color-adjust: exact; }
+            .card { border: 1px solid #ccc; box-shadow: none; }
+        }
+
+        .debug-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 0.8rem;
+            color: #991b1b;
+            display: none;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .debug-toggle {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+        .debug-toggle .btn { width: auto; padding: 4px 14px; font-size: 0.7rem; }
+
         .total-gastos-dia {
             font-size: 1.2rem;
             font-weight: 800;
             color: var(--rojo);
-            background: #fee2e2;
+            background: var(--rojo-claro);
             padding: 8px 16px;
             border-radius: 40px;
             display: inline-block;
             margin-top: 8px;
         }
-
-        .calendario {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .calendario .dia {
-            background: var(--white);
-            border: 1px solid var(--borde);
-            border-radius: 8px;
-            padding: 8px 4px;
-            text-align: center;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: 0.2s;
-            position: relative;
-        }
-        .calendario .dia:hover { background: var(--azul-claro); }
-        .calendario .dia .num { font-weight: 700; font-size: 0.9rem; }
-        .calendario .dia .indicador { display: block; width: 6px; height: 6px; border-radius: 50%; margin: 2px auto 0; }
-        .calendario .dia .indicador.verde { background: var(--verde); }
-        .calendario .dia .indicador.rojo { background: var(--rojo); }
-        .calendario .dia.hoy { border-color: var(--azul); border-width: 2px; }
-        .calendario .dia.otro-mes { opacity: 0.3; }
-        .calendario .dia-header { font-weight: 600; font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); padding: 4px 0; text-align: center; }
 
         .chart-container { position: relative; height: 200px; margin-top: 12px; }
 
@@ -334,7 +483,7 @@
         }
 
         .informe-gastos {
-            background: #fee2e2;
+            background: var(--rojo-claro);
             padding: 8px 14px;
             border-radius: 8px;
             margin: 4px 0;
@@ -346,53 +495,29 @@
         .informe-gastos .categoria { font-weight: 600; }
         .informe-gastos .monto { font-weight: 800; color: var(--rojo); }
 
-        @media (max-width: 700px) {
-            .header h1 { font-size: 1.2rem; }
-            .kpi-grid { grid-template-columns: 1fr 1fr; }
-            .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
-            .nav a { font-size: 0.7rem; padding: 6px 12px; }
-            .card { padding: 14px; }
-            table { font-size: 0.7rem; }
-            th, td { padding: 6px 8px; }
-            .calendario { max-width: 100%; }
-            .resumen-totales { font-size: 0.8rem; gap: 12px; }
-            .fecha-selector-dashboard { flex-direction: column; align-items: stretch; }
-        }
-        @media print {
-            .no-print { display: none !important; }
-            .header { background: var(--azul) !important; -webkit-print-color-adjust: exact; }
-            .card { border: 1px solid #ccc; box-shadow: none; }
-        }
-
-        .debug-box {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
+        .calendario { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 500px; margin: 0 auto; }
+        .calendario .dia {
+            background: var(--white);
+            border: 1px solid var(--borde);
             border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 16px;
-            font-size: 0.8rem;
-            color: #991b1b;
-            display: none;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            white-space: pre-wrap;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
         }
-        .debug-toggle {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 8px;
-        }
-        .debug-toggle .btn { width: auto; padding: 4px 14px; font-size: 0.7rem; }
-        
-        /* ===== CACHE BUSTER ===== */
-        .version-info {
-            font-size: 0.6rem;
-            color: var(--texto-claro);
-            text-align: right;
-            margin-top: 4px;
-            opacity: 0.5;
-        }
+        .calendario .dia:hover { background: var(--azul-claro); }
+        .calendario .dia .num { font-weight: 700; font-size: 0.9rem; }
+        .calendario .dia .indicador { display: block; width: 6px; height: 6px; border-radius: 50%; margin: 2px auto 0; }
+        .calendario .dia .indicador.verde { background: var(--verde); }
+        .calendario .dia .indicador.rojo { background: var(--rojo); }
+        .calendario .dia.hoy { border-color: var(--azul); border-width: 2px; }
+        .calendario .dia.otro-mes { opacity: 0.3; }
+        .calendario .dia-header { font-weight: 600; font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); padding: 4px 0; text-align: center; }
+
+        .scroll-table { overflow-x: auto; max-height: 400px; overflow-y: auto; }
+        .scroll-table table { min-width: 600px; }
     </style>
 </head>
 <body>
@@ -403,7 +528,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info" id="versionInfo">v2.0 · 30/06/2026</div>
+            <div class="version-info">v3.0 · 30/06/2026 · 💰 Finanzas + Calendario</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -422,6 +547,7 @@
         <a data-tab="clientes"><i class="fas fa-users"></i> Clientes</a>
         <a data-tab="informes"><i class="fas fa-file-alt"></i> Informes</a>
         <a data-tab="historial"><i class="fas fa-calendar-alt"></i> Historial</a>
+        <a data-tab="finanzas" class="active" style="background:var(--dorado);color:white;"><i class="fas fa-coins"></i> 💰 Finanzas</a>
     </nav>
 
     <!-- DEBUG -->
@@ -442,17 +568,17 @@
         </div>
 
         <div class="kpi-grid" id="kpiGrid">
-            <div class="kpi"><div class="label">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
-            <div class="kpi"><div class="label">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
-            <div class="kpi"><div class="label">📦 Costo bolsas</div><div class="value neutral" id="kpiCostoBolsas">$0</div></div>
-            <div class="kpi"><div class="label">📈 Ganancia</div><div class="value neutral" id="kpiGanancia">$0</div></div>
-            <div class="kpi"><div class="label">🧊 Bolsas</div><div class="value neutral" id="kpiBolsas">0</div></div>
-            <div class="kpi"><div class="label">👥 Clientes</div><div class="value neutral" id="kpiClientes">0</div></div>
+            <div class="kpi"><div class="label azul">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
+            <div class="kpi"><div class="label rojo">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
+            <div class="kpi"><div class="label dorado">📦 Costo bolsas</div><div class="value neutral" id="kpiCostoBolsas">$0</div></div>
+            <div class="kpi"><div class="label verde">📈 Ganancia</div><div class="value neutral" id="kpiGanancia">$0</div></div>
+            <div class="kpi"><div class="label azul">🧊 Bolsas</div><div class="value neutral" id="kpiBolsas">0</div></div>
+            <div class="kpi"><div class="label morado">👥 Clientes</div><div class="value neutral" id="kpiClientes">0</div></div>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📊 Evolución de Ventas (últimos 7 días)</div>
+                <div class="card-title azul">📊 Evolución de Ventas (últimos 7 días)</div>
             </div>
             <div class="chart-container">
                 <canvas id="chartVentas"></canvas>
@@ -461,7 +587,7 @@
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📋 Ventas del período</div>
+                <div class="card-title azul">📋 Ventas del período</div>
                 <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaVentasPeriodo')"><i class="fas fa-copy"></i> Copiar</button>
                     <button class="btn btn-sm btn-success" onclick="exportarVentasPeriodoExcel()"><i class="fas fa-file-excel"></i> Excel</button>
@@ -492,7 +618,7 @@
     <div id="tab-ventas" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📦 Registrar Venta</div>
+                <div class="card-title azul">📦 Registrar Venta</div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Fecha</label><input type="date" id="vFecha"></div>
@@ -523,7 +649,7 @@
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📋 Todas las Ventas</div>
+                <div class="card-title azul">📋 Todas las Ventas</div>
                 <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaVentasCompleta')"><i class="fas fa-copy"></i></button>
                     <button class="btn btn-sm btn-success" onclick="exportarVentasExcel()"><i class="fas fa-file-excel"></i> Excel</button>
@@ -547,7 +673,7 @@
     <div id="tab-gastos" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">💸 Registrar Gasto</div>
+                <div class="card-title rojo">💸 Registrar Gasto</div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Fecha</label><input type="date" id="gFecha"></div>
@@ -568,7 +694,7 @@
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📋 Gastos registrados</div>
+                <div class="card-title rojo">📋 Gastos registrados</div>
                 <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaGastos')"><i class="fas fa-copy"></i></button>
                     <button class="btn btn-sm btn-success" onclick="exportarGastosExcel()"><i class="fas fa-file-excel"></i> Excel</button>
@@ -593,7 +719,7 @@
     <div id="tab-fabricas" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">🏭 Carga / Devolución en Fábrica</div>
+                <div class="card-title azul">🏭 Carga / Devolución en Fábrica</div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Fecha</label><input type="date" id="fFecha"></div>
@@ -622,7 +748,7 @@
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📦 Movimientos de Fábricas</div>
+                <div class="card-title azul">📦 Movimientos de Fábricas</div>
                 <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaFabricas')"><i class="fas fa-copy"></i></button>
                     <button class="btn btn-sm btn-success" onclick="exportarFabricasExcel()"><i class="fas fa-file-excel"></i> Excel</button>
@@ -638,7 +764,7 @@
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📊 Resumen de existencias en fábricas</div>
+                <div class="card-title azul">📊 Resumen de existencias en fábricas</div>
             </div>
             <div id="resumenFabricas"></div>
         </div>
@@ -648,7 +774,7 @@
     <div id="tab-productos" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📦 Gestionar Productos</div>
+                <div class="card-title azul">📦 Gestionar Productos</div>
                 <button class="btn btn-sm btn-success no-print" id="agregarProductoBtn"><i class="fas fa-plus"></i> Agregar producto</button>
             </div>
             <div id="listaProductos" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
@@ -673,7 +799,7 @@
     <div id="tab-costos" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">💰 Costos de Productos (unitarios)</div>
+                <div class="card-title dorado">💰 Costos de Productos (unitarios)</div>
                 <button class="btn btn-sm btn-success no-print" id="guardarCostosBtn"><i class="fas fa-save"></i> Guardar costos</button>
             </div>
             <div id="costosContainer">
@@ -686,7 +812,7 @@
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📈 Margen de ganancia deseado</div>
+                <div class="card-title dorado">📈 Margen de ganancia deseado</div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Porcentaje de ganancia (%)</label><input type="number" id="margenGanancia" value="30" min="0" step="5"></div>
@@ -700,7 +826,7 @@
     <div id="tab-clientes" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">➕ Agregar Cliente</div>
+                <div class="card-title morado">➕ Agregar Cliente</div>
             </div>
             <div style="display:flex;gap:8px;">
                 <input type="text" id="nuevoCliente" placeholder="Nombre del cliente" style="flex:1;padding:10px;border-radius:40px;border:1px solid var(--borde);">
@@ -709,7 +835,7 @@
         </div>
         <div class="card">
             <div class="card-header">
-                <div class="card-title">👥 Clientes registrados</div>
+                <div class="card-title morado">👥 Clientes registrados</div>
                 <button class="btn btn-sm btn-outline no-print" onclick="copiarTabla('tablaClientes')"><i class="fas fa-copy"></i></button>
             </div>
             <div id="listaClientes"></div>
@@ -720,7 +846,7 @@
     <div id="tab-informes" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📄 Informe Diario Resumido</div>
+                <div class="card-title azul">📄 Informe Diario Resumido</div>
                 <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                     <div class="fecha-selector" style="display:flex;gap:6px;align-items:center;">
                         <label style="font-weight:600;font-size:0.8rem;">📅 Fecha:</label>
@@ -740,7 +866,7 @@
     <div id="tab-historial" class="tab-content">
         <div class="card">
             <div class="card-header">
-                <div class="card-title">📅 Historial de Informes Diarios</div>
+                <div class="card-title azul">📅 Historial de Informes Diarios</div>
                 <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-danger" onclick="limpiarHistorial()"><i class="fas fa-trash"></i> Limpiar historial</button>
                     <button class="btn btn-sm btn-success" onclick="exportarHistorialExcel()"><i class="fas fa-file-excel"></i> Excel</button>
@@ -756,10 +882,137 @@
             </div>
             <div id="historialDetalle">
                 <div class="card-header">
-                    <div class="card-title">📋 Informe del día seleccionado</div>
+                    <div class="card-title azul">📋 Informe del día seleccionado</div>
                     <button class="btn btn-sm btn-outline no-print" onclick="copiarInformeSeleccionado()"><i class="fas fa-copy"></i> Copiar</button>
                 </div>
                 <div id="historialDetalleContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB: FINANZAS (NUEVO) ==================== -->
+    <div id="tab-finanzas" class="tab-content active">
+
+        <!-- Resumen de Deudas, Transferencias y Ganancia por Cliente -->
+        <div class="finanzas-grid">
+            <div class="finanzas-card deudas">
+                <div class="titulo"><i class="fas fa-hand-holding-usd" style="color:var(--rojo);"></i> 💰 Deudas Activas</div>
+                <div class="total rojo" id="totalDeudasFinanzas">$0</div>
+                <div class="detalle" id="detalleDeudas">Cargando...</div>
+            </div>
+            <div class="finanzas-card transferencias">
+                <div class="titulo"><i class="fas fa-exchange-alt" style="color:#0369a1;"></i> 💳 Transferencias</div>
+                <div class="total azul" id="totalTransferenciasFinanzas">$0</div>
+                <div class="detalle" id="detalleTransferencias">Cargando...</div>
+            </div>
+            <div class="finanzas-card ganancia">
+                <div class="titulo"><i class="fas fa-chart-line" style="color:var(--verde);"></i> 📈 Ganancia por Cliente</div>
+                <div class="total verde" id="totalGananciaClienteFinanzas">$0</div>
+                <div class="detalle" id="detalleGananciaCliente">Cargando...</div>
+            </div>
+        </div>
+
+        <!-- GANANCIA REAL TOTAL (Cuadro principal) -->
+        <div class="ganancia-real-box">
+            <div class="item">
+                <div class="label">💵 Efectivo Cobrado</div>
+                <div class="valor verde" id="gananciaEfectivo">$0</div>
+            </div>
+            <div class="item">
+                <div class="label">💳 Transferencias Cobradas</div>
+                <div class="valor azul" id="gananciaTransferencias">$0</div>
+            </div>
+            <div class="item">
+                <div class="label">📘 Deuda (Pendiente)</div>
+                <div class="valor dorado" id="gananciaDeuda">$0</div>
+            </div>
+            <div class="item">
+                <div class="label">📈 Ganancia Neta Real</div>
+                <div class="valor morado" id="gananciaNetaReal">$0</div>
+            </div>
+        </div>
+
+        <!-- Tabla de detalle por cliente -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title dorado">📊 Detalle de Ganancia Real por Cliente</div>
+                <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaGananciaCliente')"><i class="fas fa-copy"></i> Copiar</button>
+                    <button class="btn btn-sm btn-success" onclick="exportarGananciaClienteExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                </div>
+            </div>
+            <div class="table-wrap scroll-table">
+                <table id="tablaGananciaCliente">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>💰 Total Ventas</th>
+                            <th>📦 Costo</th>
+                            <th>📈 Ganancia Bruta</th>
+                            <th>💵 Efectivo</th>
+                            <th>💳 Transfer.</th>
+                            <th>📘 Deuda</th>
+                            <th>🔴 Cobros</th>
+                            <th>📊 Ganancia Real</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyGananciaCliente"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CALENDARIO DE GANANCIAS -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title morado">📅 Calendario de Ganancias</div>
+                <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-success" onclick="exportarGananciaCalendarioExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                    <button class="btn btn-sm btn-dorado" onclick="calcularAcumulados()"><i class="fas fa-calculator"></i> Actualizar</button>
+                </div>
+            </div>
+            
+            <!-- Selector de período -->
+            <div class="filtros no-print" style="margin-bottom:12px;">
+                <label style="font-weight:600;font-size:0.8rem;">📅 Ver:</label>
+                <select id="periodoGanancia" style="width:auto;">
+                    <option value="dia">Día</option>
+                    <option value="semana" selected>Semana</option>
+                    <option value="mes">Mes</option>
+                    <option value="anio">Año</option>
+                </select>
+                <input type="date" id="fechaGanancia" style="width:auto;">
+                <button class="btn btn-sm btn-primary" id="aplicarFechaGanancia"><i class="fas fa-search"></i> Ver</button>
+                <button class="btn btn-sm btn-outline" id="hoyGanancia"><i class="fas fa-calendar-day"></i> Hoy</button>
+            </div>
+
+            <!-- Calendario -->
+            <div class="calendario-container">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-sm btn-outline" id="mesGananciaAnterior"><i class="fas fa-chevron-left"></i> Anterior</button>
+                    <span id="mesGananciaActual" style="font-weight:700;font-size:1.1rem;"></span>
+                    <button class="btn btn-sm btn-outline" id="mesGananciaSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div id="calendarioGananciaGrid" class="calendario-ganancias"></div>
+            </div>
+
+            <!-- Totales acumulados -->
+            <div class="acumulados-grid" id="acumuladosGrid">
+                <div class="acumulado-item">
+                    <div class="label">📅 Hoy</div>
+                    <div class="valor verde" id="acumuladoHoy">$0</div>
+                </div>
+                <div class="acumulado-item">
+                    <div class="label">📊 Esta Semana</div>
+                    <div class="valor azul" id="acumuladoSemana">$0</div>
+                </div>
+                <div class="acumulado-item">
+                    <div class="label">📈 Este Mes</div>
+                    <div class="valor dorado" id="acumuladoMes">$0</div>
+                </div>
+                <div class="acumulado-item">
+                    <div class="label">📅 Este Año</div>
+                    <div class="valor morado" id="acumuladoAnio">$0</div>
+                </div>
             </div>
         </div>
     </div>
@@ -774,7 +1027,7 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v2.0-20260630";
+const VERSION = "v3.0-20260630";
 console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
@@ -793,6 +1046,8 @@ let mesActual = new Date();
 let diaSeleccionado = null;
 let chartInstance = null;
 let dashboardFecha = hoy();
+let mesGanancia = new Date();
+let gananciasCalendario = {};
 
 // ============================================================
 //  UTILIDADES
@@ -853,7 +1108,7 @@ function mostrarDebug(msg) {
 }
 
 // ============================================================
-//  INICIALIZAR COSTOS POR DEFECTO (si no existen)
+//  INICIALIZAR COSTOS POR DEFECTO
 // ============================================================
 function inicializarCostos() {
     const costosDefault = {
@@ -872,7 +1127,6 @@ function inicializarCostos() {
     } else {
         try {
             const parsed = JSON.parse(costosGuardados);
-            // Verificar que todas las claves existan
             let actualizado = false;
             for (const [key, val] of Object.entries(costosDefault)) {
                 if (parsed[key] === undefined) {
@@ -891,17 +1145,10 @@ function inicializarCostos() {
         }
     }
     
-    // Cargar costos en memoria
     const stored = localStorage.getItem('myc_costos');
     if (stored) {
-        try {
-            costos = JSON.parse(stored);
-        } catch(e) {
-            costos = { ...costosDefault };
-        }
-    } else {
-        costos = { ...costosDefault };
-    }
+        try { costos = JSON.parse(stored); } catch(e) { costos = { ...costosDefault }; }
+    } else { costos = { ...costosDefault }; }
 }
 
 // ============================================================
@@ -943,7 +1190,6 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
-        // Inicializar costos primero
         inicializarCostos();
         
         const clientesData = await apiCall('clientes');
@@ -1001,7 +1247,6 @@ async function cargarDatos() {
             localStorage.setItem('myc_productos', JSON.stringify(productos));
         }
 
-        // Asegurar que costos esté sincronizado con productos
         for (const p of productos) {
             if (costos[p.clave] === undefined) {
                 costos[p.clave] = p.costo || 1000;
@@ -1010,6 +1255,7 @@ async function cargarDatos() {
         localStorage.setItem('myc_costos', JSON.stringify(costos));
 
         cargarHistorial();
+        cargarGananciasCalendario();
 
         actualizarUI();
         toast('Datos sincronizados');
@@ -1022,15 +1268,37 @@ async function cargarDatos() {
 }
 
 // ============================================================
+//  GANANCIAS CALENDARIO
+// ============================================================
+function cargarGananciasCalendario() {
+    const data = localStorage.getItem('myc_ganancias_calendario');
+    if (data) {
+        try { gananciasCalendario = JSON.parse(data); } catch(e) { gananciasCalendario = {}; }
+    } else {
+        gananciasCalendario = {};
+    }
+}
+
+function guardarGananciasCalendario() {
+    localStorage.setItem('myc_ganancias_calendario', JSON.stringify(gananciasCalendario));
+}
+
+function guardarGananciaDia(fecha, ganancia) {
+    if (!gananciasCalendario[fecha]) {
+        gananciasCalendario[fecha] = { ganancia: 0, ventas: 0, gastos: 0 };
+    }
+    gananciasCalendario[fecha].ganancia = ganancia;
+    guardarGananciasCalendario();
+}
+
+// ============================================================
 //  HISTORIAL DE INFORMES
 // ============================================================
 function cargarHistorial() {
     const data = localStorage.getItem('myc_historial_informes');
     if (data) {
         try { historial = JSON.parse(data); } catch(e) { historial = []; }
-    } else {
-        historial = [];
-    }
+    } else { historial = []; }
 }
 
 function guardarHistorial() {
@@ -1052,6 +1320,9 @@ function guardarInformeHistorial() {
     }, 0);
     const ganancia = totalVentas - totalCosto - totalGastos;
     const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
+
+    // Guardar también en el calendario de ganancias
+    guardarGananciaDia(fecha, ganancia);
 
     const informe = {
         fecha: fecha,
@@ -1078,14 +1349,12 @@ function guardarInformeHistorial() {
     };
 
     const idx = historial.findIndex(h => h.fecha === fecha);
-    if (idx !== -1) {
-        historial[idx] = informe;
-    } else {
-        historial.push(informe);
-    }
+    if (idx !== -1) { historial[idx] = informe; } else { historial.push(informe); }
     guardarHistorial();
     toast(`Informe del ${formatearFecha(fecha)} guardado en el historial`);
     renderCalendario();
+    renderCalendarioGanancias();
+    renderFinanzas();
 }
 
 function obtenerInformeHistorial(fecha) {
@@ -1171,9 +1440,7 @@ function generarYGuardarInforme(fecha) {
 function copiarInformeSeleccionado() {
     const container = document.getElementById('historialDetalleContainer');
     const texto = container.textContent.trim();
-    if (texto) {
-        navigator.clipboard.writeText(texto).then(() => toast('Informe copiado'));
-    }
+    if (texto) { navigator.clipboard.writeText(texto).then(() => toast('Informe copiado')); }
 }
 
 function exportarInformeHistorialExcel(fecha) {
@@ -1233,7 +1500,7 @@ function exportarHistorialExcel() {
 }
 
 // ============================================================
-//  CALENDARIO
+//  CALENDARIO DE INFORMES
 // ============================================================
 function renderCalendario() {
     const grid = document.getElementById('calendarioGrid');
@@ -1287,13 +1554,9 @@ function renderCalendario() {
 
     grid.innerHTML = html;
 
-    if (diaSeleccionado) {
-        verInformeHistorial(diaSeleccionado);
-    } else {
+    if (diaSeleccionado) { verInformeHistorial(diaSeleccionado); } else {
         const informeHoy = obtenerInformeHistorial(hoyStr);
-        if (informeHoy) {
-            verInformeHistorial(hoyStr);
-        } else {
+        if (informeHoy) { verInformeHistorial(hoyStr); } else {
             document.getElementById('historialDetalleContainer').innerHTML = '<p style="color:var(--texto-claro);text-align:center;padding:20px;">Seleccione un día del calendario para ver el informe</p>';
         }
     }
@@ -1482,7 +1745,7 @@ function exportarFabricasExcel() {
 }
 
 // ============================================================
-//  DASHBOARD - CORREGIDO: AHORA CALCULA EL COSTO DE BOLSAS
+//  DASHBOARD
 // ============================================================
 function renderDashboard(fecha = null) {
     const fechaStr = fecha || dashboardFecha || hoy();
@@ -1494,7 +1757,6 @@ function renderDashboard(fecha = null) {
     let bolsasVendidas = { "1.7": 0, "3.5": 0, "14": 0, "20": 0, "32": 0 };
     const clientesSet = new Set();
 
-    // Mapeo de claves de productos (coinciden con las claves en costos)
     const clavesMap = {
         "1.7": "1.7",
         "3.5": "3.5",
@@ -1511,7 +1773,6 @@ function renderDashboard(fecha = null) {
             const q = cant[i] || 0;
             const clave = clavesMap[claves[i]] || claves[i];
             bolsasVendidas[claves[i]] += q;
-            // 🔥 CALCULAR COSTO usando costos[clave]
             totalCosto += q * (costos[clave] || 0);
         }
         if (v.cliente) clientesSet.add(v.cliente);
@@ -1521,7 +1782,6 @@ function renderDashboard(fecha = null) {
     const ganancia = totalVentas - totalCosto - totalGastos;
     const totalBolsas = Object.values(bolsasVendidas).reduce((a, b) => a + b, 0);
 
-    // Mostrar en KPIs
     document.getElementById('kpiVentas').textContent = pesos(totalVentas);
     document.getElementById('kpiVentas').className = 'value neutral';
     document.getElementById('kpiGastos').textContent = pesos(totalGastos);
@@ -1965,7 +2225,7 @@ async function eliminarCliente(nombre) {
 }
 
 // ============================================================
-//  INFORME DIARIO CON SELECTOR DE FECHA Y GASTOS
+//  INFORME DIARIO
 // ============================================================
 function generarInformeDiario() {
     const container = document.getElementById('informeDiarioContainer');
@@ -1983,7 +2243,6 @@ function generarInformeDiario() {
     const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
     const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
     
-    // 🔥 CALCULAR COSTO DE BOLSAS
     const clavesMap = {
         "1.7": "1.7",
         "3.5": "3.5",
@@ -2096,6 +2355,301 @@ function exportarInformeExcel() {
 }
 
 // ============================================================
+//  FINANZAS - NUEVO MÓDULO
+// ============================================================
+function renderFinanzas() {
+    // Calcular deudas, transferencias y ganancias por cliente
+    const deudasPorCliente = {};
+    const transferenciasPorCliente = {};
+    const gananciaPorCliente = {};
+    let totalDeudas = 0;
+    let totalTransferencias = 0;
+    let totalEfectivo = 0;
+    let totalGananciaReal = 0;
+    let totalCobros = 0;
+
+    // Inicializar estructuras
+    const clientesUnicos = new Set(ventas.map(v => v.cliente).filter(Boolean));
+    clientesUnicos.forEach(c => {
+        deudasPorCliente[c] = 0;
+        transferenciasPorCliente[c] = 0;
+        gananciaPorCliente[c] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+    });
+
+    // Procesar ventas
+    for (const v of ventas) {
+        const cliente = v.cliente;
+        if (!cliente) continue;
+        
+        if (!gananciaPorCliente[cliente]) {
+            gananciaPorCliente[cliente] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+        }
+        
+        // Total ventas
+        gananciaPorCliente[cliente].ventas += v.total || 0;
+        
+        // Costo
+        const claves = ["1.7", "3.5", "14", "20", "32"];
+        let costo = 0;
+        for (let i = 0; i < claves.length; i++) {
+            costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+        }
+        gananciaPorCliente[cliente].costo += costo;
+        
+        // Según tipo de pago
+        if (v.pago === 'efectivo') {
+            gananciaPorCliente[cliente].efectivo += v.total || 0;
+            totalEfectivo += v.total || 0;
+        } else if (v.pago === 'transferencia') {
+            gananciaPorCliente[cliente].transferencias += v.total || 0;
+            totalTransferencias += v.total || 0;
+            transferenciasPorCliente[cliente] = (transferenciasPorCliente[cliente] || 0) + (v.total || 0);
+        } else if (v.pago === 'ctacte' || v.pago === 'deuda') {
+            gananciaPorCliente[cliente].deuda += v.total || 0;
+            totalDeudas += v.total || 0;
+            deudasPorCliente[cliente] = (deudasPorCliente[cliente] || 0) + (v.total || 0);
+        } else if (v.pago === 'cobrocc') {
+            gananciaPorCliente[cliente].cobros += v.total || 0;
+            totalCobros += v.total || 0;
+            // Restar de la deuda
+            deudasPorCliente[cliente] = Math.max(0, (deudasPorCliente[cliente] || 0) - (v.total || 0));
+        }
+    }
+
+    // Calcular ganancia bruta y real por cliente
+    for (const [cliente, data] of Object.entries(gananciaPorCliente)) {
+        data.gananciaBruta = data.ventas - data.costo;
+        data.gananciaReal = data.gananciaBruta + data.cobros; // Incluye cobros de deuda
+        totalGananciaReal += data.gananciaReal;
+    }
+
+    // Actualizar UI
+    document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudas);
+    document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
+    document.getElementById('totalGananciaClienteFinanzas').textContent = pesos(totalGananciaReal);
+
+    // Detalles
+    const deudores = Object.entries(deudasPorCliente).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    document.getElementById('detalleDeudas').textContent = deudores.length > 0 
+        ? `${deudores.length} clientes · ${deudores.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v)}`).join(' · ')}`
+        : '🎉 Sin deudas pendientes';
+
+    const transfer = Object.entries(transferenciasPorCliente).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    document.getElementById('detalleTransferencias').textContent = transfer.length > 0 
+        ? `${transfer.length} clientes · ${transfer.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v)}`).join(' · ')}`
+        : 'Sin transferencias registradas';
+
+    const gananciaTop = Object.entries(gananciaPorCliente).filter(([, v]) => v.gananciaReal > 0).sort((a, b) => b[1].gananciaReal - a[1].gananciaReal);
+    document.getElementById('detalleGananciaCliente').textContent = gananciaTop.length > 0 
+        ? `${gananciaTop.length} clientes · ${gananciaTop.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v.gananciaReal)}`).join(' · ')}`
+        : 'Sin ganancias registradas';
+
+    // GANANCIA REAL TOTAL
+    const gananciaNetaReal = totalEfectivo + totalTransferencias + totalCobros - Object.values(gananciaPorCliente).reduce((acc, v) => acc + v.costo, 0);
+    document.getElementById('gananciaEfectivo').textContent = pesos(totalEfectivo);
+    document.getElementById('gananciaTransferencias').textContent = pesos(totalTransferencias);
+    document.getElementById('gananciaDeuda').textContent = pesos(totalDeudas);
+    document.getElementById('gananciaNetaReal').textContent = pesos(gananciaNetaReal);
+
+    // Tabla de ganancia por cliente
+    renderTablaGananciaCliente(gananciaPorCliente);
+}
+
+function renderTablaGananciaCliente(gananciaPorCliente) {
+    const tbody = document.getElementById('tbodyGananciaCliente');
+    if (!tbody) return;
+
+    const sorted = Object.entries(gananciaPorCliente).filter(([, v]) => v.ventas > 0 || v.gananciaReal > 0).sort((a, b) => b[1].gananciaReal - a[1].gananciaReal);
+
+    if (sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin datos de ganancia</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = sorted.map(([cliente, data]) => `
+        <tr>
+            <td><strong>${cliente}</strong></td>
+            <td>${pesos(data.ventas)}</td>
+            <td>${pesos(data.costo)}</td>
+            <td style="color:${data.gananciaBruta >= 0 ? 'var(--verde)' : 'var(--rojo)'}">${pesos(data.gananciaBruta)}</td>
+            <td>${pesos(data.efectivo)}</td>
+            <td>${pesos(data.transferencias)}</td>
+            <td style="color:var(--dorado)">${pesos(data.deuda)}</td>
+            <td style="color:var(--morado)">${pesos(data.cobros)}</td>
+            <td style="color:${data.gananciaReal >= 0 ? 'var(--verde)' : 'var(--rojo)'};font-weight:800;">${pesos(data.gananciaReal)}</td>
+        </tr>
+    `).join('');
+}
+
+function exportarGananciaClienteExcel() {
+    // Similar a la tabla, exportar a Excel
+    const data = [
+        ['MYC HIELO · Ganancia Real por Cliente'],
+        [],
+        ['Cliente', 'Total Ventas', 'Costo', 'Ganancia Bruta', 'Efectivo', 'Transferencias', 'Deuda', 'Cobros', 'Ganancia Real']
+    ];
+    
+    const gananciaPorCliente = {};
+    const clientesUnicos = new Set(ventas.map(v => v.cliente).filter(Boolean));
+    clientesUnicos.forEach(c => {
+        gananciaPorCliente[c] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+    });
+
+    for (const v of ventas) {
+        const cliente = v.cliente;
+        if (!cliente || !gananciaPorCliente[cliente]) continue;
+        
+        gananciaPorCliente[cliente].ventas += v.total || 0;
+        
+        const claves = ["1.7", "3.5", "14", "20", "32"];
+        let costo = 0;
+        for (let i = 0; i < claves.length; i++) {
+            costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+        }
+        gananciaPorCliente[cliente].costo += costo;
+        
+        if (v.pago === 'efectivo') {
+            gananciaPorCliente[cliente].efectivo += v.total || 0;
+        } else if (v.pago === 'transferencia') {
+            gananciaPorCliente[cliente].transferencias += v.total || 0;
+        } else if (v.pago === 'ctacte' || v.pago === 'deuda') {
+            gananciaPorCliente[cliente].deuda += v.total || 0;
+        } else if (v.pago === 'cobrocc') {
+            gananciaPorCliente[cliente].cobros += v.total || 0;
+        }
+    }
+
+    for (const [cliente, d] of Object.entries(gananciaPorCliente)) {
+        d.gananciaBruta = d.ventas - d.costo;
+        d.gananciaReal = d.gananciaBruta + d.cobros;
+        data.push([
+            cliente, d.ventas, d.costo, d.gananciaBruta, d.efectivo, d.transferencias, d.deuda, d.cobros, d.gananciaReal
+        ]);
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Ganancia por Cliente');
+    XLSX.writeFile(wb, `ganancia_por_cliente_${hoy()}.xlsx`);
+    toast('Excel exportado');
+}
+
+// ============================================================
+//  CALENDARIO DE GANANCIAS
+// ============================================================
+function renderCalendarioGanancias() {
+    const grid = document.getElementById('calendarioGananciaGrid');
+    const mesLabel = document.getElementById('mesGananciaActual');
+    if (!grid || !mesLabel) return;
+
+    const year = mesGanancia.getFullYear();
+    const month = mesGanancia.getMonth();
+    const primerDia = new Date(year, month, 1);
+    const ultimoDia = new Date(year, month + 1, 0);
+    const diasEnMes = ultimoDia.getDate();
+    const diaInicio = primerDia.getDay();
+
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    mesLabel.textContent = `${meses[month]} ${year}`;
+
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    let html = diasSemana.map(d => `<div class="dia-header">${d}</div>`).join('');
+
+    const diasMesAnterior = new Date(year, month, 0).getDate();
+    for (let i = diaInicio - 1; i >= 0; i--) {
+        const dia = diasMesAnterior - i;
+        html += `<div class="dia otro-mes"><span class="num">${dia}</span></div>`;
+    }
+
+    const hoyStr = hoy();
+    for (let d = 1; d <= diasEnMes; d++) {
+        const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const esHoy = fecha === hoyStr;
+        const clase = `dia${esHoy ? ' hoy' : ''}`;
+        
+        let gananciaDia = 0;
+        let color = '';
+        if (gananciasCalendario[fecha]) {
+            gananciaDia = gananciasCalendario[fecha].ganancia || 0;
+            if (gananciaDia > 0) color = 'verde';
+            else if (gananciaDia < 0) color = 'rojo';
+            else color = 'dorado';
+        }
+        
+        html += `<div class="${clase}" data-fecha="${fecha}">
+            <span class="num">${d}</span>
+            ${gananciaDia !== 0 ? `<span class="ganancia-dia ${color}">${pesos(gananciaDia)}</span>` : ''}
+        </div>`;
+    }
+
+    const totalDias = diaInicio + diasEnMes;
+    const diasRestantes = (7 - (totalDias % 7)) % 7;
+    for (let d = 1; d <= diasRestantes; d++) {
+        html += `<div class="dia otro-mes"><span class="num">${d}</span></div>`;
+    }
+
+    grid.innerHTML = html;
+    
+    // Calcular acumulados
+    calcularAcumulados();
+}
+
+function calcularAcumulados() {
+    const hoyStr = hoy();
+    
+    // Calcular hoy
+    let gananciaHoy = gananciasCalendario[hoyStr] ? gananciasCalendario[hoyStr].ganancia : 0;
+    document.getElementById('acumuladoHoy').textContent = pesos(gananciaHoy);
+    
+    // Calcular semana (últimos 7 días)
+    let gananciaSemana = 0;
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0,10);
+        if (gananciasCalendario[key]) {
+            gananciaSemana += gananciasCalendario[key].ganancia || 0;
+        }
+    }
+    document.getElementById('acumuladoSemana').textContent = pesos(gananciaSemana);
+    
+    // Calcular mes actual
+    let gananciaMes = 0;
+    const mesActualStr = hoyStr.slice(0, 7);
+    for (const [fecha, data] of Object.entries(gananciasCalendario)) {
+        if (fecha.startsWith(mesActualStr)) {
+            gananciaMes += data.ganancia || 0;
+        }
+    }
+    document.getElementById('acumuladoMes').textContent = pesos(gananciaMes);
+    
+    // Calcular año actual
+    let gananciaAnio = 0;
+    const anioActual = hoyStr.slice(0, 4);
+    for (const [fecha, data] of Object.entries(gananciasCalendario)) {
+        if (fecha.startsWith(anioActual)) {
+            gananciaAnio += data.ganancia || 0;
+        }
+    }
+    document.getElementById('acumuladoAnio').textContent = pesos(gananciaAnio);
+}
+
+function exportarGananciaCalendarioExcel() {
+    const data = [
+        ['MYC HIELO · Calendario de Ganancias'],
+        ['Fecha', 'Ganancia ($)']
+    ];
+    for (const [fecha, info] of Object.entries(gananciasCalendario).sort((a, b) => a[0].localeCompare(b[0]))) {
+        data.push([formatearFecha(fecha), info.ganancia || 0]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Calendario Ganancias');
+    XLSX.writeFile(wb, `calendario_ganancias_${hoy()}.xlsx`);
+    toast('Excel exportado');
+}
+
+// ============================================================
 //  ACTUALIZAR UI
 // ============================================================
 function actualizarUI() {
@@ -2108,6 +2662,8 @@ function actualizarUI() {
     renderCostos();
     renderClientes();
     renderCalendario();
+    renderCalendarioGanancias();
+    renderFinanzas();
     generarInformeDiario();
 }
 
@@ -2137,6 +2693,7 @@ document.querySelectorAll('.nav a').forEach(el => {
         if (tab === 'clientes') renderClientes();
         if (tab === 'informes') generarInformeDiario();
         if (tab === 'historial') renderCalendario();
+        if (tab === 'finanzas') { renderFinanzas(); renderCalendarioGanancias(); }
     });
 });
 
@@ -2144,9 +2701,6 @@ document.querySelectorAll('.nav a').forEach(el => {
 //  EVENTOS
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Mostrar versión
-    document.getElementById('versionInfo').textContent = VERSION + ' · ' + hoy();
-    
     document.getElementById('vFecha').value = hoy();
     document.getElementById('gFecha').value = hoy();
     document.getElementById('fFecha').value = hoy();
@@ -2154,6 +2708,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (informeFecha) informeFecha.value = hoy();
     const dashboardFechaEl = document.getElementById('dashboardFecha');
     if (dashboardFechaEl) dashboardFechaEl.value = hoy();
+    
+    // Fecha por defecto en ganancias
+    const fechaGanancia = document.getElementById('fechaGanancia');
+    if (fechaGanancia) fechaGanancia.value = hoy();
 
     document.getElementById('syncBtn').addEventListener('click', cargarDatos);
 
@@ -2220,6 +2778,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('informeFecha').addEventListener('change', generarInformeDiario);
 
+    // Calendario de informes
     document.getElementById('mesAnterior').addEventListener('click', function() {
         mesActual.setMonth(mesActual.getMonth() - 1);
         renderCalendario();
@@ -2229,9 +2788,40 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCalendario();
     });
 
+    // Calendario de ganancias
+    document.getElementById('mesGananciaAnterior').addEventListener('click', function() {
+        mesGanancia.setMonth(mesGanancia.getMonth() - 1);
+        renderCalendarioGanancias();
+    });
+    document.getElementById('mesGananciaSiguiente').addEventListener('click', function() {
+        mesGanancia.setMonth(mesGanancia.getMonth() + 1);
+        renderCalendarioGanancias();
+    });
+
+    // Filtro de ganancias
+    document.getElementById('aplicarFechaGanancia').addEventListener('click', function() {
+        const fecha = document.getElementById('fechaGanancia').value;
+        if (fecha) {
+            const d = new Date(fecha);
+            mesGanancia = new Date(d.getFullYear(), d.getMonth(), 1);
+            renderCalendarioGanancias();
+        } else {
+            toast('Seleccione una fecha');
+        }
+    });
+    document.getElementById('hoyGanancia').addEventListener('click', function() {
+        const hoyStr = hoy();
+        document.getElementById('fechaGanancia').value = hoyStr;
+        const d = new Date();
+        mesGanancia = new Date(d.getFullYear(), d.getMonth(), 1);
+        renderCalendarioGanancias();
+        toast('Mostrando mes actual');
+    });
+
     cargarDatos();
 });
 
+// Funciones globales para onclick
 window.copiarTabla = copiarTabla;
 window.eliminarVenta = eliminarVenta;
 window.eliminarGasto = eliminarGasto;
@@ -2255,6 +2845,11 @@ window.copiarInformeSeleccionado = copiarInformeSeleccionado;
 window.generarYGuardarInforme = generarYGuardarInforme;
 window.agregarProducto = agregarProducto;
 window.toggleDebug = toggleDebug;
+window.exportarGananciaClienteExcel = exportarGananciaClienteExcel;
+window.exportarGananciaCalendarioExcel = exportarGananciaCalendarioExcel;
+window.calcularAcumulados = calcularAcumulados;
+window.renderFinanzas = renderFinanzas;
+window.renderCalendarioGanancias = renderCalendarioGanancias;
 </script>
 </body>
 </html>
