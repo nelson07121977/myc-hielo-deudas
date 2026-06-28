@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO · Gestión Integral (CORREGIDO FINAL)</title>
+    <title>MYC HIELO · Gestión Integral (DEFINITIVA)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* (Mismo CSS que antes, sin cambios) */
+        /* (mismo CSS que antes, sin cambios) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -375,7 +375,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v5.2 · CORREGIDO FINAL · 01/07/2026</div>
+            <div class="version-info">v6.0 · DEFINITIVA · 01/07/2026</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -383,7 +383,7 @@
         </div>
     </header>
 
-    <!-- NAV -->
+    <!-- NAV (igual que antes) -->
     <nav class="nav no-print">
         <a class="active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
         <a data-tab="ventas"><i class="fas fa-shopping-cart"></i> Ventas</a>
@@ -405,7 +405,7 @@
     <div id="debugBox" class="debug-box"></div>
 
     <!-- ============================================================ -->
-    <!-- TAB: DASHBOARD -->
+    <!-- TAB: DASHBOARD (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-dashboard" class="tab-content active">
         <div class="fecha-selector-dashboard no-print">
@@ -467,7 +467,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: VENTAS -->
+    <!-- TAB: VENTAS (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-ventas" class="tab-content">
         <div class="card">
@@ -525,7 +525,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: GASTOS -->
+    <!-- TAB: GASTOS (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-gastos" class="tab-content">
         <div class="card">
@@ -574,7 +574,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: FÁBRICAS -->
+    <!-- TAB: FÁBRICAS (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-fabricas" class="tab-content">
         <div class="card">
@@ -631,7 +631,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: PRODUCTOS -->
+    <!-- TAB: PRODUCTOS (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-productos" class="tab-content">
         <div class="card">
@@ -658,7 +658,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: COSTOS -->
+    <!-- TAB: COSTOS (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-costos" class="tab-content">
         <div class="card">
@@ -687,7 +687,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: CLIENTES -->
+    <!-- TAB: CLIENTES (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-clientes" class="tab-content">
         <div class="card">
@@ -712,7 +712,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: INFORMES -->
+    <!-- TAB: INFORMES (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-informes" class="tab-content">
         <div class="card">
@@ -734,7 +734,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: HISTORIAL -->
+    <!-- TAB: HISTORIAL (igual que antes) -->
     <!-- ============================================================ -->
     <div id="tab-historial" class="tab-content">
         <div class="card">
@@ -946,32 +946,11 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v5.2-final";
+const VERSION = "v6.0-definitiva";
 console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
-//  ESTADO GLOBAL
-// ============================================================
-let clientes = [];
-let ventas = [];
-let gastos = [];
-let fabricas = [];
-let productos = [];
-let costos = {};
-let fechaInicio = '';
-let fechaFin = '';
-let historial = [];
-let mesActual = new Date();
-let diaSeleccionado = null;
-let chartInstance = null;
-let dashboardFecha = hoy();
-let mesGanancia = new Date();
-let gananciasCalendario = {};
-let diaSeleccionadoGanancia = null;
-let facturaNumero = 1;
-
-// ============================================================
-//  UTILIDADES (igual que antes)
+//  UTILIDADES GLOBALES (sin cambios)
 // ============================================================
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
@@ -997,6 +976,16 @@ function formatearFechaCompleta(f) {
 function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 }); }
 function normalizarNombre(n) { return (n || '').trim().toUpperCase().replace(/\s+/g, ' '); }
 function num(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function normalizarPago(pago) {
+    if (!pago) return '';
+    const p = String(pago).trim().toLowerCase();
+    if (p.includes('efectivo')) return 'efectivo';
+    if (p.includes('transferencia') || p.includes('transf')) return 'transferencia';
+    if (p.includes('cobrocc') || p.includes('cobro cc') || p.includes('cobro de deuda')) return 'cobrocc';
+    if (p.includes('ctacte') || p.includes('cuenta corriente') || p.includes('cta cte')) return 'ctacte';
+    if (p.includes('deuda')) return 'deuda';
+    return p;
+}
 
 function toast(msg) {
     const el = document.getElementById('toast');
@@ -1005,7 +994,6 @@ function toast(msg) {
     clearTimeout(el._timer);
     el._timer = setTimeout(() => el.classList.remove('show'), 3000);
 }
-
 function copiarTabla(tablaId) {
     const tabla = document.getElementById(tablaId);
     if (!tabla) return;
@@ -1014,7 +1002,6 @@ function copiarTabla(tablaId) {
         .join('\n');
     navigator.clipboard.writeText(texto).then(() => toast('✅ Tabla copiada'));
 }
-
 function copiarSeccion(id) {
     const el = document.getElementById(id);
     if (!el) { toast('❌ No se encontró la sección'); return; }
@@ -1025,13 +1012,11 @@ function copiarSeccion(id) {
         toast('❌ No hay contenido para copiar');
     }
 }
-
 function exportarSeccionPDF(id, nombre) {
     const el = document.getElementById(id);
     if (!el) { toast('❌ No se encontró la sección'); return; }
     const elemento = el.cloneNode(true);
     elemento.querySelectorAll('.no-print, .btn, button').forEach(b => b.remove());
-    
     const opt = {
         margin: 10,
         filename: `${nombre}_${hoy()}.pdf`,
@@ -1046,7 +1031,6 @@ function exportarSeccionPDF(id, nombre) {
         toast('❌ Error al generar PDF');
     });
 }
-
 function toggleDebug() {
     const box = document.getElementById('debugBox');
     const btn = document.querySelector('.debug-toggle .btn');
@@ -1058,7 +1042,6 @@ function toggleDebug() {
         btn.innerHTML = '🐛 Mostrar Debug';
     }
 }
-
 function mostrarDebug(msg) {
     const box = document.getElementById('debugBox');
     box.style.display = 'block';
@@ -1067,6 +1050,27 @@ function mostrarDebug(msg) {
     const btn = document.querySelector('.debug-toggle .btn');
     if (btn) btn.innerHTML = '🐛 Ocultar Debug';
 }
+
+// ============================================================
+//  ESTADO GLOBAL
+// ============================================================
+let clientes = [];
+let ventas = [];
+let gastos = [];
+let fabricas = [];
+let productos = [];
+let costos = {};
+let fechaInicio = '';
+let fechaFin = '';
+let historial = [];
+let mesActual = new Date();
+let diaSeleccionado = null;
+let chartInstance = null;
+let dashboardFecha = hoy();
+let mesGanancia = new Date();
+let gananciasCalendario = {};
+let diaSeleccionadoGanancia = null;
+let facturaNumero = 1;
 
 // ============================================================
 //  INICIALIZAR COSTOS
@@ -1152,7 +1156,7 @@ async function cargarDatos() {
                     num(v.cantidades?.["ESC.32KG"] || v.c32 || 0)
                 ],
                 total: num(v.total),
-                pago: v.pago || 'efectivo',
+                pago: normalizarPago(v.pago || 'efectivo'),
                 detalle: v.detalle || ''
             }));
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
@@ -1212,25 +1216,21 @@ function cargarGananciasCalendario() {
     } else { gananciasCalendario = {}; }
     setTimeout(() => calcularAcumulados(), 100);
 }
-
 function guardarGananciasCalendario() {
     localStorage.setItem('myc_ganancias_calendario', JSON.stringify(gananciasCalendario));
 }
-
 function guardarGananciaDia(fecha, ganancia) {
     if (!gananciasCalendario[fecha]) { gananciasCalendario[fecha] = { ganancia: 0 }; }
     gananciasCalendario[fecha].ganancia = ganancia;
     guardarGananciasCalendario();
     setTimeout(() => calcularAcumulados(), 50);
 }
-
 function cargarGananciasDesdeVentas() {
     const ventasPorFecha = {};
     for (const v of ventas) {
         if (!ventasPorFecha[v.fecha]) { ventasPorFecha[v.fecha] = []; }
         ventasPorFecha[v.fecha].push(v);
     }
-    
     let cargadas = 0;
     for (const [fecha, ventasDia] of Object.entries(ventasPorFecha)) {
         const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
@@ -1247,14 +1247,12 @@ function cargarGananciasDesdeVentas() {
         const gastosDia = gastos.filter(g => g.fecha === fecha);
         const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
         const ganancia = totalVentas - totalCosto - totalGastos;
-        
         if (!gananciasCalendario[fecha]) {
             gananciasCalendario[fecha] = { ganancia: 0 };
         }
         gananciasCalendario[fecha].ganancia = ganancia;
         cargadas++;
     }
-    
     guardarGananciasCalendario();
     mostrarDebug(`✅ Ganancias cargadas automáticamente: ${cargadas} días`);
 }
@@ -1267,11 +1265,9 @@ function cargarHistorial() {
     if (data) { try { historial = JSON.parse(data); } catch(e) { historial = []; } } else { historial = []; }
 }
 function guardarHistorial() { localStorage.setItem('myc_historial_informes', JSON.stringify(historial)); }
-
 function guardarInformeHistorial() {
     const fecha = document.getElementById('informeFecha').value || hoy();
     if (!fecha) { toast('Seleccione una fecha'); return; }
-
     const ventasDia = ventas.filter(v => v.fecha === fecha);
     const gastosDia = gastos.filter(g => g.fecha === fecha);
     const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
@@ -1283,9 +1279,7 @@ function guardarInformeHistorial() {
     }, 0);
     const ganancia = totalVentas - totalCosto - totalGastos;
     const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
-
     guardarGananciaDia(fecha, ganancia);
-
     const informe = {
         fecha: fecha,
         ventas: totalVentas,
@@ -1309,7 +1303,6 @@ function guardarInformeHistorial() {
             nota: g.nota || ''
         }))
     };
-
     const idx = historial.findIndex(h => h.fecha === fecha);
     if (idx !== -1) { historial[idx] = informe; } else { historial.push(informe); }
     guardarHistorial();
@@ -1318,16 +1311,13 @@ function guardarInformeHistorial() {
     renderCalendarioGanancias();
     renderFinanzas();
 }
-
 function obtenerInformeHistorial(fecha) { return historial.find(h => h.fecha === fecha) || null; }
-
 function eliminarInformeHistorial(fecha) {
     historial = historial.filter(h => h.fecha !== fecha);
     guardarHistorial();
     renderCalendario();
     toast('Informe eliminado');
 }
-
 function limpiarHistorial() {
     if (!confirm('¿Eliminar TODO el historial de informes?')) return;
     historial = [];
@@ -1335,7 +1325,6 @@ function limpiarHistorial() {
     renderCalendario();
     toast('Historial limpiado');
 }
-
 function verInformeHistorial(fecha) {
     diaSeleccionado = fecha;
     const informe = obtenerInformeHistorial(fecha);
@@ -1349,7 +1338,6 @@ function verInformeHistorial(fecha) {
         `;
         return;
     }
-
     let html = `
         <div style="background:var(--azul-claro);padding:14px;border-radius:10px;margin-bottom:14px;">
             <h3 style="color:var(--azul);">🧊 MYC HIELO · Informe Diario</h3>
@@ -1364,7 +1352,6 @@ function verInformeHistorial(fecha) {
             <div><strong>🧊 Bolsas</strong><br>${informe.bolsasVendidas}</div>
         </div>
     `;
-
     if (informe.detalleVentas && informe.detalleVentas.length > 0) {
         html += `<div style="border-top:1px solid var(--borde);padding-top:10px;"><strong>Detalle de ventas:</strong><ul style="list-style:none;padding:0;margin-top:6px;">`;
         for (const v of informe.detalleVentas) {
@@ -1372,7 +1359,6 @@ function verInformeHistorial(fecha) {
         }
         html += `</ul></div>`;
     }
-
     if (informe.detalleGastos && informe.detalleGastos.length > 0) {
         html += `<div style="border-top:1px solid var(--borde);padding-top:10px;margin-top:10px;"><strong>Gastos:</strong><ul style="list-style:none;padding:0;margin-top:6px;">`;
         for (const g of informe.detalleGastos) {
@@ -1380,29 +1366,24 @@ function verInformeHistorial(fecha) {
         }
         html += `</ul></div>`;
     }
-
     html += `
         <div class="no-print" style="margin-top:14px;display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn btn-sm btn-danger" onclick="eliminarInformeHistorial('${fecha}')"><i class="fas fa-trash"></i> Eliminar</button>
             <button class="btn btn-sm btn-success" onclick="exportarInformeHistorialExcel('${fecha}')"><i class="fas fa-file-excel"></i> Excel</button>
         </div>
     `;
-
     container.innerHTML = html;
 }
-
 function generarYGuardarInforme(fecha) {
     document.getElementById('informeFecha').value = fecha;
     guardarInformeHistorial();
     renderCalendario();
 }
-
 function copiarInformeSeleccionado() {
     const container = document.getElementById('historialDetalleContainer');
     const texto = container.textContent.trim();
     if (texto) { navigator.clipboard.writeText(texto).then(() => toast('✅ Copiado')); }
 }
-
 function exportarInformeHistorialExcel(fecha) {
     const informe = obtenerInformeHistorial(fecha);
     if (!informe) { toast('No hay informe'); return; }
@@ -1427,7 +1408,6 @@ function exportarInformeHistorialExcel(fecha) {
     XLSX.writeFile(wb, `informe_${fecha}.xlsx`);
     toast('Excel exportado');
 }
-
 function exportarHistorialExcel() {
     if (historial.length === 0) { toast('No hay informes'); return; }
     const data = [
@@ -1456,26 +1436,21 @@ function renderCalendario() {
     const grid = document.getElementById('calendarioGrid');
     const mesLabel = document.getElementById('mesActual');
     if (!grid) return;
-
     const year = mesActual.getFullYear();
     const month = mesActual.getMonth();
     const primerDia = new Date(year, month, 1);
     const ultimoDia = new Date(year, month + 1, 0);
     const diasEnMes = ultimoDia.getDate();
     const diaInicio = primerDia.getDay();
-
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     mesLabel.textContent = `${meses[month]} ${year}`;
-
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     let html = diasSemana.map(d => `<div class="dia-header">${d}</div>`).join('');
-
     const diasMesAnterior = new Date(year, month, 0).getDate();
     for (let i = diaInicio - 1; i >= 0; i--) {
         const dia = diasMesAnterior - i;
         html += `<div class="dia otro-mes"><span class="num">${dia}</span></div>`;
     }
-
     const hoyStr = hoy();
     for (let d = 1; d <= diasEnMes; d++) {
         const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -1495,15 +1470,12 @@ function renderCalendario() {
             ${indicador}
         </div>`;
     }
-
     const totalDias = diaInicio + diasEnMes;
     const diasRestantes = (7 - (totalDias % 7)) % 7;
     for (let d = 1; d <= diasRestantes; d++) {
         html += `<div class="dia otro-mes"><span class="num">${d}</span></div>`;
     }
-
     grid.innerHTML = html;
-
     if (diaSeleccionado) { verInformeHistorial(diaSeleccionado); } else {
         const informeHoy = obtenerInformeHistorial(hoyStr);
         if (informeHoy) { verInformeHistorial(hoyStr); } else {
@@ -1525,7 +1497,6 @@ function renderVentas() {
         return ok;
     });
     filtradas.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-
     const tbody = document.getElementById('tbodyVentasCompleta');
     if (filtradas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--texto-claro);">Sin ventas</td></tr>';
@@ -1546,7 +1517,6 @@ function renderVentas() {
         </tr>
     `).join('');
 }
-
 async function registrarVenta() {
     const fecha = document.getElementById('vFecha').value;
     const clienteSelect = document.getElementById('vClienteSelect').value;
@@ -1561,17 +1531,14 @@ async function registrarVenta() {
     ];
     const pago = document.getElementById('vPago').value;
     const detalle = document.getElementById('vDetalle').value;
-
     if (!fecha || !cliente) return toast('Complete fecha y cliente');
     if (cantidades.every(c => c === 0)) return toast('Ingrese al menos una cantidad');
-
     const total = cantidades.reduce((acc, q, i) => {
         const claves = ["1.7", "3.5", "14", "20", "32"];
         const prod = productos.find(p => p.clave === claves[i]);
         const precio = prod ? (prod.precio || prod.costo || 0) : 0;
         return acc + (q || 0) * precio;
     }, 0);
-
     const result = await apiCall('guardarVenta', {
         fecha, cliente,
         cantidades: JSON.stringify({
@@ -1583,7 +1550,6 @@ async function registrarVenta() {
         }),
         pago, total, cobroDeuda: 0, chofer: ''
     }, 'POST');
-
     if (result && result.exito) {
         toast('✅ Venta registrada');
         document.getElementById('v17').value = 0;
@@ -1598,7 +1564,6 @@ async function registrarVenta() {
         toast('Error al registrar venta');
     }
 }
-
 async function eliminarVenta(id) {
     if (!confirm('¿Eliminar esta venta?')) return;
     const result = await apiCall('eliminarVenta', { id }, 'POST');
@@ -1609,7 +1574,6 @@ async function eliminarVenta(id) {
         toast('Error al eliminar venta');
     }
 }
-
 function exportarVentasExcel() {
     const data = [
         ['Fecha', 'Cliente', '1.7kg', '3.5kg', '14kg', '20kg', '32kg', 'Total', 'Pago', 'Detalle']
@@ -1633,7 +1597,6 @@ function exportarVentasExcel() {
     XLSX.writeFile(wb, `ventas_${hoy()}.xlsx`);
     toast('Excel exportado');
 }
-
 function exportarVentasPeriodoExcel() {
     const desde = fechaInicio || new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
     const hasta = fechaFin || hoy();
@@ -1659,7 +1622,6 @@ function exportarVentasPeriodoExcel() {
     XLSX.writeFile(wb, `ventas_periodo_${desde}_a_${hasta}.xlsx`);
     toast('Excel exportado');
 }
-
 function renderProductos() {
     const container = document.getElementById('listaProductos');
     if (!productos.length) {
@@ -1676,7 +1638,6 @@ function renderProductos() {
         </div>
     `).join('');
 }
-
 function editarProducto(clave) {
     const p = productos.find(prod => prod.clave === clave);
     if (!p) return;
@@ -1686,7 +1647,6 @@ function editarProducto(clave) {
     if (nuevoCosto === null) return;
     const nuevoPrecio = prompt('Nuevo precio sugerido:', p.precio);
     if (nuevoPrecio === null) return;
-
     p.nombre = nuevoNombre.trim();
     p.costo = num(nuevoCosto);
     p.precio = num(nuevoPrecio);
@@ -1695,7 +1655,6 @@ function editarProducto(clave) {
     renderCostos();
     toast('Producto actualizado');
 }
-
 function eliminarProducto(clave) {
     if (!confirm(`¿Eliminar el producto "${clave}"?`)) return;
     productos = productos.filter(p => p.clave !== clave);
@@ -1704,14 +1663,12 @@ function eliminarProducto(clave) {
     renderCostos();
     toast('Producto eliminado');
 }
-
 function guardarProductosLocal() {
     localStorage.setItem('myc_productos', JSON.stringify(productos));
     for (const p of productos) { costos[p.clave] = p.costo || 0; }
     localStorage.setItem('myc_costos', JSON.stringify(costos));
     localStorage.setItem('myc_costos_globales', JSON.stringify(costos));
 }
-
 function renderCostos() {
     const grid = document.getElementById('costosGrid');
     const labels = {};
@@ -1724,7 +1681,6 @@ function renderCostos() {
     `).join('');
     calcularPreciosSugeridos();
 }
-
 function guardarCostos() {
     document.querySelectorAll('.costo-input').forEach(inp => {
         const clave = inp.dataset.clave;
@@ -1737,7 +1693,6 @@ function guardarCostos() {
     renderDashboard();
     calcularPreciosSugeridos();
 }
-
 function calcularPreciosSugeridos() {
     const margen = num(document.getElementById('margenGanancia').value) || 30;
     const container = document.getElementById('preciosSugeridos');
@@ -1758,7 +1713,6 @@ function calcularPreciosSugeridos() {
     html += '</div>';
     container.innerHTML = html;
 }
-
 function renderClientes() {
     const container = document.getElementById('listaClientes');
     if (!clientes.length) {
@@ -1772,7 +1726,6 @@ function renderClientes() {
         </span>
     `).join('');
 }
-
 async function agregarCliente() {
     const nombre = normalizarNombre(document.getElementById('nuevoCliente').value);
     if (!nombre) return toast('Escribí un nombre');
@@ -1786,7 +1739,6 @@ async function agregarCliente() {
         toast('Error al agregar cliente');
     }
 }
-
 async function eliminarCliente(nombre) {
     if (!confirm(`¿Eliminar cliente "${nombre}"?`)) return;
     const result = await apiCall('eliminarCliente', { nombre }, 'POST');
@@ -1797,7 +1749,6 @@ async function eliminarCliente(nombre) {
         toast('Error al eliminar cliente');
     }
 }
-
 function agregarProducto() {
     const form = document.getElementById('nuevoProductoForm');
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -1809,17 +1760,14 @@ function agregarProducto() {
         document.getElementById('nuevoProductoNombre').focus();
     }
 }
-
 function guardarNuevoProducto() {
     const nombre = document.getElementById('nuevoProductoNombre').value.trim();
     const clave = document.getElementById('nuevoProductoClave').value.trim();
     const costo = num(document.getElementById('nuevoProductoCosto').value);
     const precio = num(document.getElementById('nuevoProductoPrecio').value);
-
     if (!nombre || !clave) return toast('Complete nombre y clave');
     if (costo <= 0) return toast('Ingrese un costo válido');
     if (productos.some(p => p.clave === clave)) return toast('Ya existe');
-
     productos.push({ clave, nombre, costo, precio: precio || costo * 1.5 });
     guardarProductosLocal();
     renderProductos();
@@ -1829,37 +1777,39 @@ function guardarNuevoProducto() {
 }
 
 // ============================================================
-//  🔥 FINANZAS - DEFINITIVO (deuda neta = deuda - cobros - transferencias)
+//  🔥 FINANZAS - DEFINITIVO (normaliza pagos y resta todo)
 // ============================================================
 function renderFinanzas() {
-    // Inicializar objetos por cliente
-    const deudaBrutaPorCliente = {};
-    const cobrosPorCliente = {};
-    const transferenciasPorCliente = {};
-    const efectivoPorCliente = {};
-    const gananciaPorCliente = {};
+    // Inicializar acumuladores por cliente
+    const deudaBruta = {};
+    const cobros = {};
+    const transferencias = {};
+    const efectivo = {};
+    const ganancia = {};
 
+    // Asegurar que todos los clientes estén en los objetos
     for (const c of clientes) {
-        deudaBrutaPorCliente[c] = 0;
-        cobrosPorCliente[c] = 0;
-        transferenciasPorCliente[c] = 0;
-        efectivoPorCliente[c] = 0;
-        gananciaPorCliente[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+        deudaBruta[c] = 0;
+        cobros[c] = 0;
+        transferencias[c] = 0;
+        efectivo[c] = 0;
+        ganancia[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
     }
 
     // Recorrer ventas
     for (const v of ventas) {
         const cliente = v.cliente;
         if (!cliente) continue;
-        if (!gananciaPorCliente[cliente]) {
-            gananciaPorCliente[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
-            deudaBrutaPorCliente[cliente] = 0;
-            cobrosPorCliente[cliente] = 0;
-            transferenciasPorCliente[cliente] = 0;
-            efectivoPorCliente[cliente] = 0;
+        if (!ganancia[cliente]) {
+            ganancia[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+            deudaBruta[cliente] = 0;
+            cobros[cliente] = 0;
+            transferencias[cliente] = 0;
+            efectivo[cliente] = 0;
         }
 
-        gananciaPorCliente[cliente].ventas += v.total || 0;
+        // Ventas totales
+        ganancia[cliente].ventas += v.total || 0;
 
         // Costo
         const claves = ["1.7", "3.5", "14", "20", "32"];
@@ -1867,45 +1817,44 @@ function renderFinanzas() {
         for (let i = 0; i < claves.length; i++) {
             costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
         }
-        gananciaPorCliente[cliente].costo += costo;
+        ganancia[cliente].costo += costo;
 
-        // Clasificar pago
-        if (v.pago === 'efectivo') {
-            gananciaPorCliente[cliente].efectivo += v.total || 0;
-            efectivoPorCliente[cliente] = (efectivoPorCliente[cliente] || 0) + (v.total || 0);
-        } else if (v.pago === 'transferencia') {
-            gananciaPorCliente[cliente].transferencias += v.total || 0;
-            transferenciasPorCliente[cliente] = (transferenciasPorCliente[cliente] || 0) + (v.total || 0);
-        } else if (v.pago === 'ctacte' || v.pago === 'deuda') {
-            deudaBrutaPorCliente[cliente] += v.total || 0;
-            gananciaPorCliente[cliente].deuda += v.total || 0;
-        } else if (v.pago === 'cobrocc') {
-            cobrosPorCliente[cliente] += v.total || 0;
-            gananciaPorCliente[cliente].cobros += v.total || 0;
+        // Clasificar por pago (ya normalizado)
+        const pago = v.pago || '';
+        if (pago === 'efectivo') {
+            ganancia[cliente].efectivo += v.total || 0;
+            efectivo[cliente] = (efectivo[cliente] || 0) + (v.total || 0);
+        } else if (pago === 'transferencia') {
+            ganancia[cliente].transferencias += v.total || 0;
+            transferencias[cliente] = (transferencias[cliente] || 0) + (v.total || 0);
+        } else if (pago === 'ctacte' || pago === 'deuda') {
+            deudaBruta[cliente] += v.total || 0;
+            ganancia[cliente].deuda += v.total || 0;
+        } else if (pago === 'cobrocc') {
+            cobros[cliente] += v.total || 0;
+            ganancia[cliente].cobros += v.total || 0;
         }
     }
 
-    // Calcular deuda neta = deudaBruta - (cobros + transferencias)
-    const deudaNetaPorCliente = {};
+    // Calcular deuda neta = bruta - (cobros + transferencias)
+    const deudaNeta = {};
     let totalDeudaNeta = 0;
     let totalTransferencias = 0;
     let totalEfectivo = 0;
     let totalGananciaReal = 0;
 
-    for (const c of Object.keys(gananciaPorCliente)) {
-        const bruta = deudaBrutaPorCliente[c] || 0;
-        const cobros = cobrosPorCliente[c] || 0;
-        const transf = transferenciasPorCliente[c] || 0;
-        const neta = Math.max(0, bruta - cobros - transf);
-        deudaNetaPorCliente[c] = neta;
+    for (const c of Object.keys(ganancia)) {
+        const bruta = deudaBruta[c] || 0;
+        const cob = cobros[c] || 0;
+        const transf = transferencias[c] || 0;
+        const neta = Math.max(0, bruta - cob - transf);
+        deudaNeta[c] = neta;
         totalDeudaNeta += neta;
         totalTransferencias += transf;
-        totalEfectivo += efectivoPorCliente[c] || 0;
-
-        gananciaPorCliente[c].gananciaBruta = gananciaPorCliente[c].ventas - gananciaPorCliente[c].costo;
-        // Ganancia real = ventas - costo + cobros (los cobros son ingresos)
-        gananciaPorCliente[c].gananciaReal = gananciaPorCliente[c].gananciaBruta + gananciaPorCliente[c].cobros;
-        totalGananciaReal += gananciaPorCliente[c].gananciaReal;
+        totalEfectivo += efectivo[c] || 0;
+        ganancia[c].gananciaBruta = ganancia[c].ventas - ganancia[c].costo;
+        ganancia[c].gananciaReal = ganancia[c].gananciaBruta + ganancia[c].cobros;
+        totalGananciaReal += ganancia[c].gananciaReal;
     }
 
     // Actualizar KPIs
@@ -1913,49 +1862,44 @@ function renderFinanzas() {
     document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
     document.getElementById('totalGananciaClienteFinanzas').textContent = pesos(totalGananciaReal);
 
-    // Detalle de deudores
-    const deudores = Object.entries(deudaNetaPorCliente).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    // Detalles
+    const deudores = Object.entries(deudaNeta).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     document.getElementById('detalleDeudas').textContent = deudores.length > 0 
         ? `${deudores.length} clientes · ${deudores.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v)}`).join(' · ')}`
         : '🎉 Sin deudas netas';
 
-    // Transferencias
-    const transfer = Object.entries(transferenciasPorCliente).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    const transfer = Object.entries(transferencias).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     document.getElementById('detalleTransferencias').textContent = transfer.length > 0 
         ? `${transfer.length} clientes · ${transfer.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v)}`).join(' · ')}`
         : 'Sin transferencias';
 
-    // Ganancia top
-    const gananciaTop = Object.entries(gananciaPorCliente).filter(([, v]) => v.gananciaReal > 0).sort((a, b) => b[1].gananciaReal - a[1].gananciaReal);
+    const gananciaTop = Object.entries(ganancia).filter(([, v]) => v.gananciaReal > 0).sort((a, b) => b[1].gananciaReal - a[1].gananciaReal);
     document.getElementById('detalleGananciaCliente').textContent = gananciaTop.length > 0 
         ? `${gananciaTop.length} clientes · ${gananciaTop.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v.gananciaReal)}`).join(' · ')}`
         : 'Sin ganancias';
 
-    // Ganancia real box
+    // Caja resumen
     document.getElementById('gananciaEfectivo').textContent = pesos(totalEfectivo);
     document.getElementById('gananciaTransferencias').textContent = pesos(totalTransferencias);
     document.getElementById('gananciaDeuda').textContent = pesos(totalDeudaNeta);
     document.getElementById('gananciaNetaReal').textContent = pesos(totalGananciaReal);
 
-    // Renderizar tabla de ganancia por cliente
-    renderTablaGananciaCliente(gananciaPorCliente, deudaNetaPorCliente);
+    // Tabla de ganancia por cliente
+    renderTablaGananciaCliente(ganancia, deudaNeta);
 }
 
-function renderTablaGananciaCliente(gananciaPorCliente, deudaNetaPorCliente) {
+function renderTablaGananciaCliente(ganancia, deudaNeta) {
     const tbody = document.getElementById('tbodyGananciaCliente');
     if (!tbody) return;
-
-    const sorted = Object.entries(gananciaPorCliente)
+    const sorted = Object.entries(ganancia)
         .filter(([, v]) => v.ventas > 0 || v.gananciaReal > 0)
         .sort((a, b) => b[1].gananciaReal - a[1].gananciaReal);
-
     if (sorted.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin datos</td></tr>';
         return;
     }
-
     tbody.innerHTML = sorted.map(([cliente, data]) => {
-        const deudaNeta = deudaNetaPorCliente[cliente] || 0;
+        const neta = deudaNeta[cliente] || 0;
         return `
         <tr>
             <td><strong>${cliente}</strong></td>
@@ -1964,7 +1908,7 @@ function renderTablaGananciaCliente(gananciaPorCliente, deudaNetaPorCliente) {
             <td style="color:${data.gananciaBruta >= 0 ? 'var(--verde)' : 'var(--rojo)'}">${pesos(data.gananciaBruta)}</td>
             <td>${pesos(data.efectivo)}</td>
             <td>${pesos(data.transferencias)}</td>
-            <td style="color:var(--dorado)">${pesos(deudaNeta)}</td>
+            <td style="color:var(--dorado)">${pesos(neta)}</td>
             <td style="color:var(--morado)">${pesos(data.cobros)}</td>
             <td style="color:${data.gananciaReal >= 0 ? 'var(--verde)' : 'var(--rojo)'};font-weight:800;">${pesos(data.gananciaReal)}</td>
         </tr>`;
@@ -1972,76 +1916,71 @@ function renderTablaGananciaCliente(gananciaPorCliente, deudaNetaPorCliente) {
 }
 
 function exportarGananciaClienteExcel() {
-    // Recalcular deuda neta con la misma lógica
-    const deudaBrutaPorCliente = {};
-    const cobrosPorCliente = {};
-    const transferenciasPorCliente = {};
-    const efectivoPorCliente = {};
-    const gananciaPorCliente = {};
-
+    // Recalcular con la misma lógica
+    const deudaBruta = {};
+    const cobros = {};
+    const transferencias = {};
+    const efectivo = {};
+    const ganancia = {};
     for (const c of clientes) {
-        deudaBrutaPorCliente[c] = 0;
-        cobrosPorCliente[c] = 0;
-        transferenciasPorCliente[c] = 0;
-        efectivoPorCliente[c] = 0;
-        gananciaPorCliente[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+        deudaBruta[c] = 0;
+        cobros[c] = 0;
+        transferencias[c] = 0;
+        efectivo[c] = 0;
+        ganancia[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
     }
-
     for (const v of ventas) {
         const cliente = v.cliente;
         if (!cliente) continue;
-        if (!gananciaPorCliente[cliente]) {
-            gananciaPorCliente[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
-            deudaBrutaPorCliente[cliente] = 0;
-            cobrosPorCliente[cliente] = 0;
-            transferenciasPorCliente[cliente] = 0;
-            efectivoPorCliente[cliente] = 0;
+        if (!ganancia[cliente]) {
+            ganancia[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+            deudaBruta[cliente] = 0;
+            cobros[cliente] = 0;
+            transferencias[cliente] = 0;
+            efectivo[cliente] = 0;
         }
-        gananciaPorCliente[cliente].ventas += v.total || 0;
+        ganancia[cliente].ventas += v.total || 0;
         const claves = ["1.7", "3.5", "14", "20", "32"];
         let costo = 0;
         for (let i = 0; i < claves.length; i++) {
             costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
         }
-        gananciaPorCliente[cliente].costo += costo;
-        if (v.pago === 'efectivo') {
-            gananciaPorCliente[cliente].efectivo += v.total || 0;
-            efectivoPorCliente[cliente] = (efectivoPorCliente[cliente] || 0) + (v.total || 0);
-        } else if (v.pago === 'transferencia') {
-            gananciaPorCliente[cliente].transferencias += v.total || 0;
-            transferenciasPorCliente[cliente] = (transferenciasPorCliente[cliente] || 0) + (v.total || 0);
-        } else if (v.pago === 'ctacte' || v.pago === 'deuda') {
-            deudaBrutaPorCliente[cliente] += v.total || 0;
-            gananciaPorCliente[cliente].deuda += v.total || 0;
-        } else if (v.pago === 'cobrocc') {
-            cobrosPorCliente[cliente] += v.total || 0;
-            gananciaPorCliente[cliente].cobros += v.total || 0;
+        ganancia[cliente].costo += costo;
+        const pago = v.pago || '';
+        if (pago === 'efectivo') {
+            ganancia[cliente].efectivo += v.total || 0;
+            efectivo[cliente] = (efectivo[cliente] || 0) + (v.total || 0);
+        } else if (pago === 'transferencia') {
+            ganancia[cliente].transferencias += v.total || 0;
+            transferencias[cliente] = (transferencias[cliente] || 0) + (v.total || 0);
+        } else if (pago === 'ctacte' || pago === 'deuda') {
+            deudaBruta[cliente] += v.total || 0;
+            ganancia[cliente].deuda += v.total || 0;
+        } else if (pago === 'cobrocc') {
+            cobros[cliente] += v.total || 0;
+            ganancia[cliente].cobros += v.total || 0;
         }
     }
-
-    const deudaNetaPorCliente = {};
-    for (const c of Object.keys(gananciaPorCliente)) {
-        const bruta = deudaBrutaPorCliente[c] || 0;
-        const cobros = cobrosPorCliente[c] || 0;
-        const transf = transferenciasPorCliente[c] || 0;
-        deudaNetaPorCliente[c] = Math.max(0, bruta - cobros - transf);
-        gananciaPorCliente[c].gananciaBruta = gananciaPorCliente[c].ventas - gananciaPorCliente[c].costo;
-        gananciaPorCliente[c].gananciaReal = gananciaPorCliente[c].gananciaBruta + gananciaPorCliente[c].cobros;
+    const deudaNeta = {};
+    for (const c of Object.keys(ganancia)) {
+        const bruta = deudaBruta[c] || 0;
+        const cob = cobros[c] || 0;
+        const transf = transferencias[c] || 0;
+        deudaNeta[c] = Math.max(0, bruta - cob - transf);
+        ganancia[c].gananciaBruta = ganancia[c].ventas - ganancia[c].costo;
+        ganancia[c].gananciaReal = ganancia[c].gananciaBruta + ganancia[c].cobros;
     }
-
     const data = [
         ['MYC HIELO · Ganancia Real por Cliente'],
         [],
         ['Cliente', 'Total Ventas', 'Costo', 'Ganancia Bruta', 'Efectivo', 'Transferencias', 'Deuda Neta', 'Cobros', 'Ganancia Real']
     ];
-
-    for (const [cliente, d] of Object.entries(gananciaPorCliente)) {
+    for (const [cliente, d] of Object.entries(ganancia)) {
         data.push([
             cliente, d.ventas, d.costo, d.gananciaBruta, d.efectivo, d.transferencias,
-            deudaNetaPorCliente[cliente] || 0, d.cobros, d.gananciaReal
+            deudaNeta[cliente] || 0, d.cobros, d.gananciaReal
         ]);
     }
-
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, 'Ganancia por Cliente');
@@ -2056,133 +1995,97 @@ function renderCalendarioGanancias() {
     const grid = document.getElementById('calendarioGananciaGrid');
     const mesLabel = document.getElementById('mesGananciaActual');
     if (!grid || !mesLabel) return;
-
     const year = mesGanancia.getFullYear();
     const month = mesGanancia.getMonth();
     const primerDia = new Date(year, month, 1);
     const ultimoDia = new Date(year, month + 1, 0);
     const diasEnMes = ultimoDia.getDate();
     const diaInicio = primerDia.getDay();
-
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     mesLabel.textContent = `${meses[month]} ${year}`;
-
     const primerDiaStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
     const ultimoDiaStr = `${year}-${String(month+1).padStart(2,'0')}-${String(diasEnMes).padStart(2,'0')}`;
     document.getElementById('fechaInicioGanancia').textContent = formatearFecha(primerDiaStr);
     document.getElementById('fechaFinGanancia').textContent = formatearFecha(ultimoDiaStr);
-
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     let html = diasSemana.map(d => `<div class="dia-header">${d}</div>`).join('');
-
     const diasMesAnterior = new Date(year, month, 0).getDate();
     for (let i = diaInicio - 1; i >= 0; i--) {
         const dia = diasMesAnterior - i;
         html += `<div class="dia otro-mes"><span class="num">${dia}</span></div>`;
     }
-
     const hoyStr = hoy();
-    
     for (let d = 1; d <= diasEnMes; d++) {
         const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const esHoy = fecha === hoyStr;
         const clase = `dia${esHoy ? ' hoy' : ''}${diaSeleccionadoGanancia === fecha ? ' seleccionado' : ''}`;
-        
-        let gananciaDia = 0;
-        let color = '';
+        let gananciaDia = 0, color = '';
         if (gananciasCalendario[fecha]) {
             gananciaDia = gananciasCalendario[fecha].ganancia || 0;
             if (gananciaDia > 0) color = 'verde';
             else if (gananciaDia < 0) color = 'rojo';
             else color = 'dorado';
         }
-        
         html += `<div class="${clase}" data-fecha="${fecha}" onclick="seleccionarDiaGanancia('${fecha}')">
             <span class="num">${d}</span>
             ${gananciaDia !== 0 ? `<span class="ganancia-dia ${color}">${pesos(gananciaDia)}</span>` : ''}
         </div>`;
     }
-
     const totalDias = diaInicio + diasEnMes;
     const diasRestantes = (7 - (totalDias % 7)) % 7;
     for (let d = 1; d <= diasRestantes; d++) {
         html += `<div class="dia otro-mes"><span class="num">${d}</span></div>`;
     }
-
     grid.innerHTML = html;
-    
-    if (diaSeleccionadoGanancia) {
-        mostrarDetalleDiaGanancia(diaSeleccionadoGanancia);
-    }
-    
+    if (diaSeleccionadoGanancia) mostrarDetalleDiaGanancia(diaSeleccionadoGanancia);
     setTimeout(() => calcularAcumulados(), 100);
 }
-
 function seleccionarDiaGanancia(fecha) {
     diaSeleccionadoGanancia = fecha;
     mostrarDetalleDiaGanancia(fecha);
     renderCalendarioGanancias();
 }
-
 function mostrarDetalleDiaGanancia(fecha) {
     const container = document.getElementById('detalleDiaGanancia');
     if (!container) return;
-    
     const ganancia = gananciasCalendario[fecha] ? gananciasCalendario[fecha].ganancia : 0;
     const fechaCompleta = formatearFechaCompleta(fecha);
     const fechaStr = formatearFecha(fecha);
-    
     let color = 'dorado';
     if (ganancia > 0) color = 'verde';
     else if (ganancia < 0) color = 'rojo';
-    
     document.getElementById('detalleDiaFecha').textContent = `📅 ${fechaCompleta}`;
     document.getElementById('detalleDiaMonto').textContent = `${pesos(ganancia)}`;
     document.getElementById('detalleDiaMonto').className = `monto ${color}`;
     document.getElementById('detalleDiaInfo').textContent = ganancia !== 0 ? `Ganancia del día ${fechaStr}` : 'Sin movimiento';
-    
     container.style.display = 'block';
 }
-
 function calcularAcumulados() {
     const hoyStr = hoy();
-    
     let gananciaHoy = 0;
-    if (gananciasCalendario[hoyStr]) {
-        gananciaHoy = gananciasCalendario[hoyStr].ganancia || 0;
-    }
+    if (gananciasCalendario[hoyStr]) gananciaHoy = gananciasCalendario[hoyStr].ganancia || 0;
     document.getElementById('acumuladoHoy').textContent = pesos(gananciaHoy);
-    
     let gananciaSemana = 0;
     for (let i = 0; i < 7; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
         const key = d.toISOString().slice(0,10);
-        if (gananciasCalendario[key]) {
-            gananciaSemana += gananciasCalendario[key].ganancia || 0;
-        }
+        if (gananciasCalendario[key]) gananciaSemana += gananciasCalendario[key].ganancia || 0;
     }
     document.getElementById('acumuladoSemana').textContent = pesos(gananciaSemana);
-    
     let gananciaMes = 0;
     const mesActualStr = hoyStr.slice(0, 7);
     for (const [fecha, data] of Object.entries(gananciasCalendario)) {
-        if (fecha.startsWith(mesActualStr)) {
-            gananciaMes += data.ganancia || 0;
-        }
+        if (fecha.startsWith(mesActualStr)) gananciaMes += data.ganancia || 0;
     }
     document.getElementById('acumuladoMes').textContent = pesos(gananciaMes);
-    
     let gananciaAnio = 0;
     const anioActual = hoyStr.slice(0, 4);
     for (const [fecha, data] of Object.entries(gananciasCalendario)) {
-        if (fecha.startsWith(anioActual)) {
-            gananciaAnio += data.ganancia || 0;
-        }
+        if (fecha.startsWith(anioActual)) gananciaAnio += data.ganancia || 0;
     }
     document.getElementById('acumuladoAnio').textContent = pesos(gananciaAnio);
 }
-
 function exportarGananciaCalendarioExcel() {
     const data = [
         ['MYC HIELO · Calendario de Ganancias'],
@@ -2255,7 +2158,7 @@ function generarFactura() {
     document.getElementById('facturaDeudaTotalMonto').textContent = pesos(deudaNeta);
     document.getElementById('facturaDeudaTotal').style.display = 'block';
 
-    // Desglose de deudas y pagos
+    // Desglose
     let desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
     if (deudas.length > 0) {
         desgloseHtml += '<strong>📋 Deudas del período:</strong><br>';
@@ -2306,7 +2209,7 @@ function generarFactura() {
     document.getElementById('facturaResumenSaldo').textContent = '$0';
     document.getElementById('facturaResumenSaldo').style.color = 'var(--verde)';
 
-    // Detalle de la factura: deudas (positivo) y pagos (negativo)
+    // Detalle de la factura
     let html = '';
     for (const v of deudas.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
         const detalle = v.cantidades ? v.cantidades.map((q, i) => {
@@ -2368,7 +2271,6 @@ function renderFabricas() {
             </tr>
         `).join('');
     }
-
     const resumen = {};
     for (const f of fabricas) {
         const key = f.fabrica + '|' + f.tipo;
@@ -2392,13 +2294,11 @@ function renderFabricas() {
         }).join('');
     }
 }
-
 function cargarFabricasLocal() {
     const data = localStorage.getItem('myc_fabricas_local');
     if (data) { try { fabricas = JSON.parse(data); } catch(e) { fabricas = []; } } else { fabricas = []; }
     return fabricas;
 }
-
 function eliminarFabricaLocal(id) {
     if (!confirm('¿Eliminar este registro?')) return;
     cargarFabricasLocal();
@@ -2407,9 +2307,7 @@ function eliminarFabricaLocal(id) {
     renderFabricas();
     toast('Registro eliminado');
 }
-
 function guardarFabricasLocal() { localStorage.setItem('myc_fabricas_local', JSON.stringify(fabricas)); }
-
 function exportarFabricasExcel() {
     cargarFabricasLocal();
     const data = [['Fecha', 'Fábrica', 'Tipo', 'Cargada', 'Devuelta']];
@@ -2420,17 +2318,14 @@ function exportarFabricasExcel() {
     XLSX.writeFile(wb, `fabricas_${hoy()}.xlsx`);
     toast('Excel exportado');
 }
-
 async function registrarFabrica() {
     const fecha = document.getElementById('fFecha').value;
     const fabrica = document.getElementById('fFabrica').value;
     const tipo = document.getElementById('fTipo').value;
     const cargada = parseInt(document.getElementById('fCargada').value) || 0;
     const devuelta = parseInt(document.getElementById('fDevuelta').value) || 0;
-
     if (!fecha) return toast('Seleccione fecha');
     if (cargada === 0 && devuelta === 0) return toast('Ingrese al menos una cantidad');
-
     cargarFabricasLocal();
     const nuevo = { id: 'f' + Date.now(), fecha, fabrica, tipo, cargada, devuelta };
     fabricas.push(nuevo);
@@ -2440,7 +2335,6 @@ async function registrarFabrica() {
     document.getElementById('fDevuelta').value = 0;
     renderFabricas();
 }
-
 function exportarGastosExcel() {
     const data = [['Fecha', 'Categoría', 'Monto', 'Nota']];
     for (const g of gastos) { data.push([g.fecha, g.categoria || '', g.monto || 0, g.nota || '']); }
@@ -2450,13 +2344,11 @@ function exportarGastosExcel() {
     XLSX.writeFile(wb, `gastos_${hoy()}.xlsx`);
     toast('Excel exportado');
 }
-
 function renderGastos() {
     const filtroFecha = document.getElementById('filtroGastosFecha').value;
     let filtrados = gastos;
     if (filtroFecha) filtrados = filtrados.filter(g => g.fecha === filtroFecha);
     filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-
     const tbody = document.getElementById('tbodyGastos');
     if (filtrados.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos</td></tr>';
@@ -2471,13 +2363,11 @@ function renderGastos() {
             </tr>
         `).join('');
     }
-
     const hoyStr = hoy();
     const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
     const totalHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
     document.getElementById('totalGastosDia').textContent = `Total gastos del día: ${pesos(totalHoy)}`;
 }
-
 async function eliminarGasto(id) {
     if (!confirm('¿Eliminar este gasto?')) return;
     const result = await apiCall('eliminarGasto', { id }, 'POST');
@@ -2488,17 +2378,13 @@ async function eliminarGasto(id) {
         toast('Error al eliminar gasto');
     }
 }
-
 async function registrarGasto() {
     const fecha = document.getElementById('gFecha').value;
     const categoria = document.getElementById('gCategoria').value;
     const monto = parseFloat(document.getElementById('gMonto').value);
     const nota = document.getElementById('gNota').value;
-
     if (!fecha || !monto || monto <= 0) return toast('Complete campos');
-
     const result = await apiCall('guardarGasto', { fecha, chofer: '', categoria, monto, nota }, 'POST');
-
     if (result && result.exito) {
         toast('✅ Gasto registrado');
         document.getElementById('gMonto').value = '';
@@ -2514,16 +2400,12 @@ async function registrarGasto() {
 // ============================================================
 function renderDashboard(fecha = null) {
     const fechaStr = fecha || dashboardFecha || hoy();
-
     const ventasFiltradas = ventas.filter(v => v.fecha === fechaStr);
     const gastosFiltrados = gastos.filter(g => g.fecha === fechaStr);
-
     let totalVentas = 0, totalCosto = 0, totalGastos = 0;
     let bolsasVendidas = { "1.7": 0, "3.5": 0, "14": 0, "20": 0, "32": 0 };
     const clientesSet = new Set();
-
     const clavesMap = { "1.7": "1.7", "3.5": "3.5", "14": "14", "20": "20", "32": "32" };
-
     for (const v of ventasFiltradas) {
         totalVentas += v.total || 0;
         const claves = ["1.7", "3.5", "14", "20", "32"];
@@ -2537,10 +2419,8 @@ function renderDashboard(fecha = null) {
         if (v.cliente) clientesSet.add(v.cliente);
     }
     for (const g of gastosFiltrados) totalGastos += g.monto || 0;
-
     const ganancia = totalVentas - totalCosto - totalGastos;
     const totalBolsas = Object.values(bolsasVendidas).reduce((a, b) => a + b, 0);
-
     document.getElementById('kpiVentas').textContent = pesos(totalVentas);
     document.getElementById('kpiGastos').textContent = pesos(totalGastos);
     document.getElementById('kpiCostoBolsas').textContent = pesos(totalCosto);
@@ -2548,20 +2428,16 @@ function renderDashboard(fecha = null) {
     document.getElementById('kpiGanancia').className = 'value ' + (ganancia >= 0 ? 'positive' : 'negative');
     document.getElementById('kpiBolsas').textContent = totalBolsas;
     document.getElementById('kpiClientes').textContent = clientesSet.size;
-
     const desde = fechaInicio || new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
     const hasta = fechaFin || hoy();
     renderTablaVentasPeriodo(desde, hasta);
     renderGrafico(desde, hasta);
 }
-
 function renderTablaVentasPeriodo(desde, hasta) {
     const ventasFiltradas = ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
     const gastosFiltrados = gastos.filter(g => g.fecha >= desde && g.fecha <= hasta);
-
     let totalVentas = 0, totalGastos = 0, totalCosto = 0;
     const clavesMap = { "1.7": "1.7", "3.5": "3.5", "14": "14", "20": "20", "32": "32" };
-
     for (const v of ventasFiltradas) {
         totalVentas += v.total || 0;
         const claves = ["1.7", "3.5", "14", "20", "32"];
@@ -2572,11 +2448,9 @@ function renderTablaVentasPeriodo(desde, hasta) {
         }
     }
     for (const g of gastosFiltrados) totalGastos += g.monto || 0;
-
     document.getElementById('totalVentasPeriodo').textContent = pesos(totalVentas);
     document.getElementById('totalGastosPeriodo').textContent = pesos(totalGastos);
     document.getElementById('gananciaPeriodo').textContent = pesos(totalVentas - totalCosto - totalGastos);
-
     const tbody = document.getElementById('tbodyVentasPeriodo');
     if (ventasFiltradas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin ventas</td></tr>';
@@ -2596,11 +2470,9 @@ function renderTablaVentasPeriodo(desde, hasta) {
         `).join('');
     }
 }
-
 function renderGrafico(desde, hasta) {
     const ctx = document.getElementById('chartVentas');
     if (!ctx) return;
-
     const grupos = {};
     const hoyStr = hoy();
     for (let i = 6; i >= 0; i--) {
@@ -2612,12 +2484,9 @@ function renderGrafico(desde, hasta) {
     for (const v of ventas) {
         if (grupos[v.fecha] !== undefined) { grupos[v.fecha] += v.total || 0; }
     }
-
     const labels = Object.keys(grupos).map(f => formatearFecha(f));
     const values = Object.values(grupos);
-
     if (chartInstance) { chartInstance.destroy(); }
-
     chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -2648,13 +2517,10 @@ function renderGrafico(desde, hasta) {
 function exportarInformePDF() {
     exportarSeccionPDF('informeDiarioContainer', 'Informe_Diario');
 }
-
 function exportarInformeExcel() {
     const fechaInput = document.getElementById('informeFecha');
     const fechaStr = fechaInput ? fechaInput.value : hoy();
-
     if (!fechaStr) { toast('Seleccione una fecha'); return; }
-
     const ventasDia = ventas.filter(v => v.fecha === fechaStr);
     const gastosDia = gastos.filter(g => g.fecha === fechaStr);
     const data = [
@@ -2686,23 +2552,18 @@ function exportarInformeExcel() {
     XLSX.writeFile(wb, `informe_${fechaStr}.xlsx`);
     toast('Excel exportado');
 }
-
 function generarInformeDiario() {
     const container = document.getElementById('informeDiarioContainer');
     const fechaInput = document.getElementById('informeFecha');
     const fechaStr = fechaInput ? fechaInput.value : hoy();
-
     if (!fechaStr) {
         container.innerHTML = '<p style="color:var(--texto-claro);text-align:center;padding:20px;">Seleccione una fecha</p>';
         return;
     }
-
     const ventasDia = ventas.filter(v => v.fecha === fechaStr);
     const gastosDia = gastos.filter(g => g.fecha === fechaStr);
-    
     const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
     const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
-    
     const clavesMap = { "1.7": "1.7", "3.5": "3.5", "14": "14", "20": "20", "32": "32" };
     const totalCosto = ventasDia.reduce((acc, v) => {
         const claves = ["1.7", "3.5", "14", "20", "32"];
@@ -2712,10 +2573,8 @@ function generarInformeDiario() {
             return a + (q || 0) * (costos[clave] || 0);
         }, 0);
     }, 0);
-    
     const ganancia = totalVentas - totalCosto - totalGastos;
     const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
-
     let html = `
         <div style="background:var(--azul-claro);padding:14px;border-radius:10px;margin-bottom:14px;">
             <h3 style="color:var(--azul);">🧊 MYC HIELO · Informe Diario</h3>
@@ -2730,12 +2589,10 @@ function generarInformeDiario() {
             <div><strong>🧊 Bolsas</strong><br>${ventasDia.reduce((acc,v) => acc + (v.cantidades||[]).reduce((a,b) => a + (b||0), 0), 0)}</div>
         </div>
     `;
-
     if (gastosDia.length > 0) {
         const nafta = gastosDia.filter(g => g.categoria === 'Nafta').reduce((acc, g) => acc + g.monto, 0);
         const choferes = gastosDia.filter(g => g.categoria === 'Chofer').reduce((acc, g) => acc + g.monto, 0);
         const otros = gastosDia.filter(g => g.categoria !== 'Nafta' && g.categoria !== 'Chofer').reduce((acc, g) => acc + g.monto, 0);
-        
         html += `
         <div style="border-top:1px solid var(--borde);padding-top:10px;margin-top:10px;">
             <strong>💸 Detalle de gastos del día:</strong>
@@ -2747,7 +2604,6 @@ function generarInformeDiario() {
             </div>
         </div>`;
     }
-
     if (ventasDia.length > 0) {
         html += `
         <div style="border-top:1px solid var(--borde);padding-top:10px;margin-top:10px;">
@@ -2763,11 +2619,9 @@ function generarInformeDiario() {
         }
         html += `</ul></div>`;
     }
-
     if (ventasDia.length === 0 && gastosDia.length === 0) {
         html += `<p style="color:var(--texto-claro);text-align:center;padding:20px;">No hay movimientos en esta fecha</p>`;
     }
-
     container.innerHTML = html;
 }
 
@@ -2789,7 +2643,6 @@ function imprimirFactura() {
     ventana.document.close();
     setTimeout(() => { ventana.print(); ventana.close(); }, 500);
 }
-
 function enviarFacturaWhatsApp() {
     const cliente = document.getElementById('facturaCliente').value;
     const total = document.getElementById('facturaTotal').textContent;
@@ -2803,7 +2656,6 @@ Factura N°: ${document.getElementById('facturaNumero').textContent}
     const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
     window.open(url, '_blank');
 }
-
 function enviarFacturaEmail() {
     const cliente = document.getElementById('facturaCliente').value;
     const total = document.getElementById('facturaTotal').textContent;
@@ -2818,7 +2670,6 @@ Gracias por confiar en MYC HIELO 🧊`;
     const url = `mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
     window.open(url, '_blank');
 }
-
 function exportarFacturaPDF() {
     const factura = document.getElementById('facturaBox');
     if (factura.style.display === 'none') { toast('Primero genere una factura'); return; }
@@ -2860,7 +2711,6 @@ function actualizarUI() {
     cargarClientesFactura();
     setTimeout(() => calcularAcumulados(), 200);
 }
-
 function actualizarSelectores() {
     const select = document.getElementById('vClienteSelect');
     if (!select) return;
@@ -2890,7 +2740,6 @@ document.querySelectorAll('.nav a').forEach(el => {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Setear fechas
     document.getElementById('vFecha').value = hoy();
     document.getElementById('gFecha').value = hoy();
     document.getElementById('fFecha').value = hoy();
@@ -2898,11 +2747,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (informeFecha) informeFecha.value = hoy();
     const dashboardFechaEl = document.getElementById('dashboardFecha');
     if (dashboardFechaEl) dashboardFechaEl.value = hoy();
-    
     const fechaGanancia = document.getElementById('fechaGanancia');
     if (fechaGanancia) fechaGanancia.value = hoy();
 
-    // Eventos
     document.getElementById('syncBtn').addEventListener('click', cargarDatos);
 
     document.getElementById('aplicarFechas').addEventListener('click', function() {
@@ -3016,13 +2863,12 @@ document.addEventListener('DOMContentLoaded', function() {
         toast('✅ Acumulados actualizados');
     });
 
-    // Facturación
     document.getElementById('generarFacturaBtn').addEventListener('click', generarFactura);
 
     cargarDatos();
 });
 
-// Variables globales para las funciones onclick
+// Variables globales para funciones onclick
 window.copiarTabla = copiarTabla;
 window.copiarSeccion = copiarSeccion;
 window.exportarSeccionPDF = exportarSeccionPDF;
