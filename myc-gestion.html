@@ -333,6 +333,19 @@
             border-color: var(--azul);
         }
 
+        .informe-gastos {
+            background: #fee2e2;
+            padding: 8px 14px;
+            border-radius: 8px;
+            margin: 4px 0;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .informe-gastos .categoria { font-weight: 600; }
+        .informe-gastos .monto { font-weight: 800; color: var(--rojo); }
+
         @media (max-width: 700px) {
             .header h1 { font-size: 1.2rem; }
             .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -410,7 +423,6 @@
     <!-- ==================== TAB: DASHBOARD ==================== -->
     <div id="tab-dashboard" class="tab-content active">
 
-        <!-- SELECTOR DE FECHA PARA VER CUALQUIER DÍA -->
         <div class="fecha-selector-dashboard no-print">
             <label>📅 Ver día:</label>
             <input type="date" id="dashboardFecha">
@@ -419,7 +431,6 @@
             <span style="font-size:0.7rem;color:var(--texto-claro);margin-left:auto;">Seleccioná una fecha para ver sus KPIs</span>
         </div>
 
-        <!-- KPIs: VENTAS, GASTOS, COSTO BOLSAS, GANANCIA, BOLSAS, CLIENTES -->
         <div class="kpi-grid" id="kpiGrid">
             <div class="kpi"><div class="label">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
             <div class="kpi"><div class="label">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
@@ -429,7 +440,6 @@
             <div class="kpi"><div class="label">👥 Clientes</div><div class="value neutral" id="kpiClientes">0</div></div>
         </div>
 
-        <!-- Gráfico -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📊 Evolución de Ventas (últimos 7 días)</div>
@@ -439,7 +449,6 @@
             </div>
         </div>
 
-        <!-- Tabla de ventas del período -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📋 Ventas del período</div>
@@ -1445,7 +1454,6 @@ function renderDashboard(fecha = null) {
     document.getElementById('kpiBolsas').textContent = totalBolsas;
     document.getElementById('kpiClientes').textContent = clientesSet.size;
 
-    // Tabla de ventas del período (últimos 7 días)
     const desde = fechaInicio || new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
     const hasta = fechaFin || hoy();
     renderTablaVentasPeriodo(desde, hasta);
@@ -1868,7 +1876,7 @@ async function eliminarCliente(nombre) {
 }
 
 // ============================================================
-//  INFORME DIARIO CON SELECTOR DE FECHA
+//  INFORME DIARIO CON SELECTOR DE FECHA Y GASTOS
 // ============================================================
 function generarInformeDiario() {
     const container = document.getElementById('informeDiarioContainer');
@@ -1880,8 +1888,10 @@ function generarInformeDiario() {
         return;
     }
 
+    // 🔥 FILTRAR POR FECHA CORRECTAMENTE
     const ventasDia = ventas.filter(v => v.fecha === fechaStr);
     const gastosDia = gastos.filter(g => g.fecha === fechaStr);
+
     const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
     const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
     const totalCosto = ventasDia.reduce((acc, v) => {
@@ -1907,9 +1917,27 @@ function generarInformeDiario() {
         </div>
     `;
 
+    // 🔥 DETALLE DE GASTOS
+    if (gastosDia.length > 0) {
+        html += `
+        <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
+            <strong>💸 Detalle de gastos:</strong>
+            <ul style="list-style:none;padding:0;margin-top:8px;">
+        `;
+        for (const g of gastosDia) {
+            html += `<li class="informe-gastos">
+                <span class="categoria">${g.categoria || 'Otros'}</span>
+                <span class="monto">${pesos(g.monto)}</span>
+                ${g.nota ? `<span style="font-size:0.7rem;color:var(--texto-claro);">${g.nota}</span>` : ''}
+            </li>`;
+        }
+        html += `</ul></div>`;
+    }
+
+    // 🔥 DETALLE DE VENTAS
     if (ventasDia.length > 0) {
         html += `
-        <div style="border-top:1px solid var(--borde);padding-top:12px;">
+        <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
             <strong>Detalle de ventas:</strong>
             <ul style="list-style:none;padding:0;margin-top:8px;">
         `;
@@ -1919,18 +1947,6 @@ function generarInformeDiario() {
                 return q > 0 ? `${claves[i]}kg:${q}` : null;
             }).filter(Boolean).join(', ') : '';
             html += `<li>${v.cliente || '—'} · ${detalle || 'sin detalle'} · ${pesos(v.total)} (${v.pago})</li>`;
-        }
-        html += `</ul></div>`;
-    }
-
-    if (gastosDia.length > 0) {
-        html += `
-        <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
-            <strong>Gastos:</strong>
-            <ul style="list-style:none;padding:0;margin-top:8px;">
-        `;
-        for (const g of gastosDia) {
-            html += `<li>${g.categoria} · ${pesos(g.monto)} · ${g.nota || ''}</li>`;
         }
         html += `</ul></div>`;
     }
