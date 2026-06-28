@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO · Gestión Integral (CORREGIDO)</title>
+    <title>MYC HIELO · Gestión Integral (CORREGIDO FINAL)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* (Mismo CSS que antes, sin cambios) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -374,7 +375,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v5.1 · CORREGIDO · 01/07/2026</div>
+            <div class="version-info">v5.2 · CORREGIDO FINAL · 01/07/2026</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -765,7 +766,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: FINANZAS (CORREGIDO) -->
+    <!-- TAB: FINANZAS (CORREGIDO DEFINITIVO) -->
     <!-- ============================================================ -->
     <div id="tab-finanzas" class="tab-content">
         <div class="finanzas-grid">
@@ -775,12 +776,12 @@
                 <div class="detalle" id="detalleDeudas">Cargando...</div>
             </div>
             <div class="finanzas-card transferencias">
-                <div class="titulo"><i class="fas fa-exchange-alt" style="color:#0369a1;"></i> 💳 Transferencias</div>
+                <div class="titulo"><i class="fas fa-exchange-alt" style="color:#0369a1;"></i> 💳 Transferencias Cobradas</div>
                 <div class="total azul" id="totalTransferenciasFinanzas">$0</div>
                 <div class="detalle" id="detalleTransferencias">Cargando...</div>
             </div>
             <div class="finanzas-card ganancia">
-                <div class="titulo"><i class="fas fa-chart-line" style="color:var(--verde);"></i> 📈 Ganancia por Cliente</div>
+                <div class="titulo"><i class="fas fa-chart-line" style="color:var(--verde);"></i> 📈 Ganancia Real Total</div>
                 <div class="total verde" id="totalGananciaClienteFinanzas">$0</div>
                 <div class="detalle" id="detalleGananciaCliente">Cargando...</div>
             </div>
@@ -789,7 +790,7 @@
         <div class="ganancia-real-box" id="gananciaRealBox">
             <div class="item"><div class="label">💵 Efectivo Cobrado</div><div class="valor verde" id="gananciaEfectivo">$0</div></div>
             <div class="item"><div class="label">💳 Transferencias Cobradas</div><div class="valor azul" id="gananciaTransferencias">$0</div></div>
-            <div class="item"><div class="label">📘 Deuda Neta</div><div class="valor dorado" id="gananciaDeuda">$0</div></div>
+            <div class="item"><div class="label">📘 Deuda Neta (Pendiente)</div><div class="valor dorado" id="gananciaDeuda">$0</div></div>
             <div class="item"><div class="label">📈 Ganancia Neta Real</div><div class="valor morado" id="gananciaNetaReal">$0</div></div>
         </div>
 
@@ -862,7 +863,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: FACTURACIÓN (CORREGIDO con rango de fechas) -->
+    <!-- TAB: FACTURACIÓN (CORREGIDO DEFINITIVO) -->
     <!-- ============================================================ -->
     <div id="tab-facturacion" class="tab-content">
         <div class="card">
@@ -945,7 +946,7 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v5.1-corregido";
+const VERSION = "v5.2-final";
 console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
@@ -970,7 +971,7 @@ let diaSeleccionadoGanancia = null;
 let facturaNumero = 1;
 
 // ============================================================
-//  UTILIDADES
+//  UTILIDADES (igual que antes)
 // ============================================================
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
@@ -1124,7 +1125,7 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 }
 
 // ============================================================
-//  CARGA DE DATOS
+//  CARGA DE DATOS (igual que antes)
 // ============================================================
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
@@ -1202,7 +1203,7 @@ async function cargarDatos() {
 }
 
 // ============================================================
-//  GANANCIAS CALENDARIO
+//  GANANCIAS CALENDARIO (sin cambios)
 // ============================================================
 function cargarGananciasCalendario() {
     const data = localStorage.getItem('myc_ganancias_calendario');
@@ -1259,7 +1260,7 @@ function cargarGananciasDesdeVentas() {
 }
 
 // ============================================================
-//  HISTORIAL DE INFORMES (RESUMIDO)
+//  HISTORIAL DE INFORMES (sin cambios)
 // ============================================================
 function cargarHistorial() {
     const data = localStorage.getItem('myc_historial_informes');
@@ -1449,7 +1450,7 @@ function exportarHistorialExcel() {
 }
 
 // ============================================================
-//  CALENDARIO DE INFORMES
+//  CALENDARIO DE INFORMES (sin cambios)
 // ============================================================
 function renderCalendario() {
     const grid = document.getElementById('calendarioGrid');
@@ -1828,39 +1829,39 @@ function guardarNuevoProducto() {
 }
 
 // ============================================================
-//  🔥 FINANZAS - CORREGIDO (deuda neta = deuda - cobros)
+//  🔥 FINANZAS - DEFINITIVO (deuda neta = deuda - cobros - transferencias)
 // ============================================================
 function renderFinanzas() {
-    // 1) Calcular deuda neta por cliente: sum(ctacte/deuda) - sum(cobrocc)
+    // Inicializar objetos por cliente
     const deudaBrutaPorCliente = {};
     const cobrosPorCliente = {};
     const transferenciasPorCliente = {};
+    const efectivoPorCliente = {};
     const gananciaPorCliente = {};
 
-    // Inicializar con todos los clientes
     for (const c of clientes) {
         deudaBrutaPorCliente[c] = 0;
         cobrosPorCliente[c] = 0;
         transferenciasPorCliente[c] = 0;
-        gananciaPorCliente[c] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+        efectivoPorCliente[c] = 0;
+        gananciaPorCliente[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
     }
 
-    // Recorrer todas las ventas
+    // Recorrer ventas
     for (const v of ventas) {
         const cliente = v.cliente;
         if (!cliente) continue;
         if (!gananciaPorCliente[cliente]) {
-            // si no está inicializado (por si hay ventas de clientes no listados)
-            gananciaPorCliente[cliente] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+            gananciaPorCliente[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
             deudaBrutaPorCliente[cliente] = 0;
             cobrosPorCliente[cliente] = 0;
             transferenciasPorCliente[cliente] = 0;
+            efectivoPorCliente[cliente] = 0;
         }
 
-        // Sumar total de venta
         gananciaPorCliente[cliente].ventas += v.total || 0;
 
-        // Calcular costo
+        // Costo
         const claves = ["1.7", "3.5", "14", "20", "32"];
         let costo = 0;
         for (let i = 0; i < claves.length; i++) {
@@ -1868,9 +1869,10 @@ function renderFinanzas() {
         }
         gananciaPorCliente[cliente].costo += costo;
 
-        // Clasificar según pago
+        // Clasificar pago
         if (v.pago === 'efectivo') {
             gananciaPorCliente[cliente].efectivo += v.total || 0;
+            efectivoPorCliente[cliente] = (efectivoPorCliente[cliente] || 0) + (v.total || 0);
         } else if (v.pago === 'transferencia') {
             gananciaPorCliente[cliente].transferencias += v.total || 0;
             transferenciasPorCliente[cliente] = (transferenciasPorCliente[cliente] || 0) + (v.total || 0);
@@ -1883,26 +1885,25 @@ function renderFinanzas() {
         }
     }
 
-    // Calcular deuda neta = bruta - cobros
+    // Calcular deuda neta = deudaBruta - (cobros + transferencias)
     const deudaNetaPorCliente = {};
     let totalDeudaNeta = 0;
     let totalTransferencias = 0;
     let totalEfectivo = 0;
-    let totalCobros = 0;
     let totalGananciaReal = 0;
 
     for (const c of Object.keys(gananciaPorCliente)) {
         const bruta = deudaBrutaPorCliente[c] || 0;
         const cobros = cobrosPorCliente[c] || 0;
-        const neta = Math.max(0, bruta - cobros);
+        const transf = transferenciasPorCliente[c] || 0;
+        const neta = Math.max(0, bruta - cobros - transf);
         deudaNetaPorCliente[c] = neta;
         totalDeudaNeta += neta;
-        totalTransferencias += transferenciasPorCliente[c] || 0;
-        totalEfectivo += gananciaPorCliente[c].efectivo || 0;
-        totalCobros += gananciaPorCliente[c].cobros || 0;
+        totalTransferencias += transf;
+        totalEfectivo += efectivoPorCliente[c] || 0;
 
         gananciaPorCliente[c].gananciaBruta = gananciaPorCliente[c].ventas - gananciaPorCliente[c].costo;
-        // Ganancia real = (ventas - costo) + cobros (los cobros son ingresos)
+        // Ganancia real = ventas - costo + cobros (los cobros son ingresos)
         gananciaPorCliente[c].gananciaReal = gananciaPorCliente[c].gananciaBruta + gananciaPorCliente[c].cobros;
         totalGananciaReal += gananciaPorCliente[c].gananciaReal;
     }
@@ -1912,7 +1913,7 @@ function renderFinanzas() {
     document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
     document.getElementById('totalGananciaClienteFinanzas').textContent = pesos(totalGananciaReal);
 
-    // Detalle de deudores (solo los que tienen deuda neta > 0)
+    // Detalle de deudores
     const deudores = Object.entries(deudaNetaPorCliente).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     document.getElementById('detalleDeudas').textContent = deudores.length > 0 
         ? `${deudores.length} clientes · ${deudores.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v)}`).join(' · ')}`
@@ -1934,7 +1935,6 @@ function renderFinanzas() {
     document.getElementById('gananciaEfectivo').textContent = pesos(totalEfectivo);
     document.getElementById('gananciaTransferencias').textContent = pesos(totalTransferencias);
     document.getElementById('gananciaDeuda').textContent = pesos(totalDeudaNeta);
-    // Ganancia neta real = efectivo + transferencias + cobros - costos totales (ya lo calculamos en gananciaReal)
     document.getElementById('gananciaNetaReal').textContent = pesos(totalGananciaReal);
 
     // Renderizar tabla de ganancia por cliente
@@ -1972,34 +1972,30 @@ function renderTablaGananciaCliente(gananciaPorCliente, deudaNetaPorCliente) {
 }
 
 function exportarGananciaClienteExcel() {
-    // Similar a renderFinanzas pero para exportar
-    const data = [
-        ['MYC HIELO · Ganancia Real por Cliente'],
-        [],
-        ['Cliente', 'Total Ventas', 'Costo', 'Ganancia Bruta', 'Efectivo', 'Transferencias', 'Deuda Neta', 'Cobros', 'Ganancia Real']
-    ];
-    
-    // Recalcular
+    // Recalcular deuda neta con la misma lógica
     const deudaBrutaPorCliente = {};
     const cobrosPorCliente = {};
     const transferenciasPorCliente = {};
+    const efectivoPorCliente = {};
     const gananciaPorCliente = {};
 
     for (const c of clientes) {
         deudaBrutaPorCliente[c] = 0;
         cobrosPorCliente[c] = 0;
         transferenciasPorCliente[c] = 0;
-        gananciaPorCliente[c] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+        efectivoPorCliente[c] = 0;
+        gananciaPorCliente[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
     }
 
     for (const v of ventas) {
         const cliente = v.cliente;
         if (!cliente) continue;
         if (!gananciaPorCliente[cliente]) {
-            gananciaPorCliente[cliente] = { ventas: 0, costo: 0, gananciaBruta: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
+            gananciaPorCliente[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, deuda: 0, cobros: 0 };
             deudaBrutaPorCliente[cliente] = 0;
             cobrosPorCliente[cliente] = 0;
             transferenciasPorCliente[cliente] = 0;
+            efectivoPorCliente[cliente] = 0;
         }
         gananciaPorCliente[cliente].ventas += v.total || 0;
         const claves = ["1.7", "3.5", "14", "20", "32"];
@@ -2010,6 +2006,7 @@ function exportarGananciaClienteExcel() {
         gananciaPorCliente[cliente].costo += costo;
         if (v.pago === 'efectivo') {
             gananciaPorCliente[cliente].efectivo += v.total || 0;
+            efectivoPorCliente[cliente] = (efectivoPorCliente[cliente] || 0) + (v.total || 0);
         } else if (v.pago === 'transferencia') {
             gananciaPorCliente[cliente].transferencias += v.total || 0;
             transferenciasPorCliente[cliente] = (transferenciasPorCliente[cliente] || 0) + (v.total || 0);
@@ -2026,10 +2023,17 @@ function exportarGananciaClienteExcel() {
     for (const c of Object.keys(gananciaPorCliente)) {
         const bruta = deudaBrutaPorCliente[c] || 0;
         const cobros = cobrosPorCliente[c] || 0;
-        deudaNetaPorCliente[c] = Math.max(0, bruta - cobros);
+        const transf = transferenciasPorCliente[c] || 0;
+        deudaNetaPorCliente[c] = Math.max(0, bruta - cobros - transf);
         gananciaPorCliente[c].gananciaBruta = gananciaPorCliente[c].ventas - gananciaPorCliente[c].costo;
         gananciaPorCliente[c].gananciaReal = gananciaPorCliente[c].gananciaBruta + gananciaPorCliente[c].cobros;
     }
+
+    const data = [
+        ['MYC HIELO · Ganancia Real por Cliente'],
+        [],
+        ['Cliente', 'Total Ventas', 'Costo', 'Ganancia Bruta', 'Efectivo', 'Transferencias', 'Deuda Neta', 'Cobros', 'Ganancia Real']
+    ];
 
     for (const [cliente, d] of Object.entries(gananciaPorCliente)) {
         data.push([
@@ -2195,7 +2199,7 @@ function exportarGananciaCalendarioExcel() {
 }
 
 // ============================================================
-//  FACTURACIÓN CORREGIDA (con rango de fechas y deuda neta)
+//  FACTURACIÓN CORREGIDA DEFINITIVA (resta transferencias)
 // ============================================================
 function cargarClientesFactura() {
     const select = document.getElementById('facturaCliente');
@@ -2204,7 +2208,6 @@ function cargarClientesFactura() {
     for (const c of clientes.sort()) {
         select.innerHTML += `<option value="${c}">${c}</option>`;
     }
-    // Fechas por defecto: desde el primer día del mes hasta hoy
     const hoyStr = hoy();
     const primerDiaMes = hoyStr.slice(0,7) + '-01';
     document.getElementById('facturaDesde').value = primerDiaMes;
@@ -2220,19 +2223,18 @@ function generarFactura() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
-    // Filtrar ventas del cliente en el período
     const ventasCliente = ventas.filter(v => 
         v.cliente === cliente &&
         v.fecha >= desde && v.fecha <= hasta
     );
 
-    // Separar deudas (ctacte/deuda) y cobros (cobrocc)
+    // Deudas (ctacte y deuda) y pagos (cobrocc y transferencia)
     const deudas = ventasCliente.filter(v => v.pago === 'ctacte' || v.pago === 'deuda');
-    const cobros = ventasCliente.filter(v => v.pago === 'cobrocc');
+    const pagos = ventasCliente.filter(v => v.pago === 'cobrocc' || v.pago === 'transferencia');
 
     const totalDeudas = deudas.reduce((acc, v) => acc + (v.total || 0), 0);
-    const totalCobros = cobros.reduce((acc, v) => acc + (v.total || 0), 0);
-    const deudaNeta = totalDeudas - totalCobros;
+    const totalPagos = pagos.reduce((acc, v) => acc + (v.total || 0), 0);
+    const deudaNeta = totalDeudas - totalPagos;
 
     if (deudaNeta <= 0) {
         toast('❌ El cliente no tiene deuda neta en este período');
@@ -2241,7 +2243,6 @@ function generarFactura() {
         return;
     }
 
-    // Mostrar factura
     document.getElementById('facturaBox').style.display = 'block';
     document.getElementById('facturaVacia').style.display = 'none';
 
@@ -2251,16 +2252,13 @@ function generarFactura() {
     document.getElementById('facturaPeriodo').textContent = `${formatearFecha(desde)} al ${formatearFecha(hasta)}`;
     document.getElementById('facturaFechaEmision').textContent = formatearFechaCompleta(hoy());
 
-    // Deuda total y detalle
     document.getElementById('facturaDeudaTotalMonto').textContent = pesos(deudaNeta);
     document.getElementById('facturaDeudaTotal').style.display = 'block';
 
-    // Desglose de deudas del período (solo las ventas con pago ctacte/deuda)
-    let desgloseHtml = '';
+    // Desglose de deudas y pagos
+    let desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
     if (deudas.length > 0) {
-        desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
         desgloseHtml += '<strong>📋 Deudas del período:</strong><br>';
-        let totalMostrado = 0;
         const deudasAgrupadas = {};
         for (const v of deudas.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
             if (!deudasAgrupadas[v.fecha]) deudasAgrupadas[v.fecha] = { total: 0, items: [] };
@@ -2274,19 +2272,32 @@ function generarFactura() {
         for (const [fecha, info] of Object.entries(deudasAgrupadas)) {
             const itemsStr = info.items.length > 0 ? info.items.join(' · ') : 'sin detalle';
             desgloseHtml += `📅 ${formatearFecha(fecha)}: ${pesos(info.total)} (${itemsStr})<br>`;
-            totalMostrado += info.total;
         }
+        const totalMostrado = Object.values(deudasAgrupadas).reduce((acc, i) => acc + i.total, 0);
         desgloseHtml += `<strong>💰 Total deudas: ${pesos(totalMostrado)}</strong>`;
-        // Mostrar también los cobros realizados en el período
-        if (cobros.length > 0) {
-            const totalCobrosPeriodo = cobros.reduce((acc, v) => acc + (v.total || 0), 0);
-            desgloseHtml += `<br>✅ Cobros aplicados: ${pesos(totalCobrosPeriodo)}`;
-        }
-        desgloseHtml += `<br><strong style="color:var(--rojo);">💰 Deuda neta a facturar: ${pesos(deudaNeta)}</strong>`;
-        desgloseHtml += '</div>';
     } else {
-        desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);">No hay deudas en el período.</div>';
+        desgloseHtml += 'No hay deudas en el período.<br>';
     }
+    if (pagos.length > 0) {
+        desgloseHtml += '<br><strong>💳 Pagos realizados (transferencias y cobros):</strong><br>';
+        const pagosAgrupados = {};
+        for (const v of pagos.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
+            if (!pagosAgrupados[v.fecha]) pagosAgrupados[v.fecha] = { total: 0, items: [] };
+            pagosAgrupados[v.fecha].total += v.total || 0;
+            const label = v.pago === 'cobrocc' ? 'Cobro de deuda' : 'Transferencia';
+            pagosAgrupados[v.fecha].items.push(label);
+        }
+        for (const [fecha, info] of Object.entries(pagosAgrupados)) {
+            const itemsStr = info.items.join(' · ');
+            desgloseHtml += `📅 ${formatearFecha(fecha)}: -${pesos(info.total)} (${itemsStr})<br>`;
+        }
+        const totalPagosMostrado = Object.values(pagosAgrupados).reduce((acc, i) => acc + i.total, 0);
+        desgloseHtml += `<strong>💰 Total pagos: -${pesos(totalPagosMostrado)}</strong>`;
+        desgloseHtml += `<br><strong style="color:var(--rojo);">💰 Deuda neta a facturar: ${pesos(deudaNeta)}</strong>`;
+    } else {
+        desgloseHtml += `<br><strong style="color:var(--rojo);">💰 Deuda neta a facturar: ${pesos(deudaNeta)}</strong>`;
+    }
+    desgloseHtml += '</div>';
     document.getElementById('facturaDesgloseDeudas').innerHTML = desgloseHtml;
 
     // Resumen
@@ -2295,9 +2306,8 @@ function generarFactura() {
     document.getElementById('facturaResumenSaldo').textContent = '$0';
     document.getElementById('facturaResumenSaldo').style.color = 'var(--verde)';
 
-    // Detalle de la factura: mostrar todas las deudas (con sus productos) y los cobros como líneas negativas
+    // Detalle de la factura: deudas (positivo) y pagos (negativo)
     let html = '';
-    // Deudas
     for (const v of deudas.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
         const detalle = v.cantidades ? v.cantidades.map((q, i) => {
             const claves = ["1.7", "3.5", "14", "20", "32"];
@@ -2315,19 +2325,19 @@ function generarFactura() {
             </tr>
         `;
     }
-    // Cobros (negativos)
-    for (const v of cobros.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
+    for (const v of pagos.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
+        const label = v.pago === 'cobrocc' ? '🔄 Cobro de deuda' : '💳 Transferencia';
         html += `
             <tr style="color:var(--verde);">
                 <td>${formatearFecha(v.fecha)}</td>
-                <td>🔄 Cobro de deuda</td>
+                <td>${label}</td>
                 <td>—</td>
                 <td>—</td>
                 <td style="color:var(--verde);">-${pesos(v.total)}</td>
             </tr>
         `;
     }
-    if (deudas.length === 0 && cobros.length === 0) {
+    if (deudas.length === 0 && pagos.length === 0) {
         html += `<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin movimientos en el período</td></tr>`;
     }
     document.getElementById('facturaDetalleBody').innerHTML = html;
