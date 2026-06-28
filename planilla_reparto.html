@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -353,6 +353,24 @@ async function forzarEnvioDeudas() {
     }
     toast("Deudas reenviadas");
 }
+
+// ==================== 🔥 NUEVA FUNCIÓN: GUARDAR GASTOS EN LA NUBE ====================
+async function guardarGastoRemoto(categoria, monto) {
+    try {
+        const form = new URLSearchParams();
+        form.append('ruta', 'guardarGasto');
+        form.append('fecha', getToday());
+        form.append('chofer', currentUser);
+        form.append('categoria', categoria);
+        form.append('monto', monto);
+        form.append('nota', '');
+        await fetch(API_URL, { method: 'POST', body: form });
+    } catch(e) {
+        console.error('Error guardando gasto:', e);
+    }
+}
+
+// ==================== ACTUALIZAR GASTOS (MODIFICADO) ====================
 function actualizarGastos() {
     const nafta = parseFloat(document.getElementById("gastoNafta")?.value) || 0;
     const choferes = parseFloat(document.getElementById("gastoChoferes")?.value) || 0;
@@ -360,28 +378,30 @@ function actualizarGastos() {
     gastosDetalle = { nafta, choferes, otros };
     gastos = nafta + choferes + otros;
     guardarGastosLocal();
+
+    // 🔥 Enviar a la nube
+    if (nafta > 0) guardarGastoRemoto('Nafta', nafta);
+    if (choferes > 0) guardarGastoRemoto('Chofer', choferes);
+    if (otros > 0) guardarGastoRemoto('Otros', otros);
+    
     document.getElementById("totalGastos").innerText = formatMoney(gastos);
     renderDriver();
-    toast("Gastos actualizados");
+    toast("Gastos actualizados y enviados a la nube");
 }
 
-// ==================== EXPORTAR PDF (con totales incluidos) ====================
+// ==================== EXPORTAR PDF ====================
 async function exportarPDF(elementId, nombreArchivo, esChofer = true) {
     const element = document.getElementById(elementId);
     if (!element) { toast("No se encontró la tabla"); return; }
     try {
         toast("Generando PDF...");
-        
-        // Calcular totales para el resumen
         let totalEfectivo = 0, totalTransferencia = 0, totalCobros = 0, totalGastos = 0;
         if (esChofer && currentUser !== '9999') {
-            // Para chofer, usar los totales de pantalla
             totalEfectivo = parseFloat(document.getElementById("totalEfectivo").innerText.replace('$', '').replace(/\./g, '')) || 0;
             totalTransferencia = parseFloat(document.getElementById("totalTransf").innerText.replace('$', '').replace(/\./g, '')) || 0;
             totalCobros = parseFloat(document.getElementById("totalCobros").innerText.replace('$', '').replace(/\./g, '')) || 0;
             totalGastos = gastos;
         } else if (esChofer && currentUser === '9999') {
-            // Si es admin viendo chofer, calcular de las ventas mostradas
             let ventasMostradas = ventas;
             ventasMostradas.forEach(v => {
                 if (v.pago === "efectivo") totalEfectivo += v.total;
@@ -390,7 +410,6 @@ async function exportarPDF(elementId, nombreArchivo, esChofer = true) {
             });
             totalGastos = gastos;
         } else {
-            // Admin viendo tabla de admin
             let chofer = document.getElementById("adminChoferSelect").value;
             let key = `ventas_${chofer}`;
             let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
@@ -399,12 +418,9 @@ async function exportarPDF(elementId, nombreArchivo, esChofer = true) {
                 if (v.pago === "transferencia") totalTransferencia += v.total;
                 if (v.pago === "cobrocc") totalCobros += v.cobroDeuda;
             });
-            totalGastos = 0; // No mostramos gastos en admin para no complicar
+            totalGastos = 0;
         }
-        
         const neto = totalEfectivo + totalTransferencia + totalCobros - totalGastos;
-        
-        // Crear div de resumen temporal
         const summaryDiv = document.createElement('div');
         summaryDiv.className = 'pdf-summary';
         summaryDiv.innerHTML = `
@@ -416,24 +432,17 @@ async function exportarPDF(elementId, nombreArchivo, esChofer = true) {
             <div class="total-row neto"><strong>💰 TOTAL A ENTREGAR:</strong> ${formatMoney(neto)}</div>
             <div style="font-size: 12px; color: #666; margin-top: 10px;">*Este comprobante no es fiscal</div>
         `;
-        
-        // Insertar temporalmente antes de la tabla
         element.parentNode.insertBefore(summaryDiv, element);
-        
-        // Forzar un ancho mínimo para que la tabla no se corte
         const originalWidth = element.style.width;
         element.style.width = "1000px";
-        
         const canvas = await html2canvas(element.parentNode, { 
             scale: 2, 
             logging: false,
             windowWidth: element.scrollWidth,
             backgroundColor: '#ffffff'
         });
-        
         element.style.width = originalWidth;
-        summaryDiv.remove(); // Eliminar el div temporal
-        
+        summaryDiv.remove();
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('l', 'mm', 'a4');
@@ -441,16 +450,13 @@ async function exportarPDF(elementId, nombreArchivo, esChofer = true) {
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const imgWidth = pdfWidth - 20;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
         let position = 0;
         pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        
         while (position + imgHeight > pdfHeight) {
             position -= pdfHeight;
             pdf.addPage();
             pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
         }
-        
         pdf.save(`${nombreArchivo}.pdf`);
         toast("PDF generado con resumen de rendición");
     } catch(e) {
