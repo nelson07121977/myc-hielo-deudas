@@ -260,16 +260,6 @@
             display: inline-block;
             margin-top: 8px;
         }
-        .total-ventas-dia {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--verde);
-            background: #d1fae5;
-            padding: 8px 16px;
-            border-radius: 40px;
-            display: inline-block;
-            margin-top: 8px;
-        }
 
         .calendario {
             display: grid;
@@ -300,19 +290,6 @@
 
         .chart-container { position: relative; height: 200px; margin-top: 12px; }
 
-        .alerta-deuda {
-            background: #fee2e2;
-            border-left: 4px solid var(--rojo);
-            padding: 8px 14px;
-            border-radius: 8px;
-            margin: 4px 0;
-            font-size: 0.8rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .alerta-deuda .monto { font-weight: 800; color: var(--rojo); }
-
         .resumen-totales {
             display: flex;
             gap: 20px;
@@ -328,6 +305,34 @@
         .resumen-totales .item.gastos { color: var(--rojo); }
         .resumen-totales .item.ganancia { color: var(--azul); }
 
+        .fecha-selector-dashboard {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            background: var(--azul-claro);
+            padding: 10px 16px;
+            border-radius: 40px;
+            margin-bottom: 16px;
+        }
+        .fecha-selector-dashboard label {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--azul);
+        }
+        .fecha-selector-dashboard input[type="date"] {
+            padding: 6px 12px;
+            border-radius: 40px;
+            border: 1px solid var(--borde);
+            font-size: 0.8rem;
+            font-family: inherit;
+            background: var(--white);
+            outline: none;
+        }
+        .fecha-selector-dashboard input[type="date"]:focus {
+            border-color: var(--azul);
+        }
+
         @media (max-width: 700px) {
             .header h1 { font-size: 1.2rem; }
             .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -338,6 +343,7 @@
             th, td { padding: 6px 8px; }
             .calendario { max-width: 100%; }
             .resumen-totales { font-size: 0.8rem; gap: 12px; }
+            .fecha-selector-dashboard { flex-direction: column; align-items: stretch; }
         }
         @media print {
             .no-print { display: none !important; }
@@ -403,17 +409,17 @@
 
     <!-- ==================== TAB: DASHBOARD ==================== -->
     <div id="tab-dashboard" class="tab-content active">
-        <!-- Selector de fecha -->
-        <div class="card no-print">
-            <div class="filtros">
-                <label style="font-weight:600;font-size:0.8rem;">📅 Ver día:</label>
-                <input type="date" id="dashboardFecha" style="width:auto;">
-                <button class="btn btn-sm btn-primary" id="dashboardFechaBtn"><i class="fas fa-search"></i> Ver</button>
-                <button class="btn btn-sm btn-outline" id="dashboardHoyBtn"><i class="fas fa-calendar-day"></i> Hoy</button>
-            </div>
+
+        <!-- SELECTOR DE FECHA PARA VER CUALQUIER DÍA -->
+        <div class="fecha-selector-dashboard no-print">
+            <label>📅 Ver día:</label>
+            <input type="date" id="dashboardFecha">
+            <button class="btn btn-sm btn-primary" id="dashboardFechaBtn"><i class="fas fa-search"></i> Ver</button>
+            <button class="btn btn-sm btn-outline" id="dashboardHoyBtn"><i class="fas fa-calendar-day"></i> Hoy</button>
+            <span style="font-size:0.7rem;color:var(--texto-claro);margin-left:auto;">Seleccioná una fecha para ver sus KPIs</span>
         </div>
 
-        <!-- KPIs -->
+        <!-- KPIs: VENTAS, GASTOS, COSTO BOLSAS, GANANCIA, BOLSAS, CLIENTES -->
         <div class="kpi-grid" id="kpiGrid">
             <div class="kpi"><div class="label">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
             <div class="kpi"><div class="label">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
