@@ -103,19 +103,20 @@
 
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 12px;
             margin-bottom: 20px;
         }
         .kpi {
             background: var(--white);
-            padding: 16px 18px;
+            padding: 14px 16px;
             border-radius: var(--radius);
             border: 1px solid var(--borde);
             box-shadow: var(--shadow);
+            text-align: center;
         }
-        .kpi .label { font-size: 0.65rem; text-transform: uppercase; color: var(--texto-claro); font-weight: 600; letter-spacing: 0.5px; }
-        .kpi .value { font-size: 1.5rem; font-weight: 800; margin-top: 4px; }
+        .kpi .label { font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); font-weight: 600; letter-spacing: 0.5px; }
+        .kpi .value { font-size: 1.4rem; font-weight: 800; margin-top: 4px; }
         .kpi .value.positive { color: var(--verde); }
         .kpi .value.negative { color: var(--rojo); }
         .kpi .value.neutral { color: var(--azul); }
@@ -139,24 +140,24 @@
         .filtros input:focus, .filtros select:focus { border-color: var(--azul); }
 
         .table-wrap { overflow-x: auto; border-radius: var(--radius); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
         th {
             background: var(--azul-claro);
             color: var(--azul);
             font-weight: 700;
-            padding: 10px 12px;
+            padding: 8px 10px;
             text-align: left;
             white-space: nowrap;
             border-bottom: 2px solid var(--borde);
         }
-        td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
         tr:hover { background: #f8fafc; }
 
         .badge {
             display: inline-block;
             padding: 2px 10px;
             border-radius: 40px;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 600;
         }
         .badge-deuda { background: #fee2e2; color: var(--rojo); }
@@ -312,6 +313,21 @@
         }
         .alerta-deuda .monto { font-weight: 800; color: var(--rojo); }
 
+        .resumen-totales {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 12px 16px;
+            background: var(--azul-claro);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+        .resumen-totales .item { font-weight: 700; }
+        .resumen-totales .item.ventas { color: var(--verde); }
+        .resumen-totales .item.gastos { color: var(--rojo); }
+        .resumen-totales .item.ganancia { color: var(--azul); }
+
         @media (max-width: 700px) {
             .header h1 { font-size: 1.2rem; }
             .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -321,6 +337,7 @@
             table { font-size: 0.7rem; }
             th, td { padding: 6px 8px; }
             .calendario { max-width: 100%; }
+            .resumen-totales { font-size: 0.8rem; gap: 12px; }
         }
         @media print {
             .no-print { display: none !important; }
@@ -386,7 +403,7 @@
 
     <!-- ==================== TAB: DASHBOARD ==================== -->
     <div id="tab-dashboard" class="tab-content active">
-        <!-- KPIs con selector de fecha -->
+        <!-- Selector de fecha -->
         <div class="card no-print">
             <div class="filtros">
                 <label style="font-weight:600;font-size:0.8rem;">📅 Ver día:</label>
@@ -396,6 +413,7 @@
             </div>
         </div>
 
+        <!-- KPIs -->
         <div class="kpi-grid" id="kpiGrid">
             <div class="kpi"><div class="label">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
             <div class="kpi"><div class="label">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
@@ -424,10 +442,10 @@
                     <button class="btn btn-sm btn-success" onclick="exportarVentasPeriodoExcel()"><i class="fas fa-file-excel"></i> Excel</button>
                 </div>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-                <div style="font-weight:700;color:var(--verde);">Total Ventas: <span id="totalVentasPeriodo">$0</span></div>
-                <div style="font-weight:700;color:var(--rojo);">Total Gastos: <span id="totalGastosPeriodo">$0</span></div>
-                <div style="font-weight:700;color:var(--azul);">Ganancia: <span id="gananciaPeriodo">$0</span></div>
+            <div class="resumen-totales">
+                <span class="item ventas">💰 Ventas: <span id="totalVentasPeriodo">$0</span></span>
+                <span class="item gastos">💸 Gastos: <span id="totalGastosPeriodo">$0</span></span>
+                <span class="item ganancia">📈 Ganancia: <span id="gananciaPeriodo">$0</span></span>
             </div>
             <div class="filtros no-print">
                 <input type="date" id="fechaInicio" style="width:auto;">
@@ -1421,7 +1439,7 @@ function renderDashboard(fecha = null) {
     document.getElementById('kpiBolsas').textContent = totalBolsas;
     document.getElementById('kpiClientes').textContent = clientesSet.size;
 
-    // Tabla de ventas del período (últimos 7 días para el gráfico)
+    // Tabla de ventas del período (últimos 7 días)
     const desde = fechaInicio || new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
     const hasta = fechaFin || hoy();
     renderTablaVentasPeriodo(desde, hasta);
@@ -2030,7 +2048,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderGrafico(new Date(Date.now() - 7*86400000).toISOString().slice(0,10), hoy());
     });
 
-    // Dashboard fecha
     document.getElementById('dashboardFechaBtn').addEventListener('click', function() {
         const fecha = document.getElementById('dashboardFecha').value;
         if (fecha) {
@@ -2079,7 +2096,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('informeFecha').addEventListener('change', generarInformeDiario);
 
-    // Calendario
     document.getElementById('mesAnterior').addEventListener('click', function() {
         mesActual.setMonth(mesActual.getMonth() - 1);
         renderCalendario();
@@ -2092,7 +2108,6 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarDatos();
 });
 
-// Funciones globales para onclick
 window.copiarTabla = copiarTabla;
 window.eliminarVenta = eliminarVenta;
 window.eliminarGasto = eliminarGasto;
