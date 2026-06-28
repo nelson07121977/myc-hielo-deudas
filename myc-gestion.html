@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -248,6 +249,69 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
+        .total-gastos-dia {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--rojo);
+            background: #fee2e2;
+            padding: 8px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            margin-top: 8px;
+        }
+        .total-ventas-dia {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--verde);
+            background: #d1fae5;
+            padding: 8px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .calendario {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .calendario .dia {
+            background: var(--white);
+            border: 1px solid var(--borde);
+            border-radius: 8px;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .calendario .dia:hover { background: var(--azul-claro); }
+        .calendario .dia .num { font-weight: 700; font-size: 0.9rem; }
+        .calendario .dia .indicador { display: block; width: 6px; height: 6px; border-radius: 50%; margin: 2px auto 0; }
+        .calendario .dia .indicador.verde { background: var(--verde); }
+        .calendario .dia .indicador.rojo { background: var(--rojo); }
+        .calendario .dia.hoy { border-color: var(--azul); border-width: 2px; }
+        .calendario .dia.otro-mes { opacity: 0.3; }
+        .calendario .dia-header { font-weight: 600; font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); padding: 4px 0; text-align: center; }
+
+        .chart-container { position: relative; height: 200px; margin-top: 12px; }
+
+        .alerta-deuda {
+            background: #fee2e2;
+            border-left: 4px solid var(--rojo);
+            padding: 8px 14px;
+            border-radius: 8px;
+            margin: 4px 0;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .alerta-deuda .monto { font-weight: 800; color: var(--rojo); }
+
         @media (max-width: 700px) {
             .header h1 { font-size: 1.2rem; }
             .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -256,6 +320,7 @@
             .card { padding: 14px; }
             table { font-size: 0.7rem; }
             th, td { padding: 6px 8px; }
+            .calendario { max-width: 100%; }
         }
         @media print {
             .no-print { display: none !important; }
@@ -263,7 +328,6 @@
             .card { border: 1px solid #ccc; box-shadow: none; }
         }
 
-        /* ===== DEBUG ===== */
         .debug-box {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -283,22 +347,7 @@
             justify-content: flex-end;
             margin-bottom: 8px;
         }
-        .debug-toggle .btn {
-            width: auto;
-            padding: 4px 14px;
-            font-size: 0.7rem;
-        }
-
-        .total-gastos-dia {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--rojo);
-            background: #fee2e2;
-            padding: 8px 16px;
-            border-radius: 40px;
-            display: inline-block;
-            margin-top: 8px;
-        }
+        .debug-toggle .btn { width: auto; padding: 4px 14px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
@@ -326,9 +375,10 @@
         <a data-tab="costos"><i class="fas fa-tag"></i> Costos</a>
         <a data-tab="clientes"><i class="fas fa-users"></i> Clientes</a>
         <a data-tab="informes"><i class="fas fa-file-alt"></i> Informes</a>
+        <a data-tab="historial"><i class="fas fa-calendar-alt"></i> Historial</a>
     </nav>
 
-    <!-- DEBUG (oculto por defecto) -->
+    <!-- DEBUG -->
     <div class="debug-toggle no-print">
         <button onclick="toggleDebug()" class="btn btn-sm btn-outline">🐛 Mostrar Debug</button>
     </div>
@@ -336,30 +386,55 @@
 
     <!-- ==================== TAB: DASHBOARD ==================== -->
     <div id="tab-dashboard" class="tab-content active">
-        <div class="kpi-grid" id="kpiGrid">
-            <div class="kpi"><div class="label">💰 Ganancia Hoy</div><div class="value neutral" id="kpiGananciaHoy">$0</div></div>
-            <div class="kpi"><div class="label">📈 Ganancia Semana</div><div class="value neutral" id="kpiGananciaSemana">$0</div></div>
-            <div class="kpi"><div class="label">📊 Ganancia Mes</div><div class="value neutral" id="kpiGananciaMes">$0</div></div>
-            <div class="kpi"><div class="label">🧊 Bolsas Vendidas</div><div class="value neutral" id="kpiBolsas">0</div></div>
-            <div class="kpi"><div class="label">👥 Clientes Atendidos</div><div class="value neutral" id="kpiClientes">0</div></div>
-            <div class="kpi"><div class="label">💸 Gastos Hoy</div><div class="value negative" id="kpiGastos">$0</div></div>
-        </div>
-
+        <!-- KPIs con selector de fecha -->
         <div class="card no-print">
             <div class="filtros">
-                <label style="font-weight:600;font-size:0.8rem;">📅 Filtro:</label>
-                <input type="date" id="fechaInicio">
-                <span>a</span>
-                <input type="date" id="fechaFin">
-                <button class="btn btn-primary" id="aplicarFechas"><i class="fas fa-filter"></i> Aplicar</button>
-                <button class="btn btn-outline" id="resetFechas"><i class="fas fa-times"></i> Limpiar</button>
+                <label style="font-weight:600;font-size:0.8rem;">📅 Ver día:</label>
+                <input type="date" id="dashboardFecha" style="width:auto;">
+                <button class="btn btn-sm btn-primary" id="dashboardFechaBtn"><i class="fas fa-search"></i> Ver</button>
+                <button class="btn btn-sm btn-outline" id="dashboardHoyBtn"><i class="fas fa-calendar-day"></i> Hoy</button>
             </div>
         </div>
 
+        <div class="kpi-grid" id="kpiGrid">
+            <div class="kpi"><div class="label">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
+            <div class="kpi"><div class="label">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
+            <div class="kpi"><div class="label">📦 Costo bolsas</div><div class="value neutral" id="kpiCostoBolsas">$0</div></div>
+            <div class="kpi"><div class="label">📈 Ganancia</div><div class="value neutral" id="kpiGanancia">$0</div></div>
+            <div class="kpi"><div class="label">🧊 Bolsas</div><div class="value neutral" id="kpiBolsas">0</div></div>
+            <div class="kpi"><div class="label">👥 Clientes</div><div class="value neutral" id="kpiClientes">0</div></div>
+        </div>
+
+        <!-- Gráfico -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📊 Evolución de Ventas (últimos 7 días)</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartVentas"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabla de ventas del período -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📋 Ventas del período</div>
-                <button class="btn btn-sm btn-outline no-print" onclick="copiarTabla('tablaVentasPeriodo')"><i class="fas fa-copy"></i> Copiar</button>
+                <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaVentasPeriodo')"><i class="fas fa-copy"></i> Copiar</button>
+                    <button class="btn btn-sm btn-success" onclick="exportarVentasPeriodoExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <div style="font-weight:700;color:var(--verde);">Total Ventas: <span id="totalVentasPeriodo">$0</span></div>
+                <div style="font-weight:700;color:var(--rojo);">Total Gastos: <span id="totalGastosPeriodo">$0</span></div>
+                <div style="font-weight:700;color:var(--azul);">Ganancia: <span id="gananciaPeriodo">$0</span></div>
+            </div>
+            <div class="filtros no-print">
+                <input type="date" id="fechaInicio" style="width:auto;">
+                <span>a</span>
+                <input type="date" id="fechaFin" style="width:auto;">
+                <button class="btn btn-sm btn-primary" id="aplicarFechas"><i class="fas fa-filter"></i> Aplicar</button>
+                <button class="btn btn-sm btn-outline" id="resetFechas"><i class="fas fa-times"></i> Limpiar</button>
             </div>
             <div class="table-wrap">
                 <table id="tablaVentasPeriodo">
@@ -603,13 +678,46 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📄 Informe Diario Resumido</div>
-                <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <button class="btn btn-sm btn-primary" onclick="generarInformeDiario()"><i class="fas fa-file-alt"></i> Generar</button>
-                    <button class="btn btn-sm btn-success" onclick="exportarInformeExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                    <button class="btn btn-sm btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+                <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                    <div class="fecha-selector" style="display:flex;gap:6px;align-items:center;">
+                        <label style="font-weight:600;font-size:0.8rem;">📅 Fecha:</label>
+                        <input type="date" id="informeFecha" style="padding:6px 12px;border-radius:40px;border:1px solid var(--borde);font-size:0.8rem;">
+                        <button class="btn btn-sm btn-primary" onclick="generarInformeDiario()"><i class="fas fa-file-alt"></i> Generar</button>
+                        <button class="btn btn-sm btn-success" onclick="exportarInformeExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                        <button class="btn btn-sm btn-success" onclick="guardarInformeHistorial()"><i class="fas fa-save"></i> Guardar</button>
+                        <button class="btn btn-sm btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+                    </div>
                 </div>
             </div>
             <div id="informeDiarioContainer"></div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB: HISTORIAL ==================== -->
+    <div id="tab-historial" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📅 Historial de Informes Diarios</div>
+                <div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-danger" onclick="limpiarHistorial()"><i class="fas fa-trash"></i> Limpiar historial</button>
+                    <button class="btn btn-sm btn-success" onclick="exportarHistorialExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+                </div>
+            </div>
+            <div id="calendarioContainer" style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-sm btn-outline" id="mesAnterior"><i class="fas fa-chevron-left"></i> Anterior</button>
+                    <span id="mesActual" style="font-weight:700;font-size:1.1rem;"></span>
+                    <button class="btn btn-sm btn-outline" id="mesSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div id="calendarioGrid" class="calendario"></div>
+            </div>
+            <div id="historialDetalle">
+                <div class="card-header">
+                    <div class="card-title">📋 Informe del día seleccionado</div>
+                    <button class="btn btn-sm btn-outline no-print" onclick="copiarInformeSeleccionado()"><i class="fas fa-copy"></i> Copiar</button>
+                </div>
+                <div id="historialDetalleContainer"></div>
+            </div>
         </div>
     </div>
 
@@ -620,9 +728,9 @@
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN - URL DE TU API (ACTUALIZADA)
+//  CONFIGURACIÓN
 // ============================================================
-const API_URL = "https://script.google.com/macros/s/AKfycbz5VvNsngAKJix3toFHPJmI4mM3ig8lerb8m6SEf6pJi1viapjI3V5Zs6a0VxZnha0B/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 
 // ============================================================
 //  ESTADO GLOBAL
@@ -635,6 +743,11 @@ let productos = [];
 let costos = {};
 let fechaInicio = '';
 let fechaFin = '';
+let historial = [];
+let mesActual = new Date();
+let diaSeleccionado = null;
+let chartInstance = null;
+let dashboardFecha = hoy();
 
 // ============================================================
 //  UTILIDADES
@@ -642,18 +755,14 @@ let fechaFin = '';
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
     if (!f) return '';
-    if (f.includes('T')) {
-        f = f.split('T')[0];
-    }
+    if (f.includes('T')) { f = f.split('T')[0]; }
     const d = new Date(f);
     if (isNaN(d.getTime())) return f;
     return d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
 }
 function formatearFechaInput(f) {
     if (!f) return '';
-    if (f.includes('T')) {
-        f = f.split('T')[0];
-    }
+    if (f.includes('T')) { f = f.split('T')[0]; }
     return f;
 }
 function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 }); }
@@ -665,7 +774,7 @@ function toast(msg) {
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(el._timer);
-    el._timer = setTimeout(() => el.classList.remove('show'), 2500);
+    el._timer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
 function copiarTabla(tablaId) {
@@ -694,7 +803,6 @@ function mostrarDebug(msg) {
     box.style.display = 'block';
     box.innerHTML += new Date().toLocaleTimeString() + ' - ' + msg + '\n';
     box.scrollTop = box.scrollHeight;
-    // Cambiar el texto del botón si está oculto
     const btn = document.querySelector('.debug-toggle .btn');
     if (btn) btn.innerHTML = '🐛 Ocultar Debug';
 }
@@ -738,14 +846,12 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
-        // Clientes
         const clientesData = await apiCall('clientes');
         if (clientesData && Array.isArray(clientesData)) {
             clientes = clientesData.map(c => normalizarNombre(c)).filter(Boolean);
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
-        // Ventas
         const ventasData = await apiCall('obtenerVentas');
         if (ventasData && Array.isArray(ventasData)) {
             ventas = ventasData.map(v => ({
@@ -766,7 +872,6 @@ async function cargarDatos() {
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
         }
 
-        // GASTOS
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -779,11 +884,9 @@ async function cargarDatos() {
             mostrarDebug(`Gastos cargados: ${gastos.length}`);
         }
 
-        // Fábricas (local)
         cargarFabricasLocal();
         mostrarDebug(`Fábricas cargadas desde localStorage: ${fabricas.length}`);
 
-        // Productos y costos
         const prodGuardados = localStorage.getItem('myc_productos');
         if (prodGuardados) {
             productos = JSON.parse(prodGuardados);
@@ -806,6 +909,8 @@ async function cargarDatos() {
             if (costos[p.clave] === undefined) costos[p.clave] = p.costo || 0;
         }
 
+        cargarHistorial();
+
         actualizarUI();
         toast('Datos sincronizados');
         mostrarDebug('✅ Carga de datos completada');
@@ -813,6 +918,284 @@ async function cargarDatos() {
         console.error('Error al cargar datos:', e);
         mostrarDebug('❌ ERROR: ' + e.message);
         toast('Error al sincronizar');
+    }
+}
+
+// ============================================================
+//  HISTORIAL DE INFORMES
+// ============================================================
+function cargarHistorial() {
+    const data = localStorage.getItem('myc_historial_informes');
+    if (data) {
+        try { historial = JSON.parse(data); } catch(e) { historial = []; }
+    } else {
+        historial = [];
+    }
+}
+
+function guardarHistorial() {
+    localStorage.setItem('myc_historial_informes', JSON.stringify(historial));
+}
+
+function guardarInformeHistorial() {
+    const fecha = document.getElementById('informeFecha').value || hoy();
+    if (!fecha) { toast('Seleccione una fecha'); return; }
+
+    const ventasDia = ventas.filter(v => v.fecha === fecha);
+    const gastosDia = gastos.filter(g => g.fecha === fecha);
+    const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
+    const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
+    const totalCosto = ventasDia.reduce((acc, v) => {
+        const claves = ["1.7", "3.5", "14", "20", "32"];
+        const cant = v.cantidades || [];
+        return acc + cant.reduce((a, q, i) => a + (q || 0) * (costos[claves[i]] || 0), 0);
+    }, 0);
+    const ganancia = totalVentas - totalCosto - totalGastos;
+    const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
+
+    const informe = {
+        fecha: fecha,
+        ventas: totalVentas,
+        gastos: totalGastos,
+        costoBolsas: totalCosto,
+        ganancia: ganancia,
+        clientes: clientesDia.size,
+        bolsasVendidas: ventasDia.reduce((acc, v) => acc + (v.cantidades || []).reduce((a, b) => a + (b || 0), 0), 0),
+        detalleVentas: ventasDia.map(v => ({
+            cliente: v.cliente || '—',
+            cantidades: (v.cantidades || []).map((q, i) => {
+                const claves = ["1.7", "3.5", "14", "20", "32"];
+                return q > 0 ? `${claves[i]}kg:${q}` : null;
+            }).filter(Boolean).join(', ') || 'sin detalle',
+            total: v.total || 0,
+            pago: v.pago || 'efectivo'
+        })),
+        detalleGastos: gastosDia.map(g => ({
+            categoria: g.categoria || 'Otros',
+            monto: g.monto || 0,
+            nota: g.nota || ''
+        }))
+    };
+
+    const idx = historial.findIndex(h => h.fecha === fecha);
+    if (idx !== -1) {
+        historial[idx] = informe;
+    } else {
+        historial.push(informe);
+    }
+    guardarHistorial();
+    toast(`Informe del ${formatearFecha(fecha)} guardado en el historial`);
+    renderCalendario();
+}
+
+function obtenerInformeHistorial(fecha) {
+    return historial.find(h => h.fecha === fecha) || null;
+}
+
+function eliminarInformeHistorial(fecha) {
+    historial = historial.filter(h => h.fecha !== fecha);
+    guardarHistorial();
+    renderCalendario();
+    toast('Informe eliminado del historial');
+}
+
+function limpiarHistorial() {
+    if (!confirm('¿Eliminar TODO el historial de informes?')) return;
+    historial = [];
+    guardarHistorial();
+    renderCalendario();
+    toast('Historial limpiado');
+}
+
+function verInformeHistorial(fecha) {
+    diaSeleccionado = fecha;
+    const informe = obtenerInformeHistorial(fecha);
+    const container = document.getElementById('historialDetalleContainer');
+    if (!informe) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:20px;color:var(--texto-claro);">
+                <p>No hay informe guardado para el ${formatearFecha(fecha)}</p>
+                <button class="btn btn-sm btn-primary" onclick="generarYGuardarInforme('${fecha}')">Generar y guardar ahora</button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div style="background:var(--azul-claro);padding:16px;border-radius:12px;margin-bottom:16px;">
+            <h3 style="color:var(--azul);">🧊 MYC HIELO · Informe Diario</h3>
+            <p style="color:var(--texto-claro);">${formatearFecha(informe.fecha)}</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;">
+            <div><strong>💰 Ventas</strong><br>${pesos(informe.ventas)}</div>
+            <div><strong>💸 Gastos</strong><br>${pesos(informe.gastos)}</div>
+            <div><strong>📦 Costo bolsas</strong><br>${pesos(informe.costoBolsas)}</div>
+            <div><strong>📈 Ganancia</strong><br><span style="color:${informe.ganancia>=0?'var(--verde)':'var(--rojo)'};font-weight:800;">${pesos(informe.ganancia)}</span></div>
+            <div><strong>👥 Clientes</strong><br>${informe.clientes}</div>
+            <div><strong>🧊 Bolsas vendidas</strong><br>${informe.bolsasVendidas}</div>
+        </div>
+    `;
+
+    if (informe.detalleVentas && informe.detalleVentas.length > 0) {
+        html += `<div style="border-top:1px solid var(--borde);padding-top:12px;"><strong>Detalle de ventas:</strong><ul style="list-style:none;padding:0;margin-top:8px;">`;
+        for (const v of informe.detalleVentas) {
+            html += `<li>${v.cliente} · ${v.cantidades} · ${pesos(v.total)} (${v.pago})</li>`;
+        }
+        html += `</ul></div>`;
+    }
+
+    if (informe.detalleGastos && informe.detalleGastos.length > 0) {
+        html += `<div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;"><strong>Gastos:</strong><ul style="list-style:none;padding:0;margin-top:8px;">`;
+        for (const g of informe.detalleGastos) {
+            html += `<li>${g.categoria} · ${pesos(g.monto)} · ${g.nota || ''}</li>`;
+        }
+        html += `</ul></div>`;
+    }
+
+    html += `
+        <div class="no-print" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-danger" onclick="eliminarInformeHistorial('${fecha}')"><i class="fas fa-trash"></i> Eliminar</button>
+            <button class="btn btn-sm btn-success" onclick="exportarInformeHistorialExcel('${fecha}')"><i class="fas fa-file-excel"></i> Excel</button>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function generarYGuardarInforme(fecha) {
+    document.getElementById('informeFecha').value = fecha;
+    guardarInformeHistorial();
+    renderCalendario();
+}
+
+function copiarInformeSeleccionado() {
+    const container = document.getElementById('historialDetalleContainer');
+    const texto = container.textContent.trim();
+    if (texto) {
+        navigator.clipboard.writeText(texto).then(() => toast('Informe copiado'));
+    }
+}
+
+function exportarInformeHistorialExcel(fecha) {
+    const informe = obtenerInformeHistorial(fecha);
+    if (!informe) { toast('No hay informe para esa fecha'); return; }
+    const data = [
+        ['MYC HIELO · Informe Diario', formatearFecha(fecha)],
+        [],
+        ['Ventas', informe.ventas],
+        ['Gastos', informe.gastos],
+        ['Costo bolsas', informe.costoBolsas],
+        ['Ganancia', informe.ganancia],
+        ['Clientes', informe.clientes],
+        ['Bolsas vendidas', informe.bolsasVendidas],
+        [],
+        ['Detalle de ventas'],
+        ['Cliente', 'Productos', 'Total', 'Pago']
+    ];
+    for (const v of informe.detalleVentas || []) {
+        data.push([v.cliente, v.cantidades, v.total, v.pago]);
+    }
+    data.push([], ['Gastos']);
+    data.push(['Categoría', 'Monto', 'Nota']);
+    for (const g of informe.detalleGastos || []) {
+        data.push([g.categoria, g.monto, g.nota]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Informe');
+    XLSX.writeFile(wb, `informe_${fecha}.xlsx`);
+    toast('Excel exportado');
+}
+
+function exportarHistorialExcel() {
+    if (historial.length === 0) { toast('No hay informes guardados'); return; }
+    const data = [
+        ['MYC HIELO · Historial de Informes'],
+        [],
+        ['Fecha', 'Ventas', 'Gastos', 'Costo Bolsas', 'Ganancia', 'Clientes', 'Bolsas Vendidas']
+    ];
+    for (const h of historial.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
+        data.push([
+            formatearFecha(h.fecha),
+            h.ventas || 0,
+            h.gastos || 0,
+            h.costoBolsas || 0,
+            h.ganancia || 0,
+            h.clientes || 0,
+            h.bolsasVendidas || 0
+        ]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Historial');
+    XLSX.writeFile(wb, `historial_informes_${hoy()}.xlsx`);
+    toast('Excel exportado');
+}
+
+// ============================================================
+//  CALENDARIO
+// ============================================================
+function renderCalendario() {
+    const grid = document.getElementById('calendarioGrid');
+    const mesLabel = document.getElementById('mesActual');
+    if (!grid) return;
+
+    const year = mesActual.getFullYear();
+    const month = mesActual.getMonth();
+    const primerDia = new Date(year, month, 1);
+    const ultimoDia = new Date(year, month + 1, 0);
+    const diasEnMes = ultimoDia.getDate();
+    const diaInicio = primerDia.getDay();
+
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    mesLabel.textContent = `${meses[month]} ${year}`;
+
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    let html = diasSemana.map(d => `<div class="dia-header">${d}</div>`).join('');
+
+    const diasMesAnterior = new Date(year, month, 0).getDate();
+    for (let i = diaInicio - 1; i >= 0; i--) {
+        const dia = diasMesAnterior - i;
+        html += `<div class="dia otro-mes"><span class="num">${dia}</span></div>`;
+    }
+
+    const hoyStr = hoy();
+    for (let d = 1; d <= diasEnMes; d++) {
+        const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const tieneInforme = historial.some(h => h.fecha === fecha);
+        const esHoy = fecha === hoyStr;
+        const clase = `dia${esHoy ? ' hoy' : ''}`;
+        let indicador = '';
+        if (tieneInforme) {
+            const informe = obtenerInformeHistorial(fecha);
+            if (informe) {
+                const color = informe.ganancia >= 0 ? 'verde' : 'rojo';
+                indicador = `<span class="indicador ${color}"></span>`;
+            }
+        }
+        html += `<div class="${clase}" data-fecha="${fecha}" onclick="verInformeHistorial('${fecha}')">
+            <span class="num">${d}</span>
+            ${indicador}
+        </div>`;
+    }
+
+    const totalDias = diaInicio + diasEnMes;
+    const diasRestantes = (7 - (totalDias % 7)) % 7;
+    for (let d = 1; d <= diasRestantes; d++) {
+        html += `<div class="dia otro-mes"><span class="num">${d}</span></div>`;
+    }
+
+    grid.innerHTML = html;
+
+    if (diaSeleccionado) {
+        verInformeHistorial(diaSeleccionado);
+    } else {
+        const informeHoy = obtenerInformeHistorial(hoyStr);
+        if (informeHoy) {
+            verInformeHistorial(hoyStr);
+        } else {
+            document.getElementById('historialDetalleContainer').innerHTML = '<p style="color:var(--texto-claro);text-align:center;padding:20px;">Seleccione un día del calendario para ver el informe</p>';
+        }
     }
 }
 
@@ -840,7 +1223,6 @@ function renderGastos() {
         `).join('');
     }
 
-    // Total de gastos del día
     const hoyStr = hoy();
     const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
     const totalHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
@@ -904,14 +1286,8 @@ function exportarGastosExcel() {
 function cargarFabricasLocal() {
     const data = localStorage.getItem('myc_fabricas_local');
     if (data) {
-        try {
-            fabricas = JSON.parse(data);
-        } catch(e) {
-            fabricas = [];
-        }
-    } else {
-        fabricas = [];
-    }
+        try { fabricas = JSON.parse(data); } catch(e) { fabricas = []; }
+    } else { fabricas = []; }
     return fabricas;
 }
 
@@ -921,16 +1297,12 @@ function guardarFabricasLocal() {
 
 function renderFabricas() {
     cargarFabricasLocal();
-    
     const tbody = document.getElementById('tbodyFabricas');
     if (!tbody) return;
-    
     if (fabricas.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Sin movimientos de fábricas</td></tr>';
     } else {
-        const ordenadas = [...fabricas].sort((a, b) =>
-            (b.fecha || '').localeCompare(a.fecha || '')
-        );
+        const ordenadas = [...fabricas].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
         tbody.innerHTML = ordenadas.map(f => `
             <tr>
                 <td>${formatearFecha(f.fecha)}</td>
@@ -943,7 +1315,6 @@ function renderFabricas() {
         `).join('');
     }
 
-    // Resumen
     const resumen = {};
     for (const f of fabricas) {
         const key = f.fabrica + '|' + f.tipo;
@@ -979,18 +1350,9 @@ async function registrarFabrica() {
     if (cargada === 0 && devuelta === 0) return toast('Ingrese al menos una cantidad');
 
     cargarFabricasLocal();
-
-    const nuevo = {
-        id: 'f' + Date.now(),
-        fecha,
-        fabrica,
-        tipo,
-        cargada,
-        devuelta
-    };
+    const nuevo = { id: 'f' + Date.now(), fecha, fabrica, tipo, cargada, devuelta };
     fabricas.push(nuevo);
     guardarFabricasLocal();
-    
     toast('Registro de fábrica guardado localmente');
     document.getElementById('fCargada').value = 0;
     document.getElementById('fDevuelta').value = 0;
@@ -1008,9 +1370,7 @@ function eliminarFabricaLocal(id) {
 
 function exportarFabricasExcel() {
     cargarFabricasLocal();
-    const data = [
-        ['Fecha', 'Fábrica', 'Tipo', 'Cargada', 'Devuelta']
-    ];
+    const data = [['Fecha', 'Fábrica', 'Tipo', 'Cargada', 'Devuelta']];
     for (const f of fabricas) {
         data.push([f.fecha, f.fabrica || '', f.tipo || '', f.cargada || 0, f.devuelta || 0]);
     }
@@ -1022,36 +1382,13 @@ function exportarFabricasExcel() {
 }
 
 // ============================================================
-//  ACTUALIZAR UI
-// ============================================================
-function actualizarUI() {
-    actualizarSelectores();
-    renderDashboard();
-    renderVentas();
-    renderGastos();
-    renderFabricas();
-    renderProductos();
-    renderCostos();
-    renderClientes();
-    generarInformeDiario();
-}
-
-function actualizarSelectores() {
-    const select = document.getElementById('vClienteSelect');
-    if (!select) return;
-    select.innerHTML = '<option value="">Seleccionar cliente...</option>' + 
-        clientes.map(c => `<option value="${c}">${c}</option>`).join('');
-}
-
-// ============================================================
 //  DASHBOARD
 // ============================================================
-function renderDashboard() {
-    const desde = fechaInicio || '2024-01-01';
-    const hasta = fechaFin || hoy();
+function renderDashboard(fecha = null) {
+    const fechaStr = fecha || dashboardFecha || hoy();
 
-    const ventasFiltradas = ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
-    const gastosFiltrados = gastos.filter(g => g.fecha >= desde && g.fecha <= hasta);
+    const ventasFiltradas = ventas.filter(v => v.fecha === fechaStr);
+    const gastosFiltrados = gastos.filter(g => g.fecha === fechaStr);
 
     let totalVentas = 0, totalCosto = 0, totalGastos = 0;
     let bolsasVendidas = { "1.7": 0, "3.5": 0, "14": 0, "20": 0, "32": 0 };
@@ -1070,17 +1407,45 @@ function renderDashboard() {
     }
     for (const g of gastosFiltrados) totalGastos += g.monto || 0;
 
-    const gananciaBruta = totalVentas - totalCosto;
-    const gananciaNeta = gananciaBruta - totalGastos;
+    const ganancia = totalVentas - totalCosto - totalGastos;
     const totalBolsas = Object.values(bolsasVendidas).reduce((a, b) => a + b, 0);
 
-    document.getElementById('kpiGananciaHoy').textContent = pesos(gananciaNeta);
-    document.getElementById('kpiGananciaHoy').className = 'value ' + (gananciaNeta >= 0 ? 'positive' : 'negative');
-    document.getElementById('kpiGananciaSemana').textContent = pesos(gananciaNeta);
-    document.getElementById('kpiGananciaMes').textContent = pesos(gananciaNeta);
+    document.getElementById('kpiVentas').textContent = pesos(totalVentas);
+    document.getElementById('kpiVentas').className = 'value neutral';
+    document.getElementById('kpiGastos').textContent = pesos(totalGastos);
+    document.getElementById('kpiGastos').className = 'value negative';
+    document.getElementById('kpiCostoBolsas').textContent = pesos(totalCosto);
+    document.getElementById('kpiCostoBolsas').className = 'value neutral';
+    document.getElementById('kpiGanancia').textContent = pesos(ganancia);
+    document.getElementById('kpiGanancia').className = 'value ' + (ganancia >= 0 ? 'positive' : 'negative');
     document.getElementById('kpiBolsas').textContent = totalBolsas;
     document.getElementById('kpiClientes').textContent = clientesSet.size;
-    document.getElementById('kpiGastos').textContent = pesos(totalGastos);
+
+    // Tabla de ventas del período (últimos 7 días para el gráfico)
+    const desde = fechaInicio || new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    const hasta = fechaFin || hoy();
+    renderTablaVentasPeriodo(desde, hasta);
+    renderGrafico(desde, hasta);
+}
+
+function renderTablaVentasPeriodo(desde, hasta) {
+    const ventasFiltradas = ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
+    const gastosFiltrados = gastos.filter(g => g.fecha >= desde && g.fecha <= hasta);
+
+    let totalVentas = 0, totalGastos = 0, totalCosto = 0;
+    for (const v of ventasFiltradas) {
+        totalVentas += v.total || 0;
+        const claves = ["1.7", "3.5", "14", "20", "32"];
+        const cant = v.cantidades || [];
+        for (let i = 0; i < claves.length; i++) {
+            totalCosto += (cant[i] || 0) * (costos[claves[i]] || 0);
+        }
+    }
+    for (const g of gastosFiltrados) totalGastos += g.monto || 0;
+
+    document.getElementById('totalVentasPeriodo').textContent = pesos(totalVentas);
+    document.getElementById('totalGastosPeriodo').textContent = pesos(totalGastos);
+    document.getElementById('gananciaPeriodo').textContent = pesos(totalVentas - totalCosto - totalGastos);
 
     const tbody = document.getElementById('tbodyVentasPeriodo');
     if (ventasFiltradas.length === 0) {
@@ -1100,6 +1465,56 @@ function renderDashboard() {
             </tr>
         `).join('');
     }
+}
+
+function renderGrafico(desde, hasta) {
+    const ctx = document.getElementById('chartVentas');
+    if (!ctx) return;
+
+    const grupos = {};
+    const hoyStr = hoy();
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0,10);
+        grupos[key] = 0;
+    }
+    for (const v of ventas) {
+        if (grupos[v.fecha] !== undefined) {
+            grupos[v.fecha] += v.total || 0;
+        }
+    }
+
+    const labels = Object.keys(grupos).map(f => formatearFecha(f));
+    const values = Object.values(grupos);
+
+    if (chartInstance) { chartInstance.destroy(); }
+
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ventas ($)',
+                data: values,
+                backgroundColor: 'rgba(15, 42, 110, 0.6)',
+                borderColor: 'rgba(15, 42, 110, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: function(value) { return '$' + value.toLocaleString('es-AR'); } }
+                }
+            }
+        }
+    });
 }
 
 // ============================================================
@@ -1228,6 +1643,32 @@ function exportarVentasExcel() {
     toast('Excel exportado');
 }
 
+function exportarVentasPeriodoExcel() {
+    const desde = fechaInicio || new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    const hasta = fechaFin || hoy();
+    const ventasFiltradas = ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
+    const data = [
+        ['Fecha', 'Cliente', '1.7kg', '3.5kg', '14kg', '20kg', '32kg', 'Total', 'Pago']
+    ];
+    for (const v of ventasFiltradas) {
+        data.push([
+            v.fecha, v.cliente || '',
+            v.cantidades ? v.cantidades[0] || 0 : 0,
+            v.cantidades ? v.cantidades[1] || 0 : 0,
+            v.cantidades ? v.cantidades[2] || 0 : 0,
+            v.cantidades ? v.cantidades[3] || 0 : 0,
+            v.cantidades ? v.cantidades[4] || 0 : 0,
+            v.total || 0,
+            v.pago || ''
+        ]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
+    XLSX.writeFile(wb, `ventas_periodo_${desde}_a_${hasta}.xlsx`);
+    toast('Excel exportado');
+}
+
 // ============================================================
 //  PRODUCTOS
 // ============================================================
@@ -1268,7 +1709,6 @@ function guardarNuevoProducto() {
 
     if (!nombre || !clave) return toast('Complete nombre y clave');
     if (costo <= 0) return toast('Ingrese un costo válido');
-
     if (productos.some(p => p.clave === clave)) return toast('Ya existe un producto con esa clave');
 
     productos.push({ clave, nombre, costo, precio: precio || costo * 1.5 });
@@ -1310,16 +1750,13 @@ function eliminarProducto(clave) {
 function renderCostos() {
     const grid = document.getElementById('costosGrid');
     const labels = {};
-    for (const p of productos) {
-        labels[p.clave] = p.nombre;
-    }
+    for (const p of productos) { labels[p.clave] = p.nombre; }
     grid.innerHTML = Object.entries(costos).map(([key, val]) => `
         <div class="form-group">
             <label>${labels[key] || key}</label>
             <input type="number" class="costo-input" data-clave="${key}" value="${val}" step="100" min="0">
         </div>
     `).join('');
-
     calcularPreciosSugeridos();
 }
 
@@ -1340,9 +1777,7 @@ function calcularPreciosSugeridos() {
     const margen = num(document.getElementById('margenGanancia').value) || 30;
     const container = document.getElementById('preciosSugeridos');
     const labels = {};
-    for (const p of productos) {
-        labels[p.clave] = p.nombre;
-    }
+    for (const p of productos) { labels[p.clave] = p.nombre; }
     let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px;">';
     for (const [key, costo] of Object.entries(costos)) {
         const sugerido = costo * (1 + margen / 100);
@@ -1362,9 +1797,7 @@ function calcularPreciosSugeridos() {
 
 function guardarProductosLocal() {
     localStorage.setItem('myc_productos', JSON.stringify(productos));
-    for (const p of productos) {
-        costos[p.clave] = p.costo || 0;
-    }
+    for (const p of productos) { costos[p.clave] = p.costo || 0; }
     localStorage.setItem('myc_costos', JSON.stringify(costos));
 }
 
@@ -1411,45 +1844,52 @@ async function eliminarCliente(nombre) {
 }
 
 // ============================================================
-//  INFORME DIARIO
+//  INFORME DIARIO CON SELECTOR DE FECHA
 // ============================================================
 function generarInformeDiario() {
     const container = document.getElementById('informeDiarioContainer');
-    const hoyStr = hoy();
-    const ventasHoy = ventas.filter(v => v.fecha === hoyStr);
-    const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
-    const totalVentas = ventasHoy.reduce((acc, v) => acc + (v.total || 0), 0);
-    const totalGastos = gastosHoy.reduce((acc, g) => acc + (g.monto || 0), 0);
-    const totalCosto = ventasHoy.reduce((acc, v) => {
+    const fechaInput = document.getElementById('informeFecha');
+    const fechaStr = fechaInput ? fechaInput.value : hoy();
+
+    if (!fechaStr) {
+        container.innerHTML = '<p style="color:var(--texto-claro);text-align:center;padding:20px;">Seleccione una fecha</p>';
+        return;
+    }
+
+    const ventasDia = ventas.filter(v => v.fecha === fechaStr);
+    const gastosDia = gastos.filter(g => g.fecha === fechaStr);
+    const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
+    const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
+    const totalCosto = ventasDia.reduce((acc, v) => {
         const claves = ["1.7", "3.5", "14", "20", "32"];
         const cant = v.cantidades || [];
         return acc + cant.reduce((a, q, i) => a + (q || 0) * (costos[claves[i]] || 0), 0);
     }, 0);
     const ganancia = totalVentas - totalCosto - totalGastos;
-    const clientesHoy = new Set(ventasHoy.map(v => v.cliente).filter(Boolean));
+    const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
 
     let html = `
         <div style="background:var(--azul-claro);padding:16px;border-radius:12px;margin-bottom:16px;">
             <h3 style="color:var(--azul);">🧊 MYC HIELO · Informe Diario</h3>
-            <p style="color:var(--texto-claro);">${formatearFecha(hoyStr)}</p>
+            <p style="color:var(--texto-claro);">${formatearFecha(fechaStr)}</p>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;">
             <div><strong>💰 Ventas</strong><br>${pesos(totalVentas)}</div>
             <div><strong>💸 Gastos</strong><br>${pesos(totalGastos)}</div>
             <div><strong>📦 Costo bolsas</strong><br>${pesos(totalCosto)}</div>
             <div><strong>📈 Ganancia</strong><br><span style="color:${ganancia>=0?'var(--verde)':'var(--rojo)'};font-weight:800;">${pesos(ganancia)}</span></div>
-            <div><strong>👥 Clientes</strong><br>${clientesHoy.size}</div>
-            <div><strong>🧊 Bolsas vendidas</strong><br>${ventasHoy.reduce((acc,v) => acc + (v.cantidades||[]).reduce((a,b) => a + (b||0), 0), 0)}</div>
+            <div><strong>👥 Clientes</strong><br>${clientesDia.size}</div>
+            <div><strong>🧊 Bolsas vendidas</strong><br>${ventasDia.reduce((acc,v) => acc + (v.cantidades||[]).reduce((a,b) => a + (b||0), 0), 0)}</div>
         </div>
     `;
 
-    if (ventasHoy.length > 0) {
+    if (ventasDia.length > 0) {
         html += `
         <div style="border-top:1px solid var(--borde);padding-top:12px;">
             <strong>Detalle de ventas:</strong>
             <ul style="list-style:none;padding:0;margin-top:8px;">
         `;
-        for (const v of ventasHoy) {
+        for (const v of ventasDia) {
             const detalle = v.cantidades ? v.cantidades.map((q, i) => {
                 const claves = ["1.7", "3.5", "14", "20", "32"];
                 return q > 0 ? `${claves[i]}kg:${q}` : null;
@@ -1459,36 +1899,40 @@ function generarInformeDiario() {
         html += `</ul></div>`;
     }
 
-    if (gastosHoy.length > 0) {
+    if (gastosDia.length > 0) {
         html += `
         <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
             <strong>Gastos:</strong>
             <ul style="list-style:none;padding:0;margin-top:8px;">
         `;
-        for (const g of gastosHoy) {
+        for (const g of gastosDia) {
             html += `<li>${g.categoria} · ${pesos(g.monto)} · ${g.nota || ''}</li>`;
         }
         html += `</ul></div>`;
     }
 
-    if (ventasHoy.length === 0 && gastosHoy.length === 0) {
-        html += `<p style="color:var(--texto-claro);text-align:center;padding:20px;">No hay movimientos hoy</p>`;
+    if (ventasDia.length === 0 && gastosDia.length === 0) {
+        html += `<p style="color:var(--texto-claro);text-align:center;padding:20px;">No hay movimientos en esta fecha</p>`;
     }
 
     container.innerHTML = html;
 }
 
 function exportarInformeExcel() {
-    const hoyStr = hoy();
-    const ventasHoy = ventas.filter(v => v.fecha === hoyStr);
-    const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
+    const fechaInput = document.getElementById('informeFecha');
+    const fechaStr = fechaInput ? fechaInput.value : hoy();
+
+    if (!fechaStr) { toast('Seleccione una fecha'); return; }
+
+    const ventasDia = ventas.filter(v => v.fecha === fechaStr);
+    const gastosDia = gastos.filter(g => g.fecha === fechaStr);
     const data = [
-        ['MYC HIELO · Informe Diario', formatearFecha(hoyStr)],
+        ['MYC HIELO · Informe Diario', formatearFecha(fechaStr)],
         [],
         ['Ventas'],
         ['Cliente', '1.7', '3.5', '14', '20', '32', 'Total', 'Pago']
     ];
-    for (const v of ventasHoy) {
+    for (const v of ventasDia) {
         data.push([
             v.cliente || '',
             v.cantidades ? v.cantidades[0] || 0 : 0,
@@ -1502,14 +1946,37 @@ function exportarInformeExcel() {
     }
     data.push([], ['Gastos']);
     data.push(['Categoría', 'Monto', 'Nota']);
-    for (const g of gastosHoy) {
+    for (const g of gastosDia) {
         data.push([g.categoria || '', g.monto || 0, g.nota || '']);
     }
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, 'Informe');
-    XLSX.writeFile(wb, `informe_${hoyStr}.xlsx`);
+    XLSX.writeFile(wb, `informe_${fechaStr}.xlsx`);
     toast('Excel exportado');
+}
+
+// ============================================================
+//  ACTUALIZAR UI
+// ============================================================
+function actualizarUI() {
+    actualizarSelectores();
+    renderDashboard(dashboardFecha);
+    renderVentas();
+    renderGastos();
+    renderFabricas();
+    renderProductos();
+    renderCostos();
+    renderClientes();
+    renderCalendario();
+    generarInformeDiario();
+}
+
+function actualizarSelectores() {
+    const select = document.getElementById('vClienteSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccionar cliente...</option>' +
+        clientes.map(c => `<option value="${c}">${c}</option>`).join('');
 }
 
 // ============================================================
@@ -1522,7 +1989,7 @@ document.querySelectorAll('.nav a').forEach(el => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         const tab = this.dataset.tab;
         document.getElementById('tab-' + tab).classList.add('active');
-        if (tab === 'dashboard') renderDashboard();
+        if (tab === 'dashboard') renderDashboard(dashboardFecha);
         if (tab === 'ventas') renderVentas();
         if (tab === 'gastos') renderGastos();
         if (tab === 'fabricas') renderFabricas();
@@ -1530,6 +1997,7 @@ document.querySelectorAll('.nav a').forEach(el => {
         if (tab === 'costos') renderCostos();
         if (tab === 'clientes') renderClientes();
         if (tab === 'informes') generarInformeDiario();
+        if (tab === 'historial') renderCalendario();
     });
 });
 
@@ -1540,29 +2008,55 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('vFecha').value = hoy();
     document.getElementById('gFecha').value = hoy();
     document.getElementById('fFecha').value = hoy();
+    const informeFecha = document.getElementById('informeFecha');
+    if (informeFecha) informeFecha.value = hoy();
+    const dashboardFechaEl = document.getElementById('dashboardFecha');
+    if (dashboardFechaEl) dashboardFechaEl.value = hoy();
 
     document.getElementById('syncBtn').addEventListener('click', cargarDatos);
 
     document.getElementById('aplicarFechas').addEventListener('click', function() {
         fechaInicio = document.getElementById('fechaInicio').value;
         fechaFin = document.getElementById('fechaFin').value;
-        renderDashboard();
+        renderTablaVentasPeriodo(fechaInicio, fechaFin);
+        renderGrafico(fechaInicio, fechaFin);
     });
     document.getElementById('resetFechas').addEventListener('click', function() {
         document.getElementById('fechaInicio').value = '';
         document.getElementById('fechaFin').value = '';
         fechaInicio = '';
         fechaFin = '';
-        renderDashboard();
+        renderTablaVentasPeriodo(new Date(Date.now() - 7*86400000).toISOString().slice(0,10), hoy());
+        renderGrafico(new Date(Date.now() - 7*86400000).toISOString().slice(0,10), hoy());
+    });
+
+    // Dashboard fecha
+    document.getElementById('dashboardFechaBtn').addEventListener('click', function() {
+        const fecha = document.getElementById('dashboardFecha').value;
+        if (fecha) {
+            dashboardFecha = fecha;
+            renderDashboard(fecha);
+        } else {
+            toast('Seleccione una fecha');
+        }
+    });
+    document.getElementById('dashboardHoyBtn').addEventListener('click', function() {
+        document.getElementById('dashboardFecha').value = hoy();
+        dashboardFecha = hoy();
+        renderDashboard(hoy());
+    });
+    document.getElementById('dashboardFecha').addEventListener('change', function() {
+        if (this.value) {
+            dashboardFecha = this.value;
+            renderDashboard(this.value);
+        }
     });
 
     document.getElementById('btnRegistrarVenta').addEventListener('click', registrarVenta);
     document.getElementById('btnRegistrarGasto').addEventListener('click', registrarGasto);
     document.getElementById('btnRegistrarFabrica').addEventListener('click', registrarFabrica);
 
-    document.getElementById('filtrarGastosBtn').addEventListener('click', function() {
-        renderGastos();
-    });
+    document.getElementById('filtrarGastosBtn').addEventListener('click', function() { renderGastos(); });
     document.getElementById('resetGastosBtn').addEventListener('click', function() {
         document.getElementById('filtroGastosFecha').value = '';
         renderGastos();
@@ -1583,6 +2077,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('filtroVentas').addEventListener('input', renderVentas);
     document.getElementById('filtroVentasFecha').addEventListener('change', renderVentas);
 
+    document.getElementById('informeFecha').addEventListener('change', generarInformeDiario);
+
+    // Calendario
+    document.getElementById('mesAnterior').addEventListener('click', function() {
+        mesActual.setMonth(mesActual.getMonth() - 1);
+        renderCalendario();
+    });
+    document.getElementById('mesSiguiente').addEventListener('click', function() {
+        mesActual.setMonth(mesActual.getMonth() + 1);
+        renderCalendario();
+    });
+
     cargarDatos();
 });
 
@@ -1595,10 +2101,19 @@ window.eliminarCliente = eliminarCliente;
 window.eliminarProducto = eliminarProducto;
 window.editarProducto = editarProducto;
 window.exportarVentasExcel = exportarVentasExcel;
+window.exportarVentasPeriodoExcel = exportarVentasPeriodoExcel;
 window.exportarGastosExcel = exportarGastosExcel;
 window.exportarFabricasExcel = exportarFabricasExcel;
 window.exportarInformeExcel = exportarInformeExcel;
 window.generarInformeDiario = generarInformeDiario;
+window.guardarInformeHistorial = guardarInformeHistorial;
+window.verInformeHistorial = verInformeHistorial;
+window.eliminarInformeHistorial = eliminarInformeHistorial;
+window.limpiarHistorial = limpiarHistorial;
+window.exportarHistorialExcel = exportarHistorialExcel;
+window.exportarInformeHistorialExcel = exportarInformeHistorialExcel;
+window.copiarInformeSeleccionado = copiarInformeSeleccionado;
+window.generarYGuardarInforme = generarYGuardarInforme;
 window.agregarProducto = agregarProducto;
 window.toggleDebug = toggleDebug;
 </script>
