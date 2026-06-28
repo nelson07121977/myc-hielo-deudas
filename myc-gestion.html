@@ -87,6 +87,8 @@
         }
         .nav a:hover { background: var(--azul-claro); color: var(--azul); }
         .nav a.active { background: var(--azul); color: white; }
+        .nav a.dorado { background: var(--dorado); color: white; }
+        .nav a.dorado:hover { background: #b45309; }
 
         .card {
             background: var(--white);
@@ -356,8 +358,23 @@
             padding: 4px 0;
             text-align: center;
         }
+        .calendario-ganancias .dia.seleccionado {
+            background: var(--azul-claro);
+            border-color: var(--azul);
+            border-width: 2px;
+        }
 
-        /* ===== TOTALES ACUMULADOS ===== */
+        .rango-fechas {
+            background: var(--azul-claro);
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--azul);
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
         .acumulados-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -384,6 +401,19 @@
             padding: 16px;
             border: 1px solid var(--borde);
         }
+
+        .detalle-dia-ganancia {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: var(--bg);
+            border-radius: 12px;
+            border-left: 4px solid var(--azul);
+        }
+        .detalle-dia-ganancia .fecha { font-weight: 700; font-size: 0.9rem; }
+        .detalle-dia-ganancia .monto { font-size: 1.2rem; font-weight: 800; }
+        .detalle-dia-ganancia .monto.verde { color: var(--verde); }
+        .detalle-dia-ganancia .monto.rojo { color: var(--rojo); }
+        .detalle-dia-ganancia .monto.dorado { color: var(--dorado); }
 
         @media (max-width: 700px) {
             .header h1 { font-size: 1.2rem; }
@@ -528,7 +558,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v3.0 · 30/06/2026 · 💰 Finanzas + Calendario</div>
+            <div class="version-info">v3.1 · 30/06/2026 · 💰 Finanzas + Calendario</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -547,7 +577,7 @@
         <a data-tab="clientes"><i class="fas fa-users"></i> Clientes</a>
         <a data-tab="informes"><i class="fas fa-file-alt"></i> Informes</a>
         <a data-tab="historial"><i class="fas fa-calendar-alt"></i> Historial</a>
-        <a data-tab="finanzas" class="active" style="background:var(--dorado);color:white;"><i class="fas fa-coins"></i> 💰 Finanzas</a>
+        <a data-tab="finanzas" class="dorado"><i class="fas fa-coins"></i> 💰 Finanzas</a>
     </nav>
 
     <!-- DEBUG -->
@@ -558,7 +588,7 @@
 
     <!-- ==================== TAB: DASHBOARD ==================== -->
     <div id="tab-dashboard" class="tab-content active">
-
+        <!-- (Mismo contenido que antes) -->
         <div class="fecha-selector-dashboard no-print">
             <label>📅 Ver día:</label>
             <input type="date" id="dashboardFecha">
@@ -616,6 +646,7 @@
 
     <!-- ==================== TAB: VENTAS ==================== -->
     <div id="tab-ventas" class="tab-content">
+        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📦 Registrar Venta</div>
@@ -671,6 +702,7 @@
 
     <!-- ==================== TAB: GASTOS ==================== -->
     <div id="tab-gastos" class="tab-content">
+        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title rojo">💸 Registrar Gasto</div>
@@ -717,6 +749,7 @@
 
     <!-- ==================== TAB: FÁBRICAS ==================== -->
     <div id="tab-fabricas" class="tab-content">
+        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">🏭 Carga / Devolución en Fábrica</div>
@@ -772,6 +805,7 @@
 
     <!-- ==================== TAB: PRODUCTOS ==================== -->
     <div id="tab-productos" class="tab-content">
+        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📦 Gestionar Productos</div>
@@ -797,6 +831,7 @@
 
     <!-- ==================== TAB: COSTOS ==================== -->
     <div id="tab-costos" class="tab-content">
+        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title dorado">💰 Costos de Productos (unitarios)</div>
@@ -824,6 +859,7 @@
 
     <!-- ==================== TAB: CLIENTES ==================== -->
     <div id="tab-clientes" class="tab-content">
+        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title morado">➕ Agregar Cliente</div>
@@ -844,6 +880,7 @@
 
     <!-- ==================== TAB: INFORMES ==================== -->
     <div id="tab-informes" class="tab-content">
+        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📄 Informe Diario Resumido</div>
@@ -864,6 +901,7 @@
 
     <!-- ==================== TAB: HISTORIAL ==================== -->
     <div id="tab-historial" class="tab-content">
+        <!-- (Mismo contenido que antes) -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📅 Historial de Informes Diarios</div>
@@ -890,8 +928,8 @@
         </div>
     </div>
 
-    <!-- ==================== TAB: FINANZAS (NUEVO) ==================== -->
-    <div id="tab-finanzas" class="tab-content active">
+    <!-- ==================== TAB: FINANZAS (NUEVO - CORREGIDO) ==================== -->
+    <div id="tab-finanzas" class="tab-content">
 
         <!-- Resumen de Deudas, Transferencias y Ganancia por Cliente -->
         <div class="finanzas-grid">
@@ -912,7 +950,7 @@
             </div>
         </div>
 
-        <!-- GANANCIA REAL TOTAL (Cuadro principal) -->
+        <!-- GANANCIA REAL TOTAL -->
         <div class="ganancia-real-box">
             <div class="item">
                 <div class="label">💵 Efectivo Cobrado</div>
@@ -961,7 +999,7 @@
             </div>
         </div>
 
-        <!-- CALENDARIO DE GANANCIAS -->
+        <!-- CALENDARIO DE GANANCIAS CORREGIDO -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title morado">📅 Calendario de Ganancias</div>
@@ -985,6 +1023,11 @@
                 <button class="btn btn-sm btn-outline" id="hoyGanancia"><i class="fas fa-calendar-day"></i> Hoy</button>
             </div>
 
+            <!-- Rango de fechas -->
+            <div class="rango-fechas" id="rangoFechasGanancia">
+                📅 Mostrando: <span id="fechaInicioGanancia">-</span> al <span id="fechaFinGanancia">-</span>
+            </div>
+
             <!-- Calendario -->
             <div class="calendario-container">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
@@ -993,6 +1036,13 @@
                     <button class="btn btn-sm btn-outline" id="mesGananciaSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
                 </div>
                 <div id="calendarioGananciaGrid" class="calendario-ganancias"></div>
+            </div>
+
+            <!-- Detalle del día seleccionado -->
+            <div id="detalleDiaGanancia" class="detalle-dia-ganancia" style="display:none;">
+                <div class="fecha" id="detalleDiaFecha">📅 Fecha</div>
+                <div class="monto" id="detalleDiaMonto">$0</div>
+                <div style="font-size:0.7rem;color:var(--texto-claro);" id="detalleDiaInfo">Sin información</div>
             </div>
 
             <!-- Totales acumulados -->
@@ -1027,7 +1077,7 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v3.0-20260630";
+const VERSION = "v3.1-20260630";
 console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
@@ -1048,6 +1098,7 @@ let chartInstance = null;
 let dashboardFecha = hoy();
 let mesGanancia = new Date();
 let gananciasCalendario = {};
+let diaSeleccionadoGanancia = null;
 
 // ============================================================
 //  UTILIDADES
@@ -1064,6 +1115,14 @@ function formatearFechaInput(f) {
     if (!f) return '';
     if (f.includes('T')) { f = f.split('T')[0]; }
     return f;
+}
+function formatearFechaCompleta(f) {
+    if (!f) return '';
+    const d = new Date(f);
+    if (isNaN(d.getTime())) return f;
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return `${dias[d.getDay()]} ${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
 }
 function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 }); }
 function normalizarNombre(n) { return (n || '').trim().toUpperCase().replace(/\s+/g, ' '); }
@@ -1108,7 +1167,7 @@ function mostrarDebug(msg) {
 }
 
 // ============================================================
-//  INICIALIZAR COSTOS POR DEFECTO
+//  INICIALIZAR COSTOS
 // ============================================================
 function inicializarCostos() {
     const costosDefault = {
@@ -1285,7 +1344,7 @@ function guardarGananciasCalendario() {
 
 function guardarGananciaDia(fecha, ganancia) {
     if (!gananciasCalendario[fecha]) {
-        gananciasCalendario[fecha] = { ganancia: 0, ventas: 0, gastos: 0 };
+        gananciasCalendario[fecha] = { ganancia: 0 };
     }
     gananciasCalendario[fecha].ganancia = ganancia;
     guardarGananciasCalendario();
@@ -1321,7 +1380,6 @@ function guardarInformeHistorial() {
     const ganancia = totalVentas - totalCosto - totalGastos;
     const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
 
-    // Guardar también en el calendario de ganancias
     guardarGananciaDia(fecha, ganancia);
 
     const informe = {
@@ -2355,7 +2413,7 @@ function exportarInformeExcel() {
 }
 
 // ============================================================
-//  FINANZAS - NUEVO MÓDULO
+//  FINANZAS - NUEVO MÓDULO CORREGIDO
 // ============================================================
 function renderFinanzas() {
     // Calcular deudas, transferencias y ganancias por cliente
@@ -2419,7 +2477,7 @@ function renderFinanzas() {
     // Calcular ganancia bruta y real por cliente
     for (const [cliente, data] of Object.entries(gananciaPorCliente)) {
         data.gananciaBruta = data.ventas - data.costo;
-        data.gananciaReal = data.gananciaBruta + data.cobros; // Incluye cobros de deuda
+        data.gananciaReal = data.gananciaBruta + data.cobros;
         totalGananciaReal += data.gananciaReal;
     }
 
@@ -2482,7 +2540,6 @@ function renderTablaGananciaCliente(gananciaPorCliente) {
 }
 
 function exportarGananciaClienteExcel() {
-    // Similar a la tabla, exportar a Excel
     const data = [
         ['MYC HIELO · Ganancia Real por Cliente'],
         [],
@@ -2535,7 +2592,7 @@ function exportarGananciaClienteExcel() {
 }
 
 // ============================================================
-//  CALENDARIO DE GANANCIAS
+//  CALENDARIO DE GANANCIAS CORREGIDO
 // ============================================================
 function renderCalendarioGanancias() {
     const grid = document.getElementById('calendarioGananciaGrid');
@@ -2552,6 +2609,12 @@ function renderCalendarioGanancias() {
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     mesLabel.textContent = `${meses[month]} ${year}`;
 
+    // Calcular rango de fechas
+    const primerDiaStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
+    const ultimoDiaStr = `${year}-${String(month+1).padStart(2,'0')}-${String(diasEnMes).padStart(2,'0')}`;
+    document.getElementById('fechaInicioGanancia').textContent = formatearFecha(primerDiaStr);
+    document.getElementById('fechaFinGanancia').textContent = formatearFecha(ultimoDiaStr);
+
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     let html = diasSemana.map(d => `<div class="dia-header">${d}</div>`).join('');
 
@@ -2562,21 +2625,24 @@ function renderCalendarioGanancias() {
     }
 
     const hoyStr = hoy();
+    let totalGananciaMes = 0;
+    
     for (let d = 1; d <= diasEnMes; d++) {
         const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const esHoy = fecha === hoyStr;
-        const clase = `dia${esHoy ? ' hoy' : ''}`;
+        const clase = `dia${esHoy ? ' hoy' : ''}${diaSeleccionadoGanancia === fecha ? ' seleccionado' : ''}`;
         
         let gananciaDia = 0;
         let color = '';
         if (gananciasCalendario[fecha]) {
             gananciaDia = gananciasCalendario[fecha].ganancia || 0;
+            totalGananciaMes += gananciaDia;
             if (gananciaDia > 0) color = 'verde';
             else if (gananciaDia < 0) color = 'rojo';
             else color = 'dorado';
         }
         
-        html += `<div class="${clase}" data-fecha="${fecha}">
+        html += `<div class="${clase}" data-fecha="${fecha}" onclick="seleccionarDiaGanancia('${fecha}')">
             <span class="num">${d}</span>
             ${gananciaDia !== 0 ? `<span class="ganancia-dia ${color}">${pesos(gananciaDia)}</span>` : ''}
         </div>`;
@@ -2590,8 +2656,39 @@ function renderCalendarioGanancias() {
 
     grid.innerHTML = html;
     
+    // Si hay un día seleccionado, mostrar su detalle
+    if (diaSeleccionadoGanancia) {
+        mostrarDetalleDiaGanancia(diaSeleccionadoGanancia);
+    }
+    
     // Calcular acumulados
     calcularAcumulados();
+}
+
+function seleccionarDiaGanancia(fecha) {
+    diaSeleccionadoGanancia = fecha;
+    mostrarDetalleDiaGanancia(fecha);
+    renderCalendarioGanancias();
+}
+
+function mostrarDetalleDiaGanancia(fecha) {
+    const container = document.getElementById('detalleDiaGanancia');
+    if (!container) return;
+    
+    const ganancia = gananciasCalendario[fecha] ? gananciasCalendario[fecha].ganancia : 0;
+    const fechaCompleta = formatearFechaCompleta(fecha);
+    const fechaStr = formatearFecha(fecha);
+    
+    let color = 'dorado';
+    if (ganancia > 0) color = 'verde';
+    else if (ganancia < 0) color = 'rojo';
+    
+    document.getElementById('detalleDiaFecha').textContent = `📅 ${fechaCompleta}`;
+    document.getElementById('detalleDiaMonto').textContent = `${pesos(ganancia)}`;
+    document.getElementById('detalleDiaMonto').className = `monto ${color}`;
+    document.getElementById('detalleDiaInfo').textContent = ganancia !== 0 ? `Ganancia del día ${fechaStr}` : 'Sin movimiento registrado';
+    
+    container.style.display = 'block';
 }
 
 function calcularAcumulados() {
@@ -2709,7 +2806,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const dashboardFechaEl = document.getElementById('dashboardFecha');
     if (dashboardFechaEl) dashboardFechaEl.value = hoy();
     
-    // Fecha por defecto en ganancias
     const fechaGanancia = document.getElementById('fechaGanancia');
     if (fechaGanancia) fechaGanancia.value = hoy();
 
@@ -2788,23 +2884,26 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCalendario();
     });
 
-    // Calendario de ganancias
+    // Calendario de ganancias - CORREGIDO
     document.getElementById('mesGananciaAnterior').addEventListener('click', function() {
         mesGanancia.setMonth(mesGanancia.getMonth() - 1);
+        diaSeleccionadoGanancia = null;
         renderCalendarioGanancias();
     });
     document.getElementById('mesGananciaSiguiente').addEventListener('click', function() {
         mesGanancia.setMonth(mesGanancia.getMonth() + 1);
+        diaSeleccionadoGanancia = null;
         renderCalendarioGanancias();
     });
 
-    // Filtro de ganancias
     document.getElementById('aplicarFechaGanancia').addEventListener('click', function() {
         const fecha = document.getElementById('fechaGanancia').value;
         if (fecha) {
             const d = new Date(fecha);
             mesGanancia = new Date(d.getFullYear(), d.getMonth(), 1);
+            diaSeleccionadoGanancia = fecha;
             renderCalendarioGanancias();
+            toast(`📅 Mostrando ${meses[d.getMonth()]} ${d.getFullYear()}`);
         } else {
             toast('Seleccione una fecha');
         }
@@ -2814,14 +2913,22 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('fechaGanancia').value = hoyStr;
         const d = new Date();
         mesGanancia = new Date(d.getFullYear(), d.getMonth(), 1);
+        diaSeleccionadoGanancia = hoyStr;
         renderCalendarioGanancias();
-        toast('Mostrando mes actual');
+        toast('📅 Mostrando mes actual');
+    });
+
+    // Selector de período
+    document.getElementById('periodoGanancia').addEventListener('change', function() {
+        renderCalendarioGanancias();
     });
 
     cargarDatos();
 });
 
-// Funciones globales para onclick
+// Funciones globales
+const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
 window.copiarTabla = copiarTabla;
 window.eliminarVenta = eliminarVenta;
 window.eliminarGasto = eliminarGasto;
@@ -2850,6 +2957,7 @@ window.exportarGananciaCalendarioExcel = exportarGananciaCalendarioExcel;
 window.calcularAcumulados = calcularAcumulados;
 window.renderFinanzas = renderFinanzas;
 window.renderCalendarioGanancias = renderCalendarioGanancias;
+window.seleccionarDiaGanancia = seleccionarDiaGanancia;
 </script>
 </body>
 </html>
