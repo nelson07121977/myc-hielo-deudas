@@ -647,9 +647,9 @@
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN - URL DE TU API
+//  CONFIGURACIÓN - URL CORREGIDA (USANDO LA MISMA QUE planilla_reparto.html)
 // ============================================================
-const API_URL = "https://script.google.com/macros/s/AKfycbz5VvNsngAKJix3toFHPJmI4mM3ig8lerb8m6SEf6pJi1viapjI3V5Zs6a0VxZnha0B/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
 
 // ============================================================
 //  ESTADO GLOBAL
@@ -669,15 +669,18 @@ let fechaFin = '';
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
     if (!f) return '';
-    if (f.includes('T')) f = f.split('T')[0];
-    const partes = f.split('-');
-    if (partes.length !== 3) return f;
-    const [anio, mes, dia] = partes;
-    return dia.padStart(2,'0') + '/' + mes.padStart(2,'0') + '/' + anio;
+    if (f.includes('T')) {
+        f = f.split('T')[0];
+    }
+    const d = new Date(f);
+    if (isNaN(d.getTime())) return f;
+    return d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
 }
 function formatearFechaInput(f) {
     if (!f) return '';
-    if (f.includes('T')) f = f.split('T')[0];
+    if (f.includes('T')) {
+        f = f.split('T')[0];
+    }
     return f;
 }
 function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 }); }
