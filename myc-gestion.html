@@ -11,8 +11,8 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        /* ===== ESTILOS COMPLETOS ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -33,27 +33,17 @@
             --texto-claro: #64748b;
             --radius: 16px;
             --shadow: 0 4px 12px rgba(0,0,0,0.06);
+            --whatsapp: #25D366;
+            --email: #EA4335;
         }
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--texto);
-            padding: 16px;
-            min-height: 100vh;
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--texto); padding: 16px; min-height: 100vh; }
         .app { max-width: 1600px; margin: 0 auto; }
 
         .header {
             background: linear-gradient(135deg, var(--azul), var(--azul-med));
-            color: white;
-            border-radius: var(--radius);
-            padding: 20px 24px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
+            color: white; border-radius: var(--radius); padding: 20px 24px;
+            margin-bottom: 20px; display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 12px;
         }
         .header h1 { font-size: 1.6rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .header h1 span { color: #94b8ff; }
@@ -69,7 +59,7 @@
             box-shadow: var(--shadow); border: 1px solid var(--borde);
         }
         .nav a {
-            padding: 10px 18px; border-radius: 40px; font-weight: 600; font-size: 0.8rem;
+            padding: 8px 14px; border-radius: 40px; font-weight: 600; font-size: 0.75rem;
             color: var(--texto-claro); text-decoration: none; transition: 0.2s;
             cursor: pointer; background: transparent; border: none; font-family: inherit;
         }
@@ -77,6 +67,8 @@
         .nav a.active { background: var(--azul); color: white; }
         .nav a.dorado { background: var(--dorado); color: white; }
         .nav a.dorado:hover { background: #b45309; }
+        .nav a.whatsapp { background: var(--whatsapp); color: white; }
+        .nav a.whatsapp:hover { background: #1a8a4a; }
 
         .card { background: var(--white); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--borde); }
         .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
@@ -88,43 +80,38 @@
         .card-title.morado { color: var(--morado); }
 
         .kpi-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;
         }
         .kpi {
-            background: var(--white); padding: 14px 16px; border-radius: var(--radius);
+            background: var(--white); padding: 12px 14px; border-radius: var(--radius);
             border: 1px solid var(--borde); box-shadow: var(--shadow); text-align: center;
         }
-        .kpi .label { font-size: 0.6rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-        .kpi .label.azul { color: var(--azul); }
-        .kpi .label.verde { color: var(--verde); }
-        .kpi .label.rojo { color: var(--rojo); }
-        .kpi .label.dorado { color: var(--dorado); }
-        .kpi .label.morado { color: var(--morado); }
-        .kpi .value { font-size: 1.4rem; font-weight: 800; margin-top: 4px; }
+        .kpi .label { font-size: 0.55rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; color: var(--texto-claro); }
+        .kpi .value { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
         .kpi .value.positive { color: var(--verde); }
         .kpi .value.negative { color: var(--rojo); }
         .kpi .value.neutral { color: var(--azul); }
         .kpi .value.dorado { color: var(--dorado); }
         .kpi .value.morado { color: var(--morado); }
 
-        .filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+        .filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
         .filtros input, .filtros select {
-            padding: 8px 14px; border-radius: 40px; border: 1px solid var(--borde);
-            background: var(--white); font-size: 0.8rem; font-family: inherit; outline: none;
+            padding: 6px 12px; border-radius: 40px; border: 1px solid var(--borde);
+            background: var(--white); font-size: 0.75rem; font-family: inherit; outline: none;
         }
         .filtros input:focus, .filtros select:focus { border-color: var(--azul); }
 
         .table-wrap { overflow-x: auto; border-radius: var(--radius); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
         th {
             background: var(--azul-claro); color: var(--azul); font-weight: 700;
-            padding: 8px 10px; text-align: left; white-space: nowrap; border-bottom: 2px solid var(--borde);
+            padding: 6px 8px; text-align: left; white-space: nowrap; border-bottom: 2px solid var(--borde);
         }
-        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
         tr:hover { background: #f8fafc; }
 
         .badge {
-            display: inline-block; padding: 2px 10px; border-radius: 40px; font-size: 0.65rem; font-weight: 600;
+            display: inline-block; padding: 2px 8px; border-radius: 40px; font-size: 0.6rem; font-weight: 600;
         }
         .badge-deuda { background: var(--rojo-claro); color: var(--rojo); }
         .badge-pago { background: var(--verde-claro); color: var(--verde); }
@@ -135,8 +122,8 @@
         .badge-gasto { background: var(--rojo-claro); color: var(--rojo); }
 
         .btn {
-            display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px;
-            border-radius: 40px; font-weight: 600; font-size: 0.75rem; border: none;
+            display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px;
+            border-radius: 40px; font-weight: 600; font-size: 0.7rem; border: none;
             cursor: pointer; transition: 0.2s; font-family: inherit; text-decoration: none;
         }
         .btn:active { transform: scale(0.96); }
@@ -148,24 +135,25 @@
         .btn-danger:hover { background: #991b1b; }
         .btn-dorado { background: var(--dorado); color: white; }
         .btn-dorado:hover { background: #b45309; }
+        .btn-whatsapp { background: var(--whatsapp); color: white; }
+        .btn-whatsapp:hover { background: #1a8a4a; }
+        .btn-email { background: var(--email); color: white; }
+        .btn-email:hover { background: #c5221f; }
         .btn-outline { background: transparent; border: 1px solid var(--borde); color: var(--texto); }
         .btn-outline:hover { background: var(--bg); }
-        .btn-sm { padding: 4px 12px; font-size: 0.7rem; }
-        .btn-xs { padding: 2px 8px; font-size: 0.65rem; }
+        .btn-sm { padding: 3px 10px; font-size: 0.65rem; }
+        .btn-xs { padding: 2px 6px; font-size: 0.6rem; }
 
-        .form-group { margin-bottom: 10px; }
-        .form-group label { font-weight: 600; font-size: 0.75rem; color: var(--texto-claro); display: block; margin-bottom: 2px; }
+        .form-group { margin-bottom: 8px; }
+        .form-group label { font-weight: 600; font-size: 0.7rem; color: var(--texto-claro); display: block; margin-bottom: 2px; }
         .form-group input, .form-group select {
-            width: 100%; padding: 8px 14px; border-radius: 40px; border: 1px solid var(--borde);
-            font-size: 0.85rem; font-family: inherit; background: var(--white); outline: none;
+            width: 100%; padding: 6px 12px; border-radius: 40px; border: 1px solid var(--borde);
+            font-size: 0.8rem; font-family: inherit; background: var(--white); outline: none;
         }
         .form-group input:focus, .form-group select:focus { border-color: var(--azul); }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-        .form-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
-
-        .tag { background: var(--azul-claro); display: inline-block; padding: 6px 14px; border-radius: 40px; margin: 4px; font-size: 0.8rem; }
-        .tag button { background: none; border: none; color: var(--rojo); cursor: pointer; font-weight: bold; margin-left: 6px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .form-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
 
         #toast {
             position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px);
@@ -179,48 +167,27 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        .finanzas-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 16px;
+        .acumulados-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 12px;
         }
-        .finanzas-card {
-            border-radius: var(--radius); padding: 16px 18px; border: 1px solid var(--borde); box-shadow: var(--shadow);
+        .acumulado-item {
+            background: var(--bg); border-radius: 12px; padding: 8px 10px; text-align: center;
         }
-        .finanzas-card.deudas { background: var(--rojo-claro); border-left: 4px solid var(--rojo); }
-        .finanzas-card.transferencias { background: #e0f2fe; border-left: 4px solid #0369a1; }
-        .finanzas-card.ganancia { background: var(--verde-claro); border-left: 4px solid var(--verde); }
-        .finanzas-card .titulo { font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; }
-        .finanzas-card .total { font-size: 1.8rem; font-weight: 800; margin-top: 4px; }
-        .finanzas-card .total.rojo { color: var(--rojo); }
-        .finanzas-card .total.verde { color: var(--verde); }
-        .finanzas-card .total.azul { color: var(--azul); }
-        .finanzas-card .total.dorado { color: var(--dorado); }
-        .finanzas-card .detalle { font-size: 0.7rem; color: var(--texto-claro); margin-top: 4px; }
-
-        .ganancia-real-box {
-            background: linear-gradient(135deg, #0a3e6d, #1a5a9e); color: white;
-            border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; text-align: center;
-        }
-        .ganancia-real-box .item .label { font-size: 0.6rem; text-transform: uppercase; opacity: 0.7; }
-        .ganancia-real-box .item .valor { font-size: 1.6rem; font-weight: 800; }
-        .ganancia-real-box .item .valor.verde { color: #4ade80; }
-        .ganancia-real-box .item .valor.azul { color: #93c5fd; }
-        .ganancia-real-box .item .valor.dorado { color: #fcd34d; }
-        .ganancia-real-box .item .valor.rojo { color: #f87171; }
-        .ganancia-real-box .item .valor.morado { color: #c4b5fd; }
+        .acumulado-item .label { font-size: 0.55rem; text-transform: uppercase; color: var(--texto-claro); }
+        .acumulado-item .valor { font-size: 1rem; font-weight: 800; }
 
         .calendario-ganancias {
-            display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 100%; margin: 0 auto;
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; max-width: 100%; margin: 0 auto;
         }
         .calendario-ganancias .dia {
-            background: var(--white); border: 1px solid var(--borde); border-radius: 8px;
-            padding: 6px 2px; text-align: center; font-size: 0.7rem; cursor: pointer;
-            transition: 0.2s; position: relative; min-height: 50px;
+            background: var(--white); border: 1px solid var(--borde); border-radius: 6px;
+            padding: 4px 2px; text-align: center; font-size: 0.65rem; cursor: pointer;
+            transition: 0.2s; position: relative; min-height: 40px;
         }
         .calendario-ganancias .dia:hover { background: var(--azul-claro); }
-        .calendario-ganancias .dia .num { font-weight: 700; font-size: 0.8rem; }
+        .calendario-ganancias .dia .num { font-weight: 700; font-size: 0.75rem; }
         .calendario-ganancias .dia .ganancia-dia {
-            font-size: 0.55rem; font-weight: 600; display: block; margin-top: 2px; padding: 1px 4px; border-radius: 4px;
+            font-size: 0.5rem; font-weight: 600; display: block; margin-top: 1px; padding: 1px 3px; border-radius: 3px;
         }
         .calendario-ganancias .dia .ganancia-dia.verde { background: var(--verde-claro); color: var(--verde); }
         .calendario-ganancias .dia .ganancia-dia.rojo { background: var(--rojo-claro); color: var(--rojo); }
@@ -228,75 +195,92 @@
         .calendario-ganancias .dia.hoy { border-color: var(--azul); border-width: 2px; }
         .calendario-ganancias .dia.otro-mes { opacity: 0.3; }
         .calendario-ganancias .dia-header {
-            font-weight: 600; font-size: 0.55rem; text-transform: uppercase;
-            color: var(--texto-claro); padding: 4px 0; text-align: center;
-        }
-        .calendario-ganancias .dia.seleccionado {
-            background: var(--azul-claro); border-color: var(--azul); border-width: 2px;
+            font-weight: 600; font-size: 0.5rem; text-transform: uppercase;
+            color: var(--texto-claro); padding: 3px 0; text-align: center;
         }
 
         .rango-fechas {
-            background: var(--azul-claro); padding: 8px 16px; border-radius: 40px;
-            font-size: 0.75rem; font-weight: 600; color: var(--azul); display: inline-block; margin-bottom: 12px;
+            background: var(--azul-claro); padding: 6px 14px; border-radius: 40px;
+            font-size: 0.7rem; font-weight: 600; color: var(--azul); display: inline-block; margin-bottom: 10px;
         }
 
-        .acumulados-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 12px;
-        }
-        .acumulado-item {
-            background: var(--bg); border-radius: 12px; padding: 10px 12px; text-align: center;
-        }
-        .acumulado-item .label { font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); }
-        .acumulado-item .valor { font-size: 1.1rem; font-weight: 800; }
-        .acumulado-item .valor.verde { color: var(--verde); }
-        .acumulado-item .valor.rojo { color: var(--rojo); }
-        .acumulado-item .valor.azul { color: var(--azul); }
-        .acumulado-item .valor.dorado { color: var(--dorado); }
-        .acumulado-item .valor.morado { color: var(--morado); }
+        .detalle-dia-ganancia { margin-top: 10px; padding: 10px 14px; background: var(--bg); border-radius: 10px; border-left: 4px solid var(--azul); }
+        .detalle-dia-ganancia .fecha { font-weight: 700; font-size: 0.85rem; }
+        .detalle-dia-ganancia .monto { font-size: 1.1rem; font-weight: 800; }
 
-        .calendario-container { background: var(--white); border-radius: var(--radius); padding: 16px; border: 1px solid var(--borde); }
-
-        .detalle-dia-ganancia { margin-top: 12px; padding: 12px 16px; background: var(--bg); border-radius: 12px; border-left: 4px solid var(--azul); }
-        .detalle-dia-ganancia .fecha { font-weight: 700; font-size: 0.9rem; }
-        .detalle-dia-ganancia .monto { font-size: 1.2rem; font-weight: 800; }
-        .detalle-dia-ganancia .monto.verde { color: var(--verde); }
-        .detalle-dia-ganancia .monto.rojo { color: var(--rojo); }
-        .detalle-dia-ganancia .monto.dorado { color: var(--dorado); }
-
-        .gastos-detalle-dia {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 8px 0;
+        .finanzas-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 14px;
         }
-        .gastos-detalle-dia .item {
-            background: var(--bg); padding: 8px 12px; border-radius: 8px; text-align: center;
+        .finanzas-card {
+            border-radius: var(--radius); padding: 14px 16px; border: 1px solid var(--borde); box-shadow: var(--shadow);
         }
-        .gastos-detalle-dia .item .cat { font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); }
-        .gastos-detalle-dia .item .monto { font-weight: 700; font-size: 0.9rem; }
+        .finanzas-card.deudas { background: var(--rojo-claro); border-left: 4px solid var(--rojo); }
+        .finanzas-card.transferencias { background: #e0f2fe; border-left: 4px solid #0369a1; }
+        .finanzas-card.ganancia { background: var(--verde-claro); border-left: 4px solid var(--verde); }
+        .finanzas-card .titulo { font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
+        .finanzas-card .total { font-size: 1.6rem; font-weight: 800; margin-top: 4px; }
+        .finanzas-card .total.rojo { color: var(--rojo); }
+        .finanzas-card .total.verde { color: var(--verde); }
+        .finanzas-card .total.azul { color: var(--azul); }
+        .finanzas-card .total.dorado { color: var(--dorado); }
+        .finanzas-card .detalle { font-size: 0.65rem; color: var(--texto-claro); margin-top: 4px; }
 
-        .toolbar {
-            display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+        .ganancia-real-box {
+            background: linear-gradient(135deg, #0a3e6d, #1a5a9e); color: white;
+            border-radius: var(--radius); padding: 16px 20px; margin-bottom: 14px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; text-align: center;
         }
-        .toolbar .btn { font-size: 0.65rem; padding: 4px 12px; }
+        .ganancia-real-box .item .label { font-size: 0.55rem; text-transform: uppercase; opacity: 0.7; }
+        .ganancia-real-box .item .valor { font-size: 1.4rem; font-weight: 800; }
+        .ganancia-real-box .item .valor.verde { color: #4ade80; }
+        .ganancia-real-box .item .valor.azul { color: #93c5fd; }
+        .ganancia-real-box .item .valor.dorado { color: #fcd34d; }
+        .ganancia-real-box .item .valor.rojo { color: #f87171; }
+        .ganancia-real-box .item .valor.morado { color: #c4b5fd; }
+
+        .factura-box {
+            background: white; border: 2px solid var(--azul); border-radius: var(--radius);
+            padding: 24px; margin: 12px 0; max-width: 800px; margin: 0 auto;
+        }
+        .factura-box .header-factura {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--azul); padding-bottom: 12px; margin-bottom: 16px;
+        }
+        .factura-box .header-factura .empresa { font-size: 1.4rem; font-weight: 800; color: var(--azul); }
+        .factura-box .header-factura .numero { font-size: 0.8rem; color: var(--texto-claro); }
+        .factura-box .cliente-info { margin-bottom: 16px; }
+        .factura-box .cliente-info .nombre { font-size: 1.1rem; font-weight: 700; }
+        .factura-box table { width: 100%; font-size: 0.8rem; }
+        .factura-box table th { background: var(--azul-claro); }
+        .factura-box .total-factura {
+            text-align: right; font-size: 1.2rem; font-weight: 800;
+            border-top: 2px solid var(--azul); padding-top: 12px; margin-top: 12px;
+        }
+        .factura-box .total-factura .monto { color: var(--azul); }
+
+        .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .toolbar .btn { font-size: 0.6rem; padding: 3px 10px; }
 
         @media (max-width: 700px) {
             .header h1 { font-size: 1.2rem; }
             .kpi-grid { grid-template-columns: 1fr 1fr; }
             .finanzas-grid { grid-template-columns: 1fr; }
             .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
-            .nav a { font-size: 0.7rem; padding: 6px 12px; }
+            .nav a { font-size: 0.65rem; padding: 5px 10px; }
             .card { padding: 14px; }
-            table { font-size: 0.7rem; }
-            th, td { padding: 6px 8px; }
-            .ganancia-real-box { grid-template-columns: 1fr 1fr; padding: 16px; }
-            .ganancia-real-box .item .valor { font-size: 1.2rem; }
-            .calendario-ganancias .dia { min-height: 40px; font-size: 0.6rem; }
-            .calendario-ganancias .dia .ganancia-dia { font-size: 0.5rem; }
-            .toolbar { gap: 4px; }
-            .toolbar .btn { font-size: 0.6rem; padding: 3px 8px; }
+            table { font-size: 0.65rem; }
+            th, td { padding: 4px 6px; }
+            .ganancia-real-box { grid-template-columns: 1fr 1fr; padding: 14px; }
+            .ganancia-real-box .item .valor { font-size: 1.1rem; }
+            .calendario-ganancias .dia { min-height: 34px; font-size: 0.55rem; }
+            .calendario-ganancias .dia .ganancia-dia { font-size: 0.45rem; }
+            .factura-box { padding: 16px; }
         }
         @media print {
             .no-print { display: none !important; }
             .header { background: var(--azul) !important; -webkit-print-color-adjust: exact; }
             .card { border: 1px solid #ccc; box-shadow: none; }
+            .factura-box { border: 2px solid #000; }
         }
 
         .debug-box {
@@ -308,58 +292,39 @@
         .debug-toggle .btn { width: auto; padding: 4px 14px; font-size: 0.7rem; }
 
         .total-gastos-dia {
-            font-size: 1.2rem; font-weight: 800; color: var(--rojo);
-            background: var(--rojo-claro); padding: 8px 16px; border-radius: 40px; display: inline-block; margin-top: 8px;
+            font-size: 1.1rem; font-weight: 800; color: var(--rojo);
+            background: var(--rojo-claro); padding: 6px 14px; border-radius: 40px; display: inline-block; margin-top: 6px;
         }
-
-        .chart-container { position: relative; height: 200px; margin-top: 12px; }
-
+        .chart-container { position: relative; height: 180px; margin-top: 10px; }
         .resumen-totales {
-            display: flex; gap: 20px; flex-wrap: wrap; padding: 12px 16px;
-            background: var(--azul-claro); border-radius: 12px; margin-bottom: 12px; font-size: 0.9rem;
+            display: flex; gap: 16px; flex-wrap: wrap; padding: 10px 14px;
+            background: var(--azul-claro); border-radius: 10px; margin-bottom: 10px; font-size: 0.85rem;
         }
         .resumen-totales .item { font-weight: 700; }
         .resumen-totales .item.ventas { color: var(--verde); }
         .resumen-totales .item.gastos { color: var(--rojo); }
         .resumen-totales .item.ganancia { color: var(--azul); }
-
         .fecha-selector-dashboard {
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-            background: var(--azul-claro); padding: 10px 16px; border-radius: 40px; margin-bottom: 16px;
+            display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+            background: var(--azul-claro); padding: 8px 14px; border-radius: 40px; margin-bottom: 14px;
         }
-        .fecha-selector-dashboard label { font-weight: 600; font-size: 0.8rem; color: var(--azul); }
+        .fecha-selector-dashboard label { font-weight: 600; font-size: 0.75rem; color: var(--azul); }
         .fecha-selector-dashboard input[type="date"] {
-            padding: 6px 12px; border-radius: 40px; border: 1px solid var(--borde);
-            font-size: 0.8rem; font-family: inherit; background: var(--white); outline: none;
+            padding: 4px 10px; border-radius: 40px; border: 1px solid var(--borde);
+            font-size: 0.75rem; font-family: inherit; background: var(--white); outline: none;
         }
         .fecha-selector-dashboard input[type="date"]:focus { border-color: var(--azul); }
-
-        .informe-gastos { background: var(--rojo-claro); padding: 8px 14px; border-radius: 8px; margin: 4px 0; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
-        .informe-gastos .categoria { font-weight: 600; }
-        .informe-gastos .monto { font-weight: 800; color: var(--rojo); }
-
-        .calendario { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 500px; margin: 0 auto; }
-        .calendario .dia {
-            background: var(--white); border: 1px solid var(--borde); border-radius: 8px;
-            padding: 8px 4px; text-align: center; font-size: 0.75rem; cursor: pointer; transition: 0.2s; position: relative;
+        .gastos-detalle-dia {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 6px; margin: 6px 0;
         }
-        .calendario .dia:hover { background: var(--azul-claro); }
-        .calendario .dia .num { font-weight: 700; font-size: 0.9rem; }
-        .calendario .dia .indicador { display: block; width: 6px; height: 6px; border-radius: 50%; margin: 2px auto 0; }
-        .calendario .dia .indicador.verde { background: var(--verde); }
-        .calendario .dia .indicador.rojo { background: var(--rojo); }
-        .calendario .dia.hoy { border-color: var(--azul); border-width: 2px; }
-        .calendario .dia.otro-mes { opacity: 0.3; }
-        .calendario .dia-header { font-weight: 600; font-size: 0.6rem; text-transform: uppercase; color: var(--texto-claro); padding: 4px 0; text-align: center; }
-
-        .scroll-table { overflow-x: auto; max-height: 400px; overflow-y: auto; }
-        .scroll-table table { min-width: 600px; }
-
-        /* ===== BOTONES DE ACCIÓN ===== */
-        .acciones-tabla {
-            display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end;
+        .gastos-detalle-dia .item {
+            background: var(--bg); padding: 6px 10px; border-radius: 6px; text-align: center;
         }
-        .acciones-tabla .btn { font-size: 0.6rem; padding: 2px 8px; }
+        .gastos-detalle-dia .item .cat { font-size: 0.55rem; text-transform: uppercase; color: var(--texto-claro); }
+        .gastos-detalle-dia .item .monto { font-weight: 700; font-size: 0.8rem; }
+
+        .scroll-table { overflow-x: auto; max-height: 350px; overflow-y: auto; }
+        .scroll-table table { min-width: 500px; }
     </style>
 </head>
 <body>
@@ -370,7 +335,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v3.3 · 01/07/2026 · 📋 Imprimir · PDF · Excel · Detalle Gastos</div>
+            <div class="version-info">v4.0 · 01/07/2026 · 🚀 Automatización Total + Facturación</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -389,7 +354,8 @@
         <a data-tab="clientes"><i class="fas fa-users"></i> Clientes</a>
         <a data-tab="informes"><i class="fas fa-file-alt"></i> Informes</a>
         <a data-tab="historial"><i class="fas fa-calendar-alt"></i> Historial</a>
-        <a data-tab="finanzas" class="dorado"><i class="fas fa-coins"></i> 💰 Finanzas</a>
+        <a data-tab="finanzas" class="dorado"><i class="fas fa-coins"></i> Finanzas</a>
+        <a data-tab="facturacion" class="whatsapp"><i class="fas fa-file-invoice"></i> Facturar</a>
     </nav>
 
     <!-- DEBUG -->
@@ -407,16 +373,16 @@
             <input type="date" id="dashboardFecha">
             <button class="btn btn-sm btn-primary" id="dashboardFechaBtn"><i class="fas fa-search"></i> Ver</button>
             <button class="btn btn-sm btn-outline" id="dashboardHoyBtn"><i class="fas fa-calendar-day"></i> Hoy</button>
-            <span style="font-size:0.7rem;color:var(--texto-claro);margin-left:auto;">Seleccioná una fecha para ver sus KPIs</span>
+            <span style="font-size:0.65rem;color:var(--texto-claro);margin-left:auto;">Seleccioná una fecha para ver sus KPIs</span>
         </div>
 
         <div class="kpi-grid" id="kpiGrid">
-            <div class="kpi"><div class="label azul">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
-            <div class="kpi"><div class="label rojo">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
-            <div class="kpi"><div class="label dorado">📦 Costo bolsas</div><div class="value neutral" id="kpiCostoBolsas">$0</div></div>
-            <div class="kpi"><div class="label verde">📈 Ganancia</div><div class="value neutral" id="kpiGanancia">$0</div></div>
-            <div class="kpi"><div class="label azul">🧊 Bolsas</div><div class="value neutral" id="kpiBolsas">0</div></div>
-            <div class="kpi"><div class="label morado">👥 Clientes</div><div class="value neutral" id="kpiClientes">0</div></div>
+            <div class="kpi"><div class="label">💰 Ventas</div><div class="value neutral" id="kpiVentas">$0</div></div>
+            <div class="kpi"><div class="label">💸 Gastos</div><div class="value negative" id="kpiGastos">$0</div></div>
+            <div class="kpi"><div class="label">📦 Costo bolsas</div><div class="value neutral" id="kpiCostoBolsas">$0</div></div>
+            <div class="kpi"><div class="label">📈 Ganancia</div><div class="value neutral" id="kpiGanancia">$0</div></div>
+            <div class="kpi"><div class="label">🧊 Bolsas</div><div class="value neutral" id="kpiBolsas">0</div></div>
+            <div class="kpi"><div class="label">👥 Clientes</div><div class="value neutral" id="kpiClientes">0</div></div>
         </div>
 
         <div class="card">
@@ -427,9 +393,7 @@
                     <button class="btn btn-sm btn-outline" onclick="copiarSeccion('chartVentas')"><i class="fas fa-copy"></i> Copiar</button>
                 </div>
             </div>
-            <div class="chart-container">
-                <canvas id="chartVentas"></canvas>
-            </div>
+            <div class="chart-container"><canvas id="chartVentas"></canvas></div>
         </div>
 
         <div class="card">
@@ -439,7 +403,6 @@
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaVentasPeriodo')"><i class="fas fa-copy"></i> Copiar</button>
                     <button class="btn btn-sm btn-success" onclick="exportarVentasPeriodoExcel()"><i class="fas fa-file-excel"></i> Excel</button>
                     <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('tablaVentasPeriodo','Ventas_Periodo')"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="btn btn-sm btn-outline" onclick="imprimirSeccion('tablaVentasPeriodo','Ventas del período')"><i class="fas fa-print"></i> Imprimir</button>
                 </div>
             </div>
             <div class="resumen-totales">
@@ -505,7 +468,6 @@
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaVentasCompleta')"><i class="fas fa-copy"></i> Copiar</button>
                     <button class="btn btn-sm btn-success" onclick="exportarVentasExcel()"><i class="fas fa-file-excel"></i> Excel</button>
                     <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('tablaVentasCompleta','Todas_las_Ventas')"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="btn btn-sm btn-outline" onclick="imprimirSeccion('tablaVentasCompleta','Todas las Ventas')"><i class="fas fa-print"></i> Imprimir</button>
                 </div>
             </div>
             <div class="filtros no-print">
@@ -554,7 +516,6 @@
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaGastos')"><i class="fas fa-copy"></i> Copiar</button>
                     <button class="btn btn-sm btn-success" onclick="exportarGastosExcel()"><i class="fas fa-file-excel"></i> Excel</button>
                     <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('tablaGastos','Gastos_registrados')"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="btn btn-sm btn-outline" onclick="imprimirSeccion('tablaGastos','Gastos registrados')"><i class="fas fa-print"></i> Imprimir</button>
                 </div>
             </div>
             <div class="filtros no-print">
@@ -611,8 +572,6 @@
                 <div class="toolbar no-print">
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaFabricas')"><i class="fas fa-copy"></i> Copiar</button>
                     <button class="btn btn-sm btn-success" onclick="exportarFabricasExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('tablaFabricas','Movimientos_Fabricas')"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="btn btn-sm btn-outline" onclick="imprimirSeccion('tablaFabricas','Movimientos de Fábricas')"><i class="fas fa-print"></i> Imprimir</button>
                 </div>
             </div>
             <div class="table-wrap">
@@ -626,10 +585,6 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📊 Resumen de existencias en fábricas</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="copiarSeccion('resumenFabricas')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('resumenFabricas','Resumen_Fabricas')"><i class="fas fa-file-pdf"></i> PDF</button>
-                </div>
             </div>
             <div id="resumenFabricas"></div>
         </div>
@@ -642,11 +597,7 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📦 Gestionar Productos</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-success" id="agregarProductoBtn"><i class="fas fa-plus"></i> Agregar producto</button>
-                    <button class="btn btn-sm btn-outline" onclick="copiarSeccion('listaProductos')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('listaProductos','Productos')"><i class="fas fa-file-pdf"></i> PDF</button>
-                </div>
+                <button class="btn btn-sm btn-success no-print" id="agregarProductoBtn"><i class="fas fa-plus"></i> Agregar producto</button>
             </div>
             <div id="listaProductos" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
             <div id="nuevoProductoForm" style="display:none;margin-top:12px;padding:12px;background:var(--bg);border-radius:12px;">
@@ -673,10 +624,7 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title dorado">💰 Costos de Productos (unitarios)</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-success" id="guardarCostosBtn"><i class="fas fa-save"></i> Guardar costos</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('costosContainer','Costos_Productos')"><i class="fas fa-file-pdf"></i> PDF</button>
-                </div>
+                <button class="btn btn-sm btn-success no-print" id="guardarCostosBtn"><i class="fas fa-save"></i> Guardar costos</button>
             </div>
             <div id="costosContainer">
                 <div class="form-row-3" id="costosGrid"></div>
@@ -714,10 +662,6 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title morado">👥 Clientes registrados</div>
-                <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaClientes')"><i class="fas fa-copy"></i> Copiar</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('listaClientes','Clientes')"><i class="fas fa-file-pdf"></i> PDF</button>
-                </div>
             </div>
             <div id="listaClientes"></div>
         </div>
@@ -730,15 +674,14 @@
         <div class="card">
             <div class="card-header">
                 <div class="card-title azul">📄 Informe Diario Resumido</div>
-                <div class="toolbar no-print" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                    <div class="fecha-selector" style="display:flex;gap:6px;align-items:center;">
-                        <label style="font-weight:600;font-size:0.8rem;">📅 Fecha:</label>
-                        <input type="date" id="informeFecha" style="padding:6px 12px;border-radius:40px;border:1px solid var(--borde);font-size:0.8rem;">
+                <div class="toolbar no-print">
+                    <div class="fecha-selector" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        <label style="font-weight:600;font-size:0.75rem;">📅 Fecha:</label>
+                        <input type="date" id="informeFecha" style="padding:4px 10px;border-radius:40px;border:1px solid var(--borde);font-size:0.75rem;">
                         <button class="btn btn-sm btn-primary" onclick="generarInformeDiario()"><i class="fas fa-file-alt"></i> Generar</button>
                         <button class="btn btn-sm btn-success" onclick="exportarInformeExcel()"><i class="fas fa-file-excel"></i> Excel</button>
                         <button class="btn btn-sm btn-danger" onclick="exportarInformePDF()"><i class="fas fa-file-pdf"></i> PDF</button>
-                        <button class="btn btn-sm btn-outline" onclick="imprimirSeccion('informeDiarioContainer','Informe Diario')"><i class="fas fa-print"></i> Imprimir</button>
-                        <button class="btn btn-sm btn-success" onclick="guardarInformeHistorial()"><i class="fas fa-save"></i> Guardar</button>
+                        <button class="btn btn-sm btn-dorado" onclick="guardarInformeHistorial()"><i class="fas fa-save"></i> Guardar</button>
                     </div>
                 </div>
             </div>
@@ -754,15 +697,14 @@
             <div class="card-header">
                 <div class="card-title azul">📅 Historial de Informes Diarios</div>
                 <div class="toolbar no-print">
-                    <button class="btn btn-sm btn-danger" onclick="limpiarHistorial()"><i class="fas fa-trash"></i> Limpiar historial</button>
+                    <button class="btn btn-sm btn-danger" onclick="limpiarHistorial()"><i class="fas fa-trash"></i> Limpiar</button>
                     <button class="btn btn-sm btn-success" onclick="exportarHistorialExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('calendarioContainer','Historial_Informes')"><i class="fas fa-file-pdf"></i> PDF</button>
                 </div>
             </div>
             <div id="calendarioContainer" style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
                     <button class="btn btn-sm btn-outline" id="mesAnterior"><i class="fas fa-chevron-left"></i> Anterior</button>
-                    <span id="mesActual" style="font-weight:700;font-size:1.1rem;"></span>
+                    <span id="mesActual" style="font-weight:700;font-size:1rem;"></span>
                     <button class="btn btn-sm btn-outline" id="mesSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
                 </div>
                 <div id="calendarioGrid" class="calendario"></div>
@@ -772,8 +714,6 @@
                     <div class="card-title azul">📋 Informe del día seleccionado</div>
                     <div class="toolbar no-print">
                         <button class="btn btn-sm btn-outline" onclick="copiarInformeSeleccionado()"><i class="fas fa-copy"></i> Copiar</button>
-                        <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('historialDetalleContainer','Informe_Seleccionado')"><i class="fas fa-file-pdf"></i> PDF</button>
-                        <button class="btn btn-sm btn-outline" onclick="imprimirSeccion('historialDetalleContainer','Informe del día')"><i class="fas fa-print"></i> Imprimir</button>
                     </div>
                 </div>
                 <div id="historialDetalleContainer"></div>
@@ -782,11 +722,10 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: FINANZAS (CORREGIDO) -->
+    <!-- TAB: FINANZAS (AUTOMATIZADO) -->
     <!-- ============================================================ -->
     <div id="tab-finanzas" class="tab-content">
 
-        <!-- Resumen -->
         <div class="finanzas-grid">
             <div class="finanzas-card deudas">
                 <div class="titulo"><i class="fas fa-hand-holding-usd" style="color:var(--rojo);"></i> 💰 Deudas Activas</div>
@@ -805,75 +744,42 @@
             </div>
         </div>
 
-        <!-- Ganancia Real Total -->
         <div class="ganancia-real-box" id="gananciaRealBox">
-            <div class="item">
-                <div class="label">💵 Efectivo Cobrado</div>
-                <div class="valor verde" id="gananciaEfectivo">$0</div>
-            </div>
-            <div class="item">
-                <div class="label">💳 Transferencias Cobradas</div>
-                <div class="valor azul" id="gananciaTransferencias">$0</div>
-            </div>
-            <div class="item">
-                <div class="label">📘 Deuda (Pendiente)</div>
-                <div class="valor dorado" id="gananciaDeuda">$0</div>
-            </div>
-            <div class="item">
-                <div class="label">📈 Ganancia Neta Real</div>
-                <div class="valor morado" id="gananciaNetaReal">$0</div>
-            </div>
-            <div class="item no-print" style="grid-column:1/-1;text-align:right;font-size:0.6rem;opacity:0.5;">
-                <button class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="exportarSeccionPDF('gananciaRealBox','Ganancia_Real')"><i class="fas fa-file-pdf"></i> PDF</button>
-                <button class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="imprimirSeccion('gananciaRealBox','Ganancia Real')"><i class="fas fa-print"></i> Imprimir</button>
-            </div>
+            <div class="item"><div class="label">💵 Efectivo Cobrado</div><div class="valor verde" id="gananciaEfectivo">$0</div></div>
+            <div class="item"><div class="label">💳 Transferencias Cobradas</div><div class="valor azul" id="gananciaTransferencias">$0</div></div>
+            <div class="item"><div class="label">📘 Deuda (Pendiente)</div><div class="valor dorado" id="gananciaDeuda">$0</div></div>
+            <div class="item"><div class="label">📈 Ganancia Neta Real</div><div class="valor morado" id="gananciaNetaReal">$0</div></div>
         </div>
 
-        <!-- Tabla por cliente -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title dorado">📊 Detalle de Ganancia Real por Cliente</div>
                 <div class="toolbar no-print">
                     <button class="btn btn-sm btn-outline" onclick="copiarTabla('tablaGananciaCliente')"><i class="fas fa-copy"></i> Copiar</button>
                     <button class="btn btn-sm btn-success" onclick="exportarGananciaClienteExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('tablaGananciaCliente','Ganancia_Cliente')"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="btn btn-sm btn-outline" onclick="imprimirSeccion('tablaGananciaCliente','Ganancia por Cliente')"><i class="fas fa-print"></i> Imprimir</button>
                 </div>
             </div>
             <div class="table-wrap scroll-table">
                 <table id="tablaGananciaCliente">
                     <thead>
-                        <tr>
-                            <th>Cliente</th>
-                            <th>💰 Total Ventas</th>
-                            <th>📦 Costo</th>
-                            <th>📈 Ganancia Bruta</th>
-                            <th>💵 Efectivo</th>
-                            <th>💳 Transfer.</th>
-                            <th>📘 Deuda</th>
-                            <th>🔴 Cobros</th>
-                            <th>📊 Ganancia Real</th>
-                        </tr>
+                        <tr><th>Cliente</th><th>💰 Ventas</th><th>📦 Costo</th><th>📈 Ganancia Bruta</th><th>💵 Efectivo</th><th>💳 Transfer.</th><th>📘 Deuda</th><th>🔴 Cobros</th><th>📊 Ganancia Real</th></tr>
                     </thead>
                     <tbody id="tbodyGananciaCliente"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- CALENDARIO DE GANANCIAS -->
         <div class="card">
             <div class="card-header">
                 <div class="card-title morado">📅 Calendario de Ganancias</div>
                 <div class="toolbar no-print">
                     <button class="btn btn-sm btn-success" onclick="exportarGananciaCalendarioExcel()"><i class="fas fa-file-excel"></i> Excel</button>
                     <button class="btn btn-sm btn-dorado" onclick="calcularAcumulados()"><i class="fas fa-calculator"></i> Actualizar</button>
-                    <button class="btn btn-sm btn-danger" onclick="exportarSeccionPDF('calendarioGananciaContainer','Calendario_Ganancias')"><i class="fas fa-file-pdf"></i> PDF</button>
                 </div>
             </div>
             
-            <!-- Selector -->
-            <div class="filtros no-print" style="margin-bottom:12px;">
-                <label style="font-weight:600;font-size:0.8rem;">📅 Ver:</label>
+            <div class="filtros no-print" style="margin-bottom:10px;">
+                <label style="font-weight:600;font-size:0.75rem;">📅 Ver:</label>
                 <select id="periodoGanancia" style="width:auto;">
                     <option value="dia">Día</option>
                     <option value="semana" selected>Semana</option>
@@ -885,45 +791,94 @@
                 <button class="btn btn-sm btn-outline" id="hoyGanancia"><i class="fas fa-calendar-day"></i> Hoy</button>
             </div>
 
-            <!-- Rango -->
             <div class="rango-fechas" id="rangoFechasGanancia">
                 📅 Mostrando: <span id="fechaInicioGanancia">-</span> al <span id="fechaFinGanancia">-</span>
             </div>
 
-            <!-- Calendario -->
             <div class="calendario-container" id="calendarioGananciaContainer">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
                     <button class="btn btn-sm btn-outline" id="mesGananciaAnterior"><i class="fas fa-chevron-left"></i> Anterior</button>
-                    <span id="mesGananciaActual" style="font-weight:700;font-size:1.1rem;"></span>
+                    <span id="mesGananciaActual" style="font-weight:700;font-size:1rem;"></span>
                     <button class="btn btn-sm btn-outline" id="mesGananciaSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
                 </div>
                 <div id="calendarioGananciaGrid" class="calendario-ganancias"></div>
             </div>
 
-            <!-- Detalle del día -->
             <div id="detalleDiaGanancia" class="detalle-dia-ganancia" style="display:none;">
                 <div class="fecha" id="detalleDiaFecha">📅 Fecha</div>
                 <div class="monto" id="detalleDiaMonto">$0</div>
                 <div style="font-size:0.7rem;color:var(--texto-claro);" id="detalleDiaInfo">Sin información</div>
             </div>
 
-            <!-- ACUMULADOS -->
             <div class="acumulados-grid" id="acumuladosGrid">
-                <div class="acumulado-item" id="acumuladoHoyItem">
-                    <div class="label">📅 Hoy</div>
-                    <div class="valor verde" id="acumuladoHoy">$0</div>
+                <div class="acumulado-item"><div class="label">📅 Hoy</div><div class="valor verde" id="acumuladoHoy">$0</div></div>
+                <div class="acumulado-item"><div class="label">📊 Esta Semana</div><div class="valor azul" id="acumuladoSemana">$0</div></div>
+                <div class="acumulado-item"><div class="label">📈 Este Mes</div><div class="valor dorado" id="acumuladoMes">$0</div></div>
+                <div class="acumulado-item"><div class="label">📅 Este Año</div><div class="valor morado" id="acumuladoAnio">$0</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB: FACTURACIÓN (NUEVO) -->
+    <!-- ============================================================ -->
+    <div id="tab-facturacion" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title verde"><i class="fas fa-file-invoice"></i> 🧾 Facturar por Cliente</div>
+                <div class="toolbar no-print">
+                    <button class="btn btn-sm btn-success" onclick="imprimirFactura()"><i class="fas fa-print"></i> Imprimir</button>
+                    <button class="btn btn-sm btn-whatsapp" onclick="enviarFacturaWhatsApp()"><i class="fas fa-whatsapp"></i> WhatsApp</button>
+                    <button class="btn btn-sm btn-email" onclick="enviarFacturaEmail()"><i class="fas fa-envelope"></i> Email</button>
+                    <button class="btn btn-sm btn-dorado" onclick="exportarFacturaPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
                 </div>
-                <div class="acumulado-item" id="acumuladoSemanaItem">
-                    <div class="label">📊 Esta Semana</div>
-                    <div class="valor azul" id="acumuladoSemana">$0</div>
+            </div>
+            
+            <div class="filtros no-print">
+                <div class="form-group" style="min-width:200px;">
+                    <label>👤 Seleccionar Cliente</label>
+                    <select id="facturaCliente"></select>
                 </div>
-                <div class="acumulado-item" id="acumuladoMesItem">
-                    <div class="label">📈 Este Mes</div>
-                    <div class="valor dorado" id="acumuladoMes">$0</div>
+                <div class="form-group" style="min-width:150px;">
+                    <label>📅 Desde</label>
+                    <input type="date" id="facturaFechaDesde">
                 </div>
-                <div class="acumulado-item" id="acumuladoAnioItem">
-                    <div class="label">📅 Este Año</div>
-                    <div class="valor morado" id="acumuladoAnio">$0</div>
+                <div class="form-group" style="min-width:150px;">
+                    <label>📅 Hasta</label>
+                    <input type="date" id="facturaFechaHasta">
+                </div>
+                <div class="form-group" style="display:flex;align-items:flex-end;">
+                    <button class="btn btn-primary" id="generarFacturaBtn"><i class="fas fa-file-invoice"></i> Generar Factura</button>
+                </div>
+            </div>
+
+            <div id="facturaContainer">
+                <div class="factura-box" id="facturaBox" style="display:none;">
+                    <div class="header-factura">
+                        <div class="empresa">🧊 MYC HIELO</div>
+                        <div class="numero">Factura N°: <span id="facturaNumero">001</span></div>
+                    </div>
+                    <div class="cliente-info">
+                        <div class="nombre">Cliente: <span id="facturaClienteNombre">-</span></div>
+                        <div style="font-size:0.8rem;color:var(--texto-claro);">Período: <span id="facturaPeriodo">-</span></div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Fecha</th><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Total</th></tr></thead>
+                            <tbody id="facturaDetalleBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="total-factura">
+                        <span>Total a Pagar: </span>
+                        <span class="monto" id="facturaTotal">$0</span>
+                    </div>
+                    <div style="font-size:0.7rem;color:var(--texto-claro);text-align:center;margin-top:8px;">
+                        * Este comprobante no es fiscal · Generado el <span id="facturaFechaEmision"></span>
+                    </div>
+                </div>
+                <div id="facturaVacia" style="text-align:center;padding:40px;color:var(--texto-claro);">
+                    <i class="fas fa-file-invoice" style="font-size:3rem;opacity:0.3;"></i>
+                    <p>Seleccioná un cliente y período para generar la factura</p>
                 </div>
             </div>
         </div>
@@ -939,7 +894,7 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v3.3-20260701";
+const VERSION = "v4.0-20260701";
 console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
@@ -961,6 +916,7 @@ let dashboardFecha = hoy();
 let mesGanancia = new Date();
 let gananciasCalendario = {};
 let diaSeleccionadoGanancia = null;
+let facturaNumero = 1;
 
 // ============================================================
 //  UTILIDADES
@@ -1018,36 +974,16 @@ function copiarSeccion(id) {
     }
 }
 
-function imprimirSeccion(id, titulo) {
-    const el = document.getElementById(id);
-    if (!el) { toast('❌ No se encontró la sección'); return; }
-    const ventana = window.open('', '_blank');
-    const estilos = document.querySelector('style').innerHTML;
-    ventana.document.write(`
-        <html><head><title>MYC HIELO - ${titulo}</title>
-        <style>${estilos} body { padding: 20px; background: white; } .no-print { display: none !important; }</style>
-        </head><body>
-        <h2 style="color:#0f2a6e;">🧊 MYC HIELO - ${titulo}</h2>
-        <p style="color:#64748b;">${new Date().toLocaleString('es-AR')}</p>
-        <hr>
-        ${el.outerHTML}
-        </body></html>
-    `);
-    ventana.document.close();
-    setTimeout(() => { ventana.print(); ventana.close(); }, 500);
-}
-
 function exportarSeccionPDF(id, nombre) {
     const el = document.getElementById(id);
     if (!el) { toast('❌ No se encontró la sección'); return; }
     const elemento = el.cloneNode(true);
-    // Eliminar botones de impresión
     elemento.querySelectorAll('.no-print, .btn, button').forEach(b => b.remove());
     
     const opt = {
-        margin: 10,
+        margin: 8,
         filename: `${nombre}_${hoy()}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
@@ -1126,21 +1062,18 @@ async function apiCall(ruta, params = {}, method = 'GET') {
         for (const [key, value] of Object.entries(params)) { url.searchParams.append(key, value); }
     }
     try {
-        mostrarDebug(`Llamando a API: ${ruta}`);
         const res = await fetch(url.toString(), options);
         const data = await res.json();
-        mostrarDebug(`Respuesta de ${ruta}: ${JSON.stringify(data).substring(0, 150)}...`);
         return data;
     } catch(e) {
         console.error('API Error:', e);
-        mostrarDebug(`ERROR en ${ruta}: ${e.message}`);
         toast('Error de conexión con la API');
         return { error: 'Error de conexión' };
     }
 }
 
 // ============================================================
-//  CARGA DE DATOS
+//  CARGA DE DATOS (AUTOMÁTICA)
 // ============================================================
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
@@ -1186,7 +1119,6 @@ async function cargarDatos() {
         }
 
         cargarFabricasLocal();
-        mostrarDebug(`Fábricas cargadas desde localStorage: ${fabricas.length}`);
 
         const prodGuardados = localStorage.getItem('myc_productos');
         if (prodGuardados) { productos = JSON.parse(prodGuardados); } else {
@@ -1208,14 +1140,54 @@ async function cargarDatos() {
         cargarHistorial();
         cargarGananciasCalendario();
 
+        // AUTOMÁTICO: Cargar ganancias desde ventas existentes
+        cargarGananciasDesdeVentas();
+
         actualizarUI();
-        toast('Datos sincronizados');
+        toast('✅ Datos sincronizados automáticamente');
         mostrarDebug('✅ Carga de datos completada');
     } catch(e) {
         console.error('Error al cargar datos:', e);
-        mostrarDebug('❌ ERROR: ' + e.message);
         toast('Error al sincronizar');
     }
+}
+
+// ============================================================
+//  🔥 AUTOMÁTICO: Cargar ganancias desde ventas existentes
+// ============================================================
+function cargarGananciasDesdeVentas() {
+    const ventasPorFecha = {};
+    for (const v of ventas) {
+        if (!ventasPorFecha[v.fecha]) { ventasPorFecha[v.fecha] = []; }
+        ventasPorFecha[v.fecha].push(v);
+    }
+    
+    let cargadas = 0;
+    for (const [fecha, ventasDia] of Object.entries(ventasPorFecha)) {
+        const totalVentas = ventasDia.reduce((acc, v) => acc + (v.total || 0), 0);
+        let totalCosto = 0;
+        const clavesMap = { "1.7": "1.7", "3.5": "3.5", "14": "14", "20": "20", "32": "32" };
+        for (const v of ventasDia) {
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            const cant = v.cantidades || [];
+            for (let i = 0; i < claves.length; i++) {
+                const clave = clavesMap[claves[i]] || claves[i];
+                totalCosto += (cant[i] || 0) * (costos[clave] || 0);
+            }
+        }
+        const gastosDia = gastos.filter(g => g.fecha === fecha);
+        const totalGastos = gastosDia.reduce((acc, g) => acc + (g.monto || 0), 0);
+        const ganancia = totalVentas - totalCosto - totalGastos;
+        
+        if (!gananciasCalendario[fecha]) {
+            gananciasCalendario[fecha] = { ganancia: 0 };
+        }
+        gananciasCalendario[fecha].ganancia = ganancia;
+        cargadas++;
+    }
+    
+    guardarGananciasCalendario();
+    mostrarDebug(`✅ Ganancias cargadas automáticamente: ${cargadas} días`);
 }
 
 // ============================================================
@@ -1295,7 +1267,7 @@ function guardarInformeHistorial() {
     const idx = historial.findIndex(h => h.fecha === fecha);
     if (idx !== -1) { historial[idx] = informe; } else { historial.push(informe); }
     guardarHistorial();
-    toast(`✅ Informe del ${formatearFecha(fecha)} guardado en el historial`);
+    toast(`✅ Informe del ${formatearFecha(fecha)} guardado`);
     renderCalendario();
     renderCalendarioGanancias();
     renderFinanzas();
@@ -1307,7 +1279,7 @@ function eliminarInformeHistorial(fecha) {
     historial = historial.filter(h => h.fecha !== fecha);
     guardarHistorial();
     renderCalendario();
-    toast('Informe eliminado del historial');
+    toast('Informe eliminado');
 }
 
 function limpiarHistorial() {
@@ -1325,30 +1297,30 @@ function verInformeHistorial(fecha) {
     if (!informe) {
         container.innerHTML = `
             <div style="text-align:center;padding:20px;color:var(--texto-claro);">
-                <p>No hay informe guardado para el ${formatearFecha(fecha)}</p>
-                <button class="btn btn-sm btn-primary" onclick="generarYGuardarInforme('${fecha}')">Generar y guardar ahora</button>
+                <p>No hay informe para el ${formatearFecha(fecha)}</p>
+                <button class="btn btn-sm btn-primary" onclick="generarYGuardarInforme('${fecha}')">Generar y guardar</button>
             </div>
         `;
         return;
     }
 
     let html = `
-        <div style="background:var(--azul-claro);padding:16px;border-radius:12px;margin-bottom:16px;">
+        <div style="background:var(--azul-claro);padding:14px;border-radius:10px;margin-bottom:14px;">
             <h3 style="color:var(--azul);">🧊 MYC HIELO · Informe Diario</h3>
             <p style="color:var(--texto-claro);">${formatearFecha(informe.fecha)}</p>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px;">
             <div><strong>💰 Ventas</strong><br>${pesos(informe.ventas)}</div>
             <div><strong>💸 Gastos</strong><br>${pesos(informe.gastos)}</div>
             <div><strong>📦 Costo bolsas</strong><br>${pesos(informe.costoBolsas)}</div>
             <div><strong>📈 Ganancia</strong><br><span style="color:${informe.ganancia>=0?'var(--verde)':'var(--rojo)'};font-weight:800;">${pesos(informe.ganancia)}</span></div>
             <div><strong>👥 Clientes</strong><br>${informe.clientes}</div>
-            <div><strong>🧊 Bolsas vendidas</strong><br>${informe.bolsasVendidas}</div>
+            <div><strong>🧊 Bolsas</strong><br>${informe.bolsasVendidas}</div>
         </div>
     `;
 
     if (informe.detalleVentas && informe.detalleVentas.length > 0) {
-        html += `<div style="border-top:1px solid var(--borde);padding-top:12px;"><strong>Detalle de ventas:</strong><ul style="list-style:none;padding:0;margin-top:8px;">`;
+        html += `<div style="border-top:1px solid var(--borde);padding-top:10px;"><strong>Detalle de ventas:</strong><ul style="list-style:none;padding:0;margin-top:6px;">`;
         for (const v of informe.detalleVentas) {
             html += `<li>${v.cliente} · ${v.cantidades} · ${pesos(v.total)} (${v.pago})</li>`;
         }
@@ -1356,7 +1328,7 @@ function verInformeHistorial(fecha) {
     }
 
     if (informe.detalleGastos && informe.detalleGastos.length > 0) {
-        html += `<div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;"><strong>Gastos:</strong><ul style="list-style:none;padding:0;margin-top:8px;">`;
+        html += `<div style="border-top:1px solid var(--borde);padding-top:10px;margin-top:10px;"><strong>Gastos:</strong><ul style="list-style:none;padding:0;margin-top:6px;">`;
         for (const g of informe.detalleGastos) {
             html += `<li>${g.categoria} · ${pesos(g.monto)} · ${g.nota || ''}</li>`;
         }
@@ -1364,7 +1336,7 @@ function verInformeHistorial(fecha) {
     }
 
     html += `
-        <div class="no-print" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="no-print" style="margin-top:14px;display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn btn-sm btn-danger" onclick="eliminarInformeHistorial('${fecha}')"><i class="fas fa-trash"></i> Eliminar</button>
             <button class="btn btn-sm btn-success" onclick="exportarInformeHistorialExcel('${fecha}')"><i class="fas fa-file-excel"></i> Excel</button>
         </div>
@@ -1382,12 +1354,12 @@ function generarYGuardarInforme(fecha) {
 function copiarInformeSeleccionado() {
     const container = document.getElementById('historialDetalleContainer');
     const texto = container.textContent.trim();
-    if (texto) { navigator.clipboard.writeText(texto).then(() => toast('✅ Informe copiado')); }
+    if (texto) { navigator.clipboard.writeText(texto).then(() => toast('✅ Copiado')); }
 }
 
 function exportarInformeHistorialExcel(fecha) {
     const informe = obtenerInformeHistorial(fecha);
-    if (!informe) { toast('No hay informe para esa fecha'); return; }
+    if (!informe) { toast('No hay informe'); return; }
     const data = [
         ['MYC HIELO · Informe Diario', formatearFecha(fecha)],
         [], ['Ventas', informe.ventas], ['Gastos', informe.gastos],
@@ -1411,7 +1383,7 @@ function exportarInformeHistorialExcel(fecha) {
 }
 
 function exportarHistorialExcel() {
-    if (historial.length === 0) { toast('No hay informes guardados'); return; }
+    if (historial.length === 0) { toast('No hay informes'); return; }
     const data = [
         ['MYC HIELO · Historial de Informes'],
         [],
@@ -1489,7 +1461,7 @@ function renderCalendario() {
     if (diaSeleccionado) { verInformeHistorial(diaSeleccionado); } else {
         const informeHoy = obtenerInformeHistorial(hoyStr);
         if (informeHoy) { verInformeHistorial(hoyStr); } else {
-            document.getElementById('historialDetalleContainer').innerHTML = '<p style="color:var(--texto-claro);text-align:center;padding:20px;">Seleccione un día del calendario para ver el informe</p>';
+            document.getElementById('historialDetalleContainer').innerHTML = '<p style="color:var(--texto-claro);text-align:center;padding:20px;">Seleccione un día del calendario</p>';
         }
     }
 }
@@ -1505,7 +1477,7 @@ function renderGastos() {
 
     const tbody = document.getElementById('tbodyGastos');
     if (filtrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos registrados</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos</td></tr>';
     } else {
         tbody.innerHTML = filtrados.map(g => `
             <tr>
@@ -1532,9 +1504,7 @@ async function registrarGasto() {
 
     if (!fecha || !monto || monto <= 0) return toast('Complete campos');
 
-    const result = await apiCall('guardarGasto', {
-        fecha, chofer: '', categoria, monto, nota
-    }, 'POST');
+    const result = await apiCall('guardarGasto', { fecha, chofer: '', categoria, monto, nota }, 'POST');
 
     if (result && result.exito) {
         toast('✅ Gasto registrado');
@@ -1559,9 +1529,7 @@ async function eliminarGasto(id) {
 
 function exportarGastosExcel() {
     const data = [['Fecha', 'Categoría', 'Monto', 'Nota']];
-    for (const g of gastos) {
-        data.push([g.fecha, g.categoria || '', g.monto || 0, g.nota || '']);
-    }
+    for (const g of gastos) { data.push([g.fecha, g.categoria || '', g.monto || 0, g.nota || '']); }
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
@@ -1585,7 +1553,7 @@ function renderFabricas() {
     const tbody = document.getElementById('tbodyFabricas');
     if (!tbody) return;
     if (fabricas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Sin movimientos de fábricas</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-claro);">Sin movimientos</td></tr>';
     } else {
         const ordenadas = [...fabricas].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
         tbody.innerHTML = ordenadas.map(f => `
@@ -1611,12 +1579,12 @@ function renderFabricas() {
     if (!cont) return;
     const entries = Object.entries(resumen);
     if (entries.length === 0) {
-        cont.innerHTML = '<p style="color:var(--texto-claro);">Sin datos para resumen</p>';
+        cont.innerHTML = '<p style="color:var(--texto-claro);">Sin datos</p>';
     } else {
         cont.innerHTML = entries.map(([key, val]) => {
             const [fabrica, tipo] = key.split('|');
             const saldo = val.cargada - val.devuelta;
-            return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;">
+            return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;">
                 <span><strong>${fabrica}</strong> · ${tipo}</span>
                 <span>Cargadas: <strong style="color:var(--verde);">${val.cargada}</strong> | Devueltas: <strong style="color:var(--rojo);">${val.devuelta}</strong> | Saldo: <strong style="color:${saldo>=0?'var(--verde)':'var(--rojo)'};">${saldo}</strong></span>
             </div>`;
@@ -1638,7 +1606,7 @@ async function registrarFabrica() {
     const nuevo = { id: 'f' + Date.now(), fecha, fabrica, tipo, cargada, devuelta };
     fabricas.push(nuevo);
     guardarFabricasLocal();
-    toast('Registro de fábrica guardado localmente');
+    toast('Registro guardado');
     document.getElementById('fCargada').value = 0;
     document.getElementById('fDevuelta').value = 0;
     renderFabricas();
@@ -1656,9 +1624,7 @@ function eliminarFabricaLocal(id) {
 function exportarFabricasExcel() {
     cargarFabricasLocal();
     const data = [['Fecha', 'Fábrica', 'Tipo', 'Cargada', 'Devuelta']];
-    for (const f of fabricas) {
-        data.push([f.fecha, f.fabrica || '', f.tipo || '', f.cargada || 0, f.devuelta || 0]);
-    }
+    for (const f of fabricas) { data.push([f.fecha, f.fabrica || '', f.tipo || '', f.cargada || 0, f.devuelta || 0]); }
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(data);
     XLSX.utils.book_append_sheet(wb, ws, 'Fabricas');
@@ -1736,7 +1702,7 @@ function renderTablaVentasPeriodo(desde, hasta) {
 
     const tbody = document.getElementById('tbodyVentasPeriodo');
     if (ventasFiltradas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin ventas en este período</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin ventas</td></tr>';
     } else {
         tbody.innerHTML = ventasFiltradas.slice().reverse().map(v => `
             <tr>
@@ -1815,7 +1781,7 @@ function renderVentas() {
 
     const tbody = document.getElementById('tbodyVentasCompleta');
     if (filtradas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--texto-claro);">Sin ventas registradas</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--texto-claro);">Sin ventas</td></tr>';
         return;
     }
     tbody.innerHTML = filtradas.map(v => `
@@ -1957,14 +1923,14 @@ function exportarVentasPeriodoExcel() {
 function renderProductos() {
     const container = document.getElementById('listaProductos');
     if (!productos.length) {
-        container.innerHTML = '<p style="color:var(--texto-claro);">No hay productos registrados</p>';
+        container.innerHTML = '<p style="color:var(--texto-claro);">No hay productos</p>';
         return;
     }
     container.innerHTML = productos.map(p => `
-        <div class="tag" style="display:inline-flex;align-items:center;gap:8px;background:var(--azul-claro);padding:8px 14px;border-radius:40px;margin:4px;">
+        <div class="tag" style="display:inline-flex;align-items:center;gap:8px;background:var(--azul-claro);padding:6px 12px;border-radius:40px;margin:4px;">
             <strong>${p.nombre}</strong>
-            <span style="font-size:0.7rem;color:var(--texto-claro);">Costo: ${pesos(p.costo)}</span>
-            <span style="font-size:0.7rem;color:var(--verde);">Precio: ${pesos(p.precio)}</span>
+            <span style="font-size:0.65rem;color:var(--texto-claro);">Costo: ${pesos(p.costo)}</span>
+            <span style="font-size:0.65rem;color:var(--verde);">Precio: ${pesos(p.precio)}</span>
             <button onclick="editarProducto('${p.clave}')" style="background:none;border:none;color:var(--azul);cursor:pointer;">✏️</button>
             <button onclick="eliminarProducto('${p.clave}')" style="background:none;border:none;color:var(--rojo);cursor:pointer;font-weight:bold;">✖</button>
         </div>
@@ -1991,7 +1957,7 @@ function guardarNuevoProducto() {
 
     if (!nombre || !clave) return toast('Complete nombre y clave');
     if (costo <= 0) return toast('Ingrese un costo válido');
-    if (productos.some(p => p.clave === clave)) return toast('Ya existe un producto con esa clave');
+    if (productos.some(p => p.clave === clave)) return toast('Ya existe');
 
     productos.push({ clave, nombre, costo, precio: precio || costo * 1.5 });
     guardarProductosLocal();
@@ -2060,16 +2026,15 @@ function calcularPreciosSugeridos() {
     const container = document.getElementById('preciosSugeridos');
     const labels = {};
     for (const p of productos) { labels[p.clave] = p.nombre; }
-    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px;">';
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px;">';
     for (const [key, costo] of Object.entries(costos)) {
         const sugerido = costo * (1 + margen / 100);
         const nombre = labels[key] || key;
         html += `
-            <div style="background:var(--azul-claro);padding:12px;border-radius:12px;text-align:center;">
+            <div style="background:var(--azul-claro);padding:10px;border-radius:10px;text-align:center;">
                 <div style="font-weight:700;">${nombre}</div>
-                <div style="font-size:0.8rem;color:var(--texto-claro);">Costo: ${pesos(costo)}</div>
-                <div style="font-size:1rem;font-weight:800;color:var(--azul);">Sugerido: ${pesos(Math.round(sugerido))}</div>
-                <div style="font-size:0.7rem;color:var(--texto-claro);">+${margen}%</div>
+                <div style="font-size:0.75rem;color:var(--texto-claro);">Costo: ${pesos(costo)}</div>
+                <div style="font-size:0.9rem;font-weight:800;color:var(--azul);">Sugerido: ${pesos(Math.round(sugerido))}</div>
             </div>
         `;
     }
@@ -2090,7 +2055,7 @@ function guardarProductosLocal() {
 function renderClientes() {
     const container = document.getElementById('listaClientes');
     if (!clientes.length) {
-        container.innerHTML = '<p style="color:var(--texto-claro);">Sin clientes registrados</p>';
+        container.innerHTML = '<p style="color:var(--texto-claro);">Sin clientes</p>';
         return;
     }
     container.innerHTML = clientes.map(c => `
@@ -2116,7 +2081,7 @@ async function agregarCliente() {
 }
 
 async function eliminarCliente(nombre) {
-    if (!confirm(`¿Eliminar cliente "${nombre}" y todos sus movimientos?`)) return;
+    if (!confirm(`¿Eliminar cliente "${nombre}"?`)) return;
     const result = await apiCall('eliminarCliente', { nombre }, 'POST');
     if (result && result.exito) {
         toast('Cliente eliminado');
@@ -2159,43 +2124,42 @@ function generarInformeDiario() {
     const clientesDia = new Set(ventasDia.map(v => v.cliente).filter(Boolean));
 
     let html = `
-        <div style="background:var(--azul-claro);padding:16px;border-radius:12px;margin-bottom:16px;">
+        <div style="background:var(--azul-claro);padding:14px;border-radius:10px;margin-bottom:14px;">
             <h3 style="color:var(--azul);">🧊 MYC HIELO · Informe Diario</h3>
             <p style="color:var(--texto-claro);">${formatearFecha(fechaStr)}</p>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px;">
             <div><strong>💰 Ventas</strong><br>${pesos(totalVentas)}</div>
             <div><strong>💸 Gastos</strong><br>${pesos(totalGastos)}</div>
             <div><strong>📦 Costo bolsas</strong><br>${pesos(totalCosto)}</div>
             <div><strong>📈 Ganancia</strong><br><span style="color:${ganancia>=0?'var(--verde)':'var(--rojo)'};font-weight:800;">${pesos(ganancia)}</span></div>
             <div><strong>👥 Clientes</strong><br>${clientesDia.size}</div>
-            <div><strong>🧊 Bolsas vendidas</strong><br>${ventasDia.reduce((acc,v) => acc + (v.cantidades||[]).reduce((a,b) => a + (b||0), 0), 0)}</div>
+            <div><strong>🧊 Bolsas</strong><br>${ventasDia.reduce((acc,v) => acc + (v.cantidades||[]).reduce((a,b) => a + (b||0), 0), 0)}</div>
         </div>
     `;
 
-    // 🔥 DETALLE DE GASTOS POR DÍA (Nafta, Choferes, Otros)
     if (gastosDia.length > 0) {
         const nafta = gastosDia.filter(g => g.categoria === 'Nafta').reduce((acc, g) => acc + g.monto, 0);
         const choferes = gastosDia.filter(g => g.categoria === 'Chofer').reduce((acc, g) => acc + g.monto, 0);
         const otros = gastosDia.filter(g => g.categoria !== 'Nafta' && g.categoria !== 'Chofer').reduce((acc, g) => acc + g.monto, 0);
         
         html += `
-        <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
+        <div style="border-top:1px solid var(--borde);padding-top:10px;margin-top:10px;">
             <strong>💸 Detalle de gastos del día:</strong>
             <div class="gastos-detalle-dia">
                 <div class="item"><div class="cat">⛽ Nafta</div><div class="monto">${pesos(nafta)}</div></div>
                 <div class="item"><div class="cat">👨‍✈️ Choferes</div><div class="monto">${pesos(choferes)}</div></div>
                 <div class="item"><div class="cat">📦 Otros</div><div class="monto">${pesos(otros)}</div></div>
-                <div class="item" style="background:var(--rojo-claro);"><div class="cat">💰 TOTAL GASTOS</div><div class="monto" style="color:var(--rojo);">${pesos(totalGastos)}</div></div>
+                <div class="item" style="background:var(--rojo-claro);"><div class="cat">💰 TOTAL</div><div class="monto" style="color:var(--rojo);">${pesos(totalGastos)}</div></div>
             </div>
         </div>`;
     }
 
     if (ventasDia.length > 0) {
         html += `
-        <div style="border-top:1px solid var(--borde);padding-top:12px;margin-top:12px;">
+        <div style="border-top:1px solid var(--borde);padding-top:10px;margin-top:10px;">
             <strong>Detalle de ventas:</strong>
-            <ul style="list-style:none;padding:0;margin-top:8px;">
+            <ul style="list-style:none;padding:0;margin-top:6px;">
         `;
         for (const v of ventasDia) {
             const detalle = v.cantidades ? v.cantidades.map((q, i) => {
@@ -2257,7 +2221,7 @@ function exportarInformeExcel() {
 }
 
 // ============================================================
-//  FINANZAS
+//  FINANZAS (AUTOMATIZADO)
 // ============================================================
 function renderFinanzas() {
     const deudasPorCliente = {};
@@ -2324,17 +2288,17 @@ function renderFinanzas() {
     const deudores = Object.entries(deudasPorCliente).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     document.getElementById('detalleDeudas').textContent = deudores.length > 0 
         ? `${deudores.length} clientes · ${deudores.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v)}`).join(' · ')}`
-        : '🎉 Sin deudas pendientes';
+        : '🎉 Sin deudas';
 
     const transfer = Object.entries(transferenciasPorCliente).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     document.getElementById('detalleTransferencias').textContent = transfer.length > 0 
         ? `${transfer.length} clientes · ${transfer.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v)}`).join(' · ')}`
-        : 'Sin transferencias registradas';
+        : 'Sin transferencias';
 
     const gananciaTop = Object.entries(gananciaPorCliente).filter(([, v]) => v.gananciaReal > 0).sort((a, b) => b[1].gananciaReal - a[1].gananciaReal);
     document.getElementById('detalleGananciaCliente').textContent = gananciaTop.length > 0 
         ? `${gananciaTop.length} clientes · ${gananciaTop.slice(0, 3).map(([c, v]) => `${c}: ${pesos(v.gananciaReal)}`).join(' · ')}`
-        : 'Sin ganancias registradas';
+        : 'Sin ganancias';
 
     const gananciaNetaReal = totalEfectivo + totalTransferencias + totalCobros - Object.values(gananciaPorCliente).reduce((acc, v) => acc + v.costo, 0);
     document.getElementById('gananciaEfectivo').textContent = pesos(totalEfectivo);
@@ -2352,7 +2316,7 @@ function renderTablaGananciaCliente(gananciaPorCliente) {
     const sorted = Object.entries(gananciaPorCliente).filter(([, v]) => v.ventas > 0 || v.gananciaReal > 0).sort((a, b) => b[1].gananciaReal - a[1].gananciaReal);
 
     if (sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin datos de ganancia</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin datos</td></tr>';
         return;
     }
 
@@ -2513,27 +2477,25 @@ function mostrarDetalleDiaGanancia(fecha) {
     document.getElementById('detalleDiaFecha').textContent = `📅 ${fechaCompleta}`;
     document.getElementById('detalleDiaMonto').textContent = `${pesos(ganancia)}`;
     document.getElementById('detalleDiaMonto').className = `monto ${color}`;
-    document.getElementById('detalleDiaInfo').textContent = ganancia !== 0 ? `Ganancia del día ${fechaStr}` : 'Sin movimiento registrado';
+    document.getElementById('detalleDiaInfo').textContent = ganancia !== 0 ? `Ganancia del día ${fechaStr}` : 'Sin movimiento';
     
     container.style.display = 'block';
 }
 
 // ============================================================
-//  🚀 ACUMULADOS - CORREGIDO
+//  ACUMULADOS
 // ============================================================
 function calcularAcumulados() {
-    console.log('🔄 Calculando acumulados...');
-    
     const hoyStr = hoy();
     
-    // 🔥 1. GANANCIA DE HOY
+    // Hoy
     let gananciaHoy = 0;
     if (gananciasCalendario[hoyStr]) {
         gananciaHoy = gananciasCalendario[hoyStr].ganancia || 0;
     }
     document.getElementById('acumuladoHoy').textContent = pesos(gananciaHoy);
     
-    // 🔥 2. GANANCIA DE LA SEMANA (últimos 7 días)
+    // Semana (últimos 7 días)
     let gananciaSemana = 0;
     for (let i = 0; i < 7; i++) {
         const d = new Date();
@@ -2545,7 +2507,7 @@ function calcularAcumulados() {
     }
     document.getElementById('acumuladoSemana').textContent = pesos(gananciaSemana);
     
-    // 🔥 3. GANANCIA DEL MES ACTUAL
+    // Mes actual
     let gananciaMes = 0;
     const mesActualStr = hoyStr.slice(0, 7);
     for (const [fecha, data] of Object.entries(gananciasCalendario)) {
@@ -2555,7 +2517,7 @@ function calcularAcumulados() {
     }
     document.getElementById('acumuladoMes').textContent = pesos(gananciaMes);
     
-    // 🔥 4. GANANCIA DEL AÑO ACTUAL (CORREGIDO: gananciaAnio)
+    // Año actual
     let gananciaAnio = 0;
     const anioActual = hoyStr.slice(0, 4);
     for (const [fecha, data] of Object.entries(gananciasCalendario)) {
@@ -2564,13 +2526,6 @@ function calcularAcumulados() {
         }
     }
     document.getElementById('acumuladoAnio').textContent = pesos(gananciaAnio);
-    
-    console.log('✅ Acumulados calculados:', {
-        hoy: gananciaHoy,
-        semana: gananciaSemana,
-        mes: gananciaMes,
-        anio: gananciaAnio
-    });
 }
 
 function exportarGananciaCalendarioExcel() {
@@ -2589,6 +2544,148 @@ function exportarGananciaCalendarioExcel() {
 }
 
 // ============================================================
+//  FACTURACIÓN
+// ============================================================
+function cargarClientesFactura() {
+    const select = document.getElementById('facturaCliente');
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccionar cliente...</option>';
+    for (const c of clientes.sort()) {
+        select.innerHTML += `<option value="${c}">${c}</option>`;
+    }
+}
+
+function generarFactura() {
+    const cliente = document.getElementById('facturaCliente').value;
+    const desde = document.getElementById('facturaFechaDesde').value;
+    const hasta = document.getElementById('facturaFechaHasta').value;
+
+    if (!cliente) { toast('Seleccione un cliente'); return; }
+    if (!desde || !hasta) { toast('Seleccione el período'); return; }
+
+    const ventasCliente = ventas.filter(v => 
+        v.cliente === cliente && 
+        v.fecha >= desde && 
+        v.fecha <= hasta &&
+        v.total > 0
+    ).sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+    if (ventasCliente.length === 0) {
+        toast('❌ No hay ventas para este cliente en el período');
+        document.getElementById('facturaBox').style.display = 'none';
+        document.getElementById('facturaVacia').style.display = 'block';
+        return;
+    }
+
+    // Mostrar factura
+    document.getElementById('facturaBox').style.display = 'block';
+    document.getElementById('facturaVacia').style.display = 'none';
+
+    // Número de factura
+    facturaNumero++;
+    document.getElementById('facturaNumero').textContent = String(facturaNumero).padStart(3, '0');
+    document.getElementById('facturaClienteNombre').textContent = cliente;
+    document.getElementById('facturaPeriodo').textContent = `${formatearFecha(desde)} al ${formatearFecha(hasta)}`;
+    document.getElementById('facturaFechaEmision').textContent = formatearFechaCompleta(hoy());
+
+    // Detalle
+    let totalFactura = 0;
+    let html = '';
+    for (const v of ventasCliente) {
+        const detalle = v.cantidades ? v.cantidades.map((q, i) => {
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            return q > 0 ? `${claves[i]}kg:${q}` : null;
+        }).filter(Boolean).join(' · ') : 'sin detalle';
+        // Calcular precio por cantidad (para mostrar)
+        const cantTotal = (v.cantidades || []).reduce((a, b) => a + (b || 0), 0);
+        const precioUnitario = cantTotal > 0 ? Math.round(v.total / cantTotal) : 0;
+        html += `
+            <tr>
+                <td>${formatearFecha(v.fecha)}</td>
+                <td>${detalle}</td>
+                <td>${cantTotal}</td>
+                <td>${pesos(precioUnitario)}</td>
+                <td>${pesos(v.total)}</td>
+            </tr>
+        `;
+        totalFactura += v.total || 0;
+    }
+
+    document.getElementById('facturaDetalleBody').innerHTML = html;
+    document.getElementById('facturaTotal').textContent = pesos(totalFactura);
+
+    toast('✅ Factura generada');
+}
+
+function imprimirFactura() {
+    const factura = document.getElementById('facturaBox');
+    if (factura.style.display === 'none') { toast('Primero genere una factura'); return; }
+    const ventana = window.open('', '_blank');
+    const estilos = document.querySelector('style').innerHTML;
+    ventana.document.write(`
+        <html><head><title>Factura MYC HIELO</title>
+        <style>${estilos} body { padding: 40px; background: white; } .no-print { display: none !important; } .factura-box { border: 2px solid #000; box-shadow: none; }</style>
+        </head><body>
+        ${document.getElementById('facturaBox').outerHTML}
+        </body></html>
+    `);
+    ventana.document.close();
+    setTimeout(() => { ventana.print(); ventana.close(); }, 500);
+}
+
+function enviarFacturaWhatsApp() {
+    const cliente = document.getElementById('facturaCliente').value;
+    const total = document.getElementById('facturaTotal').textContent;
+    if (!cliente || total === '$0') { toast('Primero genere una factura'); return; }
+    const mensaje = `🧊 *MYC HIELO* - Factura para ${cliente}
+Total: ${total}
+Período: ${document.getElementById('facturaPeriodo').textContent}
+Generado: ${document.getElementById('facturaFechaEmision').textContent}
+Factura N°: ${document.getElementById('facturaNumero').textContent}
+
+*Gracias por confiar en MYC HIELO* 🧊`;
+    const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, '_blank');
+}
+
+function enviarFacturaEmail() {
+    const cliente = document.getElementById('facturaCliente').value;
+    const total = document.getElementById('facturaTotal').textContent;
+    if (!cliente || total === '$0') { toast('Primero genere una factura'); return; }
+    const asunto = `Factura MYC HIELO - ${cliente}`;
+    const cuerpo = `🧊 MYC HIELO - Factura para ${cliente}
+Total: ${total}
+Período: ${document.getElementById('facturaPeriodo').textContent}
+Factura N°: ${document.getElementById('facturaNumero').textContent}
+Generado: ${document.getElementById('facturaFechaEmision').textContent}
+
+Gracias por confiar en MYC HIELO 🧊`;
+    const url = `mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+    window.open(url, '_blank');
+}
+
+function exportarFacturaPDF() {
+    const factura = document.getElementById('facturaBox');
+    if (factura.style.display === 'none') { toast('Primero genere una factura'); return; }
+    const elemento = factura.cloneNode(true);
+    elemento.style.border = '2px solid #000';
+    elemento.style.boxShadow = 'none';
+    const opt = {
+        margin: 10,
+        filename: `Factura_${document.getElementById('facturaClienteNombre').textContent}_${hoy()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    toast('📄 Generando PDF de factura...');
+    html2pdf().set(opt).from(elemento).save().then(() => {
+        toast('✅ PDF de factura generado');
+    }).catch(() => {
+        toast('❌ Error al generar PDF');
+    });
+}
+
+// ============================================================
 //  ACTUALIZAR UI
 // ============================================================
 function actualizarUI() {
@@ -2604,6 +2701,7 @@ function actualizarUI() {
     renderCalendarioGanancias();
     renderFinanzas();
     generarInformeDiario();
+    cargarClientesFactura();
     setTimeout(() => calcularAcumulados(), 200);
 }
 
@@ -2634,6 +2732,7 @@ document.querySelectorAll('.nav a').forEach(el => {
         if (tab === 'informes') generarInformeDiario();
         if (tab === 'historial') renderCalendario();
         if (tab === 'finanzas') { renderFinanzas(); renderCalendarioGanancias(); }
+        if (tab === 'facturacion') { cargarClientesFactura(); }
     });
 });
 
@@ -2651,6 +2750,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const fechaGanancia = document.getElementById('fechaGanancia');
     if (fechaGanancia) fechaGanancia.value = hoy();
+
+    // Fechas de facturación por defecto (últimos 30 días)
+    const facturaDesde = document.getElementById('facturaFechaDesde');
+    const facturaHasta = document.getElementById('facturaFechaHasta');
+    if (facturaDesde) {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        facturaDesde.value = d.toISOString().slice(0,10);
+    }
+    if (facturaHasta) facturaHasta.value = hoy();
 
     document.getElementById('syncBtn').addEventListener('click', cargarDatos);
 
@@ -2671,12 +2780,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('dashboardFechaBtn').addEventListener('click', function() {
         const fecha = document.getElementById('dashboardFecha').value;
-        if (fecha) {
-            dashboardFecha = fecha;
-            renderDashboard(fecha);
-        } else {
-            toast('Seleccione una fecha');
-        }
+        if (fecha) { dashboardFecha = fecha; renderDashboard(fecha); } else { toast('Seleccione una fecha'); }
     });
     document.getElementById('dashboardHoyBtn').addEventListener('click', function() {
         document.getElementById('dashboardFecha').value = hoy();
@@ -2684,10 +2788,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderDashboard(hoy());
     });
     document.getElementById('dashboardFecha').addEventListener('change', function() {
-        if (this.value) {
-            dashboardFecha = this.value;
-            renderDashboard(this.value);
-        }
+        if (this.value) { dashboardFecha = this.value; renderDashboard(this.value); }
     });
 
     document.getElementById('btnRegistrarVenta').addEventListener('click', registrarVenta);
@@ -2717,6 +2818,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('informeFecha').addEventListener('change', generarInformeDiario);
 
+    // Calendario de informes
     document.getElementById('mesAnterior').addEventListener('click', function() {
         mesActual.setMonth(mesActual.getMonth() - 1);
         renderCalendario();
@@ -2726,7 +2828,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCalendario();
     });
 
-    // CALENDARIO DE GANANCIAS
+    // Calendario de ganancias
     document.getElementById('mesGananciaAnterior').addEventListener('click', function() {
         mesGanancia.setMonth(mesGanancia.getMonth() - 1);
         diaSeleccionadoGanancia = null;
@@ -2748,7 +2850,7 @@ document.addEventListener('DOMContentLoaded', function() {
             diaSeleccionadoGanancia = fecha;
             renderCalendarioGanancias();
             setTimeout(() => calcularAcumulados(), 100);
-            toast(`📅 Mostrando ${meses[d.getMonth()]} ${d.getFullYear()}`);
+            toast(`📅 Mostrando ${['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][d.getMonth()]} ${d.getFullYear()}`);
         } else {
             toast('Seleccione una fecha');
         }
@@ -2775,16 +2877,15 @@ document.addEventListener('DOMContentLoaded', function() {
         toast('✅ Acumulados actualizados');
     });
 
+    // Facturación
+    document.getElementById('generarFacturaBtn').addEventListener('click', generarFactura);
+
     cargarDatos();
 });
 
 // Variables globales
-const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
-// Funciones globales
 window.copiarTabla = copiarTabla;
 window.copiarSeccion = copiarSeccion;
-window.imprimirSeccion = imprimirSeccion;
 window.exportarSeccionPDF = exportarSeccionPDF;
 window.eliminarVenta = eliminarVenta;
 window.eliminarGasto = eliminarGasto;
@@ -2815,6 +2916,11 @@ window.calcularAcumulados = calcularAcumulados;
 window.renderFinanzas = renderFinanzas;
 window.renderCalendarioGanancias = renderCalendarioGanancias;
 window.seleccionarDiaGanancia = seleccionarDiaGanancia;
+window.generarFactura = generarFactura;
+window.imprimirFactura = imprimirFactura;
+window.enviarFacturaWhatsApp = enviarFacturaWhatsApp;
+window.enviarFacturaEmail = enviarFacturaEmail;
+window.exportarFacturaPDF = exportarFacturaPDF;
 </script>
 </body>
 </html>
