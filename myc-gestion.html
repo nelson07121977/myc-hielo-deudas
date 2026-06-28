@@ -384,6 +384,15 @@
             margin-bottom: 8px;
         }
         .debug-toggle .btn { width: auto; padding: 4px 14px; font-size: 0.7rem; }
+        
+        /* ===== CACHE BUSTER ===== */
+        .version-info {
+            font-size: 0.6rem;
+            color: var(--texto-claro);
+            text-align: right;
+            margin-top: 4px;
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
@@ -394,6 +403,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
+            <div class="version-info" id="versionInfo">v2.0 · 30/06/2026</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -764,6 +774,8 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
+const VERSION = "v2.0-20260630";
+console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
 //  ESTADO GLOBAL
@@ -841,6 +853,58 @@ function mostrarDebug(msg) {
 }
 
 // ============================================================
+//  INICIALIZAR COSTOS POR DEFECTO (si no existen)
+// ============================================================
+function inicializarCostos() {
+    const costosDefault = {
+        "1.7": 1000,
+        "3.5": 1500,
+        "14": 4000,
+        "20": 4500,
+        "32": 6000
+    };
+    
+    const costosGuardados = localStorage.getItem('myc_costos');
+    if (!costosGuardados) {
+        localStorage.setItem('myc_costos', JSON.stringify(costosDefault));
+        localStorage.setItem('myc_costos_globales', JSON.stringify(costosDefault));
+        console.log('✅ Costos por defecto inicializados:', costosDefault);
+    } else {
+        try {
+            const parsed = JSON.parse(costosGuardados);
+            // Verificar que todas las claves existan
+            let actualizado = false;
+            for (const [key, val] of Object.entries(costosDefault)) {
+                if (parsed[key] === undefined) {
+                    parsed[key] = val;
+                    actualizado = true;
+                }
+            }
+            if (actualizado) {
+                localStorage.setItem('myc_costos', JSON.stringify(parsed));
+                localStorage.setItem('myc_costos_globales', JSON.stringify(parsed));
+                console.log('✅ Costos actualizados:', parsed);
+            }
+        } catch(e) {
+            localStorage.setItem('myc_costos', JSON.stringify(costosDefault));
+            localStorage.setItem('myc_costos_globales', JSON.stringify(costosDefault));
+        }
+    }
+    
+    // Cargar costos en memoria
+    const stored = localStorage.getItem('myc_costos');
+    if (stored) {
+        try {
+            costos = JSON.parse(stored);
+        } catch(e) {
+            costos = { ...costosDefault };
+        }
+    } else {
+        costos = { ...costosDefault };
+    }
+}
+
+// ============================================================
 //  API CALLS
 // ============================================================
 async function apiCall(ruta, params = {}, method = 'GET') {
@@ -879,6 +943,9 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
+        // Inicializar costos primero
+        inicializarCostos();
+        
         const clientesData = await apiCall('clientes');
         if (clientesData && Array.isArray(clientesData)) {
             clientes = clientesData.map(c => normalizarNombre(c)).filter(Boolean);
@@ -934,13 +1001,13 @@ async function cargarDatos() {
             localStorage.setItem('myc_productos', JSON.stringify(productos));
         }
 
-        const costosGuardados = localStorage.getItem('myc_costos');
-        if (costosGuardados) {
-            try { costos = JSON.parse(costosGuardados); } catch(e) {}
-        }
+        // Asegurar que costos esté sincronizado con productos
         for (const p of productos) {
-            if (costos[p.clave] === undefined) costos[p.clave] = p.costo || 0;
+            if (costos[p.clave] === undefined) {
+                costos[p.clave] = p.costo || 1000;
+            }
         }
+        localStorage.setItem('myc_costos', JSON.stringify(costos));
 
         cargarHistorial();
 
@@ -1852,6 +1919,7 @@ function guardarProductosLocal() {
     localStorage.setItem('myc_productos', JSON.stringify(productos));
     for (const p of productos) { costos[p.clave] = p.costo || 0; }
     localStorage.setItem('myc_costos', JSON.stringify(costos));
+    localStorage.setItem('myc_costos_globales', JSON.stringify(costos));
 }
 
 // ============================================================
@@ -2076,6 +2144,9 @@ document.querySelectorAll('.nav a').forEach(el => {
 //  EVENTOS
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
+    // Mostrar versión
+    document.getElementById('versionInfo').textContent = VERSION + ' · ' + hoy();
+    
     document.getElementById('vFecha').value = hoy();
     document.getElementById('gFecha').value = hoy();
     document.getElementById('fFecha').value = hoy();
