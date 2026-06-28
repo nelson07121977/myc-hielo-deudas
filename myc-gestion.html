@@ -374,7 +374,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v4.9 · 01/07/2026 · 🧾 CORREGIDO</div>
+            <div class="version-info">v5.0 · 01/07/2026 · 🔥 VERSIÓN FINAL</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -466,7 +466,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: VENTAS -->
+    <!-- TAB: VENTAS (MISMO QUE ANTES) -->
     <!-- ============================================================ -->
     <div id="tab-ventas" class="tab-content">
         <div class="card">
@@ -862,7 +862,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- TAB: FACTURACIÓN (CON TODOS LOS ELEMENTOS) -->
+    <!-- TAB: FACTURACIÓN (SIMPLIFICADA) -->
     <!-- ============================================================ -->
     <div id="tab-facturacion" class="tab-content">
         <div class="card">
@@ -880,14 +880,6 @@
                 <div class="form-group" style="min-width:200px;">
                     <label>👤 Seleccionar Cliente</label>
                     <select id="facturaCliente"></select>
-                </div>
-                <div class="form-group" style="min-width:150px;">
-                    <label>📅 Desde</label>
-                    <input type="date" id="facturaFechaDesde">
-                </div>
-                <div class="form-group" style="min-width:150px;">
-                    <label>📅 Hasta</label>
-                    <input type="date" id="facturaFechaHasta">
                 </div>
                 <div class="form-group" style="display:flex;align-items:flex-end;">
                     <button class="btn btn-primary" id="generarFacturaBtn"><i class="fas fa-file-invoice"></i> Generar Factura</button>
@@ -929,7 +921,7 @@
                 </div>
                 <div id="facturaVacia" style="text-align:center;padding:40px;color:var(--texto-claro);">
                     <i class="fas fa-file-invoice" style="font-size:3rem;opacity:0.3;"></i>
-                    <p>Seleccioná un cliente y período para generar la factura</p>
+                    <p>Seleccioná un cliente y generá la factura</p>
                 </div>
             </div>
         </div>
@@ -945,7 +937,7 @@
 //  CONFIGURACIÓN
 // ============================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v4.9-20260701";
+const VERSION = "v5.0-20260701";
 console.log("🧊 MYC HIELO · Versión:", VERSION);
 
 // ============================================================
@@ -1828,7 +1820,7 @@ function guardarNuevoProducto() {
 }
 
 // ============================================================
-//  🔥 FINANZAS - CORREGIDO: AHORA SUMAN LOS COBROS
+//  🔥 FINANZAS - CORREGIDO
 // ============================================================
 function renderFinanzas() {
     const deudasPorCliente = {};
@@ -1876,7 +1868,6 @@ function renderFinanzas() {
             totalDeudas += v.total || 0;
             deudasPorCliente[cliente] = (deudasPorCliente[cliente] || 0) + (v.total || 0);
         } else if (v.pago === 'cobrocc') {
-            // 🔥 COBRO DE DEUDA - SE SUMA A COBROS Y SE RESTA DE LA DEUDA
             gananciaPorCliente[cliente].cobros += v.total || 0;
             totalCobros += v.total || 0;
             deudasPorCliente[cliente] = Math.max(0, (deudasPorCliente[cliente] || 0) - (v.total || 0));
@@ -2618,16 +2609,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const fechaGanancia = document.getElementById('fechaGanancia');
     if (fechaGanancia) fechaGanancia.value = hoy();
 
-    // 🔥 FACTURACIÓN - Elementos existen en el HTML
-    const facturaDesde = document.getElementById('facturaFechaDesde');
-    const facturaHasta = document.getElementById('facturaFechaHasta');
-    if (facturaDesde) {
-        facturaDesde.value = '2020-01-01';
-    }
-    if (facturaHasta) {
-        facturaHasta.value = hoy();
-    }
-
     // Eventos
     document.getElementById('syncBtn').addEventListener('click', cargarDatos);
 
@@ -2749,7 +2730,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-//  🔥 FACTURACIÓN (CORREGIDA)
+//  🔥 FACTURACIÓN (SIMPLIFICADA Y CORREGIDA)
 // ============================================================
 function cargarClientesFactura() {
     const select = document.getElementById('facturaCliente');
@@ -2762,11 +2743,8 @@ function cargarClientesFactura() {
 
 function generarFactura() {
     const cliente = document.getElementById('facturaCliente').value;
-    const desde = document.getElementById('facturaFechaDesde').value;
-    const hasta = document.getElementById('facturaFechaHasta').value;
 
     if (!cliente) { toast('Seleccione un cliente'); return; }
-    if (!desde || !hasta) { toast('Seleccione el período'); return; }
 
     // 🔥 OBTENER TODAS LAS DEUDAS DEL CLIENTE (SIN IMPORTAR FECHA)
     const todasLasDeudas = ventas.filter(v => 
@@ -2774,6 +2752,14 @@ function generarFactura() {
         (v.pago === 'ctacte' || v.pago === 'deuda')
     );
     const deudaTotalReal = todasLasDeudas.reduce((acc, v) => acc + (v.total || 0), 0);
+
+    // Si no hay deudas
+    if (deudaTotalReal === 0) {
+        toast('❌ Este cliente no tiene deudas');
+        document.getElementById('facturaBox').style.display = 'none';
+        document.getElementById('facturaVacia').style.display = 'block';
+        return;
+    }
 
     // 🔥 DESGLOSE DE DEUDAS
     const deudasDetalle = {};
@@ -2789,14 +2775,6 @@ function generarFactura() {
         deudasDetalle[v.fecha].cantidades.push(detalle);
     }
 
-    // Si no hay deudas
-    if (deudaTotalReal === 0) {
-        toast('❌ Este cliente no tiene deudas');
-        document.getElementById('facturaBox').style.display = 'none';
-        document.getElementById('facturaVacia').style.display = 'block';
-        return;
-    }
-
     // Mostrar factura
     document.getElementById('facturaBox').style.display = 'block';
     document.getElementById('facturaVacia').style.display = 'none';
@@ -2804,7 +2782,7 @@ function generarFactura() {
     facturaNumero++;
     document.getElementById('facturaNumero').textContent = String(facturaNumero).padStart(3, '0');
     document.getElementById('facturaClienteNombre').textContent = cliente;
-    document.getElementById('facturaPeriodo').textContent = `${formatearFecha(desde)} al ${formatearFecha(hasta)}`;
+    document.getElementById('facturaPeriodo').textContent = 'Todas las fechas';
     document.getElementById('facturaFechaEmision').textContent = formatearFechaCompleta(hoy());
 
     // MOSTRAR DEUDA TOTAL REAL
@@ -2815,7 +2793,7 @@ function generarFactura() {
     let desgloseHtml = '';
     const fechasDeuda = Object.keys(deudasDetalle).sort();
     if (fechasDeuda.length > 0) {
-        desgloseHtml = '<div style="font-size:0.7rem;color:var(--texto-claro);margin-top:4px;border-top:1px dashed var(--borde);padding-top:6px;">';
+        desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
         desgloseHtml += '<strong>📋 Todas las deudas del cliente:</strong><br>';
         let totalMostrado = 0;
         for (const fecha of fechasDeuda) {
@@ -2826,8 +2804,6 @@ function generarFactura() {
         }
         desgloseHtml += `<strong>💰 Total deudas: ${pesos(totalMostrado)}</strong>`;
         desgloseHtml += '</div>';
-    } else {
-        desgloseHtml = '<div style="font-size:0.7rem;color:var(--texto-claro);">🎉 No hay deudas registradas</div>';
     }
     document.getElementById('facturaDesgloseDeudas').innerHTML = desgloseHtml;
 
@@ -2889,7 +2865,7 @@ function enviarFacturaWhatsApp() {
     if (!cliente || total === '$0') { toast('Primero genere una factura'); return; }
     const mensaje = `🧊 *MYC HIELO* - Factura para ${cliente}
 Total a Pagar: ${total}
-Período: ${document.getElementById('facturaPeriodo').textContent}
+Período: Todas las fechas
 Factura N°: ${document.getElementById('facturaNumero').textContent}
 
 *Gracias por confiar en MYC HIELO* 🧊`;
@@ -2904,7 +2880,7 @@ function enviarFacturaEmail() {
     const asunto = `Factura MYC HIELO - ${cliente}`;
     const cuerpo = `🧊 MYC HIELO - Factura para ${cliente}
 Total a Pagar: ${total}
-Período: ${document.getElementById('facturaPeriodo').textContent}
+Período: Todas las fechas
 Factura N°: ${document.getElementById('facturaNumero').textContent}
 
 Gracias por confiar en MYC HIELO 🧊`;
