@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO · Gestión Integral (v6.8.3 FINANZAS)</title>
+    <title>MYC HIELO · Gestión Integral (v6.8.4 FINANZAS)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* ===== ESTILOS (igual que antes, no los repito para no alargar) ===== */
+        /* ===== ESTILOS (igual que antes) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -375,7 +375,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v6.8.3 · FACTURACIÓN CORREGIDA (saldo total histórico) · 28/06/2026</div>
+            <div class="version-info">v6.8.4 · FACTURACIÓN CORREGIDA (agrupa deudas sin productos) · 28/06/2026</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -836,10 +836,10 @@
 
 <script>
 // ======================================================================
-//  CONFIGURACIÓN Y UTILIDADES
+//  CONFIGURACIÓN Y UTILIDADES (igual que antes)
 // ======================================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v6.8.3-facturacion";
+const VERSION = "v6.8.4-facturacion";
 
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
@@ -1967,7 +1967,7 @@ function exportarGananciaCalendarioExcel() {
 }
 
 // ======================================================================
-//  🔥 FACTURACIÓN CORREGIDA (saldo total histórico)
+//  🔥 FACTURACIÓN CORREGIDA (agrupa deudas sin productos)
 // ======================================================================
 function generarFactura() {
     const cliente = document.getElementById('facturaCliente').value;
@@ -1994,11 +1994,28 @@ function generarFactura() {
     const totalPagos = pagosTotales.reduce((acc, v) => acc + (v.total || 0), 0);
     const saldoNeto = totalDeudas - totalPagos;
 
-    // === 4. Deudas y pagos del PERÍODO seleccionado (para el detalle) ===
+    // === 4. Deudas y pagos del PERÍODO seleccionado ===
     const deudasPeriodo = deudasTotales.filter(v => v.fecha >= desde && v.fecha <= hasta);
     const pagosPeriodo = pagosTotales.filter(v => v.fecha >= desde && v.fecha <= hasta);
 
-    const totalDeudasPeriodo = deudasPeriodo.reduce((acc, v) => acc + (v.total || 0), 0);
+    // Separar deudas con productos y sin productos
+    const deudasConProductos = deudasPeriodo.filter(v => tieneProductos(v));
+    const deudasSinProductos = deudasPeriodo.filter(v => !tieneProductos(v));
+
+    // Agrupar deudas sin productos por fecha
+    const deudasSinProductosAgrupadas = {};
+    for (const v of deudasSinProductos) {
+        if (!deudasSinProductosAgrupadas[v.fecha]) {
+            deudasSinProductosAgrupadas[v.fecha] = { total: 0, items: [] };
+        }
+        deudasSinProductosAgrupadas[v.fecha].total += v.total || 0;
+        deudasSinProductosAgrupadas[v.fecha].items.push(v.detalle || 'Deuda registrada');
+    }
+
+    // Total de deudas del período
+    const totalDeudasPeriodo = deudasConProductos.reduce((acc, v) => acc + (v.total || 0), 0) +
+                               Object.values(deudasSinProductosAgrupadas).reduce((acc, grupo) => acc + grupo.total, 0);
+
     const totalPagosPeriodo = pagosPeriodo.reduce((acc, v) => acc + (v.total || 0), 0);
 
     // === 5. Mostrar factura ===
@@ -2017,22 +2034,32 @@ function generarFactura() {
     // === 6. Desglose detallado ===
     let desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
 
-    if (deudasPeriodo.length > 0) {
+    if (deudasConProductos.length > 0 || Object.keys(deudasSinProductosAgrupadas).length > 0) {
         desgloseHtml += '<strong>📋 Deudas del período:</strong><br>';
-        const deudasAgrupadas = {};
-        for (const v of deudasPeriodo.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
-            if (!deudasAgrupadas[v.fecha]) deudasAgrupadas[v.fecha] = { total: 0, items: [] };
-            deudasAgrupadas[v.fecha].total += v.total || 0;
+
+        // Deudas con productos
+        const deudasConProductosAgrupadas = {};
+        for (const v of deudasConProductos.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
+            if (!deudasConProductosAgrupadas[v.fecha]) {
+                deudasConProductosAgrupadas[v.fecha] = { total: 0, items: [] };
+            }
+            deudasConProductosAgrupadas[v.fecha].total += v.total || 0;
             const detalle = v.cantidades ? v.cantidades.map((q, i) => {
                 const claves = ["1.7", "3.5", "14", "20", "32"];
                 return q > 0 ? `${claves[i]}kg:${q}` : null;
             }).filter(Boolean).join(' · ') : 'sin detalle';
-            deudasAgrupadas[v.fecha].items.push(detalle);
+            deudasConProductosAgrupadas[v.fecha].items.push(detalle);
         }
-        for (const [fecha, info] of Object.entries(deudasAgrupadas)) {
-            const itemsStr = info.items.length > 0 ? info.items.join(' · ') : 'sin detalle';
+        for (const [fecha, info] of Object.entries(deudasConProductosAgrupadas)) {
+            const itemsStr = info.items.join(' · ');
             desgloseHtml += `📅 ${formatearFecha(fecha)}: ${pesos(info.total)} (${itemsStr})<br>`;
         }
+
+        // Deudas sin productos agrupadas
+        for (const [fecha, grupo] of Object.entries(deudasSinProductosAgrupadas)) {
+            desgloseHtml += `📅 ${formatearFecha(fecha)}: ${pesos(grupo.total)} (Deuda registrada)<br>`;
+        }
+
         desgloseHtml += `<strong>💰 Total deudas del período: ${pesos(totalDeudasPeriodo)}</strong>`;
     } else {
         desgloseHtml += 'No hay deudas en el período.<br>';
@@ -2067,7 +2094,9 @@ function generarFactura() {
 
     // === 7. Tabla de detalle ===
     let html = '';
-    for (const v of deudasPeriodo.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
+
+    // Deudas con productos
+    for (const v of deudasConProductos.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
         const detalle = v.cantidades ? v.cantidades.map((q, i) => {
             const claves = ["1.7", "3.5", "14", "20", "32"];
             return q > 0 ? `${claves[i]}kg:${q}` : null;
@@ -2076,16 +2105,24 @@ function generarFactura() {
         const precioUnitario = cantTotal > 0 ? Math.round(v.total / cantTotal) : 0;
         html += `<tr><td>${formatearFecha(v.fecha)}</td><td>${detalle}</td><td>${cantTotal}</td><td>${pesos(precioUnitario)}</td><td>${pesos(v.total)}</td></tr>`;
     }
+
+    // Deudas sin productos agrupadas
+    for (const [fecha, grupo] of Object.entries(deudasSinProductosAgrupadas).sort((a,b) => a[0].localeCompare(b[0]))) {
+        html += `<tr><td>${formatearFecha(fecha)}</td><td>Deuda registrada</td><td>—</td><td>—</td><td>${pesos(grupo.total)}</td></tr>`;
+    }
+
+    // Pagos
     for (const v of pagosPeriodo.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
         const label = v.pago === 'cobrocc' ? '🔄 Cobro de deuda' : '💳 Transferencia (pago)';
         html += `<tr style="color:var(--verde);"><td>${formatearFecha(v.fecha)}</td><td>${label}</td><td>—</td><td>—</td><td style="color:var(--verde);">-${pesos(v.total)}</td></tr>`;
     }
-    if (deudasPeriodo.length === 0 && pagosPeriodo.length === 0) {
+
+    if (deudasConProductos.length === 0 && Object.keys(deudasSinProductosAgrupadas).length === 0 && pagosPeriodo.length === 0) {
         html += `<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin movimientos en el período</td></tr>`;
     }
     document.getElementById('facturaDetalleBody').innerHTML = html;
 
-    // === 8. Total a pagar (SALDO NETO TOTAL) ===
+    // === 8. Total a pagar ===
     document.getElementById('facturaTotal').textContent = pesos(saldoNeto);
     toast(`✅ Factura generada: ${cliente} saldo total ${pesos(saldoNeto)}`);
 }
