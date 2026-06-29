@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO · Gestión Integral (v6.8.6 FINAL)</title>
+    <title>MYC HIELO · Gestión Integral (v6.8.7 FINAL)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -375,7 +375,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v6.8.6 · FACTURACIÓN FINAL (sin duplicar deudas) · 28/06/2026</div>
+            <div class="version-info">v6.8.7 · FACTURACIÓN CON SALDO REAL (desde movimientos) · 28/06/2026</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -839,7 +839,7 @@
 //  CONFIGURACIÓN Y UTILIDADES
 // ======================================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v6.8.6-final";
+const VERSION = "v6.8.7-final";
 
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
@@ -1020,7 +1020,7 @@ async function apiCall(ruta, params = {}, method = 'GET') {
 }
 
 // ======================================================================
-//  CARGA DE DATOS (CORREGIDA: solo convertimos pagos, no deudas)
+//  CARGA DE DATOS
 // ======================================================================
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
@@ -1068,7 +1068,7 @@ async function cargarDatos() {
                 detalle: m.detalle || ''
             }));
             mostrarDebug(`Movimientos cargados: ${movimientos.length}`);
-            // 🔥 SOLO CONVERTIR PAGOS (NO DEUDAS)
+            // Convertir movimientos de pago a ventas (para el detalle de la factura)
             for (const m of movimientos) {
                 if (m.tipo === 'pago') {
                     let pagoNormalizado = 'cobrocc';
@@ -1086,7 +1086,7 @@ async function cargarDatos() {
                         esMovimiento: true
                     });
                 }
-                // Los movimientos de tipo 'deuda' NO se convierten, ya están en ventas como 'ctacte'
+                // No convertimos deudas, ya están en ventas como ctacte
             }
             mostrarDebug(`Ventas totales (incluyendo pagos): ${ventas.length}`);
         }
@@ -1957,7 +1957,7 @@ function exportarGananciaCalendarioExcel() {
 }
 
 // ======================================================================
-//  🔥 FACTURACIÓN DEFINITIVA (usa el saldo neto real)
+//  🔥 FACTURACIÓN DEFINITIVA (usa movimientos para saldo real)
 // ======================================================================
 function generarFactura() {
     const cliente = document.getElementById('facturaCliente').value;
@@ -1968,25 +1968,22 @@ function generarFactura() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
-    // === 1. Obtener TODAS las ventas del cliente ===
-    const todasLasVentas = ventas.filter(v => v.cliente === cliente);
+    // === 1. Obtener movimientos del cliente (TODOS) ===
+    const movsCliente = movimientos.filter(m => m.cliente === cliente);
 
-    // === 2. Separar deudas y pagos ===
-    const deudasTotales = todasLasVentas.filter(v => v.pago === 'ctacte' || v.pago === 'deuda');
-    const pagosTotales = todasLasVentas.filter(v => {
+    // === 2. Calcular saldo neto TOTAL usando movimientos ===
+    const totalDeudasMov = movsCliente.filter(m => m.tipo === 'deuda').reduce((acc, m) => acc + m.monto, 0);
+    const totalPagosMov = movsCliente.filter(m => m.tipo === 'pago').reduce((acc, m) => acc + m.monto, 0);
+    const saldoNeto = totalDeudasMov - totalPagosMov;
+
+    // === 3. Deudas y pagos del PERÍODO (para detalle, usando ventas) ===
+    const todasLasVentas = ventas.filter(v => v.cliente === cliente);
+    const deudasPeriodo = todasLasVentas.filter(v => (v.pago === 'ctacte' || v.pago === 'deuda') && v.fecha >= desde && v.fecha <= hasta);
+    const pagosPeriodo = todasLasVentas.filter(v => {
         if (v.pago === 'cobrocc') return true;
         if (v.pago === 'transferencia' && !tieneProductos(v)) return true;
         return false;
-    });
-
-    // === 3. Calcular saldo neto TOTAL ===
-    const totalDeudas = deudasTotales.reduce((acc, v) => acc + (v.total || 0), 0);
-    const totalPagos = pagosTotales.reduce((acc, v) => acc + (v.total || 0), 0);
-    const saldoNeto = totalDeudas - totalPagos;
-
-    // === 4. Deudas y pagos del PERÍODO ===
-    const deudasPeriodo = deudasTotales.filter(v => v.fecha >= desde && v.fecha <= hasta);
-    const pagosPeriodo = pagosTotales.filter(v => v.fecha >= desde && v.fecha <= hasta);
+    }).filter(v => v.fecha >= desde && v.fecha <= hasta);
 
     // Agrupar deudas del período (con y sin productos)
     const deudasConProductos = deudasPeriodo.filter(v => tieneProductos(v));
@@ -2004,7 +2001,7 @@ function generarFactura() {
                                Object.values(deudasSinProductosAgrupadas).reduce((acc, g) => acc + g.total, 0);
     const totalPagosPeriodo = pagosPeriodo.reduce((acc, v) => acc + (v.total || 0), 0);
 
-    // === 5. Mostrar factura ===
+    // === 4. Mostrar factura ===
     document.getElementById('facturaBox').style.display = 'block';
     document.getElementById('facturaVacia').style.display = 'none';
 
@@ -2017,7 +2014,7 @@ function generarFactura() {
     document.getElementById('facturaDeudaTotalMonto').textContent = pesos(saldoNeto);
     document.getElementById('facturaDeudaTotal').style.display = 'block';
 
-    // === 6. Desglose detallado ===
+    // === 5. Desglose detallado ===
     let desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
 
     if (deudasConProductos.length > 0 || Object.keys(deudasSinProductosAgrupadas).length > 0) {
@@ -2067,17 +2064,17 @@ function generarFactura() {
         desgloseHtml += '<br>No hay pagos en el período.';
     }
 
-    desgloseHtml += `<br><strong style="color:var(--rojo);font-size:0.9rem;">🔴 SALDO TOTAL ACTUAL: ${pesos(saldoNeto)}</strong>`;
+    desgloseHtml += `<br><strong style="color:var(--rojo);font-size:0.9rem;">🔴 SALDO TOTAL ACTUAL (todas las deudas - todos los pagos): ${pesos(saldoNeto)}</strong>`;
     desgloseHtml += '</div>';
     document.getElementById('facturaDesgloseDeudas').innerHTML = desgloseHtml;
 
-    // === 7. Resumen (TODOS los valores ahora usan saldoNeto) ===
+    // === 6. Resumen (todos los valores usan saldoNeto) ===
     document.getElementById('facturaResumenPeriodo').textContent = pesos(saldoNeto);
     document.getElementById('facturaResumenDeuda').textContent = pesos(saldoNeto);
     document.getElementById('facturaResumenSaldo').textContent = pesos(saldoNeto);
     document.getElementById('facturaResumenSaldo').style.color = saldoNeto >= 0 ? 'var(--verde)' : 'var(--rojo)';
 
-    // === 8. Tabla de detalle ===
+    // === 7. Tabla de detalle ===
     let html = '';
 
     for (const v of deudasConProductos.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
@@ -2104,7 +2101,7 @@ function generarFactura() {
     }
     document.getElementById('facturaDetalleBody').innerHTML = html;
 
-    // === 9. Total a Pagar (SALDO NETO TOTAL) ===
+    // === 8. Total a Pagar (SALDO NETO TOTAL) ===
     document.getElementById('facturaTotal').textContent = pesos(saldoNeto);
     toast(`✅ Factura generada: ${cliente} saldo total ${pesos(saldoNeto)}`);
 }
