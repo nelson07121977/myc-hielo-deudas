@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO · Gestión Integral (v6.9 CORREGIDA)</title>
+    <title>MYC HIELO · Gestión Integral (v6.8.2 FINANZAS)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* ===== ESTILOS ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -374,7 +375,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v6.9 · FACTURACIÓN CORREGIDA · 01/07/2026</div>
+            <div class="version-info">v6.8.2 · FACTURACIÓN CORREGIDA (saldo total) · 28/06/2026</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -835,10 +836,10 @@
 
 <script>
 // ======================================================================
-//  CONFIGURACIÓN Y UTILIDADES
+//  CONFIGURACIÓN Y UTILIDADES (igual que antes)
 // ======================================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v6.9-facturacion";
+const VERSION = "v6.8.2-facturacion";
 
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
@@ -876,6 +877,7 @@ function normalizarPago(pago) {
     return p;
 }
 
+// 🔥 Función global: detecta si una venta tiene productos (cantidades > 0)
 function tieneProductos(v) {
     return (v.cantidades || []).some(q => (q || 0) > 0);
 }
@@ -1067,6 +1069,7 @@ async function cargarDatos() {
                 detalle: m.detalle || ''
             }));
             mostrarDebug(`Movimientos cargados: ${movimientos.length}`);
+            // Integrar movimientos como ventas (pagos)
             for (const m of movimientos) {
                 if (m.tipo === 'pago') {
                     let pagoNormalizado = 'cobrocc';
@@ -1133,7 +1136,7 @@ async function cargarDatos() {
 }
 
 // ======================================================================
-//  GANANCIAS CALENDARIO
+//  GANANCIAS CALENDARIO (resumido)
 // ======================================================================
 function cargarGananciasCalendario() {
     const data = localStorage.getItem('myc_ganancias_calendario');
@@ -1184,7 +1187,7 @@ function cargarGananciasDesdeVentas() {
 }
 
 // ======================================================================
-//  HISTORIAL
+//  HISTORIAL (resumido)
 // ======================================================================
 function cargarHistorial() {
     const data = localStorage.getItem('myc_historial_informes');
@@ -1592,7 +1595,7 @@ function guardarNuevoProducto() {
 }
 
 // ======================================================================
-//  FINANZAS
+//  FINANZAS (CORREGIDO)
 // ======================================================================
 function renderFinanzas() {
     const deudaBruta = {};
@@ -1685,6 +1688,12 @@ function renderFinanzas() {
         ganancia[c].gananciaReal = ganancia[c].gananciaBruta + ganancia[c].cobros;
         totalGananciaReal += ganancia[c].gananciaReal;
     }
+
+    console.log('🔍 RESULTADOS FINANZAS:');
+    console.log('Total Efectivo:', totalEfectivo);
+    console.log('Total Transferencias (todas):', totalTransferencias);
+    console.log('Total Deuda Neta:', totalDeudaNeta);
+    console.log('Total Ganancia Real:', totalGananciaReal);
 
     document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudaNeta);
     document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
@@ -1959,7 +1968,7 @@ function generarFactura() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
-    // === 1. Obtener TODAS las ventas del cliente (sin filtro de fecha) ===
+    // === 1. Obtener TODAS las ventas del cliente ===
     const todasLasVentas = ventas.filter(v => v.cliente === cliente);
 
     // === 2. Separar deudas y pagos de TODOS los tiempos ===
@@ -1992,13 +2001,14 @@ function generarFactura() {
     document.getElementById('facturaPeriodo').textContent = `${formatearFecha(desde)} al ${formatearFecha(hasta)}`;
     document.getElementById('facturaFechaEmision').textContent = formatearFechaCompleta(hoy());
 
-    // Mostrar saldo neto TOTAL (que es el que debe coincidir con Control de Deudas)
+    // Mostrar saldo neto TOTAL
     document.getElementById('facturaDeudaTotalMonto').textContent = pesos(saldoNeto);
     document.getElementById('facturaDeudaTotal').style.display = 'block';
 
     // === 6. Desglose detallado ===
     let desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
 
+    // Deudas del período
     if (deudasPeriodo.length > 0) {
         desgloseHtml += '<strong>📋 Deudas del período:</strong><br>';
         const deudasAgrupadas = {};
@@ -2020,6 +2030,7 @@ function generarFactura() {
         desgloseHtml += 'No hay deudas en el período.<br>';
     }
 
+    // Pagos del período
     if (pagosPeriodo.length > 0) {
         desgloseHtml += '<br><strong>💳 Pagos aplicados en el período:</strong><br>';
         const pagosAgrupados = {};
@@ -2038,10 +2049,12 @@ function generarFactura() {
         desgloseHtml += '<br>No hay pagos en el período.';
     }
 
+    // Saldo neto TOTAL
     desgloseHtml += `<br><strong style="color:var(--rojo);font-size:0.9rem;">🔴 SALDO TOTAL ACTUAL (todas las deudas - todos los pagos): ${pesos(saldoNeto)}</strong>`;
     desgloseHtml += '</div>';
     document.getElementById('facturaDesgloseDeudas').innerHTML = desgloseHtml;
 
+    // Resumen
     document.getElementById('facturaResumenPeriodo').textContent = pesos(totalDeudasPeriodo);
     document.getElementById('facturaResumenDeuda').textContent = pesos(saldoNeto);
     document.getElementById('facturaResumenSaldo').textContent = pesos(saldoNeto);
@@ -2067,12 +2080,13 @@ function generarFactura() {
     }
     document.getElementById('facturaDetalleBody').innerHTML = html;
 
+    // === 8. Total a pagar (SALDO NETO TOTAL) ===
     document.getElementById('facturaTotal').textContent = pesos(saldoNeto);
     toast(`✅ Factura generada: ${cliente} saldo total ${pesos(saldoNeto)}`);
 }
 
 // ======================================================================
-//  FÁBRICAS Y GASTOS
+//  FÁBRICAS Y GASTOS (resumidos)
 // ======================================================================
 function renderFabricas() {
     cargarFabricasLocal();
@@ -2439,7 +2453,8 @@ function actualizarSelectores() {
 function cargarClientesFactura() {
     const select = document.getElementById('facturaCliente');
     if (!select) return;
-    select.innerHTML = '<option value="">Seleccionar cliente...</option>' + clientes.sort().map(c => `<option value="${c}">${c}</option>`).join('');
+    select.innerHTML = '<option value="">Seleccionar cliente...</option>';
+    for (const c of clientes.sort()) { select.innerHTML += `<option value="${c}">${c}</option>`; }
     const hoyStr = hoy();
     const primerDiaMes = hoyStr.slice(0,7) + '-01';
     document.getElementById('facturaDesde').value = primerDiaMes;
