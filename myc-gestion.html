@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>MYC HIELO · Gestión Integral (v6.8.7 FINAL)</title>
+    <title>MYC HIELO · Gestión Integral (v6.8.8 FINAL)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* ===== ESTILOS COMPLETOS (igual que antes) ===== */
+        /* ===== ESTILOS (igual que antes) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --azul: #0f2a6e;
@@ -375,7 +375,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v6.8.7 · FACTURACIÓN CON SALDO REAL (desde movimientos) · 28/06/2026</div>
+            <div class="version-info">v6.8.8 · FACTURACIÓN CON COPIA ESTRUCTURADA</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -777,6 +777,7 @@
                     <button class="btn btn-sm btn-whatsapp" onclick="enviarFacturaWhatsApp()"><i class="fas fa-whatsapp"></i> WhatsApp</button>
                     <button class="btn btn-sm btn-email" onclick="enviarFacturaEmail()"><i class="fas fa-envelope"></i> Email</button>
                     <button class="btn btn-sm btn-dorado" onclick="exportarFacturaPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+                    <button class="btn btn-sm btn-outline" onclick="copiarFacturaEstructurada()"><i class="fas fa-copy"></i> Copiar</button>
                 </div>
             </div>
             <div class="filtros no-print" style="flex-wrap:wrap; gap:10px;">
@@ -839,7 +840,7 @@
 //  CONFIGURACIÓN Y UTILIDADES
 // ======================================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
-const VERSION = "v6.8.7-final";
+const VERSION = "v6.8.8-final";
 
 function hoy() { return new Date().toISOString().slice(0, 10); }
 function formatearFecha(f) {
@@ -939,6 +940,107 @@ function mostrarDebug(msg) {
     box.scrollTop = box.scrollHeight;
     const btn = document.querySelector('.debug-toggle .btn');
     if (btn) btn.innerHTML = '🐛 Ocultar Debug';
+}
+
+// ======================================================================
+//  🔥 COPIA FACTURA EN FORMATO ESTRUCTURADO
+// ======================================================================
+function copiarFacturaEstructurada() {
+    const facturaBox = document.getElementById('facturaBox');
+    if (facturaBox.style.display === 'none') {
+        toast('Primero genere una factura');
+        return;
+    }
+
+    // Obtener datos de la factura
+    const cliente = document.getElementById('facturaClienteNombre').textContent;
+    const numero = document.getElementById('facturaNumero').textContent;
+    const periodo = document.getElementById('facturaPeriodo').textContent;
+    const deudaPeriodo = document.getElementById('facturaDeudaTotalMonto').textContent;
+    const saldoTotal = document.getElementById('facturaTotal').textContent;
+    const fechaEmision = document.getElementById('facturaFechaEmision').textContent;
+
+    // Obtener detalle de deudas (desglose)
+    const desgloseDiv = document.getElementById('facturaDesgloseDeudas');
+    let desgloseText = '';
+    if (desgloseDiv) {
+        // Extraer solo el texto visible sin etiquetas HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = desgloseDiv.innerHTML;
+        // Eliminar el último strong (el que dice "SALDO TOTAL ACTUAL") para no duplicar
+        const strongs = tempDiv.querySelectorAll('strong');
+        if (strongs.length > 0) {
+            const lastStrong = strongs[strongs.length - 1];
+            if (lastStrong.textContent.includes('SALDO TOTAL ACTUAL')) {
+                lastStrong.remove();
+            }
+        }
+        desgloseText = tempDiv.textContent.trim();
+    }
+
+    // Obtener filas de la tabla
+    const tbody = document.getElementById('facturaDetalleBody');
+    let filas = [];
+    if (tbody) {
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td');
+            if (cols.length === 5) {
+                const fecha = cols[0].textContent.trim();
+                const producto = cols[1].textContent.trim();
+                const cantidad = cols[2].textContent.trim();
+                const precio = cols[3].textContent.trim();
+                const total = cols[4].textContent.trim();
+                filas.push({ fecha, producto, cantidad, precio, total });
+            }
+        });
+    }
+
+    // Construir el texto estructurado
+    let texto = '';
+    texto += '🧊 MYC HIELO\n';
+    texto += `Factura N°: ${numero}\n`;
+    texto += '\n';
+    texto += `Cliente: ${cliente}\n`;
+    texto += `Período: ${periodo}\n`;
+    texto += `🔴 Deuda neta (período): ${deudaPeriodo}\n`;
+    texto += '\n';
+    texto += '📋 Deudas del período:\n';
+    texto += desgloseText + '\n';
+    texto += '\n';
+    texto += `🔴 SALDO TOTAL ACTUAL (todas las deudas - todos los pagos): ${saldoTotal}\n`;
+    texto += '\n';
+    texto += `📊 Total facturado: ${saldoTotal}\n`;
+    texto += `🔴 Deuda neta: ${saldoTotal}\n`;
+    texto += `✅ Saldo después de esta factura: ${saldoTotal}\n`;
+    texto += '\n';
+    texto += '📅 Fecha     Producto     Cantidad     Precio     Total\n';
+    texto += '-----------------------------------------------------------\n';
+    if (filas.length > 0) {
+        filas.forEach(f => {
+            texto += `${f.fecha.padEnd(12)} ${f.producto.padEnd(12)} ${f.cantidad.padEnd(10)} ${f.precio.padEnd(10)} ${f.total}\n`;
+        });
+    } else {
+        texto += 'No hay movimientos en el período.\n';
+    }
+    texto += '\n';
+    texto += `💰 Total a Pagar: ${saldoTotal}\n`;
+    texto += '\n';
+    texto += `* Este comprobante no es fiscal · Generado el ${fechaEmision}\n`;
+
+    // Copiar al portapapeles
+    navigator.clipboard.writeText(texto).then(() => {
+        toast('✅ Factura copiada en formato estructurado');
+    }).catch(() => {
+        // Fallback para navegadores que no soportan clipboard API
+        const textarea = document.createElement('textarea');
+        textarea.value = texto;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        toast('✅ Factura copiada en formato estructurado');
+    });
 }
 
 // ======================================================================
@@ -1086,7 +1188,6 @@ async function cargarDatos() {
                         esMovimiento: true
                     });
                 }
-                // No convertimos deudas, ya están en ventas como ctacte
             }
             mostrarDebug(`Ventas totales (incluyendo pagos): ${ventas.length}`);
         }
@@ -1957,7 +2058,7 @@ function exportarGananciaCalendarioExcel() {
 }
 
 // ======================================================================
-//  🔥 FACTURACIÓN DEFINITIVA (usa movimientos para saldo real)
+//  FACTURACIÓN
 // ======================================================================
 function generarFactura() {
     const cliente = document.getElementById('facturaCliente').value;
@@ -1968,15 +2069,15 @@ function generarFactura() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
-    // === 1. Obtener movimientos del cliente (TODOS) ===
+    // === 1. Obtener movimientos del cliente ===
     const movsCliente = movimientos.filter(m => m.cliente === cliente);
 
-    // === 2. Calcular saldo neto TOTAL usando movimientos ===
+    // === 2. Calcular saldo neto TOTAL ===
     const totalDeudasMov = movsCliente.filter(m => m.tipo === 'deuda').reduce((acc, m) => acc + m.monto, 0);
     const totalPagosMov = movsCliente.filter(m => m.tipo === 'pago').reduce((acc, m) => acc + m.monto, 0);
     const saldoNeto = totalDeudasMov - totalPagosMov;
 
-    // === 3. Deudas y pagos del PERÍODO (para detalle, usando ventas) ===
+    // === 3. Deudas y pagos del PERÍODO (para detalle) ===
     const todasLasVentas = ventas.filter(v => v.cliente === cliente);
     const deudasPeriodo = todasLasVentas.filter(v => (v.pago === 'ctacte' || v.pago === 'deuda') && v.fecha >= desde && v.fecha <= hasta);
     const pagosPeriodo = todasLasVentas.filter(v => {
@@ -1985,7 +2086,6 @@ function generarFactura() {
         return false;
     }).filter(v => v.fecha >= desde && v.fecha <= hasta);
 
-    // Agrupar deudas del período (con y sin productos)
     const deudasConProductos = deudasPeriodo.filter(v => tieneProductos(v));
     const deudasSinProductos = deudasPeriodo.filter(v => !tieneProductos(v));
 
@@ -2014,7 +2114,7 @@ function generarFactura() {
     document.getElementById('facturaDeudaTotalMonto').textContent = pesos(saldoNeto);
     document.getElementById('facturaDeudaTotal').style.display = 'block';
 
-    // === 5. Desglose detallado ===
+    // === 5. Desglose ===
     let desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
 
     if (deudasConProductos.length > 0 || Object.keys(deudasSinProductosAgrupadas).length > 0) {
@@ -2068,13 +2168,12 @@ function generarFactura() {
     desgloseHtml += '</div>';
     document.getElementById('facturaDesgloseDeudas').innerHTML = desgloseHtml;
 
-    // === 6. Resumen (todos los valores usan saldoNeto) ===
     document.getElementById('facturaResumenPeriodo').textContent = pesos(saldoNeto);
     document.getElementById('facturaResumenDeuda').textContent = pesos(saldoNeto);
     document.getElementById('facturaResumenSaldo').textContent = pesos(saldoNeto);
     document.getElementById('facturaResumenSaldo').style.color = saldoNeto >= 0 ? 'var(--verde)' : 'var(--rojo)';
 
-    // === 7. Tabla de detalle ===
+    // === 6. Tabla de detalle ===
     let html = '';
 
     for (const v of deudasConProductos.sort((a,b) => a.fecha.localeCompare(b.fecha))) {
@@ -2101,7 +2200,6 @@ function generarFactura() {
     }
     document.getElementById('facturaDetalleBody').innerHTML = html;
 
-    // === 8. Total a Pagar (SALDO NETO TOTAL) ===
     document.getElementById('facturaTotal').textContent = pesos(saldoNeto);
     toast(`✅ Factura generada: ${cliente} saldo total ${pesos(saldoNeto)}`);
 }
@@ -2668,6 +2766,7 @@ window.imprimirFactura = imprimirFactura;
 window.enviarFacturaWhatsApp = enviarFacturaWhatsApp;
 window.enviarFacturaEmail = enviarFacturaEmail;
 window.exportarFacturaPDF = exportarFacturaPDF;
+window.copiarFacturaEstructurada = copiarFacturaEstructurada;
 </script>
 </body>
 </html>
