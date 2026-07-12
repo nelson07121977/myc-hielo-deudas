@@ -275,7 +275,7 @@ function guardarGastosLocal() {
     localStorage.setItem(key, JSON.stringify({ total: gastos, detalle: gastosDetalle }));
 }
 
-// ==================== LÓGICA DE VENTAS ====================
+// ==================== LÓGICA DE VENTAS (CORREGIDA) ====================
 function calcularTotal(cliente, cantidades) {
     let p = precios[cliente] || precios[clientes[0]];
     return (cantidades["1,7 KG"]||0)*p["1,7 KG"] + (cantidades["3,5 KG"]||0)*p["3,5 KG"] +
@@ -296,7 +296,9 @@ async function enviarMovimientoDeuda(venta, tipo) {
         return true;
     } catch(e) { console.error("Error enviando deuda:", e); return false; }
 }
-async function guardarVentaEnNube(venta) {
+
+// 🔥 FUNCIÓN CORREGIDA: Guarda la venta en la nube con reintentos y manejo de errores
+async function guardarVentaEnNube(venta, reintentos = 2) {
     try {
         let form = new URLSearchParams();
         form.append('ruta', 'guardarVenta');
@@ -307,9 +309,31 @@ async function guardarVentaEnNube(venta) {
         form.append('total', venta.total);
         form.append('cobroDeuda', venta.cobroDeuda);
         form.append('chofer', currentUser);
-        await fetch(API_URL, { method: 'POST', body: form });
-    } catch(e) { console.error(e); }
+        
+        const response = await fetch(API_URL, { method: 'POST', body: form });
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${data.error || 'Error desconocido'}`);
+        }
+        
+        console.log('✅ Venta guardada en la nube:', venta.id);
+        return true;
+    } catch(e) {
+        console.error('❌ Error al guardar venta en la nube:', e);
+        
+        if (reintentos > 0) {
+            console.log(`🔄 Reintentando... (${reintentos} intentos restantes)`);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // esperar 2 segundos
+            return guardarVentaEnNube(venta, reintentos - 1);
+        }
+        
+        toast('⚠️ No se pudo guardar la venta en la nube. Revisá tu conexión.');
+        return false;
+    }
 }
+
+// 🔥 FUNCIÓN CORREGIDA: Agrega la venta localmente y luego la envía a la nube
 function agregarVenta(cliente, cantidades, pago, cobroMonto) {
     let total = (pago === "cobrocc") ? 0 : calcularTotal(cliente, cantidades);
     let nueva = {
@@ -321,16 +345,29 @@ function agregarVenta(cliente, cantidades, pago, cobroMonto) {
         total: total,
         cobroDeuda: (pago === "cobrocc") ? cobroMonto : 0
     };
+    
+    // Guardar localmente primero
     ventas.push(nueva);
     guardarVentasLocal();
-    guardarVentaEnNube(nueva);
-    if (pago === "ctacte" && total > 0) {
-        enviarMovimientoDeuda(nueva, 'deuda');
-    } else if (pago === "cobrocc" && cobroMonto > 0) {
-        enviarMovimientoDeuda(nueva, 'pago');
-    }
+    
+    // Enviar a la nube (con reintentos)
+    guardarVentaEnNube(nueva).then(exito => {
+        if (exito) {
+            // Si la venta se guardó correctamente, ahora enviamos el movimiento de deuda (si corresponde)
+            if (pago === "ctacte" && total > 0) {
+                enviarMovimientoDeuda(nueva, 'deuda');
+            } else if (pago === "cobrocc" && cobroMonto > 0) {
+                enviarMovimientoDeuda(nueva, 'pago');
+            }
+        } else {
+            // Si falló, mostramos un mensaje y dejamos la venta en local para reintentar después
+            toast('⚠️ Venta guardada localmente, pero no en la nube. Usá "Sincronizar" más tarde.');
+        }
+    });
+    
     return nueva;
 }
+
 function eliminarVenta(id) {
     ventas = ventas.filter(v => v.id != id);
     guardarVentasLocal();
@@ -354,7 +391,7 @@ async function forzarEnvioDeudas() {
     toast("Deudas reenviadas");
 }
 
-// ==================== 🔥 NUEVA FUNCIÓN: GUARDAR GASTOS EN LA NUBE ====================
+// ==================== GUARDAR GASTOS EN LA NUBE ====================
 async function guardarGastoRemoto(categoria, monto) {
     try {
         const form = new URLSearchParams();
@@ -370,7 +407,6 @@ async function guardarGastoRemoto(categoria, monto) {
     }
 }
 
-// ==================== ACTUALIZAR GASTOS (MODIFICADO) ====================
 function actualizarGastos() {
     const nafta = parseFloat(document.getElementById("gastoNafta")?.value) || 0;
     const choferes = parseFloat(document.getElementById("gastoChoferes")?.value) || 0;
@@ -379,7 +415,6 @@ function actualizarGastos() {
     gastos = nafta + choferes + otros;
     guardarGastosLocal();
 
-    // 🔥 Enviar a la nube
     if (nafta > 0) guardarGastoRemoto('Nafta', nafta);
     if (choferes > 0) guardarGastoRemoto('Chofer', choferes);
     if (otros > 0) guardarGastoRemoto('Otros', otros);
@@ -506,23 +541,23 @@ function renderDriver() {
     }
     
     let tbody = document.getElementById("salesTableBody");
-    if (ventas.length === 0) tbody.innerHTML = '<tr><td colspan="11">No hay ventas registradas</div><div>';
+    if (ventas.length === 0) tbody.innerHTML = '<tr><td colspan="11">No hay ventas registradas</td></tr>';
     else {
         let html = '';
         ventas.slice().reverse().forEach(v => {
             html += `<tr>
-                <td>${v.fecha}</div><div>
-                <td><strong>${v.cliente}</strong></div><div>
-                <td style="text-align:center;">${v.cantidades["1,7 KG"]||0}</div><div>
-                <td style="text-align:center;">${v.cantidades["3,5 KG"]||0}</div><div>
-                <td style="text-align:center;">${v.cantidades["14 KG"]||0}</div><div>
-                <td style="text-align:center;">${v.cantidades["ESC.20KG"]||0}</div><div>
-                <td style="text-align:center;">${v.cantidades["ESC.32KG"]||0}</div><div>
-                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></div><div>
-                <td>${badgePago(v.pago)}</div><div>
-                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
-                <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></div><div>
-            </table>`;
+                <td>${v.fecha}</td>
+                <td><strong>${v.cliente}</strong></td>
+                <td style="text-align:center;">${v.cantidades["1,7 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades["3,5 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades["14 KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades["ESC.20KG"]||0}</td>
+                <td style="text-align:center;">${v.cantidades["ESC.32KG"]||0}</td>
+                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                <td>${badgePago(v.pago)}</td>
+                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</td>
+                <td><button onclick="eliminarVentaHandler(${v.id})" style="background:#dc2626; padding:4px 8px;">🗑️</button></td>
+            </tr>`;
         });
         tbody.innerHTML = html;
     }
@@ -549,21 +584,21 @@ function renderAdmin() {
         <div class="card">🔄 Cobros: ${formatMoney(totalCob)}</div>
     `;
     let tbody = document.getElementById("adminSalesBody");
-    if (ventasChofer.length === 0) tbody.innerHTML = '<tr><td colspan="10">Sin ventas</div><div>';
+    if (ventasChofer.length === 0) tbody.innerHTML = '<tr><td colspan="10">Sin ventas</td></tr>';
     else {
         let html = '';
         ventasChofer.slice().reverse().forEach(v => {
             html += `<tr>
-                <td>${v.fecha}</div><div>
-                <td><strong>${v.cliente}</strong></div><div>
-                <td>${v.cantidades["1,7 KG"]||0}</div><div>
-                <td>${v.cantidades["3,5 KG"]||0}</div><div>
-                <td>${v.cantidades["14 KG"]||0}</div><div>
-                <td>${v.cantidades["ESC.20KG"]||0}</div><div>
-                <td>${v.cantidades["ESC.32KG"]||0}</div><div>
-                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></div><div>
-                <td>${badgePago(v.pago)}</div><div>
-                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</div><div>
+                <td>${v.fecha}</td>
+                <td><strong>${v.cliente}</strong></td>
+                <td>${v.cantidades["1,7 KG"]||0}</td>
+                <td>${v.cantidades["3,5 KG"]||0}</td>
+                <td>${v.cantidades["14 KG"]||0}</td>
+                <td>${v.cantidades["ESC.20KG"]||0}</td>
+                <td>${v.cantidades["ESC.32KG"]||0}</td>
+                <td><strong>${v.pago==="cobrocc"?"$0":formatMoney(v.total)}</strong></td>
+                <td>${badgePago(v.pago)}</td>
+                <td>${v.cobroDeuda>0 ? formatMoney(v.cobroDeuda) : '—'}</td>
             </tr>`;
         });
         tbody.innerHTML = html;
