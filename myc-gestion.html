@@ -398,7 +398,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v7.3 · FACTURACIÓN CORREGIDA · TODAS LAS FUNCIONES</div>
+            <div class="version-info">v7.4 · CORREGIDO</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -979,6 +979,11 @@
 <div id="toast"></div>
 
 <script>
+// ************************************************************
+//  CÓDIGO COMPLETO CORREGIDO - v7.4
+//  Incluye TODAS las funciones necesarias.
+// ************************************************************
+
 // ========== UTILIDADES ==========
 function hoy() { return new Date().toISOString().slice(0,10); }
 function formatearFecha(f) {
@@ -1254,7 +1259,6 @@ async function cargarDatos() {
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
-        // Cargar movimientos (deudas y pagos)
         const movimientosData = await apiCall('movimientos');
         if (movimientosData && Array.isArray(movimientosData)) {
             movimientos = movimientosData.map(m => ({
@@ -1269,7 +1273,6 @@ async function cargarDatos() {
             mostrarDebug(`Movimientos cargados: ${movimientos.length}`);
         }
 
-        // Cargar gastos
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -1767,7 +1770,6 @@ function guardarNuevoProducto() {
 
 // ========== FINANZAS ==========
 function renderFinanzas() {
-    // Usa movimientos directamente
     const deudaNeta = {};
     for (const c of clientes) deudaNeta[c] = 0;
     for (const m of movimientos) {
@@ -1778,31 +1780,15 @@ function renderFinanzas() {
         else if (m.tipo === 'pago') deudaNeta[cliente] -= m.monto;
     }
     let totalDeudaNeta = 0;
-    let totalTransferencias = 0;
-    let totalEfectivo = 0;
     for (const c of Object.keys(deudaNeta)) {
         const saldo = deudaNeta[c];
         if (saldo > 0) totalDeudaNeta += saldo;
-        // Para transferencias y efectivo, usamos las ventas (como antes)
     }
-    // Recalcular transferencias y efectivo desde ventas (para mostrar)
-    const transferencias = {};
-    const efectivo = {};
-    for (const v of ventas) {
-        const cliente = v.cliente;
-        if (!cliente) continue;
-        if (v.pago === 'transferencia') transferencias[cliente] = (transferencias[cliente] || 0) + v.total;
-        if (v.pago === 'efectivo') efectivo[cliente] = (efectivo[cliente] || 0) + v.total;
-    }
-    for (const c of Object.keys(transferencias)) totalTransferencias += transferencias[c];
-    for (const c of Object.keys(efectivo)) totalEfectivo += efectivo[c];
-
     document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudaNeta);
-    document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
-    // Ganancia real se calcula de forma simplificada
+    // Los demás datos se actualizan en la carga
 }
 
-// ========== FUNCIONES DE EXPORTACIÓN PARA FINANZAS ==========
+// ========== EXPORTACIONES DE FINANZAS ==========
 function exportarGananciaClienteExcel() {
     const deudaBruta = {};
     const cobros = {};
@@ -1919,7 +1905,38 @@ function exportarGananciaCalendarioExcel() {
     toast('Excel exportado');
 }
 
-// ========== 🔥 FUNCIÓN PARA CALCULAR SALDO CLIENTE ==========
+// ========== FUNCIONES DE ACUMULADOS ==========
+function calcularAcumulados() {
+    const hoyStr = hoy();
+    let gananciaHoy = 0;
+    if (gananciasCalendario[hoyStr]) gananciaHoy = gananciasCalendario[hoyStr].ganancia || 0;
+    document.getElementById('acumuladoHoy').textContent = pesos(gananciaHoy);
+
+    let gananciaSemana = 0;
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0,10);
+        if (gananciasCalendario[key]) gananciaSemana += gananciasCalendario[key].ganancia || 0;
+    }
+    document.getElementById('acumuladoSemana').textContent = pesos(gananciaSemana);
+
+    let gananciaMes = 0;
+    const mesActualStr = hoyStr.slice(0, 7);
+    for (const [fecha, data] of Object.entries(gananciasCalendario)) {
+        if (fecha.startsWith(mesActualStr)) gananciaMes += data.ganancia || 0;
+    }
+    document.getElementById('acumuladoMes').textContent = pesos(gananciaMes);
+
+    let gananciaAnio = 0;
+    const anioActual = hoyStr.slice(0, 4);
+    for (const [fecha, data] of Object.entries(gananciasCalendario)) {
+        if (fecha.startsWith(anioActual)) gananciaAnio += data.ganancia || 0;
+    }
+    document.getElementById('acumuladoAnio').textContent = pesos(gananciaAnio);
+}
+
+// ========== FUNCIÓN PARA CALCULAR SALDO CLIENTE (USADA EN FACTURACIÓN) ==========
 function calcularSaldoCliente(cliente, desde, hasta) {
     let deudas = 0;
     let pagos = 0;
@@ -1932,7 +1949,7 @@ function calcularSaldoCliente(cliente, desde, hasta) {
     return deudas - pagos;
 }
 
-// ========== FACTURACIÓN (CORREGIDA) ==========
+// ========== FACTURACIÓN ==========
 function generarFactura() {
     const cliente = document.getElementById('facturaCliente').value;
     const desde = document.getElementById('facturaDesde').value;
@@ -2400,7 +2417,7 @@ document.querySelectorAll('.nav a').forEach(el => {
     });
 });
 
-// ========== MÓDULO DE DEUDAS (con funciones de copiar, WhatsApp y PDF) ==========
+// ========== MÓDULO DE DEUDAS ==========
 function mostrarSubtabDeuda(el, subtabId) {
     document.querySelectorAll('.d-subtab').forEach(s => s.style.display = 'none');
     document.getElementById(subtabId).style.display = 'block';
