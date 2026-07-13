@@ -975,7 +975,7 @@
 <div id="toast"></div>
 <script>
 // ================================================================
-// CÓDIGO COMPLETO - PARTE 2
+// CÓDIGO COMPLETO - TODAS LAS FUNCIONES DEFINIDAS
 // ================================================================
 
 // ========== UTILIDADES ==========
@@ -2365,7 +2365,7 @@ function actualizarUI() {
     renderCostos();
     renderClientes();
     renderCalendario();
-    renderCalendarioGanancias();
+    renderCalendarioGanancias();  // Esta función existe
     renderFinanzas();
     generarInformeDiario();
     cargarClientesFactura();
@@ -2651,6 +2651,77 @@ function exportarDeudaPDF(tipo) {
     };
     toast('📄 Generando PDF de deudas...');
     html2pdf().set(opt).from(div).save().then(() => toast('✅ PDF generado')).catch(() => toast('❌ Error al generar PDF'));
+}
+
+// ========== FUNCIONES DE CALENDARIO DE GANANCIAS ==========
+function renderCalendarioGanancias() {
+    const grid = document.getElementById('calendarioGananciaGrid');
+    const mesLabel = document.getElementById('mesGananciaActual');
+    if (!grid) return;
+
+    const year = mesGanancia.getFullYear();
+    const month = mesGanancia.getMonth();
+    const primerDia = new Date(year, month, 1);
+    const ultimoDia = new Date(year, month + 1, 0);
+    const diasEnMes = ultimoDia.getDate();
+    const diaInicio = primerDia.getDay();
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    mesLabel.textContent = `${meses[month]} ${year}`;
+
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    let html = diasSemana.map(d => `<div class="dia-header" style="text-align:center;font-weight:600;font-size:0.7rem;color:var(--texto-claro);">${d}</div>`).join('');
+
+    const hoyStr = hoy();
+    for (let i = 0; i < diaInicio; i++) {
+        html += `<div class="dia otro-mes" style="text-align:center;padding:4px;opacity:0.3;"></div>`;
+    }
+
+    for (let d = 1; d <= diasEnMes; d++) {
+        const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const esHoy = fecha === hoyStr;
+        const gananciaInfo = gananciasCalendario[fecha];
+        const ganancia = gananciaInfo ? gananciaInfo.ganancia : 0;
+        const color = ganancia > 0 ? 'var(--verde)' : (ganancia < 0 ? 'var(--rojo)' : 'var(--texto-claro)');
+        const clase = `dia ${esHoy ? 'hoy' : ''}`;
+        html += `<div class="${clase}" style="text-align:center;padding:6px 2px;border-radius:6px;cursor:pointer;background:${esHoy ? 'var(--azul-claro)' : 'transparent'};border:1px solid ${esHoy ? 'var(--azul)' : 'transparent'};" onclick="seleccionarDiaGanancia('${fecha}')">
+            <span style="font-weight:${esHoy?'700':'400'};font-size:0.8rem;">${d}</span>
+            <div style="font-size:0.6rem;font-weight:600;color:${color};">${ganancia !== 0 ? pesos(ganancia) : ''}</div>
+        </div>`;
+    }
+
+    grid.innerHTML = html;
+
+    // Si hay un día seleccionado, mostrar detalle
+    if (diaSeleccionadoGanancia) {
+        const info = gananciasCalendario[diaSeleccionadoGanancia];
+        if (info) {
+            document.getElementById('detalleDiaGanancia').style.display = 'block';
+            document.getElementById('detalleDiaFecha').textContent = `📅 ${formatearFecha(diaSeleccionadoGanancia)}`;
+            document.getElementById('detalleDiaMonto').textContent = pesos(info.ganancia || 0);
+            document.getElementById('detalleDiaInfo').textContent = `Ganancia del día`;
+        } else {
+            document.getElementById('detalleDiaGanancia').style.display = 'none';
+        }
+    } else {
+        document.getElementById('detalleDiaGanancia').style.display = 'none';
+    }
+}
+
+function seleccionarDiaGanancia(fecha) {
+    diaSeleccionadoGanancia = fecha;
+    renderCalendarioGanancias();
+    const info = gananciasCalendario[fecha];
+    if (info) {
+        document.getElementById('detalleDiaGanancia').style.display = 'block';
+        document.getElementById('detalleDiaFecha').textContent = `📅 ${formatearFecha(fecha)}`;
+        document.getElementById('detalleDiaMonto').textContent = pesos(info.ganancia || 0);
+        document.getElementById('detalleDiaInfo').textContent = `Ganancia del día`;
+    } else {
+        document.getElementById('detalleDiaGanancia').style.display = 'block';
+        document.getElementById('detalleDiaFecha').textContent = `📅 ${formatearFecha(fecha)}`;
+        document.getElementById('detalleDiaMonto').textContent = '$0';
+        document.getElementById('detalleDiaInfo').textContent = 'Sin datos registrados';
+    }
 }
 
 // ========== EXPONER FUNCIONES GLOBALES ==========
