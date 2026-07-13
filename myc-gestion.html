@@ -398,7 +398,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v7.4 · CORREGIDO</div>
+            <div class="version-info">v7.6 · COMPLETO</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -807,7 +807,7 @@
         </div>
     </div>
 
-    <!-- ===== TAB: FACTURACIÓN (CORREGIDA) ===== -->
+    <!-- ===== TAB: FACTURACIÓN ===== -->
     <div id="tab-facturacion" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -871,7 +871,7 @@
         </div>
     </div>
 
-    <!-- ===== TAB: DEUDAS (CON BOTONES COPIAR, WHATSAPP, PDF) ===== -->
+    <!-- ===== TAB: DEUDAS ===== -->
     <div id="tab-deudas" class="tab-content">
         <div class="nav no-print" style="margin-bottom:16px;">
             <a class="active" onclick="mostrarSubtabDeuda(this,'d-resumen')" style="cursor:pointer;"><i class="fas fa-chart-bar"></i> Resumen</a>
@@ -880,7 +880,6 @@
             <a onclick="mostrarSubtabDeuda(this,'d-registrar')" style="cursor:pointer;"><i class="fas fa-plus-circle"></i> Registrar</a>
         </div>
 
-        <!-- Resumen -->
         <div id="d-resumen" class="d-subtab">
             <div class="card">
                 <div class="card-header">
@@ -899,7 +898,6 @@
             </div>
         </div>
 
-        <!-- Deudores -->
         <div id="d-deudores" class="d-subtab" style="display:none;">
             <div class="card">
                 <div class="card-header">
@@ -918,7 +916,6 @@
             </div>
         </div>
 
-        <!-- Movimientos -->
         <div id="d-movimientos" class="d-subtab" style="display:none;">
             <div class="card">
                 <div class="card-header">
@@ -948,7 +945,6 @@
             </div>
         </div>
 
-        <!-- Registrar -->
         <div id="d-registrar" class="d-subtab" style="display:none;">
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:16px;">
                 <div class="card">
@@ -977,12 +973,10 @@
 </div>
 
 <div id="toast"></div>
-
 <script>
-// ************************************************************
-//  CÓDIGO COMPLETO CORREGIDO - v7.4
-//  Incluye TODAS las funciones necesarias.
-// ************************************************************
+// ================================================================
+// CÓDIGO COMPLETO - PARTE 2
+// ================================================================
 
 // ========== UTILIDADES ==========
 function hoy() { return new Date().toISOString().slice(0,10); }
@@ -1085,7 +1079,6 @@ function mostrarDebug(msg) {
     if (btn) btn.innerHTML = '🐛 Ocultar Debug';
 }
 
-// ========== COPIA FACTURA ESTRUCTURADA ==========
 function copiarFacturaEstructurada() {
     const facturaBox = document.getElementById('facturaBox');
     if (facturaBox.style.display === 'none') {
@@ -1785,7 +1778,7 @@ function renderFinanzas() {
         if (saldo > 0) totalDeudaNeta += saldo;
     }
     document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudaNeta);
-    // Los demás datos se actualizan en la carga
+    // Otras métricas de finanzas se pueden agregar aquí
 }
 
 // ========== EXPORTACIONES DE FINANZAS ==========
@@ -1905,7 +1898,7 @@ function exportarGananciaCalendarioExcel() {
     toast('Excel exportado');
 }
 
-// ========== FUNCIONES DE ACUMULADOS ==========
+// ========== ACUMULADOS ==========
 function calcularAcumulados() {
     const hoyStr = hoy();
     let gananciaHoy = 0;
@@ -1936,7 +1929,7 @@ function calcularAcumulados() {
     document.getElementById('acumuladoAnio').textContent = pesos(gananciaAnio);
 }
 
-// ========== FUNCIÓN PARA CALCULAR SALDO CLIENTE (USADA EN FACTURACIÓN) ==========
+// ========== CALCULAR SALDO CLIENTE (para facturación) ==========
 function calcularSaldoCliente(cliente, desde, hasta) {
     let deudas = 0;
     let pagos = 0;
