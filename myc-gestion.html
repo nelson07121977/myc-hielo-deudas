@@ -1189,7 +1189,9 @@ let diaSeleccionadoGanancia = null;
 let facturaNumero = 1;
 
 // ========== API ==========
-const API_URL = "https://script.google.com/macros/s/AKfycbwoodVaOey98TZ7FW5uO1b5_feKxPCnxAkiNmPwoxJ9p7b6eZFC8idXWEGyVJeq6rYh/exec";
+// 🔧 USO LA URL DEL ARCHIVO VIEJO QUE SÍ FUNCIONA PARA VENTAS
+const API_URL = "https://script.google.com/macros/s/AKfycbz5VvNsngAKJix3toFHPJmI4mM3ig8lerb8m6SEf6pJi1viapjI3V5Zs6a0VxZnha0B/exec";
+
 async function apiCall(ruta, params = {}, method = 'GET') {
     const url = new URL(API_URL);
     url.searchParams.append('ruta', ruta);
