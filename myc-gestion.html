@@ -975,7 +975,7 @@
 <div id="toast"></div>
 <script>
 // ================================================================
-// CÓDIGO COMPLETO - CON AJUSTES EN PDF Y COPIA DE FACTURA
+// CÓDIGO COMPLETO - CON CARGA DE VENTAS CORREGIDA
 // ================================================================
 
 // ========== UTILIDADES ==========
@@ -1003,6 +1003,12 @@ function formatearFechaCompleta(f) {
 function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0 }); }
 function normalizarNombre(n) { return (n || '').trim().toUpperCase().replace(/\s+/g, ' '); }
 function num(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+// Función auxiliar para extraer cantidades del objeto que devuelve la API
+function extraerCantidades(obj) {
+    const claves = ['1,7 KG', '3,5 KG', '14 KG', 'ESC.20KG', 'ESC.32KG'];
+    return claves.map(clave => num(obj[clave] || 0));
+}
 
 function normalizarPago(pago) {
     if (!pago) return '';
@@ -1079,7 +1085,6 @@ function mostrarDebug(msg) {
     if (btn) btn.innerHTML = '🐛 Ocultar Debug';
 }
 
-// FUNCIÓN MEJORADA PARA COPIAR FACTURA (TEXTO ESTRUCTURADO)
 function copiarFacturaEstructurada() {
     const facturaBox = document.getElementById('facturaBox');
     if (facturaBox.style.display === 'none') {
@@ -1242,17 +1247,20 @@ function inicializarCostos() {
     else { costos = { ...costosDefault }; }
 }
 
-// ========== CARGA DE DATOS ==========
+// ========== CARGA DE DATOS (CORREGIDA) ==========
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
         inicializarCostos();
+
+        // 1. Clientes
         const clientesData = await apiCall('clientes');
         if (clientesData && Array.isArray(clientesData)) {
             clientes = clientesData.map(c => normalizarNombre(c)).filter(Boolean);
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
+        // 2. Movimientos (deudas/pagos)
         const movimientosData = await apiCall('movimientos');
         if (movimientosData && Array.isArray(movimientosData)) {
             movimientos = movimientosData.map(m => ({
@@ -1267,6 +1275,7 @@ async function cargarDatos() {
             mostrarDebug(`Movimientos cargados: ${movimientos.length}`);
         }
 
+        // 3. Gastos
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -1279,8 +1288,30 @@ async function cargarDatos() {
             mostrarDebug(`Gastos cargados: ${gastos.length}`);
         }
 
+        // 4. Ventas (NUEVO)
+        const ventasData = await apiCall('ventas');  // Ajusta el nombre del endpoint si es necesario
+        if (ventasData && Array.isArray(ventasData)) {
+            ventas = ventasData.map(v => {
+                const cantidades = extraerCantidades(v.cantidades || {});
+                return {
+                    id: v.id,
+                    fecha: formatearFechaInput(v.fecha),
+                    cliente: normalizarNombre(v.cliente),
+                    cantidades: cantidades,
+                    total: num(v.total),
+                    pago: v.pago || 'efectivo',
+                    detalle: v.detalle || ''
+                };
+            });
+            mostrarDebug(`Ventas cargadas: ${ventas.length}`);
+        } else {
+            mostrarDebug('No se recibieron ventas o el formato es incorrecto');
+        }
+
+        // 5. Fábricas (local)
         cargarFabricasLocal();
 
+        // 6. Productos desde localStorage
         const prodGuardados = localStorage.getItem('myc_productos');
         if (prodGuardados) { productos = JSON.parse(prodGuardados); } else {
             productos = [
@@ -1298,6 +1329,7 @@ async function cargarDatos() {
         }
         localStorage.setItem('myc_costos', JSON.stringify(costos));
 
+        // 7. Historial y ganancias
         cargarHistorial();
         cargarGananciasCalendario();
         cargarGananciasDesdeVentas();
@@ -2042,7 +2074,6 @@ function enviarFacturaEmail() {
     window.open(`mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`, '_blank');
 }
 
-// FUNCIÓN MEJORADA PARA EXPORTAR FACTURA A PDF (SIN CORTES)
 function exportarFacturaPDF() {
     const factura = document.getElementById('facturaBox');
     if (factura.style.display === 'none') {
@@ -2057,7 +2088,6 @@ function exportarFacturaPDF() {
     elemento.style.border = '2px solid #000';
     elemento.style.background = 'white';
     elemento.style.fontSize = '12px';
-    // Asegurar que las tablas no se corten
     elemento.querySelectorAll('table').forEach(t => {
         t.style.width = '100%';
         t.style.borderCollapse = 'collapse';
@@ -2067,7 +2097,6 @@ function exportarFacturaPDF() {
         cell.style.padding = '6px 8px';
         cell.style.wordBreak = 'break-word';
     });
-    // Quitar botones y elementos no imprimibles
     elemento.querySelectorAll('.no-print, .btn, button').forEach(b => b.remove());
 
     const opt = {
@@ -2710,7 +2739,6 @@ function renderCalendarioGanancias() {
 
     grid.innerHTML = html;
 
-    // Si hay un día seleccionado, mostrar detalle
     if (diaSeleccionadoGanancia) {
         const info = gananciasCalendario[diaSeleccionadoGanancia];
         if (info) {
@@ -2918,7 +2946,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('generarFacturaBtn').addEventListener('click', generarFactura);
 
-    // Deudas
     document.getElementById('dBtnDeuda')?.addEventListener('click', registrarDeudaTab);
     document.getElementById('dBtnPago')?.addEventListener('click', registrarPagoTab);
     document.getElementById('dFiltroCliente')?.addEventListener('input', renderMovimientosDeuda);
