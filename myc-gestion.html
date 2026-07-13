@@ -398,7 +398,7 @@
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
             <div class="sub">Gestión Integral · Google Sheets</div>
-            <div class="version-info">v7.2 · FACTURACIÓN CORREGIDA</div>
+            <div class="version-info">v7.3 · FACTURACIÓN CORREGIDA · TODAS LAS FUNCIONES</div>
         </div>
         <div class="header-actions no-print">
             <button class="btn" id="syncBtn"><i class="fas fa-sync"></i> Sincronizar</button>
@@ -1783,16 +1783,144 @@ function renderFinanzas() {
     for (const c of Object.keys(deudaNeta)) {
         const saldo = deudaNeta[c];
         if (saldo > 0) totalDeudaNeta += saldo;
-        // Transferencias y efectivo no se pueden calcular desde movimientos, se mantienen por compatibilidad
+        // Para transferencias y efectivo, usamos las ventas (como antes)
     }
+    // Recalcular transferencias y efectivo desde ventas (para mostrar)
+    const transferencias = {};
+    const efectivo = {};
+    for (const v of ventas) {
+        const cliente = v.cliente;
+        if (!cliente) continue;
+        if (v.pago === 'transferencia') transferencias[cliente] = (transferencias[cliente] || 0) + v.total;
+        if (v.pago === 'efectivo') efectivo[cliente] = (efectivo[cliente] || 0) + v.total;
+    }
+    for (const c of Object.keys(transferencias)) totalTransferencias += transferencias[c];
+    for (const c of Object.keys(efectivo)) totalEfectivo += efectivo[c];
+
     document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudaNeta);
-    // El resto de finanzas se deja como estaba (con datos de ventas)
-    // Por simplicidad, se mantiene la estructura original
+    document.getElementById('totalTransferenciasFinanzas').textContent = pesos(totalTransferencias);
+    // Ganancia real se calcula de forma simplificada
 }
 
-// ========== 🔥 NUEVA FUNCIÓN: CALCULAR SALDO CLIENTE ==========
+// ========== FUNCIONES DE EXPORTACIÓN PARA FINANZAS ==========
+function exportarGananciaClienteExcel() {
+    const deudaBruta = {};
+    const cobros = {};
+    const efectivo = {};
+    const transferencias = {};
+    const ganancia = {};
+
+    for (const c of clientes) {
+        deudaBruta[c] = 0;
+        cobros[c] = 0;
+        efectivo[c] = 0;
+        transferencias[c] = 0;
+        ganancia[c] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, cobros: 0, deuda: 0 };
+    }
+
+    for (const v of ventas) {
+        const cliente = v.cliente;
+        if (!cliente) continue;
+        if (!ganancia[cliente]) {
+            ganancia[cliente] = { ventas: 0, costo: 0, efectivo: 0, transferencias: 0, cobros: 0, deuda: 0 };
+            deudaBruta[cliente] = 0;
+            cobros[cliente] = 0;
+            efectivo[cliente] = 0;
+            transferencias[cliente] = 0;
+        }
+        const pago = v.pago || '';
+        const tieneProd = tieneProductos(v);
+        const monto = v.total || 0;
+
+        if (pago === 'transferencia') {
+            transferencias[cliente] = (transferencias[cliente] || 0) + monto;
+        }
+
+        if (pago === 'efectivo') {
+            ganancia[cliente].ventas += monto;
+            ganancia[cliente].efectivo += monto;
+            efectivo[cliente] = (efectivo[cliente] || 0) + monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
+        } else if (pago === 'transferencia' && tieneProd) {
+            ganancia[cliente].ventas += monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
+        } else if (pago === 'transferencia' && !tieneProd) {
+            cobros[cliente] = (cobros[cliente] || 0) + monto;
+            ganancia[cliente].cobros += monto;
+        } else if (pago === 'ctacte' || pago === 'deuda') {
+            deudaBruta[cliente] = (deudaBruta[cliente] || 0) + monto;
+            ganancia[cliente].deuda += monto;
+        } else if (pago === 'cobrocc') {
+            cobros[cliente] = (cobros[cliente] || 0) + monto;
+            ganancia[cliente].cobros += monto;
+        } else {
+            ganancia[cliente].ventas += monto;
+            ganancia[cliente].efectivo += monto;
+            efectivo[cliente] = (efectivo[cliente] || 0) + monto;
+            const claves = ["1.7", "3.5", "14", "20", "32"];
+            let costo = 0;
+            for (let i = 0; i < claves.length; i++) {
+                costo += (v.cantidades[i] || 0) * (costos[claves[i]] || 0);
+            }
+            ganancia[cliente].costo += costo;
+        }
+    }
+
+    const deudaNeta = {};
+    for (const c of Object.keys(ganancia)) {
+        const bruta = deudaBruta[c] || 0;
+        const cob = cobros[c] || 0;
+        deudaNeta[c] = Math.max(0, bruta - cob);
+        ganancia[c].gananciaBruta = ganancia[c].ventas - ganancia[c].costo;
+        ganancia[c].gananciaReal = ganancia[c].gananciaBruta + ganancia[c].cobros;
+    }
+
+    const data = [
+        ['MYC HIELO · Ganancia Real por Cliente'],
+        [],
+        ['Cliente', 'Total Ventas', 'Costo', 'Ganancia Bruta', 'Efectivo', 'Transferencias', 'Deuda Neta', 'Cobros', 'Ganancia Real']
+    ];
+    for (const [cliente, d] of Object.entries(ganancia)) {
+        let transfTotal = 0;
+        for (const v of ventas) {
+            if (v.cliente === cliente && v.pago === 'transferencia') transfTotal += v.total || 0;
+        }
+        data.push([
+            cliente, d.ventas, d.costo, d.gananciaBruta, d.efectivo, transfTotal,
+            deudaNeta[cliente] || 0, d.cobros, d.gananciaReal
+        ]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Ganancia por Cliente');
+    XLSX.writeFile(wb, `ganancia_por_cliente_${hoy()}.xlsx`);
+    toast('Excel exportado');
+}
+
+function exportarGananciaCalendarioExcel() {
+    const data = [['MYC HIELO · Calendario de Ganancias'], ['Fecha', 'Ganancia ($)']];
+    for (const [fecha, info] of Object.entries(gananciasCalendario).sort((a, b) => a[0].localeCompare(b[0]))) {
+        data.push([formatearFecha(fecha), info.ganancia || 0]);
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Calendario Ganancias');
+    XLSX.writeFile(wb, `calendario_ganancias_${hoy()}.xlsx`);
+    toast('Excel exportado');
+}
+
+// ========== 🔥 FUNCIÓN PARA CALCULAR SALDO CLIENTE ==========
 function calcularSaldoCliente(cliente, desde, hasta) {
-    // Suma todas las deudas del cliente en el período
     let deudas = 0;
     let pagos = 0;
     for (const m of movimientos) {
@@ -1801,7 +1929,7 @@ function calcularSaldoCliente(cliente, desde, hasta) {
         if (m.tipo === 'deuda') deudas += m.monto;
         else if (m.tipo === 'pago') pagos += m.monto;
     }
-    return deudas - pagos; // saldo neto
+    return deudas - pagos;
 }
 
 // ========== FACTURACIÓN (CORREGIDA) ==========
@@ -1814,16 +1942,10 @@ function generarFactura() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
-    // ================================================================
-    // 1. CALCULAR SALDO REAL USANDO MOVIMIENTOS
-    // ================================================================
     const saldoNeto = calcularSaldoCliente(cliente, desde, hasta);
     const deudasDetalle = movimientos.filter(m => m.cliente === cliente && m.tipo === 'deuda' && m.fecha >= desde && m.fecha <= hasta);
     const pagosDetalle = movimientos.filter(m => m.cliente === cliente && m.tipo === 'pago' && m.fecha >= desde && m.fecha <= hasta);
 
-    // ================================================================
-    // 2. MOSTRAR FACTURA
-    // ================================================================
     document.getElementById('facturaBox').style.display = 'block';
     document.getElementById('facturaVacia').style.display = 'none';
 
@@ -1835,9 +1957,7 @@ function generarFactura() {
 
     document.getElementById('facturaDeudaTotalMonto').textContent = pesos(saldoNeto);
 
-    // Desglose
     let desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
-
     if (deudasDetalle.length > 0) {
         desgloseHtml += '<strong>📋 Deudas del período:</strong><br>';
         for (const d of deudasDetalle) {
@@ -1869,7 +1989,6 @@ function generarFactura() {
     document.getElementById('facturaResumenSaldo').textContent = pesos(saldoNeto);
     document.getElementById('facturaTotal').textContent = pesos(saldoNeto);
 
-    // Tabla detalle
     let html = '';
     const todos = [...deudasDetalle, ...pagosDetalle].sort((a, b) => a.fecha.localeCompare(b.fecha));
     for (const item of todos) {
@@ -2523,10 +2642,6 @@ function exportarDeudaPDF(tipo) {
     toast('📄 Generando PDF de deudas...');
     html2pdf().set(opt).from(div).save().then(() => toast('✅ PDF generado')).catch(() => toast('❌ Error al generar PDF'));
 }
-
-// ========== FUNCIONES DE EXPORTACIÓN (Excel y PDF) ==========
-// Estas funciones ya están definidas arriba (exportarVentasExcel, exportarGastosExcel, etc.)
-// Pero se exponen globalmente para que los botones las encuentren.
 
 // ========== EXPONER FUNCIONES GLOBALES ==========
 window.copiarTabla = copiarTabla;
