@@ -1004,12 +1004,6 @@ function pesos(n) { return '$' + Number(n).toLocaleString('es-AR', { minimumFrac
 function normalizarNombre(n) { return (n || '').trim().toUpperCase().replace(/\s+/g, ' '); }
 function num(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 
-// Función auxiliar para extraer cantidades del objeto que devuelve la API
-function extraerCantidades(obj) {
-    const claves = ['1,7 KG', '3,5 KG', '14 KG', 'ESC.20KG', 'ESC.32KG'];
-    return claves.map(clave => num(obj[clave] || 0));
-}
-
 function normalizarPago(pago) {
     if (!pago) return '';
     const p = String(pago).trim().toLowerCase();
@@ -1252,15 +1246,33 @@ async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
         inicializarCostos();
-
-        // 1. Clientes
         const clientesData = await apiCall('clientes');
         if (clientesData && Array.isArray(clientesData)) {
             clientes = clientesData.map(c => normalizarNombre(c)).filter(Boolean);
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
-        // 2. Movimientos (deudas/pagos)
+        // VENTAS - CORREGIDO usando obtenerVentas y mapeo robusto
+        const ventasData = await apiCall('obtenerVentas');
+        if (ventasData && Array.isArray(ventasData)) {
+            ventas = ventasData.map(v => ({
+                id: v.id,
+                fecha: formatearFechaInput(v.fecha),
+                cliente: normalizarNombre(v.cliente),
+                cantidades: [
+                    num(v.cantidades?.["1,7 KG"] || v.c17 || 0),
+                    num(v.cantidades?.["3,5 KG"] || v.c35 || 0),
+                    num(v.cantidades?.["14 KG"] || v.c14 || 0),
+                    num(v.cantidades?.["ESC.20KG"] || v.c20 || 0),
+                    num(v.cantidades?.["ESC.32KG"] || v.c32 || 0)
+                ],
+                total: num(v.total),
+                pago: v.pago || 'efectivo',
+                detalle: v.detalle || ''
+            }));
+            mostrarDebug(`Ventas cargadas: ${ventas.length}`);
+        }
+
         const movimientosData = await apiCall('movimientos');
         if (movimientosData && Array.isArray(movimientosData)) {
             movimientos = movimientosData.map(m => ({
@@ -1275,7 +1287,6 @@ async function cargarDatos() {
             mostrarDebug(`Movimientos cargados: ${movimientos.length}`);
         }
 
-        // 3. Gastos
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -1288,30 +1299,8 @@ async function cargarDatos() {
             mostrarDebug(`Gastos cargados: ${gastos.length}`);
         }
 
-        // 4. Ventas (NUEVO)
-        const ventasData = await apiCall('ventas');  // Ajusta el nombre del endpoint si es necesario
-        if (ventasData && Array.isArray(ventasData)) {
-            ventas = ventasData.map(v => {
-                const cantidades = extraerCantidades(v.cantidades || {});
-                return {
-                    id: v.id,
-                    fecha: formatearFechaInput(v.fecha),
-                    cliente: normalizarNombre(v.cliente),
-                    cantidades: cantidades,
-                    total: num(v.total),
-                    pago: v.pago || 'efectivo',
-                    detalle: v.detalle || ''
-                };
-            });
-            mostrarDebug(`Ventas cargadas: ${ventas.length}`);
-        } else {
-            mostrarDebug('No se recibieron ventas o el formato es incorrecto');
-        }
-
-        // 5. Fábricas (local)
         cargarFabricasLocal();
 
-        // 6. Productos desde localStorage
         const prodGuardados = localStorage.getItem('myc_productos');
         if (prodGuardados) { productos = JSON.parse(prodGuardados); } else {
             productos = [
@@ -1329,7 +1318,6 @@ async function cargarDatos() {
         }
         localStorage.setItem('myc_costos', JSON.stringify(costos));
 
-        // 7. Historial y ganancias
         cargarHistorial();
         cargarGananciasCalendario();
         cargarGananciasDesdeVentas();
