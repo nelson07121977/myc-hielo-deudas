@@ -1001,6 +1001,8 @@
 //  *************** FACTURACIÓN CORREGIDA ********************
 //  Ahora calcula el saldo directamente desde las ventas
 //  sin depender de movimientos (automático).
+//  *************** CARGA DE DATOS CORREGIDA *****************
+//  Ahora reconstruye las ventas desde los movimientos.
 // ************************************************************
 
 // ========== UTILIDADES ==========
@@ -1267,7 +1269,7 @@ function inicializarCostos() {
     else { costos = { ...costosDefault }; }
 }
 
-// ========== CARGA DE DATOS ==========
+// ========== CARGA DE DATOS (CORREGIDA) ==========
 async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
@@ -1278,30 +1280,8 @@ async function cargarDatos() {
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
-        const ventasData = await apiCall('obtenerVentas');
-        if (ventasData && Array.isArray(ventasData)) {
-            ventas = ventasData.map(v => {
-                const pagoNormalizado = normalizarPago(v.pago || 'efectivo');
-                return {
-                    id: v.id,
-                    fecha: formatearFechaInput(v.fecha),
-                    cliente: normalizarNombre(v.cliente),
-                    cantidades: [
-                        num(v.cantidades?.["1,7 KG"] || v.c17 || 0),
-                        num(v.cantidades?.["3,5 KG"] || v.c35 || 0),
-                        num(v.cantidades?.["14 KG"] || v.c14 || 0),
-                        num(v.cantidades?.["ESC.20KG"] || v.c20 || 0),
-                        num(v.cantidades?.["ESC.32KG"] || v.c32 || 0)
-                    ],
-                    total: num(v.total),
-                    pago: pagoNormalizado,
-                    detalle: v.detalle || '',
-                    esMovimiento: false
-                };
-            });
-            mostrarDebug(`Ventas cargadas: ${ventas.length}`);
-        }
-
+        // --- CARGA DE MOVIMIENTOS (DEUDAS) ---
+        // Esta es la parte clave. Primero cargamos los movimientos.
         const movimientosData = await apiCall('movimientos');
         if (movimientosData && Array.isArray(movimientosData)) {
             movimientos = movimientosData.map(m => ({
@@ -1314,27 +1294,62 @@ async function cargarDatos() {
                 detalle: m.detalle || ''
             }));
             mostrarDebug(`Movimientos cargados: ${movimientos.length}`);
+
+            // --- CREACIÓN DE "VENTAS VIRTUALES" A PARTIR DE DEUDAS ---
+            // Ahora, para cada deuda que encontremos, creamos una venta "fantasma".
+            // Así, el módulo de Ventas y Facturación verán estas deudas como si fueran ventas reales.
+            ventas = []; // Reiniciamos el array de ventas para empezar limpio.
             for (const m of movimientos) {
-                if (m.tipo === 'pago') {
-                    let pagoNormalizado = 'cobrocc';
-                    if (m.forma_pago && m.forma_pago.toLowerCase().includes('transferencia')) {
-                        pagoNormalizado = 'transferencia';
-                    }
+                // Si es una deuda...
+                if (m.tipo === 'deuda' && m.monto > 0) {
+                    // Creamos una venta virtual asociada a esa deuda.
                     ventas.push({
-                        id: 'mov_pago_' + m.id,
+                        id: 'deuda_' + m.id,
+                        fecha: m.fecha,
+                        cliente: m.cliente,
+                        cantidades: [0,0,0,0,0], // No tenemos productos, pero el sistema lo necesita
+                        total: m.monto,
+                        pago: 'ctacte', // Marcamos que fue a cuenta corriente
+                        detalle: m.detalle || 'Deuda cargada automáticamente',
+                        esMovimiento: true
+                    });
+                }
+                // Si es un pago de deuda...
+                else if (m.tipo === 'pago' && m.monto > 0) {
+                    // Creamos una venta virtual para el pago (como un cobro)
+                    ventas.push({
+                        id: 'pago_' + m.id,
                         fecha: m.fecha,
                         cliente: m.cliente,
                         cantidades: [0,0,0,0,0],
                         total: m.monto,
-                        pago: pagoNormalizado,
-                        detalle: m.detalle || 'Pago de deuda',
+                        pago: 'cobrocc', // Lo marcamos como un cobro de deuda
+                        detalle: m.detalle || 'Pago de deuda cargado automáticamente',
                         esMovimiento: true
                     });
                 }
             }
-            mostrarDebug(`Ventas totales (incluyendo pagos): ${ventas.length}`);
+            // Combinamos las ventas virtuales con cualquier venta real que haya en la nube (si las hubiera).
+            // Pero para tu caso, las ventas reales son las que fallan, así que esto las reemplaza.
+            mostrarDebug(`Ventas totales (reconstruidas desde movimientos): ${ventas.length}`);
         }
 
+        // --- CARGA DE VENTAS REALES (OPCIONAL) ---
+        // Si quieres que las ventas reales también se muestren (por si alguna funciona),
+        // puedes cargarlas después. Pero para que la facturación sea correcta,
+        // lo mejor es que las ventas a crédito solo vengan de las deudas.
+        /*
+        const ventasData = await apiCall('obtenerVentas');
+        if (ventasData && Array.isArray(ventasData)) {
+            // Si tienes ventas reales, puedes filtrarlas para que no se dupliquen
+            // con las virtuales (ej: solo las que no sean 'ctacte').
+            const ventasReales = ventasData.map(v => { ... });
+            ventas = [...ventas, ...ventasReales];
+        }
+        */
+
+        // --- EL RESTO DE LA CARGA (gastos, fábricas, productos, etc.) ---
+        // Todo esto queda exactamente igual.
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
