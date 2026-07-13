@@ -817,7 +817,7 @@
                     <button class="btn btn-sm btn-whatsapp" onclick="enviarFacturaWhatsApp()"><i class="fas fa-whatsapp"></i> WhatsApp</button>
                     <button class="btn btn-sm btn-email" onclick="enviarFacturaEmail()"><i class="fas fa-envelope"></i> Email</button>
                     <button class="btn btn-sm btn-dorado" onclick="exportarFacturaPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="btn btn-sm btn-outline" onclick="copiarFacturaEstructurada()"><i class="fas fa-copy"></i> Copiar</button>
+                    <button class="btn btn-sm btn-outline" onclick="copiarFacturaEstructurada()"><i class="fas fa-copy"></i> Copiar texto</button>
                 </div>
             </div>
             <div class="filtros no-print" style="flex-wrap:wrap; gap:10px;">
@@ -975,7 +975,7 @@
 <div id="toast"></div>
 <script>
 // ================================================================
-// CÓDIGO COMPLETO - TODAS LAS FUNCIONES DEFINIDAS
+// CÓDIGO COMPLETO - CON AJUSTES EN PDF Y COPIA DE FACTURA
 // ================================================================
 
 // ========== UTILIDADES ==========
@@ -1079,6 +1079,7 @@ function mostrarDebug(msg) {
     if (btn) btn.innerHTML = '🐛 Ocultar Debug';
 }
 
+// FUNCIÓN MEJORADA PARA COPIAR FACTURA (TEXTO ESTRUCTURADO)
 function copiarFacturaEstructurada() {
     const facturaBox = document.getElementById('facturaBox');
     if (facturaBox.style.display === 'none') {
@@ -2041,23 +2042,41 @@ function enviarFacturaEmail() {
     window.open(`mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`, '_blank');
 }
 
+// FUNCIÓN MEJORADA PARA EXPORTAR FACTURA A PDF (SIN CORTES)
 function exportarFacturaPDF() {
     const factura = document.getElementById('facturaBox');
-    if (factura.style.display === 'none') { toast('Primero genere una factura'); return; }
+    if (factura.style.display === 'none') {
+        toast('Primero genere una factura');
+        return;
+    }
     const elemento = factura.cloneNode(true);
     elemento.style.width = '1100px';
     elemento.style.margin = '0 auto';
     elemento.style.padding = '20px';
     elemento.style.boxShadow = 'none';
     elemento.style.border = '2px solid #000';
+    elemento.style.background = 'white';
+    elemento.style.fontSize = '12px';
+    // Asegurar que las tablas no se corten
+    elemento.querySelectorAll('table').forEach(t => {
+        t.style.width = '100%';
+        t.style.borderCollapse = 'collapse';
+    });
+    elemento.querySelectorAll('td, th').forEach(cell => {
+        cell.style.border = '1px solid #ccc';
+        cell.style.padding = '6px 8px';
+        cell.style.wordBreak = 'break-word';
+    });
+    // Quitar botones y elementos no imprimibles
     elemento.querySelectorAll('.no-print, .btn, button').forEach(b => b.remove());
 
     const opt = {
         margin: 10,
         filename: `Factura_${document.getElementById('facturaClienteNombre').textContent}_${hoy()}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, width: 1200, height: 800 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        html2canvas: { scale: 2, useCORS: true, logging: false, width: 1200 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     toast('📄 Generando PDF de factura...');
     html2pdf().set(opt).from(elemento).save()
@@ -2365,7 +2384,7 @@ function actualizarUI() {
     renderCostos();
     renderClientes();
     renderCalendario();
-    renderCalendarioGanancias();  // Esta función existe
+    renderCalendarioGanancias();
     renderFinanzas();
     generarInformeDiario();
     cargarClientesFactura();
