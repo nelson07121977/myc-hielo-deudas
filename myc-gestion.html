@@ -817,7 +817,7 @@
                     <button class="btn btn-sm btn-whatsapp" onclick="enviarFacturaWhatsApp()"><i class="fas fa-whatsapp"></i> WhatsApp</button>
                     <button class="btn btn-sm btn-email" onclick="enviarFacturaEmail()"><i class="fas fa-envelope"></i> Email</button>
                     <button class="btn btn-sm btn-dorado" onclick="exportarFacturaPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
-                    <button class="btn btn-sm btn-outline" onclick="copiarFacturaEstructurada()"><i class="fas fa-copy"></i> Copiar texto</button>
+                    <button class="btn btn-sm btn-outline" onclick="copiarFacturaEstructurada()"><i class="fas fa-copy"></i> Copiar</button>
                 </div>
             </div>
             <div class="filtros no-print" style="flex-wrap:wrap; gap:10px;">
@@ -975,7 +975,7 @@
 <div id="toast"></div>
 <script>
 // ================================================================
-// CÓDIGO COMPLETO - CON CARGA DE VENTAS CORREGIDA
+// CÓDIGO COMPLETO - CORREGIDO (carga de ventas, total de gastos, finanzas)
 // ================================================================
 
 // ========== UTILIDADES ==========
@@ -1246,13 +1246,15 @@ async function cargarDatos() {
     mostrarDebug('Iniciando carga de datos...');
     try {
         inicializarCostos();
+
+        // 1. Clientes
         const clientesData = await apiCall('clientes');
         if (clientesData && Array.isArray(clientesData)) {
             clientes = clientesData.map(c => normalizarNombre(c)).filter(Boolean);
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
-        // VENTAS - CORREGIDO usando obtenerVentas y mapeo robusto
+        // 2. Ventas (CORREGIDO - usa obtenerVentas y mapeo robusto)
         const ventasData = await apiCall('obtenerVentas');
         if (ventasData && Array.isArray(ventasData)) {
             ventas = ventasData.map(v => ({
@@ -1271,8 +1273,11 @@ async function cargarDatos() {
                 detalle: v.detalle || ''
             }));
             mostrarDebug(`Ventas cargadas: ${ventas.length}`);
+        } else {
+            mostrarDebug('No se recibieron ventas o el formato es incorrecto');
         }
 
+        // 3. Movimientos (deudas/pagos)
         const movimientosData = await apiCall('movimientos');
         if (movimientosData && Array.isArray(movimientosData)) {
             movimientos = movimientosData.map(m => ({
@@ -1287,6 +1292,7 @@ async function cargarDatos() {
             mostrarDebug(`Movimientos cargados: ${movimientos.length}`);
         }
 
+        // 4. Gastos
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -1299,10 +1305,15 @@ async function cargarDatos() {
             mostrarDebug(`Gastos cargados: ${gastos.length}`);
         }
 
+        // 5. Fábricas (local)
         cargarFabricasLocal();
+        mostrarDebug(`Fábricas cargadas desde localStorage: ${fabricas.length}`);
 
+        // 6. Productos y costos
         const prodGuardados = localStorage.getItem('myc_productos');
-        if (prodGuardados) { productos = JSON.parse(prodGuardados); } else {
+        if (prodGuardados) {
+            productos = JSON.parse(prodGuardados);
+        } else {
             productos = [
                 { clave: '1.7', nombre: '1,7 kg', costo: 1000, precio: 1500 },
                 { clave: '3.5', nombre: '3,5 kg', costo: 1500, precio: 2500 },
@@ -1313,20 +1324,27 @@ async function cargarDatos() {
             localStorage.setItem('myc_productos', JSON.stringify(productos));
         }
 
+        const costosGuardados = localStorage.getItem('myc_costos');
+        if (costosGuardados) {
+            try { costos = JSON.parse(costosGuardados); } catch(e) {}
+        }
         for (const p of productos) {
-            if (costos[p.clave] === undefined) { costos[p.clave] = p.costo || 1000; }
+            if (costos[p.clave] === undefined) costos[p.clave] = p.costo || 0;
         }
         localStorage.setItem('myc_costos', JSON.stringify(costos));
 
+        // 7. Historial y ganancias
         cargarHistorial();
         cargarGananciasCalendario();
         cargarGananciasDesdeVentas();
 
+        // 8. Actualizar UI
         actualizarUI();
         toast('✅ Datos sincronizados automáticamente');
         mostrarDebug('✅ Carga de datos completada');
     } catch(e) {
         console.error('Error al cargar datos:', e);
+        mostrarDebug('❌ ERROR: ' + e.message);
         toast('Error al sincronizar');
     }
 }
@@ -1799,7 +1817,9 @@ function renderFinanzas() {
         if (saldo > 0) totalDeudaNeta += saldo;
     }
     document.getElementById('totalDeudasFinanzas').textContent = pesos(totalDeudaNeta);
-    // Otras métricas de finanzas se pueden agregar aquí
+    
+    // Calcular ganancias reales por cliente
+    exportarGananciaClienteExcel(); // reutilizamos la lógica para mostrar
 }
 
 // ========== EXPORTACIONES DE FINANZAS ==========
@@ -1885,26 +1905,31 @@ function exportarGananciaClienteExcel() {
         ganancia[c].gananciaReal = ganancia[c].gananciaBruta + ganancia[c].cobros;
     }
 
-    const data = [
-        ['MYC HIELO · Ganancia Real por Cliente'],
-        [],
-        ['Cliente', 'Total Ventas', 'Costo', 'Ganancia Bruta', 'Efectivo', 'Transferencias', 'Deuda Neta', 'Cobros', 'Ganancia Real']
-    ];
-    for (const [cliente, d] of Object.entries(ganancia)) {
+    // Mostrar en tabla
+    const tbody = document.getElementById('tbodyGananciaCliente');
+    if (!tbody) return;
+    const entries = Object.entries(ganancia);
+    if (entries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--texto-claro);">Sin datos de ganancias</td></tr>';
+        return;
+    }
+    tbody.innerHTML = entries.map(([cliente, d]) => {
         let transfTotal = 0;
         for (const v of ventas) {
             if (v.cliente === cliente && v.pago === 'transferencia') transfTotal += v.total || 0;
         }
-        data.push([
-            cliente, d.ventas, d.costo, d.gananciaBruta, d.efectivo, transfTotal,
-            deudaNeta[cliente] || 0, d.cobros, d.gananciaReal
-        ]);
-    }
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Ganancia por Cliente');
-    XLSX.writeFile(wb, `ganancia_por_cliente_${hoy()}.xlsx`);
-    toast('Excel exportado');
+        return `<tr>
+            <td><strong>${cliente}</strong></td>
+            <td>${pesos(d.ventas)}</td>
+            <td>${pesos(d.costo)}</td>
+            <td>${pesos(d.gananciaBruta)}</td>
+            <td>${pesos(d.efectivo)}</td>
+            <td>${pesos(transfTotal)}</td>
+            <td>${pesos(deudaNeta[cliente] || 0)}</td>
+            <td>${pesos(d.cobros)}</td>
+            <td style="font-weight:700;color:${d.gananciaReal>=0?'var(--verde)':'var(--rojo)'};">${pesos(d.gananciaReal)}</td>
+        </tr>`;
+    }).join('');
 }
 
 function exportarGananciaCalendarioExcel() {
@@ -2173,20 +2198,30 @@ function exportarGastosExcel() {
 function renderGastos() {
     const filtroFecha = document.getElementById('filtroGastosFecha').value;
     let filtrados = gastos;
-    if (filtroFecha) filtrados = filtrados.filter(g => g.fecha === filtroFecha);
+    if (filtroFecha) {
+        filtrados = filtrados.filter(g => g.fecha === filtroFecha);
+    }
     filtrados.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
     const tbody = document.getElementById('tbodyGastos');
-    if (filtrados.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos</td></tr>'; } else {
+    if (filtrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--texto-claro);">Sin gastos registrados</td></tr>';
+    } else {
         tbody.innerHTML = filtrados.map(g => `
-            <tr><td>${formatearFecha(g.fecha)}</td><td><span class="badge badge-gasto">${g.categoria || '—'}</span></td>
-            <td>${pesos(g.monto || 0)}</td><td>${g.nota || ''}</td>
-            <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td></tr>
+            <tr>
+                <td>${formatearFecha(g.fecha)}</td>
+                <td><span class="badge badge-gasto">${g.categoria || '—'}</span></td>
+                <td>${pesos(g.monto || 0)}</td>
+                <td>${g.nota || ''}</td>
+                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="eliminarGasto('${g.id}')"><i class="fas fa-trash"></i></button></td>
+            </tr>
         `).join('');
     }
-    const hoyStr = hoy();
-    const gastosHoy = gastos.filter(g => g.fecha === hoyStr);
-    const totalHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
-    document.getElementById('totalGastosDia').textContent = `Total gastos del día: ${pesos(totalHoy)}`;
+
+    // 🔧 CORREGIDO: Total de los gastos filtrados (no solo de hoy)
+    const totalFiltrados = filtrados.reduce((acc, g) => acc + (g.monto || 0), 0);
+    const fechaMostrada = filtroFecha || 'todos los días';
+    document.getElementById('totalGastosDia').textContent = `Total de gastos (${fechaMostrada === 'todos los días' ? 'todos' : formatearFecha(filtroFecha)}): ${pesos(totalFiltrados)}`;
 }
 async function eliminarGasto(id) {
     if (!confirm('¿Eliminar este gasto?')) return;
@@ -2727,6 +2762,7 @@ function renderCalendarioGanancias() {
 
     grid.innerHTML = html;
 
+    // Si hay un día seleccionado, mostrar detalle
     if (diaSeleccionadoGanancia) {
         const info = gananciasCalendario[diaSeleccionadoGanancia];
         if (info) {
@@ -2934,6 +2970,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('generarFacturaBtn').addEventListener('click', generarFactura);
 
+    // Deudas
     document.getElementById('dBtnDeuda')?.addEventListener('click', registrarDeudaTab);
     document.getElementById('dBtnPago')?.addEventListener('click', registrarPagoTab);
     document.getElementById('dFiltroCliente')?.addEventListener('input', renderMovimientosDeuda);
