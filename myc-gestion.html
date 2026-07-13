@@ -45,7 +45,6 @@
         }
         .app { max-width: 1600px; margin:0 auto; }
 
-        /* HEADER */
         .header {
             background: linear-gradient(135deg, var(--azul), var(--azul-med));
             color: white;
@@ -78,7 +77,6 @@
         }
         .header-actions .btn:hover { background: rgba(255,255,255,0.22); }
 
-        /* NAV */
         .nav {
             display: flex;
             gap: 6px;
@@ -113,7 +111,6 @@
         .nav a.whatsapp { background: var(--whatsapp); color: white; }
         .nav a.whatsapp:hover { background: #1a8a4a; }
 
-        /* CARDS */
         .card {
             background: var(--white);
             border-radius: var(--radius);
@@ -144,7 +141,6 @@
         }
         .card-title i { width: 22px; color: var(--azul-med); }
 
-        /* KPI */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -179,7 +175,6 @@
         .kpi .value.dorado { color: var(--dorado); }
         .kpi .value.morado { color: var(--morado); }
 
-        /* FILTROS */
         .filtros {
             display: flex;
             gap: 8px;
@@ -198,7 +193,6 @@
         }
         .filtros input:focus, .filtros select:focus { border-color: var(--azul); }
 
-        /* TABLAS */
         .table-wrap {
             overflow-x: auto;
             border-radius: var(--radius);
@@ -224,7 +218,6 @@
         }
         tr:hover { background: #fafcff; }
 
-        /* BADGES */
         .badge {
             display: inline-block;
             padding: 2px 10px;
@@ -240,7 +233,6 @@
         .badge-ctacte { background: #e0e7ff; color: #3730a3; }
         .badge-gasto { background: var(--rojo-claro); color: var(--rojo); }
 
-        /* BUTTONS */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -273,7 +265,6 @@
         .btn-sm { padding:3px 12px; font-size:0.65rem; }
         .btn-xs { padding:2px 8px; font-size:0.6rem; }
 
-        /* FORMS */
         .form-group {
             margin-bottom: 10px;
         }
@@ -299,7 +290,6 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
-        /* OTROS */
         #toast {
             position: fixed;
             bottom: 24px;
@@ -339,7 +329,6 @@
             font-weight: bold;
         }
 
-        /* FACTURA */
         .factura-box {
             background: white;
             border: 2px solid var(--azul);
@@ -380,8 +369,6 @@
         }
 
         .scroll-table { overflow-x: auto; max-height: 420px; overflow-y: auto; }
-
-        /* DEUDAS - toolbars */
         .d-toolbar {
             display: flex;
             gap: 6px;
@@ -406,7 +393,6 @@
 <body>
 <div class="app">
 
-    <!-- HEADER -->
     <header class="header">
         <div>
             <h1>🧊 MYC <span>HIELO</span></h1>
@@ -419,7 +405,6 @@
         </div>
     </header>
 
-    <!-- NAV -->
     <nav class="nav no-print">
         <a class="active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
         <a data-tab="ventas"><i class="fas fa-shopping-cart"></i> Ventas</a>
@@ -435,7 +420,6 @@
         <a data-tab="deudas" style="background:linear-gradient(135deg,#b91c1c,#991b1b);color:white;"><i class="fas fa-hand-holding-usd"></i> Deudas</a>
     </nav>
 
-    <!-- DEBUG -->
     <div class="debug-toggle no-print" style="display:flex; justify-content:flex-end; margin-bottom:8px;">
         <button onclick="toggleDebug()" class="btn btn-sm btn-outline">🐛 Mostrar Debug</button>
     </div>
@@ -884,7 +868,7 @@
         </div>
     </div>
 
-    <!-- ===== TAB: DEUDAS (CON BOTONES COPIAR, WHATSAPP, PDF) ===== -->
+    <!-- ===== TAB: DEUDAS ===== -->
     <div id="tab-deudas" class="tab-content">
         <div class="nav no-print" style="margin-bottom:16px;">
             <a class="active" onclick="mostrarSubtabDeuda(this,'d-resumen')" style="cursor:pointer;"><i class="fas fa-chart-bar"></i> Resumen</a>
@@ -893,7 +877,6 @@
             <a onclick="mostrarSubtabDeuda(this,'d-registrar')" style="cursor:pointer;"><i class="fas fa-plus-circle"></i> Registrar</a>
         </div>
 
-        <!-- Resumen -->
         <div id="d-resumen" class="d-subtab">
             <div class="card">
                 <div class="card-header">
@@ -912,7 +895,6 @@
             </div>
         </div>
 
-        <!-- Deudores -->
         <div id="d-deudores" class="d-subtab" style="display:none;">
             <div class="card">
                 <div class="card-header">
@@ -931,7 +913,6 @@
             </div>
         </div>
 
-        <!-- Movimientos -->
         <div id="d-movimientos" class="d-subtab" style="display:none;">
             <div class="card">
                 <div class="card-header">
@@ -961,7 +942,6 @@
             </div>
         </div>
 
-        <!-- Registrar -->
         <div id="d-registrar" class="d-subtab" style="display:none;">
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:16px;">
                 <div class="card">
@@ -992,19 +972,6 @@
 <div id="toast"></div>
 
 <script>
-// ************************************************************
-//  CÓDIGO COMPLETO FUSIONADO (versión 7.1)
-//  Incluye: Dashboard, Ventas, Gastos, Fábricas, Productos,
-//  Costos, Clientes, Informes, Historial, Finanzas,
-//  Facturación (con copia estructurada y PDF arreglado) y
-//  Módulo de Deudas (con Copiar, WhatsApp y PDF).
-//  *************** FACTURACIÓN CORREGIDA ********************
-//  Ahora calcula el saldo directamente desde las ventas
-//  sin depender de movimientos (automático).
-//  *************** CARGA DE DATOS CORREGIDA *****************
-//  Ahora reconstruye las ventas desde los movimientos.
-// ************************************************************
-
 // ========== UTILIDADES ==========
 function hoy() { return new Date().toISOString().slice(0,10); }
 function formatearFecha(f) {
@@ -1106,7 +1073,6 @@ function mostrarDebug(msg) {
     if (btn) btn.innerHTML = '🐛 Ocultar Debug';
 }
 
-// ========== COPIA FACTURA ESTRUCTURADA ==========
 function copiarFacturaEstructurada() {
     const facturaBox = document.getElementById('facturaBox');
     if (facturaBox.style.display === 'none') {
@@ -1280,8 +1246,7 @@ async function cargarDatos() {
             mostrarDebug(`Clientes cargados: ${clientes.length}`);
         }
 
-        // --- CARGA DE MOVIMIENTOS (DEUDAS) ---
-        // Esta es la parte clave. Primero cargamos los movimientos.
+        // Cargar movimientos
         const movimientosData = await apiCall('movimientos');
         if (movimientosData && Array.isArray(movimientosData)) {
             movimientos = movimientosData.map(m => ({
@@ -1295,61 +1260,36 @@ async function cargarDatos() {
             }));
             mostrarDebug(`Movimientos cargados: ${movimientos.length}`);
 
-            // --- CREACIÓN DE "VENTAS VIRTUALES" A PARTIR DE DEUDAS ---
-            // Ahora, para cada deuda que encontremos, creamos una venta "fantasma".
-            // Así, el módulo de Ventas y Facturación verán estas deudas como si fueran ventas reales.
-            ventas = []; // Reiniciamos el array de ventas para empezar limpio.
+            // Reconstruir ventas virtuales desde movimientos de deuda y pago
+            ventas = [];
             for (const m of movimientos) {
-                // Si es una deuda...
                 if (m.tipo === 'deuda' && m.monto > 0) {
-                    // Creamos una venta virtual asociada a esa deuda.
                     ventas.push({
                         id: 'deuda_' + m.id,
                         fecha: m.fecha,
                         cliente: m.cliente,
-                        cantidades: [0,0,0,0,0], // No tenemos productos, pero el sistema lo necesita
+                        cantidades: [0,0,0,0,0],
                         total: m.monto,
-                        pago: 'ctacte', // Marcamos que fue a cuenta corriente
+                        pago: 'ctacte',
                         detalle: m.detalle || 'Deuda cargada automáticamente',
                         esMovimiento: true
                     });
-                }
-                // Si es un pago de deuda...
-                else if (m.tipo === 'pago' && m.monto > 0) {
-                    // Creamos una venta virtual para el pago (como un cobro)
+                } else if (m.tipo === 'pago' && m.monto > 0) {
                     ventas.push({
                         id: 'pago_' + m.id,
                         fecha: m.fecha,
                         cliente: m.cliente,
                         cantidades: [0,0,0,0,0],
                         total: m.monto,
-                        pago: 'cobrocc', // Lo marcamos como un cobro de deuda
+                        pago: 'cobrocc',
                         detalle: m.detalle || 'Pago de deuda cargado automáticamente',
                         esMovimiento: true
                     });
                 }
             }
-            // Combinamos las ventas virtuales con cualquier venta real que haya en la nube (si las hubiera).
-            // Pero para tu caso, las ventas reales son las que fallan, así que esto las reemplaza.
             mostrarDebug(`Ventas totales (reconstruidas desde movimientos): ${ventas.length}`);
         }
 
-        // --- CARGA DE VENTAS REALES (OPCIONAL) ---
-        // Si quieres que las ventas reales también se muestren (por si alguna funciona),
-        // puedes cargarlas después. Pero para que la facturación sea correcta,
-        // lo mejor es que las ventas a crédito solo vengan de las deudas.
-        /*
-        const ventasData = await apiCall('obtenerVentas');
-        if (ventasData && Array.isArray(ventasData)) {
-            // Si tienes ventas reales, puedes filtrarlas para que no se dupliquen
-            // con las virtuales (ej: solo las que no sean 'ctacte').
-            const ventasReales = ventasData.map(v => { ... });
-            ventas = [...ventas, ...ventasReales];
-        }
-        */
-
-        // --- EL RESTO DE LA CARGA (gastos, fábricas, productos, etc.) ---
-        // Todo esto queda exactamente igual.
         const gastosData = await apiCall('obtenerGastos');
         if (gastosData && Array.isArray(gastosData)) {
             gastos = gastosData.map(g => ({
@@ -2197,7 +2137,6 @@ function exportarGananciaCalendarioExcel() {
 }
 
 // ========== FACTURACIÓN (CORREGIDA) ==========
-// 🔥 NUEVA VERSIÓN: Calcula el saldo directamente desde las ventas (sin depender de movimientos)
 function generarFactura() {
     const cliente = document.getElementById('facturaCliente').value;
     const desde = document.getElementById('facturaDesde').value;
@@ -2207,27 +2146,18 @@ function generarFactura() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
-    // ================================================================
-    // 1. CALCULAR DEUDAS Y PAGOS DIRECTAMENTE DESDE VENTAS
-    // ================================================================
     const ventasCliente = ventas.filter(v => v.cliente === cliente && v.fecha >= desde && v.fecha <= hasta);
 
-    // Deudas = ventas con pago 'ctacte'
     const deudasPeriodo = ventasCliente
         .filter(v => v.pago === 'ctacte')
         .reduce((acc, v) => acc + (v.total || 0), 0);
 
-    // Pagos = ventas con pago 'cobrocc' o transferencia sin productos (si aplica)
     const pagosPeriodo = ventasCliente
         .filter(v => v.pago === 'cobrocc' || (v.pago === 'transferencia' && !tieneProductos(v)))
         .reduce((acc, v) => acc + (v.total || 0), 0);
 
-    // Saldo neto = deudas - pagos
     const saldoNeto = deudasPeriodo - pagosPeriodo;
 
-    // ================================================================
-    // 2. MOSTRAR FACTURA (con los nuevos datos)
-    // ================================================================
     document.getElementById('facturaBox').style.display = 'block';
     document.getElementById('facturaVacia').style.display = 'none';
 
@@ -2239,9 +2169,6 @@ function generarFactura() {
 
     document.getElementById('facturaDeudaTotalMonto').textContent = pesos(saldoNeto);
 
-    // ================================================================
-    // 3. DESGLOSE DE DEUDAS Y PAGOS (para mostrar en la factura)
-    // ================================================================
     let desgloseHtml = '<div style="font-size:0.75rem;color:var(--texto-claro);margin-top:6px;border-top:1px dashed var(--borde);padding-top:6px;">';
 
     const deudasDetalle = ventasCliente.filter(v => v.pago === 'ctacte');
@@ -2279,9 +2206,6 @@ function generarFactura() {
     document.getElementById('facturaResumenSaldo').textContent = pesos(saldoNeto);
     document.getElementById('facturaTotal').textContent = pesos(saldoNeto);
 
-    // ================================================================
-    // 4. TABLA DE DETALLE DE LA FACTURA
-    // ================================================================
     let html = '';
     const todosMovs = [...deudasDetalle, ...pagosDetalle].sort((a, b) => a.fecha.localeCompare(b.fecha));
 
@@ -2701,7 +2625,7 @@ document.querySelectorAll('.nav a').forEach(el => {
     });
 });
 
-// ========== MÓDULO DE DEUDAS (con funciones de copiar, WhatsApp y PDF) ==========
+// ========== MÓDULO DE DEUDAS ==========
 function mostrarSubtabDeuda(el, subtabId) {
     document.querySelectorAll('.d-subtab').forEach(s => s.style.display = 'none');
     document.getElementById(subtabId).style.display = 'block';
