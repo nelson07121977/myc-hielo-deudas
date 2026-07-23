@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const Database = require('better-sqlite3');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,126 +10,147 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-
-// Servir archivos estáticos (HTML, CSS, JS)
 app.use(express.static(__dirname));
 
-// Inicializar base de datos SQLite con better-sqlite3
-const db = new Database('./supermercado.db');
+// ================================================================
+//  CONFIGURACIÓN DE LA BASE DE DATOS
+// ================================================================
+// Crear la carpeta 'data' si no existe (para persistencia)
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  console.log('📁 Carpeta data creada');
+}
 
-console.log('✅ Conectado a la base de datos SQLite');
+// Ruta de la base de datos dentro de la carpeta data
+const dbPath = path.join(dataDir, 'supermercado.db');
+console.log(`📂 Base de datos en: ${dbPath}`);
+
+// Inicializar base de datos
+let db;
+try {
+  db = new Database(dbPath);
+  console.log('✅ Conectado a la base de datos SQLite');
+} catch (err) {
+  console.error('❌ Error al conectar a la base de datos:', err.message);
+  process.exit(1);
+}
 
 // ================================================================
 //  CREAR TABLAS (migración automática)
 // ================================================================
-db.exec(`
-  CREATE TABLE IF NOT EXISTS productos (
-    id INTEGER PRIMARY KEY,
-    codigo TEXT,
-    codigo_barras TEXT,
-    nombre TEXT,
-    categoria TEXT,
-    precio_final REAL,
-    stock REAL,
-    tipo_venta TEXT,
-    costo_s_iva REAL,
-    tipo_iva INTEGER,
-    precio_s_iva REAL,
-    stock_disponible REAL,
-    stock_minimo REAL,
-    marca TEXT,
-    ubicacion TEXT,
-    seccion TEXT,
-    activo INTEGER DEFAULT 1,
-    metodo_precio TEXT,
-    porcentaje_ganancia REAL
-  );
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS productos (
+      id INTEGER PRIMARY KEY,
+      codigo TEXT,
+      codigo_barras TEXT,
+      nombre TEXT,
+      categoria TEXT,
+      precio_final REAL,
+      stock REAL,
+      tipo_venta TEXT,
+      costo_s_iva REAL,
+      tipo_iva INTEGER,
+      precio_s_iva REAL,
+      stock_disponible REAL,
+      stock_minimo REAL,
+      marca TEXT,
+      ubicacion TEXT,
+      seccion TEXT,
+      activo INTEGER DEFAULT 1,
+      metodo_precio TEXT,
+      porcentaje_ganancia REAL
+    );
 
-  CREATE TABLE IF NOT EXISTS ventas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fecha TEXT,
-    timestamp INTEGER,
-    total REAL,
-    medio_pago TEXT,
-    cliente_id INTEGER,
-    cliente_nombre TEXT,
-    cajero TEXT,
-    tarjeta_tipo TEXT,
-    tarjeta_numero TEXT,
-    tarjeta_cuotas INTEGER,
-    items TEXT
-  );
+    CREATE TABLE IF NOT EXISTS ventas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha TEXT,
+      timestamp INTEGER,
+      total REAL,
+      medio_pago TEXT,
+      cliente_id INTEGER,
+      cliente_nombre TEXT,
+      cajero TEXT,
+      tarjeta_tipo TEXT,
+      tarjeta_numero TEXT,
+      tarjeta_cuotas INTEGER,
+      items TEXT
+    );
 
-  CREATE TABLE IF NOT EXISTS movimientos_stock (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fecha TEXT,
-    producto_id INTEGER,
-    nombre TEXT,
-    tipo TEXT,
-    cantidad REAL,
-    stock_anterior REAL,
-    stock_nuevo REAL,
-    usuario TEXT,
-    venta_id INTEGER
-  );
+    CREATE TABLE IF NOT EXISTS movimientos_stock (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha TEXT,
+      producto_id INTEGER,
+      nombre TEXT,
+      tipo TEXT,
+      cantidad REAL,
+      stock_anterior REAL,
+      stock_nuevo REAL,
+      usuario TEXT,
+      venta_id INTEGER
+    );
 
-  CREATE TABLE IF NOT EXISTS caja (
-    id INTEGER PRIMARY KEY,
-    estado TEXT,
-    monto_inicial REAL,
-    total_efectivo REAL,
-    total_tarjeta REAL,
-    total_mp REAL,
-    total_ctacte REAL,
-    fecha_apertura TEXT,
-    hora_apertura TEXT,
-    fecha_cierre TEXT,
-    hora_cierre TEXT,
-    total_cierre REAL
-  );
+    CREATE TABLE IF NOT EXISTS caja (
+      id INTEGER PRIMARY KEY,
+      estado TEXT,
+      monto_inicial REAL,
+      total_efectivo REAL,
+      total_tarjeta REAL,
+      total_mp REAL,
+      total_ctacte REAL,
+      fecha_apertura TEXT,
+      hora_apertura TEXT,
+      fecha_cierre TEXT,
+      hora_cierre TEXT,
+      total_cierre REAL
+    );
 
-  CREATE TABLE IF NOT EXISTS compras (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fecha TEXT,
-    proveedor TEXT,
-    total REAL,
-    items TEXT
-  );
+    CREATE TABLE IF NOT EXISTS compras (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha TEXT,
+      proveedor TEXT,
+      total REAL,
+      items TEXT
+    );
 
-  CREATE TABLE IF NOT EXISTS proveedores (
-    id INTEGER PRIMARY KEY,
-    nombre TEXT,
-    cuit TEXT,
-    telefono TEXT
-  );
+    CREATE TABLE IF NOT EXISTS proveedores (
+      id INTEGER PRIMARY KEY,
+      nombre TEXT,
+      cuit TEXT,
+      telefono TEXT
+    );
 
-  CREATE TABLE IF NOT EXISTS clientes (
-    id INTEGER PRIMARY KEY,
-    nombre TEXT,
-    cuit TEXT,
-    saldo REAL
-  );
+    CREATE TABLE IF NOT EXISTS clientes (
+      id INTEGER PRIMARY KEY,
+      nombre TEXT,
+      cuit TEXT,
+      saldo REAL
+    );
 
-  CREATE TABLE IF NOT EXISTS logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fecha TEXT,
-    usuario TEXT,
-    accion TEXT,
-    detalle TEXT
-  );
+    CREATE TABLE IF NOT EXISTS logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha TEXT,
+      usuario TEXT,
+      accion TEXT,
+      detalle TEXT
+    );
 
-  CREATE TABLE IF NOT EXISTS sync_queue (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    device_id TEXT,
-    tipo TEXT,
-    data TEXT,
-    intentos INTEGER DEFAULT 0,
-    creado_en TEXT,
-    sincronizado INTEGER DEFAULT 0
-  );
-`);
-
-console.log('✅ Tablas creadas/verificadas');
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      device_id TEXT,
+      tipo TEXT,
+      data TEXT,
+      intentos INTEGER DEFAULT 0,
+      creado_en TEXT,
+      sincronizado INTEGER DEFAULT 0
+    );
+  `);
+  console.log('✅ Tablas creadas/verificadas correctamente');
+} catch (err) {
+  console.error('❌ Error al crear tablas:', err.message);
+  process.exit(1);
+}
 
 // ================================================================
 //  FUNCIONES AUXILIARES
@@ -449,8 +472,11 @@ app.post('/api/productos/sync', (req, res) => {
   }
 });
 
-// Iniciar servidor
+// ================================================================
+//  INICIAR SERVIDOR
+// ================================================================
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`📡 Accesible desde otros dispositivos en tu red usando la IP local`);
+  console.log(`📂 Datos guardados en: ${dataDir}`);
 });
