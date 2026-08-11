@@ -1048,6 +1048,10 @@ let totalFiambresDB = 0;
 let syncQueue = [];
 let isOnline = true;
 
+// Variables para compras
+let compraProductoSeleccionadoId = null;
+let compraProductoSeleccionadoObj = null; // <-- NUEVO: guardamos el objeto completo
+
 // ================================================================
 //  TOAST
 // ================================================================
@@ -1082,13 +1086,12 @@ function playVentaSound() { playSound(880,200,0.4); setTimeout(()=>playSound(110
 function playScanSound() { playSound(600,100,0.3); setTimeout(()=>playSound(800,100,0.3),100); }
 
 // ================================================================
-//  LOGS (sincronizados al servidor)
+//  LOGS
 // ================================================================
 function agregarLog(accion, detalle = '') {
     const fecha = new Date().toISOString();
     logs.push({ fecha, usuario: usuario ? usuario.nombre : 'Sistema', accion, detalle });
     if (logs.length > 100) logs.shift();
-    // Intentar enviar al servidor
     if (isOnline) {
         apiFetch('/api/logs', {
             method: 'POST',
@@ -1105,7 +1108,7 @@ function renderLogs() {
 }
 
 // ================================================================
-//  FUNCIONES DE RED CON FALLBACK LOCAL
+//  FUNCIONES DE RED
 // ================================================================
 async function apiFetch(endpoint, options = {}) {
     const url = SERVER_URL + endpoint;
@@ -1129,7 +1132,6 @@ async function apiFetch(endpoint, options = {}) {
     }
 }
 
-// Verificar estado del servidor periódicamente
 async function checkServerStatus() {
     try {
         await fetch(SERVER_URL + '/api/status');
@@ -1137,10 +1139,7 @@ async function checkServerStatus() {
         document.getElementById('statusServidor').innerHTML = '🟢 Conectado';
         document.getElementById('statusServidor').style.background = '#d1fae5';
         document.getElementById('statusServidor').style.color = '#0a7c4a';
-        // Si hay cola de sincronización, procesarla
-        if (syncQueue.length > 0) {
-            processSyncQueue();
-        }
+        if (syncQueue.length > 0) processSyncQueue();
     } catch (e) {
         isOnline = false;
         document.getElementById('statusServidor').innerHTML = '🔴 Sin conexión';
@@ -1150,17 +1149,10 @@ async function checkServerStatus() {
 }
 
 // ================================================================
-//  BASE DE DATOS LOCAL (IndexedDB - fallback)
-// ================================================================
-// (Mantenemos las funciones de IndexedDB como respaldo)
-// ... (las mismas que ya tenías, las dejo por brevedad pero puedes mantenerlas)
-
-// ================================================================
-//  GUARDAR DATOS (híbrido: servidor + local)
+//  GUARDAR DATOS
 // ================================================================
 async function guardarDatos() {
     try {
-        // Sincronizar productos con el servidor
         await apiFetch('/api/productos/sync', {
             method: 'POST',
             body: JSON.stringify({ productos: productos })
@@ -1169,7 +1161,6 @@ async function guardarDatos() {
         isOnline = true;
     } catch (e) {
         console.warn('⚠️ Servidor no disponible, guardando localmente');
-        // Guardar en localStorage como fallback
         localStorage.setItem('productos', JSON.stringify(productos));
         localStorage.setItem('proveedores', JSON.stringify(proveedores));
         localStorage.setItem('ventas', JSON.stringify(ventas));
@@ -1185,7 +1176,7 @@ async function guardarDatos() {
 }
 
 // ================================================================
-//  CARGAR DATOS (primero servidor, luego local)
+//  CARGAR DATOS
 // ================================================================
 async function cargarDatos() {
     console.log('🔄 Cargando datos...');
@@ -1194,20 +1185,16 @@ async function cargarDatos() {
         loginContainer.innerHTML = '<h2><i class="fas fa-spinner fa-spin"></i> Conectando al servidor...</h2>';
     }
     try {
-        // Intentar cargar desde servidor
         const result = await apiFetch('/api/productos?limit=200');
         productos = result.data;
         totalProductosDB = result.total;
         offsetProductos = 200;
         console.log(`✅ Cargados ${productos.length} productos desde servidor`);
 
-        // Cargar proveedores
         const provData = await apiFetch('/api/proveedores');
         proveedores = provData;
 
-        // Cargar dashboard
         const dashData = await apiFetch('/api/dashboard');
-        // Actualizar caja con datos del servidor
         caja = {
             estado: dashData.caja_estado,
             total_efectivo: dashData.caja_efectivo,
@@ -1216,21 +1203,17 @@ async function cargarDatos() {
             total_ctacte: dashData.caja_ctacte
         };
 
-        // Cargar compras
         const comprasData = await apiFetch('/api/compras');
         compras = comprasData;
 
-        // Cargar logs
         const logsData = await apiFetch('/api/logs');
         logs = logsData;
 
-        // Cargar usuarios (desde localStorage)
         usuarios = JSON.parse(localStorage.getItem('usuarios')) || [
             { id:1, nombre:'admin', clave:'admin123', rol:'admin', pregunta:'', respuesta:'' },
             { id:2, nombre:'cajero1', clave:'caja123', rol:'cajero', pregunta:'', respuesta:'' }
         ];
 
-        // Cargar config
         config = JSON.parse(localStorage.getItem('config')) || {
             nombreLocal: 'Supermercado Futuro', impuesto: 21,
             ticketHeader: '¡Gracias por su compra!', ticketFooter: 'Vuelva pronto!', autoPrint: true
@@ -1248,7 +1231,6 @@ async function cargarDatos() {
         document.getElementById('statusServidor').style.background = '#fee2e2';
         document.getElementById('statusServidor').style.color = '#b91c1c';
 
-        // Fallback a localStorage
         const allProducts = JSON.parse(localStorage.getItem('productos')) || [];
         totalProductosDB = allProducts.length;
         productos = allProducts.slice(0, CANTIDAD_INICIAL);
@@ -1282,7 +1264,6 @@ async function cargarDatos() {
 
     document.getElementById('kpiDeviceId').textContent = device_id.slice(-8);
 
-    // Mostrar login
     if (loginContainer) {
         loginContainer.innerHTML = `
             <h2><i class="fas fa-store-alt"></i> Supermercado</h2>
@@ -1297,9 +1278,6 @@ async function cargarDatos() {
     console.log('✅ Datos cargados');
 }
 
-// ================================================================
-//  RESETEAR DATOS
-// ================================================================
 function resetearDatos() {
     const clave = prompt('Ingresá la clave maestra para restablecer todos los datos:');
     if (clave === null) return;
@@ -1325,7 +1303,7 @@ function resetearDatos() {
 }
 
 // ================================================================
-//  LOGIN Y FUNCIONES DE SEGURIDAD
+//  LOGIN Y SEGURIDAD
 // ================================================================
 function login() {
     console.log('Login iniciado');
@@ -1381,7 +1359,7 @@ document.getElementById('themeToggle').addEventListener('click', function() {
 });
 
 // ================================================================
-//  SIDEBAR Y NAVEGACIÓN
+//  SIDEBAR
 // ================================================================
 function inicializarSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -1424,7 +1402,7 @@ function inicializarSidebar() {
 }
 
 // ================================================================
-//  CARGA INICIAL ESCALONADA
+//  CARGA INICIAL
 // ================================================================
 function cargarDatosIniciales() {
     setTimeout(() => {
@@ -1461,17 +1439,14 @@ function cargarDatosIniciales() {
         document.getElementById('cargarMasCarnesBtn').addEventListener('click', cargarMasCarnes);
         document.getElementById('cargarMasFiambresBtn').addEventListener('click', cargarMasFiambres);
         document.getElementById('cargarMasProductosBtn').addEventListener('click', cargarMasProductos);
-        // Verificar estado del servidor cada 30 segundos
         setInterval(checkServerStatus, 30000);
         checkServerStatus();
     }, 150);
 }
 
 // ================================================================
-//  BUSCADOR DE PRODUCTOS EN COMPRAS
+//  BUSCADOR DE PRODUCTOS EN COMPRAS (con almacenamiento completo)
 // ================================================================
-let compraProductoSeleccionado = null;
-
 async function buscarProductosCompra(query) {
     if (!query || query.length < 2) {
         document.getElementById('compraResultados').innerHTML = '';
@@ -1493,9 +1468,28 @@ async function buscarProductosCompra(query) {
         container.querySelectorAll('.result-item').forEach(el => {
             el.addEventListener('click', function() {
                 const id = parseInt(this.dataset.id);
-                compraProductoSeleccionado = id;
-                document.getElementById('compraBuscarProducto').value = this.textContent.split(' (')[0];
-                container.innerHTML = '';
+                // Buscar el objeto completo en result.data
+                const producto = result.data.find(p => p.id === id);
+                if (producto) {
+                    compraProductoSeleccionadoId = id;
+                    compraProductoSeleccionadoObj = producto; // Guardamos el objeto completo
+
+                    // Asegurar que el producto esté en el arreglo local 'productos'
+                    if (!productos.find(p => p.id === id)) {
+                        productos.push({ ...producto });
+                        totalProductosDB++;
+                        // Actualizar cachés si corresponde
+                        if (producto.categoria === 'carniceria') {
+                            productosCarnesCache.push({ ...producto });
+                            totalCarnesDB++;
+                        } else if (producto.categoria === 'fiambres') {
+                            productosFiambresCache.push({ ...producto });
+                            totalFiambresDB++;
+                        }
+                    }
+                    document.getElementById('compraBuscarProducto').value = producto.nombre;
+                    container.innerHTML = '';
+                }
             });
         });
     } catch(e) {
@@ -1531,7 +1525,7 @@ function calcularPorcentaje() {
 }
 
 // ================================================================
-//  BUSCADOR DE CAJA
+//  BUSCADOR DE CAJA (sin cambios relevantes)
 // ================================================================
 document.getElementById('buscarProducto').addEventListener('input', function() {
     if (!esCajero()) return;
@@ -1791,7 +1785,7 @@ function agregarProductoAlCarrito(producto) {
 }
 
 // ================================================================
-//  PRODUCTOS (CRUD)
+//  PRODUCTOS (CRUD) con eliminación correcta
 // ================================================================
 function getProductosFiltrados() {
     const filtro = document.getElementById('filtroProductos').value.toLowerCase();
@@ -1912,14 +1906,33 @@ document.getElementById('nuevoProductoBtn').addEventListener('click', function()
     toast('Producto agregado', 'success');
 });
 
+// CORRECCIÓN: Eliminar producto actualizando cachés
 function eliminarProducto(id) {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     if (!confirm('¿Eliminar producto?')) return;
     const idx = productos.findIndex(p => p.id === id);
     if (idx !== -1) {
         const nombre = productos[idx].nombre;
+        const categoria = productos[idx].categoria;
         productos.splice(idx, 1);
         totalProductosDB--;
+        
+        // Eliminar también de las cachés de carnicería y fiambres
+        if (categoria === 'carniceria') {
+            const idxCarne = productosCarnesCache.findIndex(p => p.id === id);
+            if (idxCarne !== -1) {
+                productosCarnesCache.splice(idxCarne, 1);
+                totalCarnesDB--;
+            }
+        } else if (categoria === 'fiambres') {
+            const idxFiambre = productosFiambresCache.findIndex(p => p.id === id);
+            if (idxFiambre !== -1) {
+                productosFiambresCache.splice(idxFiambre, 1);
+                totalFiambresDB--;
+            }
+        }
+
+        // Actualizar vistas
         renderProductos(true);
         renderCarniceria();
         renderFiambres();
@@ -2267,10 +2280,10 @@ function agregarManualCompra() {
 }
 
 // ================================================================
-//  COMPRAS
+//  COMPRAS (con corrección de stock)
 // ================================================================
 document.getElementById('agregarItemCompraBtn').addEventListener('click', function() {
-    if (!compraProductoSeleccionado) {
+    if (!compraProductoSeleccionadoId) {
         toast('Seleccioná un producto de la búsqueda', 'error');
         return;
     }
@@ -2280,15 +2293,25 @@ document.getElementById('agregarItemCompraBtn').addEventListener('click', functi
         toast('Complete los datos', 'error');
         return;
     }
-    const producto = productos.find(p => p.id === compraProductoSeleccionado);
+    // Usar el objeto completo guardado
+    const producto = compraProductoSeleccionadoObj || productos.find(p => p.id === compraProductoSeleccionadoId);
     if (!producto) { toast('Producto no encontrado', 'error'); return; }
-    compraItems.push({ producto_id: compraProductoSeleccionado, nombre: producto.nombre, cantidad: cant, precio_costo: precio });
+    compraItems.push({
+        producto_id: producto.id,
+        nombre: producto.nombre,
+        cantidad: cant,
+        precio_costo: precio,
+        es_manual: false,
+        categoria: producto.categoria,
+        tipo_venta: producto.tipo_venta
+    });
     renderCompraItems();
     document.getElementById('compraCantidad').value = 1;
     document.getElementById('compraPrecioCosto').value = '';
     document.getElementById('compraBuscarProducto').value = '';
     document.getElementById('compraResultados').innerHTML = '';
-    compraProductoSeleccionado = null;
+    compraProductoSeleccionadoId = null;
+    compraProductoSeleccionadoObj = null;
     toast('Item agregado', 'success');
 });
 
@@ -2315,6 +2338,7 @@ function eliminarItemCompra(idx) {
     renderCompraItems();
 }
 
+// CORRECCIÓN: Finalizar compra con creación de productos nuevos y actualización de stock
 document.getElementById('finalizarCompraBtn').addEventListener('click', function() {
     if (compraItems.length === 0) { toast('Agregá items', 'error'); return; }
     const proveedor_id = parseInt(document.getElementById('compraProveedor').value);
@@ -2329,35 +2353,78 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', function
         totalPagado = totalCalculado;
     }
     const proveedor = proveedores.find(p => p.id === proveedor_id);
+
+    // Procesar cada item
+    compraItems.forEach(item => {
+        let prod = productos.find(p => p.id === item.producto_id);
+        // Si es manual o el producto no existe, crearlo
+        if (item.es_manual || !prod) {
+            const id = nextProductoId++;
+            const nuevo = {
+                id,
+                codigo: '',
+                codigo_barras: '',
+                nombre: item.nombre,
+                categoria: item.categoria || 'otros',
+                precio_final: item.precio_costo * 1.5, // precio sugerido (50% sobre costo)
+                stock: 0,
+                tipo_venta: item.tipo_venta || 'unidad',
+                costo_s_iva: item.precio_costo,
+                tipo_iva: 21,
+                precio_s_iva: 0,
+                stock_disponible: 0,
+                stock_minimo: 0,
+                marca: '',
+                ubicacion: '',
+                seccion: '',
+                activo: 1,
+                metodo_precio: 'fijo',
+                porcentaje_ganancia: 0
+            };
+            productos.push(nuevo);
+            totalProductosDB++;
+            // Actualizar cachés
+            if (nuevo.categoria === 'carniceria') {
+                productosCarnesCache.push(nuevo);
+                totalCarnesDB++;
+            } else if (nuevo.categoria === 'fiambres') {
+                productosFiambresCache.push(nuevo);
+                totalFiambresDB++;
+            }
+            prod = nuevo;
+        }
+
+        // Actualizar stock y costo
+        const stockAnterior = prod.stock || 0;
+        prod.stock = stockAnterior + item.cantidad;
+        // Actualizar costo promedio
+        const costoAnterior = prod.costo_s_iva || 0;
+        const nuevoCosto = (costoAnterior * stockAnterior + item.precio_costo * item.cantidad) / prod.stock;
+        prod.costo_s_iva = Math.round(nuevoCosto * 100) / 100;
+        // Si usa porcentaje, recalcular precio
+        if (prod.metodo_precio === 'porcentaje' && prod.porcentaje_ganancia > 0) {
+            prod.precio_final = prod.costo_s_iva * (1 + prod.porcentaje_ganancia / 100);
+        }
+        movimientosStock.push({
+            fecha: new Date().toISOString(),
+            producto_id: prod.id,
+            nombre: prod.nombre,
+            tipo: 'compra',
+            cantidad: item.cantidad,
+            stock_anterior: stockAnterior,
+            stock_nuevo: prod.stock,
+            usuario: usuario.nombre
+        });
+    });
+
+    // Guardar compra
     compras.push({ 
         fecha, 
         proveedor: proveedor ? proveedor.nombre : 'ID ' + proveedor_id, 
         total: totalPagado,
         items: compraItems.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_costo }))
     });
-    // Actualizar stock
-    compraItems.forEach(item => {
-        if (item.es_manual) return;
-        const prod = productos.find(p => p.id === item.producto_id);
-        if (prod) {
-            prod.stock = (prod.stock || 0) + item.cantidad;
-            const nuevoCosto = ((prod.costo_s_iva || 0) * (prod.stock - item.cantidad) + item.precio_costo * item.cantidad) / prod.stock;
-            prod.costo_s_iva = Math.round(nuevoCosto * 100) / 100;
-            if (prod.metodo_precio === 'porcentaje' && prod.porcentaje_ganancia > 0) {
-                prod.precio_final = prod.costo_s_iva * (1 + prod.porcentaje_ganancia / 100);
-            }
-            movimientosStock.push({
-                fecha: new Date().toISOString(),
-                producto_id: prod.id,
-                nombre: prod.nombre,
-                tipo: 'compra',
-                cantidad: item.cantidad,
-                stock_anterior: prod.stock - item.cantidad,
-                stock_nuevo: prod.stock,
-                usuario: usuario.nombre
-            });
-        }
-    });
+
     compraItems = [];
     renderCompraItems();
     renderProductos();
@@ -2368,7 +2435,7 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', function
     guardarDatos();
     document.getElementById('compraTotalPagado').value = '';
     agregarLog('Compra registrada', `Total $${totalPagado} de ${proveedor ? proveedor.nombre : ''}`);
-    toast('✅ Compra registrada', 'success');
+    toast('✅ Compra registrada y stock actualizado', 'success');
 });
 
 // ================================================================
@@ -2533,14 +2600,12 @@ document.getElementById('registrarVentaBtn').addEventListener('click', function(
         tarjeta: tarjetaInfo 
     };
     
-    // Intentar enviar al servidor
     if (isOnline) {
         apiFetch('/api/ventas', {
             method: 'POST',
             body: JSON.stringify({ venta, items: venta.items, device_id })
         }).then(response => {
             if (response.success) {
-                // Éxito: actualizar localmente
                 ventas.push(venta);
                 carrito.forEach(item => {
                     const prod = productos.find(p => p.id === item.producto_id);
@@ -2576,13 +2641,11 @@ document.getElementById('registrarVentaBtn').addEventListener('click', function(
                 toast('✅ Venta registrada en el servidor', 'success');
             }
         }).catch(err => {
-            // Falló el servidor, guardar localmente para sincronizar después
             toast('⚠️ Servidor no disponible. Venta guardada localmente para sincronizar.', 'error');
             guardarVentaOffline(venta);
             procesarVentaLocal(venta);
         });
     } else {
-        // Modo offline: guardar localmente
         toast('📡 Modo offline. Venta guardada localmente.', 'info');
         guardarVentaOffline(venta);
         procesarVentaLocal(venta);
@@ -2655,9 +2718,6 @@ async function processSyncQueue() {
     }
 }
 
-// ================================================================
-//  MOSTRAR TICKET
-// ================================================================
 function mostrarTicket(venta) {
     const html = generarTicketHTML(venta);
     document.getElementById('ticketPrint').innerHTML = html;
