@@ -960,7 +960,6 @@
 // ================================================================
 //  CONFIGURACIÓN DEL SERVIDOR
 // ================================================================
-// 🔴 CAMBIA ESTA IP POR LA DE TU SERVIDOR (ej: 192.168.1.100)
 const SERVER_URL = 'https://myc-hielo-deudas-production.up.railway.app';
 const device_id = localStorage.getItem('device_id') || 'device_' + Date.now();
 localStorage.setItem('device_id', device_id);
@@ -1050,7 +1049,7 @@ let isOnline = true;
 
 // Variables para compras
 let compraProductoSeleccionadoId = null;
-let compraProductoSeleccionadoObj = null; // <-- NUEVO: guardamos el objeto completo
+let compraProductoSeleccionadoObj = null;
 
 // ================================================================
 //  TOAST
@@ -1445,7 +1444,7 @@ function cargarDatosIniciales() {
 }
 
 // ================================================================
-//  BUSCADOR DE PRODUCTOS EN COMPRAS (con almacenamiento completo)
+//  BUSCADOR DE PRODUCTOS EN COMPRAS
 // ================================================================
 async function buscarProductosCompra(query) {
     if (!query || query.length < 2) {
@@ -1468,17 +1467,13 @@ async function buscarProductosCompra(query) {
         container.querySelectorAll('.result-item').forEach(el => {
             el.addEventListener('click', function() {
                 const id = parseInt(this.dataset.id);
-                // Buscar el objeto completo en result.data
                 const producto = result.data.find(p => p.id === id);
                 if (producto) {
                     compraProductoSeleccionadoId = id;
-                    compraProductoSeleccionadoObj = producto; // Guardamos el objeto completo
-
-                    // Asegurar que el producto esté en el arreglo local 'productos'
+                    compraProductoSeleccionadoObj = producto;
                     if (!productos.find(p => p.id === id)) {
                         productos.push({ ...producto });
                         totalProductosDB++;
-                        // Actualizar cachés si corresponde
                         if (producto.categoria === 'carniceria') {
                             productosCarnesCache.push({ ...producto });
                             totalCarnesDB++;
@@ -1525,7 +1520,7 @@ function calcularPorcentaje() {
 }
 
 // ================================================================
-//  BUSCADOR DE CAJA (sin cambios relevantes)
+//  BUSCADOR DE CAJA (VENTAS)
 // ================================================================
 document.getElementById('buscarProducto').addEventListener('input', function() {
     if (!esCajero()) return;
@@ -1785,7 +1780,7 @@ function agregarProductoAlCarrito(producto) {
 }
 
 // ================================================================
-//  PRODUCTOS (CRUD) con eliminación correcta
+//  PRODUCTOS (CRUD) con eliminación sincronizada
 // ================================================================
 function getProductosFiltrados() {
     const filtro = document.getElementById('filtroProductos').value.toLowerCase();
@@ -1906,41 +1901,53 @@ document.getElementById('nuevoProductoBtn').addEventListener('click', function()
     toast('Producto agregado', 'success');
 });
 
-// CORRECCIÓN: Eliminar producto actualizando cachés
+// CORRECCIÓN: Eliminar producto sincronizado con servidor y cachés
 function eliminarProducto(id) {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     if (!confirm('¿Eliminar producto?')) return;
     const idx = productos.findIndex(p => p.id === id);
-    if (idx !== -1) {
-        const nombre = productos[idx].nombre;
-        const categoria = productos[idx].categoria;
-        productos.splice(idx, 1);
-        totalProductosDB--;
-        
-        // Eliminar también de las cachés de carnicería y fiambres
-        if (categoria === 'carniceria') {
-            const idxCarne = productosCarnesCache.findIndex(p => p.id === id);
-            if (idxCarne !== -1) {
-                productosCarnesCache.splice(idxCarne, 1);
-                totalCarnesDB--;
-            }
-        } else if (categoria === 'fiambres') {
-            const idxFiambre = productosFiambresCache.findIndex(p => p.id === id);
-            if (idxFiambre !== -1) {
-                productosFiambresCache.splice(idxFiambre, 1);
-                totalFiambresDB--;
-            }
-        }
+    if (idx === -1) { toast('Producto no encontrado', 'error'); return; }
+    const nombre = productos[idx].nombre;
+    const categoria = productos[idx].categoria;
 
-        // Actualizar vistas
-        renderProductos(true);
-        renderCarniceria();
-        renderFiambres();
-        verificarStockBajo();
-        guardarDatos();
-        agregarLog('Eliminar producto', `${nombre} eliminado`);
-        toast('Producto eliminado', 'success');
+    // 1. Eliminar del servidor
+    if (isOnline) {
+        apiFetch(`/api/productos/${id}`, { method: 'DELETE' })
+            .then(() => {
+                toast('Producto eliminado del servidor', 'success');
+            })
+            .catch(err => {
+                toast('Error al eliminar del servidor, se eliminará localmente', 'error');
+            });
     }
+
+    // 2. Eliminar localmente
+    productos.splice(idx, 1);
+    totalProductosDB--;
+    
+    // 3. Eliminar de cachés
+    if (categoria === 'carniceria') {
+        const idxCarne = productosCarnesCache.findIndex(p => p.id === id);
+        if (idxCarne !== -1) {
+            productosCarnesCache.splice(idxCarne, 1);
+            totalCarnesDB--;
+        }
+    } else if (categoria === 'fiambres') {
+        const idxFiambre = productosFiambresCache.findIndex(p => p.id === id);
+        if (idxFiambre !== -1) {
+            productosFiambresCache.splice(idxFiambre, 1);
+            totalFiambresDB--;
+        }
+    }
+
+    // 4. Actualizar vistas
+    renderProductos(true);
+    renderCarniceria();
+    renderFiambres();
+    verificarStockBajo();
+    guardarDatos();
+    agregarLog('Eliminar producto', `${nombre} eliminado`);
+    toast('Producto eliminado', 'success');
 }
 
 function editarProducto(id) {
@@ -2280,7 +2287,7 @@ function agregarManualCompra() {
 }
 
 // ================================================================
-//  COMPRAS (con corrección de stock)
+//  COMPRAS
 // ================================================================
 document.getElementById('agregarItemCompraBtn').addEventListener('click', function() {
     if (!compraProductoSeleccionadoId) {
@@ -2293,7 +2300,6 @@ document.getElementById('agregarItemCompraBtn').addEventListener('click', functi
         toast('Complete los datos', 'error');
         return;
     }
-    // Usar el objeto completo guardado
     const producto = compraProductoSeleccionadoObj || productos.find(p => p.id === compraProductoSeleccionadoId);
     if (!producto) { toast('Producto no encontrado', 'error'); return; }
     compraItems.push({
@@ -2366,7 +2372,7 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', function
                 codigo_barras: '',
                 nombre: item.nombre,
                 categoria: item.categoria || 'otros',
-                precio_final: item.precio_costo * 1.5, // precio sugerido (50% sobre costo)
+                precio_final: item.precio_costo * 1.5,
                 stock: 0,
                 tipo_venta: item.tipo_venta || 'unidad',
                 costo_s_iva: item.precio_costo,
@@ -2383,7 +2389,6 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', function
             };
             productos.push(nuevo);
             totalProductosDB++;
-            // Actualizar cachés
             if (nuevo.categoria === 'carniceria') {
                 productosCarnesCache.push(nuevo);
                 totalCarnesDB++;
@@ -2397,11 +2402,9 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', function
         // Actualizar stock y costo
         const stockAnterior = prod.stock || 0;
         prod.stock = stockAnterior + item.cantidad;
-        // Actualizar costo promedio
         const costoAnterior = prod.costo_s_iva || 0;
         const nuevoCosto = (costoAnterior * stockAnterior + item.precio_costo * item.cantidad) / prod.stock;
         prod.costo_s_iva = Math.round(nuevoCosto * 100) / 100;
-        // Si usa porcentaje, recalcular precio
         if (prod.metodo_precio === 'porcentaje' && prod.porcentaje_ganancia > 0) {
             prod.precio_final = prod.costo_s_iva * (1 + prod.porcentaje_ganancia / 100);
         }
