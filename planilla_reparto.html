@@ -176,7 +176,7 @@
             <button id="guardarProductosBtn" style="margin-top:8px;">💾 Guardar productos</button>
         </div>
 
-        <!-- ===== NUEVO CONTENIDO: TAB DEUDAS ===== -->
+        <!-- ===== NUEVO CONTENIDO: TAB DEUDAS (DESDE LA API) ===== -->
         <div id="tabDeudas" class="tab-content">
             <div class="card">
                 <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--borde); padding-bottom:12px; margin-bottom:16px;">
@@ -187,11 +187,11 @@
                         <button class="btn btn-sm btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
                     </div>
                 </div>
-                <div id="deudasAdminLista"></div>
+                <div id="deudasAdminLista"><p style="text-align:center;color:var(--texto-claro);">Cargando deudas...</p></div>
                 <div style="background:linear-gradient(135deg,var(--rojo),#991b1b); color:white; padding:14px; border-radius:12px; text-align:center; margin-top:14px; font-size:1.1rem; font-weight:800;">
                     💰 Total adeudado: <span id="deudasAdminTotal">$0</span>
                 </div>
-                <div style="font-size:0.65rem; color:var(--texto-claro); text-align:center; margin-top:8px;">* Datos calculados en base a las ventas locales de ambos choferes.</div>
+                <div style="font-size:0.65rem; color:var(--texto-claro); text-align:center; margin-top:8px;">* Datos obtenidos de la API unificada (Google Sheets).</div>
             </div>
         </div>
 
@@ -626,10 +626,6 @@ function renderAdmin() {
     }
     renderClientesAdmin();
     renderProductosAdmin();
-    // Asegurar que la pestaña de deudas se renderice si está activa
-    if (document.getElementById('tabDeudas').classList.contains('active')) {
-        renderDeudasAdmin();
-    }
 }
 
 function renderClientesAdmin() {
@@ -775,61 +771,77 @@ async function apiCall(ruta, params, usePost = false) {
     } catch(e) { console.error(e); return null; }
 }
 
-// ==================== NUEVA FUNCIÓN: RENDER DEUDAS ADMIN ====================
-function renderDeudasAdmin() {
+// ==================== NUEVA FUNCIÓN: RENDER DEUDAS ADMIN (DESDE LA API) ====================
+async function renderDeudasAdmin() {
     const lista = document.getElementById('deudasAdminLista');
     const totalSpan = document.getElementById('deudasAdminTotal');
-    const saldos = {};
 
-    // Recorrer ambos choferes para calcular la deuda total
-    for (let pin of ["1234", "5678"]) {
-        let key = `ventas_${pin}`;
-        let ventasPin = JSON.parse(localStorage.getItem(key) || "[]");
-        for (let v of ventasPin) {
-            if (v.pago === "ctacte") {
-                // Cuenta corriente -> aumenta la deuda
-                saldos[v.cliente] = (saldos[v.cliente] || 0) + (v.total || 0);
-            } else if (v.pago === "cobrocc") {
-                // Cobro de deuda -> disminuye la deuda
-                saldos[v.cliente] = (saldos[v.cliente] || 0) - (v.cobroDeuda || 0);
+    // Mostrar cargando
+    lista.innerHTML = '<p style="text-align:center;color:var(--texto-claro);">Cargando deudas desde la nube...</p>';
+    totalSpan.textContent = '$0';
+
+    try {
+        // Obtener movimientos desde la API
+        const data = await apiCall('movimientos');
+        if (!data || !Array.isArray(data)) {
+            lista.innerHTML = '<p style="text-align:center;color:var(--texto-claro);">⚠️ No se pudieron obtener los movimientos. Verificá la conexión.</p>';
+            return;
+        }
+
+        // Calcular saldos por cliente (igual que en Control de Deudas)
+        const saldos = {};
+        for (let mov of data) {
+            const cliente = mov.cliente_nombre || mov.cliente || '';
+            if (!cliente) continue;
+            if (!saldos[cliente]) saldos[cliente] = 0;
+            const monto = parseFloat(mov.monto) || 0;
+            if (mov.tipo === 'deuda') {
+                saldos[cliente] += monto;
+            } else if (mov.tipo === 'pago') {
+                saldos[cliente] -= monto;
             }
         }
-    }
 
-    // Filtrar solo los que tienen deuda positiva (> 0) y ordenar de mayor a menor
-    const deudores = Object.entries(saldos)
-        .filter(([cliente, saldo]) => saldo > 0)
-        .sort((a, b) => b[1] - a[1]);
+        // Filtrar solo los que tienen saldo positivo (> 0)
+        const deudores = Object.entries(saldos)
+            .filter(([cliente, saldo]) => saldo > 0)
+            .sort((a, b) => b[1] - a[1]);
 
-    if (deudores.length === 0) {
-        lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--verde);font-weight:700;">🎉 No hay clientes con deuda activa</div>';
-        totalSpan.textContent = '$0';
-        return;
-    }
+        if (deudores.length === 0) {
+            lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--verde);font-weight:700;">🎉 No hay clientes con deuda activa</div>';
+            totalSpan.textContent = '$0';
+            return;
+        }
 
-    let html = `<div style="overflow-x:auto;"><table id="tablaDeudasAdmin" style="width:100%;">
-        <thead><tr><th style="text-align:left;">Cliente</th><th style="text-align:left;">Deuda</th></tr></thead>
-        <tbody>`;
-    let total = 0;
-    for (let [cliente, saldo] of deudores) {
-        total += saldo;
-        html += `<tr>
-            <td><strong>${cliente}</strong></td>
-            <td style="color:var(--rojo);font-weight:800;">$${saldo.toLocaleString('es-AR')}</td>
-        </tr>`;
+        // Generar tabla
+        let html = `<div style="overflow-x:auto;"><table id="tablaDeudasAdmin" style="width:100%;">
+            <thead><tr><th style="text-align:left;">Cliente</th><th style="text-align:left;">Deuda</th></tr></thead>
+            <tbody>`;
+        let total = 0;
+        for (let [cliente, saldo] of deudores) {
+            total += saldo;
+            html += `<tr>
+                <td><strong>${cliente}</strong></td>
+                <td style="color:var(--rojo);font-weight:800;">$${saldo.toLocaleString('es-AR')}</td>
+            </tr>`;
+        }
+        html += `</tbody></table></div>`;
+        lista.innerHTML = html;
+        totalSpan.textContent = '$' + total.toLocaleString('es-AR');
+
+    } catch (error) {
+        console.error('Error al cargar deudas:', error);
+        lista.innerHTML = '<p style="text-align:center;color:var(--texto-claro);">❌ Error al cargar las deudas. Reintentá más tarde.</p>';
     }
-    html += `</tbody></table></div>`;
-    lista.innerHTML = html;
-    totalSpan.textContent = '$' + total.toLocaleString('es-AR');
 }
 
 // Funciones para Copiar y PDF de la pestaña Deudas (sin modificar el resto)
 window.copiarDeudaAdmin = function() {
     const texto = document.getElementById('deudasAdminLista').textContent.trim();
-    if (texto && texto !== '🎉 No hay clientes con deuda activa') {
+    if (texto && texto !== '🎉 No hay clientes con deuda activa' && !texto.includes('Cargando') && !texto.includes('Error')) {
         navigator.clipboard.writeText(texto).then(() => toast('✅ Lista de deudas copiada')).catch(() => toast('❌ Error al copiar'));
     } else if (texto) {
-        toast('No hay deudas para copiar');
+        toast('No hay deudas para copiar o no se cargaron');
     } else {
         toast('No hay datos para copiar');
     }
@@ -840,10 +852,8 @@ window.exportarDeudaAdminPDF = function() {
     if (!element) { toast('No se encontró la sección'); return; }
     toast('📄 Generando PDF de deudas...');
     try {
-        // Clonar el elemento y quitar botones para la impresión
         const container = element.cloneNode(true);
         container.querySelectorAll('.no-print, .btn, button, .toolbar').forEach(b => b.remove());
-        // Ajustar estilo para que se vea bien en PDF
         container.style.background = 'white';
         container.style.padding = '20px';
         container.style.borderRadius = '0';
@@ -872,8 +882,8 @@ async function iniciarSesion(pin) {
         document.getElementById("driverPanel").style.display = "none";
         document.getElementById("adminPanel").style.display = "block";
         cargarClientes(); cargarProductos(); renderAdmin();
-        // Renderizar deudas al entrar en admin
-        renderDeudasAdmin();
+        // Cargar las deudas al entrar al panel Admin
+        await renderDeudasAdmin();
     } else {
         document.getElementById("loginScreen").style.display = "none";
         document.getElementById("driverPanel").style.display = "block";
@@ -939,7 +949,7 @@ document.getElementById("exportAdminPdfBtn")?.addEventListener("click", () => {
     exportarPDF("adminTableToExport", `ventas_chofer_${chofer}_admin`, false);
 });
 
-// Manejo de cambio de pestañas (se agrega la nueva pestaña deudas)
+// Manejo de cambio de pestañas (incluyendo la nueva pestaña de deudas)
 document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", function() {
         document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -949,7 +959,7 @@ document.querySelectorAll(".tab").forEach(tab => {
         const target = document.getElementById(`tab${id.charAt(0).toUpperCase()+id.slice(1)}`);
         if (target) target.classList.add("active");
         
-        // Si se selecciona la pestaña de deudas, renderizar las deudas
+        // Si se selecciona la pestaña de deudas, cargar los datos desde la API
         if (id === "deudas") {
             renderDeudasAdmin();
         }
