@@ -908,6 +908,7 @@
                 <div class="card-title"><i class="fas fa-edit"></i> Modificación de Factura (Solo visual)</div>
                 <div class="toolbar no-print">
                     <button class="btn btn-sm btn-success" id="exportarModifPDFBtn"><i class="fas fa-file-pdf"></i> Exportar PDF</button>
+                    <button class="btn btn-sm btn-success" id="generarFacturaModifBtn"><i class="fas fa-eye"></i> Generar Factura</button>
                     <button class="btn btn-sm btn-outline" id="recargarModifBtn"><i class="fas fa-sync"></i> Recargar</button>
                     <button class="btn btn-sm btn-outline" id="restaurarModifBtn"><i class="fas fa-undo"></i> Restaurar originales</button>
                     <button class="btn btn-sm btn-primary" id="forzarCargaMovimientosBtn"><i class="fas fa-download"></i> Recargar movimientos</button>
@@ -1061,7 +1062,7 @@
 <div id="toast"></div>
 <script>
 // ================================================================
-// CÓDIGO COMPLETO - CON MODIFICACIÓN FACTURA
+// CÓDIGO COMPLETO - CON MODIFICACIÓN FACTURA Y BOTÓN GENERAR FACTURA
 // ================================================================
 
 // ========== UTILIDADES ==========
@@ -2556,7 +2557,6 @@ function cargarModificaciones() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
-    // Verificar si hay movimientos cargados
     if (!movimientos || movimientos.length === 0) {
         toast('⚠️ No hay movimientos cargados. Use "Recargar movimientos" para actualizar.');
         document.getElementById('modifVacia').style.display = 'block';
@@ -2568,10 +2568,8 @@ function cargarModificaciones() {
     desdeModifActual = desde;
     hastaModifActual = hasta;
 
-    // Normalizar cliente para comparación
     const clienteNorm = normalizarNombre(cliente);
 
-    // Filtrar movimientos
     const deudas = movimientos.filter(m => 
         normalizarNombre(m.cliente) === clienteNorm && 
         m.tipo === 'deuda' && 
@@ -2636,7 +2634,6 @@ function renderTablaModificacion() {
         `;
     }).join('');
 
-    // Event listeners para actualizar el resumen en tiempo real
     document.querySelectorAll('.modif-monto, .modif-fecha, .modif-forma, .modif-detalle').forEach(el => {
         el.addEventListener('change', function() {
             const idx = parseInt(this.dataset.index);
@@ -2718,22 +2715,101 @@ function recargarModif() {
 
 async function forzarCargaMovimientos() {
     toast('🔄 Recargando movimientos desde la API...');
-    await cargarDatos(); // recarga todo
+    await cargarDatos();
     cargarClientesModif();
     toast('✅ Movimientos recargados');
-    // Si hay un cliente seleccionado, recargar la tabla
     if (clienteModifActual && desdeModifActual && hastaModifActual) {
         cargarModificaciones();
     }
 }
 
+function generarFacturaModif() {
+    // Esta función genera una vista previa de la factura en una nueva ventana
+    if (movimientosModificados.length === 0) {
+        toast('No hay movimientos cargados. Primero cargue los movimientos.');
+        return;
+    }
+    const activos = movimientosModificados.filter(m => !m._eliminada);
+    if (activos.length === 0) {
+        toast('No hay movimientos activos para generar factura.');
+        return;
+    }
+
+    const cliente = clienteModifActual;
+    const desde = desdeModifActual;
+    const hasta = hastaModifActual;
+    let totalDeudas = 0, totalPagos = 0;
+    let htmlDetalle = '';
+    for (const m of activos) {
+        if (m.tipo === 'deuda') {
+            totalDeudas += m.monto;
+            htmlDetalle += `<tr><td>${formatearFecha(m.fecha)}</td><td>Deuda</td><td>—</td><td>—</td><td>${pesos(m.monto)}</td></tr>`;
+        } else {
+            totalPagos += m.monto;
+            htmlDetalle += `<tr style="color:var(--verde);"><td>${formatearFecha(m.fecha)}</td><td>Pago</td><td>—</td><td>—</td><td style="color:var(--verde);">-${pesos(m.monto)}</td></tr>`;
+        }
+    }
+    const saldoNeto = totalDeudas - totalPagos;
+
+    const facturaHTML = `
+        <div style="font-family: 'Inter', system-ui, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; border: 2px solid #0f2a6e; border-radius: 16px; background: white;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f2a6e; padding-bottom: 12px; margin-bottom: 16px;">
+                <div style="font-size: 1.4rem; font-weight: 800; color: #0f2a6e;">🧊 MYC HIELO</div>
+                <div style="font-size: 0.8rem; color: #64748b;">Factura Personalizada</div>
+            </div>
+            <div>
+                <div style="font-size: 1.1rem; font-weight: 700;">Cliente: ${cliente}</div>
+                <div style="font-size: 0.8rem; color: #64748b;">Período: ${formatearFecha(desde)} al ${formatearFecha(hasta)}</div>
+                <div style="margin-top: 4px; font-weight: 600; color: #b91c1c;">🔴 Deuda neta (período): ${pesos(saldoNeto)}</div>
+                <div style="margin-top: 6px; font-size: 0.75rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 6px;">
+                    <strong>📋 Movimientos del período:</strong><br>
+                    ${activos.map(m => `📅 ${formatearFecha(m.fecha)}: ${m.tipo === 'deuda' ? 'Deuda' : 'Pago'} ${pesos(m.monto)} (${m.detalle || ''})`).join('<br>')}
+                    <br><strong style="color: #b91c1c;">🔴 SALDO TOTAL ACTUAL: ${pesos(saldoNeto)}</strong>
+                </div>
+            </div>
+            <div style="background: #e8eeff; padding: 10px 16px; border-radius: 8px; margin: 12px 0; display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 0.8rem;">
+                <span><strong>📊 Total facturado:</strong> ${pesos(saldoNeto)}</span>
+                <span><strong>🔴 Deuda neta:</strong> ${pesos(saldoNeto)}</span>
+                <span><strong>✅ Saldo después de esta factura:</strong> ${pesos(saldoNeto)}</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                    <thead><tr style="background: #e8eeff; color: #0f2a6e; font-weight: 700;">
+                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Fecha</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Tipo</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Cantidad</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Precio</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 8px;">Total</th>
+                    </tr></thead>
+                    <tbody>${htmlDetalle}</tbody>
+                </table>
+            </div>
+            <div style="text-align: right; font-size: 1.1rem; font-weight: 800; border-top: 2px solid #0f2a6e; padding-top: 12px; margin-top: 12px;">
+                <span>💰 Total a Pagar: </span>
+                <span style="color: #b91c1c; font-size: 1.5rem;">${pesos(saldoNeto)}</span>
+            </div>
+            <div style="font-size: 0.65rem; color: #64748b; text-align: center; margin-top: 8px;">* Este comprobante no es fiscal · Generado el ${formatearFechaCompleta(hoy())}</div>
+        </div>
+    `;
+
+    // Abrir en nueva ventana para visualizar
+    const ventana = window.open('', '_blank', 'width=1100,height=800');
+    if (!ventana) {
+        toast('❌ No se pudo abrir la ventana. Permita ventanas emergentes.');
+        return;
+    }
+    ventana.document.write(`<html><head><title>Factura ${cliente}</title><style>body { background: #f1f5fb; }</style></head><body>${facturaHTML}</body></html>`);
+    ventana.document.close();
+    toast('✅ Factura generada en nueva ventana');
+}
+
 function exportarModifPDF() {
+    // Esta función exporta a PDF usando html2pdf (ya existente)
     if (movimientosModificados.length === 0) { toast('No hay movimientos para exportar'); return; }
 
     const activos = movimientosModificados.filter(m => !m._eliminada);
     if (activos.length === 0) { toast('No hay movimientos activos para exportar'); return; }
 
-    // Construir la factura personalizada
     const cliente = clienteModifActual;
     const desde = desdeModifActual;
     const hasta = hastaModifActual;
@@ -3209,6 +3285,7 @@ window.agregarFilaModifManual = agregarFilaModifManual;
 window.restaurarOriginalesModif = restaurarOriginalesModif;
 window.recargarModif = recargarModif;
 window.forzarCargaMovimientos = forzarCargaMovimientos;
+window.generarFacturaModif = generarFacturaModif;
 window.exportarModifPDF = exportarModifPDF;
 
 // ========== INICIALIZACIÓN ==========
@@ -3342,6 +3419,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('restaurarModifBtn').addEventListener('click', restaurarOriginalesModif);
     document.getElementById('recargarModifBtn').addEventListener('click', recargarModif);
     document.getElementById('forzarCargaMovimientosBtn').addEventListener('click', forzarCargaMovimientos);
+    document.getElementById('generarFacturaModifBtn').addEventListener('click', generarFacturaModif);
     document.getElementById('exportarModifPDFBtn').addEventListener('click', exportarModifPDF);
 
     // Deudas
