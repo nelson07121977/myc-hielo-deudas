@@ -448,7 +448,6 @@
         <a data-tab="historial"><i class="fas fa-calendar-alt"></i> Historial</a>
         <a data-tab="finanzas" class="dorado"><i class="fas fa-coins"></i> Finanzas</a>
         <a data-tab="facturacion" class="whatsapp"><i class="fas fa-file-invoice"></i> Facturar</a>
-        <!-- PESTAÑA MODIFICACIÓN FACTURA -->
         <a data-tab="modificacion" class="modif"><i class="fas fa-edit"></i> Modificación Factura</a>
         <a data-tab="deudas" style="background:linear-gradient(135deg,#b91c1c,#991b1b);color:white;"><i class="fas fa-hand-holding-usd"></i> Deudas</a>
     </nav>
@@ -461,7 +460,6 @@
 
     <!-- ===== DASHBOARD ===== -->
     <div id="tab-dashboard" class="tab-content active">
-        <!-- (El contenido de Dashboard es el mismo que ya tenías) -->
         <div class="fecha-selector-dashboard no-print" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:var(--azul-claro); padding:8px 16px; border-radius:40px; margin-bottom:14px;">
             <label style="font-weight:600; font-size:0.75rem; color:var(--azul);">📅 Ver día:</label>
             <input type="date" id="dashboardFecha" style="padding:4px 10px; border-radius:40px; border:1px solid var(--borde); font-size:0.75rem; font-family:inherit; background:var(--white); outline:none;">
@@ -912,6 +910,7 @@
                     <button class="btn btn-sm btn-success" id="exportarModifPDFBtn"><i class="fas fa-file-pdf"></i> Exportar PDF</button>
                     <button class="btn btn-sm btn-outline" id="recargarModifBtn"><i class="fas fa-sync"></i> Recargar</button>
                     <button class="btn btn-sm btn-outline" id="restaurarModifBtn"><i class="fas fa-undo"></i> Restaurar originales</button>
+                    <button class="btn btn-sm btn-primary" id="forzarCargaMovimientosBtn"><i class="fas fa-download"></i> Recargar movimientos</button>
                 </div>
             </div>
             <div class="filtros no-print" style="flex-wrap:wrap; gap:10px;">
@@ -1062,7 +1061,7 @@
 <div id="toast"></div>
 <script>
 // ================================================================
-// CÓDIGO COMPLETO - CON MODIFICACIÓN FACTURA (Solo visual, sin persistencia)
+// CÓDIGO COMPLETO - CON MODIFICACIÓN FACTURA
 // ================================================================
 
 // ========== UTILIDADES ==========
@@ -2557,20 +2556,31 @@ function cargarModificaciones() {
     if (!desde || !hasta) { toast('Seleccione rango de fechas'); return; }
     if (desde > hasta) { toast('La fecha desde debe ser anterior a hasta'); return; }
 
+    // Verificar si hay movimientos cargados
+    if (!movimientos || movimientos.length === 0) {
+        toast('⚠️ No hay movimientos cargados. Use "Recargar movimientos" para actualizar.');
+        document.getElementById('modifVacia').style.display = 'block';
+        document.getElementById('modifTablaWrapper').style.display = 'none';
+        return;
+    }
+
     clienteModifActual = cliente;
     desdeModifActual = desde;
     hastaModifActual = hasta;
 
-    // Obtener movimientos del cliente en el período
+    // Normalizar cliente para comparación
+    const clienteNorm = normalizarNombre(cliente);
+
+    // Filtrar movimientos
     const deudas = movimientos.filter(m => 
-        m.cliente === cliente && 
+        normalizarNombre(m.cliente) === clienteNorm && 
         m.tipo === 'deuda' && 
         m.fecha >= desde && 
         m.fecha <= hasta
     ).map(m => ({ ...m, _id: 'd_' + m.id, _original: true }));
 
     const pagos = movimientos.filter(m => 
-        m.cliente === cliente && 
+        normalizarNombre(m.cliente) === clienteNorm && 
         m.tipo === 'pago' && 
         m.fecha >= desde && 
         m.fecha <= hasta
@@ -2578,6 +2588,13 @@ function cargarModificaciones() {
 
     movimientosOriginales = [...deudas, ...pagos].sort((a, b) => a.fecha.localeCompare(b.fecha));
     movimientosModificados = movimientosOriginales.map(m => ({ ...m }));
+
+    if (movimientosModificados.length === 0) {
+        toast('ℹ️ No hay movimientos para este cliente en el período seleccionado.');
+        document.getElementById('modifVacia').style.display = 'block';
+        document.getElementById('modifTablaWrapper').style.display = 'none';
+        return;
+    }
 
     document.getElementById('modifVacia').style.display = 'none';
     document.getElementById('modifTablaWrapper').style.display = 'block';
@@ -2601,7 +2618,7 @@ function renderTablaModificacion() {
         return `
             <tr class="${eliminada}">
                 <td><input type="date" value="${m.fecha}" class="modif-fecha" data-index="${index}" style="width:120px;padding:4px;border-radius:6px;border:1px solid var(--borde);background:var(--bg);color:var(--texto);"></td>
-                <td><span class="badge ${tipoClasse}">${tipoLabel}</span></td>
+                <td><span class="badge ${tipoClase}">${tipoLabel}</span></td>
                 <td><input type="number" value="${m.monto}" class="modif-monto" data-index="${index}" step="any" min="0" style="width:120px;padding:4px;border-radius:6px;border:1px solid var(--borde);background:var(--bg);color:var(--texto);"></td>
                 <td>
                     <select class="modif-forma" data-index="${index}" style="padding:4px;border-radius:6px;border:1px solid var(--borde);background:var(--bg);color:var(--texto);width:120px;">
@@ -2696,6 +2713,17 @@ function recargarModif() {
         cargarModificaciones();
     } else {
         toast('Primero cargue los movimientos');
+    }
+}
+
+async function forzarCargaMovimientos() {
+    toast('🔄 Recargando movimientos desde la API...');
+    await cargarDatos(); // recarga todo
+    cargarClientesModif();
+    toast('✅ Movimientos recargados');
+    // Si hay un cliente seleccionado, recargar la tabla
+    if (clienteModifActual && desdeModifActual && hastaModifActual) {
+        cargarModificaciones();
     }
 }
 
@@ -3180,6 +3208,7 @@ window.restaurarFilaModif = restaurarFilaModif;
 window.agregarFilaModifManual = agregarFilaModifManual;
 window.restaurarOriginalesModif = restaurarOriginalesModif;
 window.recargarModif = recargarModif;
+window.forzarCargaMovimientos = forzarCargaMovimientos;
 window.exportarModifPDF = exportarModifPDF;
 
 // ========== INICIALIZACIÓN ==========
@@ -3312,6 +3341,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('agregarFilaModifBtn').addEventListener('click', agregarFilaModifManual);
     document.getElementById('restaurarModifBtn').addEventListener('click', restaurarOriginalesModif);
     document.getElementById('recargarModifBtn').addEventListener('click', recargarModif);
+    document.getElementById('forzarCargaMovimientosBtn').addEventListener('click', forzarCargaMovimientos);
     document.getElementById('exportarModifPDFBtn').addEventListener('click', exportarModifPDF);
 
     // Deudas
