@@ -128,7 +128,6 @@
             <div class="tab active" data-tab="ventas">📊 Ventas</div>
             <div class="tab" data-tab="clientes">🏷️ Clientes</div>
             <div class="tab" data-tab="productos">📦 Productos</div>
-            <!-- ===== NUEVA PESTAÑA DE DEUDAS ===== -->
             <div class="tab" data-tab="deudas">💳 Deudas</div>
             <div class="tab" data-tab="datos">⚙️ Datos</div>
         </div>
@@ -176,7 +175,7 @@
             <button id="guardarProductosBtn" style="margin-top:8px;">💾 Guardar productos</button>
         </div>
 
-        <!-- ===== NUEVO CONTENIDO: TAB DEUDAS (DESDE LA API) ===== -->
+        <!-- ===== PESTAÑA DE DEUDAS ===== -->
         <div id="tabDeudas" class="tab-content">
             <div class="card">
                 <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--borde); padding-bottom:12px; margin-bottom:16px;">
@@ -754,7 +753,11 @@ async function sincronizarTodoConNube() {
     }
     toast("Sincronización completa");
 }
+
+// ==================== FUNCIÓN API CORREGIDA (con params por defecto) ====================
 async function apiCall(ruta, params, usePost = false) {
+    // Asegurar que params sea un objeto, incluso si es undefined o null
+    params = params || {};
     try {
         if (usePost) {
             let form = new URLSearchParams();
@@ -771,24 +774,38 @@ async function apiCall(ruta, params, usePost = false) {
     } catch(e) { console.error(e); return null; }
 }
 
-// ==================== NUEVA FUNCIÓN: RENDER DEUDAS ADMIN (DESDE LA API) ====================
+// ==================== RENDER DEUDAS ADMIN (CON DEPURACIÓN) ====================
 async function renderDeudasAdmin() {
     const lista = document.getElementById('deudasAdminLista');
     const totalSpan = document.getElementById('deudasAdminTotal');
 
     // Mostrar cargando
-    lista.innerHTML = '<p style="text-align:center;color:var(--texto-claro);">Cargando deudas desde la nube...</p>';
+    lista.innerHTML = '<p style="text-align:center;color:var(--texto-claro);">⏳ Cargando deudas desde la nube...</p>';
     totalSpan.textContent = '$0';
 
     try {
-        // Obtener movimientos desde la API
-        const data = await apiCall('movimientos');
-        if (!data || !Array.isArray(data)) {
-            lista.innerHTML = '<p style="text-align:center;color:var(--texto-claro);">⚠️ No se pudieron obtener los movimientos. Verificá la conexión.</p>';
+        console.log('📡 Solicitando movimientos a la API...');
+        // AHORA PASAMOS UN OBJETO VACÍO COMO SEGUNDO PARÁMETRO
+        const data = await apiCall('movimientos', {});
+        console.log('📦 Respuesta de la API:', data);
+
+        if (!data) {
+            lista.innerHTML = '<p style="text-align:center;color:var(--rojo);">❌ La API no devolvió datos. Verificá tu conexión.</p>';
             return;
         }
 
-        // Calcular saldos por cliente (igual que en Control de Deudas)
+        if (!Array.isArray(data)) {
+            lista.innerHTML = `<p style="text-align:center;color:var(--rojo);">⚠️ La respuesta no es un array. Revisá la API. Respuesta: ${JSON.stringify(data).substring(0, 200)}</p>`;
+            return;
+        }
+
+        if (data.length === 0) {
+            lista.innerHTML = '<p style="text-align:center;color:var(--texto-claro);">📭 No hay movimientos registrados en la API.</p>';
+            totalSpan.textContent = '$0';
+            return;
+        }
+
+        // Calcular saldos
         const saldos = {};
         for (let mov of data) {
             const cliente = mov.cliente_nombre || mov.cliente || '';
@@ -802,7 +819,9 @@ async function renderDeudasAdmin() {
             }
         }
 
-        // Filtrar solo los que tienen saldo positivo (> 0)
+        console.log('🧮 Saldos calculados:', saldos);
+
+        // Filtrar solo deudores
         const deudores = Object.entries(saldos)
             .filter(([cliente, saldo]) => saldo > 0)
             .sort((a, b) => b[1] - a[1]);
@@ -828,14 +847,15 @@ async function renderDeudasAdmin() {
         html += `</tbody></table></div>`;
         lista.innerHTML = html;
         totalSpan.textContent = '$' + total.toLocaleString('es-AR');
+        console.log('✅ Deudas renderizadas correctamente.');
 
     } catch (error) {
-        console.error('Error al cargar deudas:', error);
-        lista.innerHTML = '<p style="text-align:center;color:var(--texto-claro);">❌ Error al cargar las deudas. Reintentá más tarde.</p>';
+        console.error('❌ Error en renderDeudasAdmin:', error);
+        lista.innerHTML = `<p style="text-align:center;color:var(--rojo);">❌ Error al cargar: ${error.message}</p>`;
     }
 }
 
-// Funciones para Copiar y PDF de la pestaña Deudas (sin modificar el resto)
+// Funciones para Copiar y PDF de la pestaña Deudas
 window.copiarDeudaAdmin = function() {
     const texto = document.getElementById('deudasAdminLista').textContent.trim();
     if (texto && texto !== '🎉 No hay clientes con deuda activa' && !texto.includes('Cargando') && !texto.includes('Error')) {
