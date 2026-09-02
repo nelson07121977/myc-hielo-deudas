@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* ===== TODOS LOS ESTILOS (COMPLETOS, SIN CAMBIOS) ===== */
+        /* ===== TODOS LOS ESTILOS (COMPLETOS) ===== */
         :root {
             --bg-primary: #f0f4f9;
             --bg-secondary: #ffffff;
@@ -552,8 +552,7 @@
     <button onclick="registrarCajero()" class="btn-secundario"><i class="fas fa-user-plus"></i> Crear cajero</button>
     <button onclick="resetearDatos()" class="btn-danger"><i class="fas fa-undo"></i> Restablecer datos</button>
     <div style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; font-size:0.8rem;">
-        <button onclick="configurarSincronizacion()" class="btn" style="background:var(--btn-primary-bg);"><i class="fas fa-cloud-upload-alt"></i> Configurar sincronización</button>
-        <span id="syncStatusLabel" style="margin-left:8px; font-size:0.7rem; color:var(--text-secondary);">Sin sincronizar</span>
+        <span id="syncStatusLabel" style="margin-left:8px; font-size:0.7rem; color:var(--text-secondary);">🔄 Sincronizando automáticamente...</span>
     </div>
 </div>
 
@@ -976,10 +975,13 @@
 
 <script>
 // ================================================================
-//  CONFIGURACIÓN DE SINCRONIZACIÓN (JSONBin)
+//  CONFIGURACIÓN FIJA (HARDCODEADA) DE SINCRONIZACIÓN
 // ================================================================
-let JSONBIN_API_KEY = '';
-let JSONBIN_BIN_ID = '';
+// Usamos la Access Key de SUPERMERCADOAPP
+const JSONBIN_API_KEY = '$2a$10$eUk6BVx77f6orQ0uFzUet.xBmuQJ9jAYQK007TL2.cc6WMc722Fgy';
+const JSONBIN_BIN_ID = '6a983726f5f4af5e29615c48';
+// Clave maestra de respaldo (NEC071219777) por si la Access Key falla
+const MASTER_KEY = '$2a$10$5N7QOeZl80b14qsVY8ZQP.OhEkwy/.MDjWCO9y9T9mT7gmySj47XW';
 
 // ================================================================
 //  ESTADO GLOBAL (TODOS LOS DATOS EN UN SOLO OBJETO)
@@ -1081,84 +1083,56 @@ const device_id = localStorage.getItem('supermercado_device') || 'device_' + Dat
 localStorage.setItem('supermercado_device', device_id);
 
 // ================================================================
-//  FUNCIONES DE SINCRONIZACIÓN CON JSONBIN
+//  FUNCIONES DE SINCRONIZACIÓN CON JSONBIN (CON FALLBACK)
 // ================================================================
-function configurarSincronizacion() {
-    const apiKey = prompt('Ingresá tu API Key de JSONBin (obtenela en jsonbin.io):');
-    if (!apiKey) return;
-    const binId = prompt('Ingresá el ID del bin (o dejalo vacío para crear uno nuevo):');
-    JSONBIN_API_KEY = apiKey.trim();
-
-    const isAccessKey = JSONBIN_API_KEY.startsWith('$2a$10$');
-    const headerName = isAccessKey ? 'X-Access-Key' : 'X-Master-Key';
-
-    if (binId && binId.trim()) {
-        JSONBIN_BIN_ID = binId.trim();
-        guardarConfiguracionSync();
-        toast('Configuración guardada. Sincronizando...', 'info');
-        sincronizarAhora();
-    } else {
-        toast('Creando nuevo bin...', 'info');
-        fetch('https://api.jsonbin.io/v3/b', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                [headerName]: JSONBIN_API_KEY
-            },
-            body: JSON.stringify({})
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.record) {
-                JSONBIN_BIN_ID = data.record;
-                guardarConfiguracionSync();
-                toast('Bin creado. ID: ' + JSONBIN_BIN_ID, 'success');
-                sincronizarAhora();
-            } else {
-                toast('Error al crear bin: ' + JSON.stringify(data), 'error');
-            }
-        })
-        .catch(err => toast('Error: ' + err.message, 'error'));
-    }
-}
-
-function guardarConfiguracionSync() {
-    const configSync = { apiKey: JSONBIN_API_KEY, binId: JSONBIN_BIN_ID };
-    localStorage.setItem('supermercado_sync', JSON.stringify(configSync));
-}
-
-function cargarConfiguracionSync() {
-    try {
-        const data = localStorage.getItem('supermercado_sync');
-        if (data) {
-            const parsed = JSON.parse(data);
-            JSONBIN_API_KEY = parsed.apiKey || '';
-            JSONBIN_BIN_ID = parsed.binId || '';
-            if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-                document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
-                document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
-            }
-        }
-    } catch(e) {}
-}
-
 function sincronizarAhora() {
-    if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) {
-        toast('⚠️ Configurá la sincronización primero (botón en login)', 'error');
-        return;
-    }
     const statusEl = document.getElementById('syncStatusHeader');
     statusEl.textContent = '⏳ Sincronizando...';
     statusEl.className = 'sync-status syncing';
 
-    const isAccessKey = JSONBIN_API_KEY.startsWith('$2a$10$');
-    const headerName = isAccessKey ? 'X-Access-Key' : 'X-Master-Key';
+    // Intentar con Access Key primero
+    subirDatos(JSONBIN_API_KEY, 'X-Access-Key')
+        .then(() => {
+            // Éxito: descargar para fusionar
+            return descargarDatos(JSONBIN_API_KEY, 'X-Access-Key');
+        })
+        .then(() => {
+            statusEl.textContent = '✅ Sincronizado';
+            statusEl.className = 'sync-status synced';
+            document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
+            document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
+            toast('✅ Sincronización completada', 'success');
+        })
+        .catch(err => {
+            // Si falla la Access Key, probar con Master Key
+            console.warn('Access Key falló, probando con Master Key...', err);
+            subirDatos(MASTER_KEY, 'X-Master-Key')
+                .then(() => descargarDatos(MASTER_KEY, 'X-Master-Key'))
+                .then(() => {
+                    statusEl.textContent = '✅ Sincronizado (Master Key)';
+                    statusEl.className = 'sync-status synced';
+                    document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado (Master)';
+                    document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
+                    toast('✅ Sincronización completada con Master Key', 'success');
+                })
+                .catch(err2 => {
+                    // Si ambas fallan, error
+                    console.error('Error con ambas claves:', err2);
+                    statusEl.textContent = '❌ Error';
+                    statusEl.className = 'sync-status error';
+                    document.getElementById('syncStatusLabel').textContent = '🔴 Error de sincronización';
+                    document.getElementById('syncStatusLabel').style.color = '#b91c1c';
+                    toast('❌ Error de sincronización. Verifica tu conexión.', 'error');
+                });
+        });
+}
 
-    fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+function subirDatos(apiKey, headerName) {
+    return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            [headerName]: JSONBIN_API_KEY
+            [headerName]: apiKey
         },
         body: JSON.stringify(estado)
     })
@@ -1167,33 +1141,17 @@ function sincronizarAhora() {
         return res.json();
     })
     .then(data => {
-        if (data.record) {
-            estado.lastSync = new Date().toISOString();
-            guardarEstadoLocal();
-            toast('✅ Datos subidos a la nube', 'success');
-            statusEl.textContent = '✅ Sincronizado';
-            statusEl.className = 'sync-status synced';
-            return descargarEstado();
-        } else {
-            throw new Error('Error al subir: ' + JSON.stringify(data));
-        }
-    })
-    .catch(err => {
-        toast('❌ Error en sincronización: ' + err.message, 'error');
-        statusEl.textContent = '❌ Error';
-        statusEl.className = 'sync-status error';
+        if (!data.record) throw new Error('Error al subir: ' + JSON.stringify(data));
+        estado.lastSync = new Date().toISOString();
+        guardarEstadoLocal();
+        console.log('✅ Datos subidos a la nube');
     });
 }
 
-function descargarEstado() {
-    if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return;
-    const statusEl = document.getElementById('syncStatusHeader');
-    const isAccessKey = JSONBIN_API_KEY.startsWith('$2a$10$');
-    const headerName = isAccessKey ? 'X-Access-Key' : 'X-Master-Key';
-
-    fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+function descargarDatos(apiKey, headerName) {
+    return fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
         headers: {
-            [headerName]: JSONBIN_API_KEY
+            [headerName]: apiKey
         }
     })
     .then(res => {
@@ -1218,23 +1176,14 @@ function descargarEstado() {
                 if (!estado.nextProductoId) estado.nextProductoId = 1;
                 estado.lastSync = new Date().toISOString();
                 guardarEstadoLocal();
-                toast('✅ Datos sincronizados desde la nube', 'success');
                 if (usuario) recargarInterfaz();
+                console.log('✅ Datos descargados y fusionados');
             } else {
-                toast('ℹ️ Ya estás sincronizado', 'info');
+                console.log('ℹ️ Ya estás sincronizado');
             }
-            statusEl.textContent = '✅ Sincronizado';
-            statusEl.className = 'sync-status synced';
-            document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
-            document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
         } else {
             throw new Error('Error al descargar: ' + JSON.stringify(data));
         }
-    })
-    .catch(err => {
-        toast('❌ Error al descargar: ' + err.message, 'error');
-        statusEl.textContent = '❌ Error';
-        statusEl.className = 'sync-status error';
     });
 }
 
@@ -1293,12 +1242,8 @@ function login() {
     cargarDatosIniciales();
     agregarLog('Inicio de sesión', `Usuario ${user.nombre} (${user.rol}) desde ${device_id}`);
     toast('✅ Bienvenido ' + user.nombre, 'success');
-    cargarConfiguracionSync();
-    // SINCRONIZACIÓN AUTOMÁTICA DESACTIVADA PARA EVITAR ERRORES
-    // if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-    //     descargarEstado();
-    // }
-    console.log('🔴 Sincronización automática desactivada. Usá el botón "Sincronizar" manualmente.');
+    // Sincronizar automáticamente al loguearse
+    sincronizarAhora();
 }
 
 function registrarCajero() {
@@ -1323,16 +1268,14 @@ function resetearDatos() {
     const clave = prompt('Ingresá la clave maestra para restablecer TODOS los datos (07121977):');
     if (clave === null) return;
     if (clave !== '07121977') { toast('Clave incorrecta', 'error'); return; }
-    if (!confirm('⚠️ ¿Seguro? Se borrarán TODOS los datos locales y de la nube.')) return;
+    if (!confirm('⚠️ ¿Seguro? Se borrarán TODOS los datos locales Y de la nube.')) return;
     localStorage.removeItem('supermercado_estado');
     localStorage.removeItem('supermercado_device');
-    localStorage.removeItem('supermercado_sync');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-        fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-            method: 'DELETE',
-            headers: { 'X-Master-Key': JSONBIN_API_KEY }
-        }).catch(() => {});
-    }
+    // Borrar bin remoto
+    fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+        method: 'DELETE',
+        headers: { 'X-Master-Key': MASTER_KEY }
+    }).catch(() => {});
     location.reload();
 }
 
@@ -1870,10 +1813,8 @@ document.getElementById('registrarVentaBtn').addEventListener('click', function(
     agregarLog('Venta registrada', `N°${venta.id} - Total $${venta.total}`);
     toast('✅ Venta registrada', 'success');
     guardarEstadoLocal();
-    // Sincronizar automáticamente
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-        sincronizarAhora();
-    }
+    // Sincronizar automáticamente después de la venta
+    sincronizarAhora();
 });
 
 function mostrarTicket(venta) {
@@ -1942,7 +1883,7 @@ function generarTicketHTML(venta) {
 }
 
 // ================================================================
-//  PRODUCTOS (CRUD)
+//  PRODUCTOS (CRUD) - CON SINCRONIZACIÓN TRAS CADA CAMBIO
 // ================================================================
 function getProductosFiltrados() {
     const filtro = document.getElementById('filtroProductos').value.toLowerCase();
@@ -2044,7 +1985,7 @@ document.getElementById('nuevoProductoBtn').addEventListener('click', function()
     guardarEstadoLocal();
     agregarLog('Nuevo producto', `${nombre} agregado (${metodo ? 'porcentaje' : 'fijo'})`);
     toast('Producto agregado', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 });
 
 function eliminarProducto(id) {
@@ -2061,7 +2002,7 @@ function eliminarProducto(id) {
     guardarEstadoLocal();
     agregarLog('Eliminar producto', `${nombre} eliminado`);
     toast('Producto eliminado', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 }
 
 function editarProducto(id) {
@@ -2104,11 +2045,11 @@ function editarProducto(id) {
     guardarEstadoLocal();
     agregarLog('Editar producto', `${nombre} actualizado`);
     toast('Producto actualizado', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 }
 
 // ================================================================
-//  CARNICERÍA Y FIAMBRES (VERSIÓN LOCAL)
+//  CARNICERÍA Y FIAMBRES (VERSIÓN LOCAL) - CON SINCRONIZACIÓN
 // ================================================================
 const CORTES_PREDEFINIDOS_CARNICERIA = [
     'Bife de chorizo', 'Bife de costilla', 'Lomo', 'Cuadril', 'Paleta', 'Peceto', 'Aguja', 'Tapa de asado',
@@ -2218,7 +2159,7 @@ function agregarCorte(nombre, categoria) {
     guardarEstadoLocal();
     agregarLog('Agregar corte', `${nombre} agregado a ${categoria}`);
     toast(`✅ ${nombre} agregado a ${categoria}`, 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 }
 
 function cargarCortesPredefinidos(categoria) {
@@ -2247,7 +2188,7 @@ function cargarCortesPredefinidos(categoria) {
         guardarEstadoLocal();
         agregarLog('Cargar cortes predefinidos', `${agregados} ${categoria} agregados`);
         toast(`✅ ${agregados} ${categoria} agregados. Ahora podés editar cada uno.`, 'success');
-        if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+        sincronizarAhora();
     } else {
         toast(`Todos los ${categoria} ya estaban cargados`, 'info');
     }
@@ -2261,7 +2202,7 @@ function agregarCortePersonalizado(categoria) {
 }
 
 // ================================================================
-//  PROVEEDORES Y COMPRAS (LOCAL)
+//  PROVEEDORES Y COMPRAS (LOCAL) - CON SINCRONIZACIÓN
 // ================================================================
 function renderProveedores() {
     const tbody = document.getElementById('tbodyProveedores');
@@ -2292,7 +2233,7 @@ function agregarProveedor() {
     cargarSelectoresCompra();
     agregarLog('Agregar proveedor', `${nombre} agregado`);
     toast('Proveedor agregado', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 }
 
 function eliminarProveedor(id) {
@@ -2306,7 +2247,7 @@ function eliminarProveedor(id) {
         cargarSelectoresCompra();
         agregarLog('Eliminar proveedor', `${nombre} eliminado`);
         toast('Proveedor eliminado', 'success');
-        if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+        sincronizarAhora();
     }
 }
 
@@ -2424,7 +2365,7 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', function
     guardarEstadoLocal();
     agregarLog('Compra registrada', `Total $${totalPagado} de ${proveedor ? proveedor.nombre : ''}`);
     toast('✅ Compra registrada y stock actualizado', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 });
 
 function renderCompras() {
@@ -2461,7 +2402,7 @@ function renderCompras() {
 function cargarMasCompras() { paginaComprasActual++; renderCompras(); }
 
 // ================================================================
-//  CAJA
+//  CAJA - CON SINCRONIZACIÓN
 // ================================================================
 function renderCaja() {
     if (estado.caja && estado.caja.estado === 'abierta') {
@@ -2499,7 +2440,7 @@ document.getElementById('abrirCajaBtn').addEventListener('click', function() {
     actualizarDashboard();
     agregarLog('Abrir caja', `Monto inicial $${monto}`);
     toast('✅ Caja abierta', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 });
 
 document.getElementById('cierreXBtn').addEventListener('click', function() {
@@ -2523,7 +2464,7 @@ document.getElementById('cierreZBtn').addEventListener('click', function() {
     actualizarDashboard();
     agregarLog('Cierre Z', `Total $${total}`);
     toast('✅ Caja cerrada', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 });
 
 // ================================================================
@@ -2844,7 +2785,7 @@ function exportarFacturasCSV() {
 }
 
 // ================================================================
-//  IMPORTAR PRODUCTOS (igual que antes, pero con datos locales)
+//  IMPORTAR PRODUCTOS
 // ================================================================
 function importarProductos() {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
@@ -3136,7 +3077,7 @@ function mostrarModalImport() {
                     verificarStockBajo();
                     agregarLog('Importar productos', `${importados} productos importados`);
                     toast(`✅ ${importados} productos importados${omitidos > 0 ? ` (${omitidos} omitidos)` : ''}`, 'success');
-                    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+                    sincronizarAhora();
                 }, 50);
                 cerrarModalImport();
             }
@@ -3206,7 +3147,7 @@ function cambiarRolUsuario() {
     agregarLog('Cambio de rol', `${user.nombre} ahora es ${nuevoRol}`);
     toast('Rol actualizado', 'success');
     cargarUsuariosEnSelect();
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 }
 
 function guardarPreguntaSecreta() {
@@ -3221,7 +3162,7 @@ function guardarPreguntaSecreta() {
     guardarEstadoLocal();
     agregarLog('Guardar pregunta secreta', `${user.nombre} actualizó su pregunta`);
     toast('Pregunta guardada', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 }
 
 document.getElementById('guardarConfigBtn').addEventListener('click', function() {
@@ -3237,7 +3178,7 @@ document.getElementById('guardarConfigBtn').addEventListener('click', function()
     document.getElementById('tituloLocal').innerHTML = estado.config.nombreLocal || 'SUPER<span>MERCADO</span>';
     agregarLog('Configuración guardada', '');
     toast('Configuración guardada', 'success');
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+    sincronizarAhora();
 });
 
 // ================================================================
@@ -3266,7 +3207,7 @@ document.getElementById('importBackupInput').addEventListener('change', function
             guardarEstadoLocal();
             recargarInterfaz();
             toast('✅ Backup importado', 'success');
-            if (JSONBIN_API_KEY && JSONBIN_BIN_ID) sincronizarAhora();
+            sincronizarAhora();
         } catch (err) {
             toast('❌ Error al leer archivo', 'error');
         }
@@ -3365,17 +3306,44 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
 // ================================================================
 (function init() {
     cargarEstadoLocal();
-    cargarConfiguracionSync();
     document.getElementById('kpiDeviceId').textContent = device_id.slice(-8);
-    console.log('🛒 Supermercado - Sistema autónomo con sincronización');
+    console.log('🛒 Supermercado - Sistema con sincronización automática');
     console.log(`📱 Device ID: ${device_id}`);
-    // SINCRONIZACIÓN AUTOMÁTICA DESACTIVADA PARA EVITAR ERRORES
-    // if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-    //     document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
-    //     document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
-    //     setTimeout(() => descargarEstado(), 1000);
-    // }
-    console.log('🔴 Sincronización automática desactivada. Usá el botón "Sincronizar" manualmente.');
+    console.log('🔑 Usando Access Key: SUPERMERCADOAPP');
+    console.log(`📦 Bin ID: ${JSONBIN_BIN_ID}`);
+    // Al iniciar, sincronizar automáticamente si hay datos locales
+    if (estado.productos.length > 0 || estado.ventas.length > 0) {
+        // Si ya hay datos, sincronizar (fusionar)
+        setTimeout(sincronizarAhora, 2000);
+    } else {
+        // Si no hay datos locales, descargar del bin
+        setTimeout(() => {
+            descargarDatos(JSONBIN_API_KEY, 'X-Access-Key')
+                .then(() => {
+                    document.getElementById('syncStatusHeader').textContent = '✅ Sincronizado';
+                    document.getElementById('syncStatusHeader').className = 'sync-status synced';
+                    document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
+                    document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
+                })
+                .catch(() => {
+                    // Si falla, intentar con Master Key
+                    descargarDatos(MASTER_KEY, 'X-Master-Key')
+                        .then(() => {
+                            document.getElementById('syncStatusHeader').textContent = '✅ Sincronizado (Master)';
+                            document.getElementById('syncStatusHeader').className = 'sync-status synced';
+                            document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
+                            document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
+                        })
+                        .catch(() => {
+                            console.warn('No se pudo descargar datos. Iniciando local.');
+                            document.getElementById('syncStatusHeader').textContent = '⚠️ Local';
+                            document.getElementById('syncStatusHeader').className = 'sync-status error';
+                            document.getElementById('syncStatusLabel').textContent = '🔴 Modo local (sin sincronización)';
+                            document.getElementById('syncStatusLabel').style.color = '#b91c1c';
+                        });
+                });
+        }, 1500);
+    }
 })();
 </script>
 </body>
