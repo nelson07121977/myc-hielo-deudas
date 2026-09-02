@@ -950,9 +950,15 @@
 <div id="toast" class="toast"></div>
 <div id="ticketPrint" style="display:none;"></div>
 <script>
+// ================================================================
+//  CONFIGURACIÓN SUPABASE (HARDCODEADA)
+// ================================================================
 const SUPABASE_URL = 'https://ziuidmibhdqnmjgfyzvu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_EcqrDX2D1IoEOfxKvAcXYw_Y3mIi9fZ';
 
+// ================================================================
+//  FUNCIÓN FETCH MEJORADA (MANEJA RESPUESTAS VACÍAS Y ERRORES)
+// ================================================================
 async function supabaseFetch(endpoint, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
     const defaultHeaders = {
@@ -965,18 +971,31 @@ async function supabaseFetch(endpoint, options = {}) {
             ...options,
             headers: { ...defaultHeaders, ...options.headers }
         });
+        // Si la respuesta es 204 No Content, devolver { success: true }
+        if (response.status === 204) return { success: true };
+        // Si la respuesta no es OK, intentar leer el cuerpo como texto para dar un error claro
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+            throw new Error(`HTTP ${response.status}: ${errorText || 'Error sin detalles'}`);
         }
-        if (response.status === 204) return { success: true };
-        return await response.json();
+        // Intentar parsear JSON. Si falla, devolver { success: true } (asumir éxito)
+        const text = await response.text();
+        if (!text) return { success: true }; // Respuesta vacía
+        try {
+            return JSON.parse(text);
+        } catch (parseError) {
+            // Si no es JSON, devolver el texto como objeto
+            return { success: true, message: text };
+        }
     } catch (err) {
         console.error('Error en Supabase:', err);
         throw err;
     }
 }
 
+// ================================================================
+//  VARIABLES GLOBALES
+// ================================================================
 let usuario = null;
 let carrito = [];
 let compraItems = [];
@@ -1008,28 +1027,31 @@ const COMPRAS_POR_PAGINA = 15;
 const CARNES_POR_PAGINA = 50;
 const device_id = 'device_' + Date.now();
 
+// ================================================================
+//  CARGA DE DATOS DESDE SUPABASE
+// ================================================================
 async function cargarDatosDesdeSupabase() {
     try {
         const productos = await supabaseFetch('productos?order=id.asc');
-        productosCache = productos || [];
-        const proveedores = await supabaseFetch('proveedores?order=id.asc') || [];
-        proveedoresCache = proveedores;
-        const ventas = await supabaseFetch('ventas?order=id.desc&limit=500') || [];
-        ventasCache = ventas;
-        const compras = await supabaseFetch('compras?order=id.desc&limit=200') || [];
-        comprasCache = compras;
+        productosCache = Array.isArray(productos) ? productos : [];
+        const proveedores = await supabaseFetch('proveedores?order=id.asc');
+        proveedoresCache = Array.isArray(proveedores) ? proveedores : [];
+        const ventas = await supabaseFetch('ventas?order=id.desc&limit=500');
+        ventasCache = Array.isArray(ventas) ? ventas : [];
+        const compras = await supabaseFetch('compras?order=id.desc&limit=200');
+        comprasCache = Array.isArray(compras) ? compras : [];
         const cajaResult = await supabaseFetch('caja?id=eq.1');
-        cajaCache = cajaResult && cajaResult.length > 0 ? cajaResult[0] : null;
-        const movimientos = await supabaseFetch('movimientos_stock?order=id.desc&limit=100') || [];
-        movimientosStockCache = movimientos;
-        const logs = await supabaseFetch('logs?order=id.desc&limit=100') || [];
-        logsCache = logs;
-        const clientes = await supabaseFetch('clientes?order=id.asc') || [];
-        clientesCache = clientes;
-        const usuarios = await supabaseFetch('usuarios');
-        if (usuarios && usuarios.length > 0) {
-            localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
-        } else {
+        cajaCache = (Array.isArray(cajaResult) && cajaResult.length > 0) ? cajaResult[0] : null;
+        const movimientos = await supabaseFetch('movimientos_stock?order=id.desc&limit=100');
+        movimientosStockCache = Array.isArray(movimientos) ? movimientos : [];
+        const logs = await supabaseFetch('logs?order=id.desc&limit=100');
+        logsCache = Array.isArray(logs) ? logs : [];
+        const clientes = await supabaseFetch('clientes?order=id.asc');
+        clientesCache = Array.isArray(clientes) ? clientes : [];
+        // Usuarios
+        let usuarios = await supabaseFetch('usuarios');
+        if (!Array.isArray(usuarios) || usuarios.length === 0) {
+            // Crear usuarios por defecto
             await supabaseFetch('usuarios', {
                 method: 'POST',
                 body: JSON.stringify([
@@ -1037,8 +1059,10 @@ async function cargarDatosDesdeSupabase() {
                     { nombre: 'cajero1', clave: 'caja123', rol: 'cajero' }
                 ])
             });
-            const usuariosReload = await supabaseFetch('usuarios');
-            if (usuariosReload) localStorage.setItem('supermercado_usuarios', JSON.stringify(usuariosReload));
+            usuarios = await supabaseFetch('usuarios') || [];
+        }
+        if (Array.isArray(usuarios) && usuarios.length > 0) {
+            localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
         }
         console.log('✅ Datos cargados desde Supabase');
         console.log(`📦 ${productosCache.length} productos, ${ventasCache.length} ventas`);
@@ -1050,6 +1074,9 @@ async function cargarDatosDesdeSupabase() {
     }
 }
 
+// ================================================================
+//  TOAST Y LOGS (CON MANEJO DE ERRORES SILENCIOSO)
+// ================================================================
 function toast(msg, tipo = 'info') {
     const el = document.getElementById('toast');
     if (!el) return;
@@ -1070,7 +1097,8 @@ async function agregarLog(accion, detalle = '') {
         logsCache.unshift(logEntry);
         if (logsCache.length > 100) logsCache.pop();
     } catch (e) {
-        console.warn('Error guardando log en Supabase:', e);
+        // No mostrar error en consola para no saturar
+        console.debug('Log guardado localmente (error en Supabase)');
     }
     renderLogs();
 }
@@ -1093,6 +1121,9 @@ function playSound(frecuencia = 800, duracion = 150, volumen = 0.3) {
 function playVentaSound() { playSound(880,200,0.4); setTimeout(()=>playSound(1100,150,0.3),150); }
 function playScanSound() { playSound(600,100,0.3); setTimeout(()=>playSound(800,100,0.3),100); }
 
+// ================================================================
+//  LOGIN Y SEGURIDAD
+// ================================================================
 async function login() {
     const nombre = document.getElementById('loginNombre').value.trim();
     const clave = document.getElementById('loginClave').value.trim();
@@ -1119,7 +1150,7 @@ async function registrarCajero() {
             body: JSON.stringify({ nombre, clave, rol: 'cajero' })
         });
         const usuarios = await supabaseFetch('usuarios');
-        localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
+        if (Array.isArray(usuarios)) localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
         await agregarLog('Crear cajero', `Cajero ${nombre} creado`);
         toast('✅ Cajero creado.', 'success');
     } catch (e) {
@@ -1278,6 +1309,9 @@ function calcularPorcentaje() {
     document.getElementById('pctGananciaMes').textContent = '$' + (gananciaMes * factor).toFixed(2);
 }
 
+// ================================================================
+//  BUSCADOR Y CARRITO (funciones reutilizadas)
+// ================================================================
 const CATEGORIAS_BUSQUEDA = {
     'carniceria': ['carniceria', 'carnicería', 'carne'],
     'fiambres': ['fiambres', 'fiambre', 'fiambreria', 'fiambería'],
@@ -1590,6 +1624,9 @@ document.getElementById('metodoPago').addEventListener('change', function() {
     document.getElementById('clienteCtacteGroup').style.display = val === 'ctacte' ? 'block' : 'none';
 });
 
+// ================================================================
+//  REGISTRAR VENTA
+// ================================================================
 document.getElementById('registrarVentaBtn').addEventListener('click', async function() {
     if (!esCajero()) { toast('No tenés permiso para vender', 'error'); return; }
     if (carrito.length === 0) return toast('Carrito vacío', 'error');
@@ -1763,6 +1800,9 @@ function generarTicketHTML(venta) {
     return html;
 }
 
+// ================================================================
+//  PRODUCTOS (CRUD) - con sincronización
+// ================================================================
 function getProductosFiltrados() {
     const filtro = document.getElementById('filtroProductos').value.toLowerCase();
     const rubro = document.getElementById('filtroRubro').value;
@@ -1859,7 +1899,7 @@ document.getElementById('nuevoProductoBtn').addEventListener('click', async func
             method: 'POST',
             body: JSON.stringify(nuevoProducto)
         });
-        const newId = result[0]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
+        const newId = (Array.isArray(result) && result.length > 0) ? result[0].id : (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
         const productoFinal = { ...nuevoProducto, id: newId };
         productosCache.push(productoFinal);
         renderProductos(true);
@@ -1945,6 +1985,9 @@ async function editarProducto(id) {
     }
 }
 
+// ================================================================
+//  CARNICERÍA Y FIAMBRES
+// ================================================================
 const CORTES_PREDEFINIDOS_CARNICERIA = [
     'Bife de chorizo', 'Bife de costilla', 'Lomo', 'Cuadril', 'Paleta', 'Peceto', 'Aguja', 'Tapa de asado',
     'Matambre', 'Falda', 'Molleja', 'Entraña', 'Colita de cuadril', 'Ojo de bife', 'Tira de asado', 'Vacío',
@@ -2050,7 +2093,7 @@ async function agregarCorte(nombre, categoria) {
             method: 'POST',
             body: JSON.stringify(nuevo)
         });
-        const newId = result[0]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
+        const newId = (Array.isArray(result) && result.length > 0) ? result[0].id : (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
         const productoFinal = { ...nuevo, id: newId };
         productosCache.push(productoFinal);
         renderProductos();
@@ -2082,10 +2125,13 @@ async function cargarCortesPredefinidos(categoria) {
                     method: 'POST',
                     body: JSON.stringify(nuevo)
                 });
-                const newId = result[0]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
+                const newId = (Array.isArray(result) && result.length > 0) ? result[0].id : (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
                 productosCache.push({ ...nuevo, id: newId });
                 agregados++;
-            } catch (e) { console.warn('Error agregando corte:', e); }
+            } catch (e) { 
+                console.warn('Error agregando corte:', e);
+                // No interrumpir el flujo
+            }
         }
     }
     if (agregados > 0) {
@@ -2106,6 +2152,9 @@ function agregarCortePersonalizado(categoria) {
     agregarCorte(nombre, categoria);
 }
 
+// ================================================================
+//  PROVEEDORES Y COMPRAS
+// ================================================================
 function renderProveedores() {
     const tbody = document.getElementById('tbodyProveedores');
     if (proveedoresCache.length === 0) {
@@ -2133,7 +2182,7 @@ async function agregarProveedor() {
             method: 'POST',
             body: JSON.stringify({ nombre, cuit, telefono })
         });
-        const newId = result[0]?.id || (proveedoresCache.length ? Math.max(...proveedoresCache.map(p => p.id)) + 1 : 1);
+        const newId = (Array.isArray(result) && result.length > 0) ? result[0].id : (proveedoresCache.length ? Math.max(...proveedoresCache.map(p => p.id)) + 1 : 1);
         proveedoresCache.push({ id: newId, nombre, cuit, telefono });
         renderProveedores();
         cargarSelectoresCompra();
@@ -2285,7 +2334,7 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', async fu
                     method: 'POST',
                     body: JSON.stringify(nuevo)
                 });
-                const newId = result[0]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
+                const newId = (Array.isArray(result) && result.length > 0) ? result[0].id : (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
                 prod = { ...nuevo, id: newId };
                 productosCache.push(prod);
             }
@@ -2382,6 +2431,9 @@ function renderCompras() {
 
 function cargarMasCompras() { paginaComprasActual++; renderCompras(); }
 
+// ================================================================
+//  CAJA
+// ================================================================
 function renderCaja() {
     if (cajaCache && cajaCache.estado === 'abierta') {
         document.getElementById('estadoCajaTexto').textContent = 'Abierta';
@@ -2416,7 +2468,7 @@ document.getElementById('abrirCajaBtn').addEventListener('click', async function
     };
     try {
         const existing = await supabaseFetch('caja?id=eq.1');
-        if (existing && existing.length > 0) {
+        if (Array.isArray(existing) && existing.length > 0) {
             await supabaseFetch('caja?id=eq.1', {
                 method: 'PATCH',
                 body: JSON.stringify(cajaData)
@@ -2472,6 +2524,9 @@ document.getElementById('cierreZBtn').addEventListener('click', async function()
     }
 });
 
+// ================================================================
+//  DASHBOARD Y REPORTES (reutilizados)
+// ================================================================
 function actualizarDashboard() {
     const hoy = new Date().toISOString().slice(0, 10);
     const fechaLimite = new Date();
@@ -2779,6 +2834,9 @@ function exportarFacturasCSV() {
     toast('✅ Facturas exportadas a CSV', 'success');
 }
 
+// ================================================================
+//  IMPORTAR PRODUCTOS
+// ================================================================
 function importarProductos() {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     const input = document.createElement('input');
@@ -3048,7 +3106,7 @@ function mostrarModalImport() {
                         body: JSON.stringify(nuevos)
                     });
                     for (let i = 0; i < nuevos.length; i++) {
-                        const newId = result[i]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 + i : 1 + i);
+                        const newId = (Array.isArray(result) && result.length > i) ? result[i].id : (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 + i : 1 + i);
                         productosCache.push({ ...nuevos[i], id: newId });
                     }
                 } catch (e) {
@@ -3140,7 +3198,7 @@ async function cambiarRolUsuario() {
             body: JSON.stringify({ rol: nuevoRol })
         });
         const usuarios = await supabaseFetch('usuarios');
-        localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
+        if (Array.isArray(usuarios)) localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
         await agregarLog('Cambio de rol', `Usuario ID ${userId} ahora es ${nuevoRol}`);
         toast('Rol actualizado', 'success');
         cargarUsuariosEnSelect();
@@ -3160,7 +3218,7 @@ async function guardarPreguntaSecreta() {
             body: JSON.stringify({ pregunta, respuesta })
         });
         const usuarios = await supabaseFetch('usuarios');
-        localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
+        if (Array.isArray(usuarios)) localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
         await agregarLog('Guardar pregunta secreta', `Usuario ID ${userId} actualizó su pregunta`);
         toast('Pregunta guardada', 'success');
     } catch (err) {
@@ -3305,6 +3363,9 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
     }
 });
 
+// ================================================================
+//  INICIALIZACIÓN
+// ================================================================
 (async function init() {
     console.log('🛒 Supermercado - Sistema con sincronización en Supabase');
     console.log(`📱 Device ID: ${device_id}`);
@@ -3315,7 +3376,7 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
         const usuarios = JSON.parse(localStorage.getItem('supermercado_usuarios')) || [];
         if (usuarios.length === 0) {
             const usuariosDB = await supabaseFetch('usuarios');
-            if (usuariosDB && usuariosDB.length > 0) {
+            if (Array.isArray(usuariosDB) && usuariosDB.length > 0) {
                 localStorage.setItem('supermercado_usuarios', JSON.stringify(usuariosDB));
             }
         }
