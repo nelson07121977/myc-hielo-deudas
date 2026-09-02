@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* ===== TODOS LOS ESTILOS (COMPLETOS) ===== */
+        /* ===== TODOS LOS ESTILOS (COMPLETOS, SIN CAMBIOS) ===== */
         :root {
             --bg-primary: #f0f4f9;
             --bg-secondary: #ffffff;
@@ -978,7 +978,6 @@
 // ================================================================
 //  CONFIGURACIÓN DE SINCRONIZACIÓN (JSONBin)
 // ================================================================
-// Estas variables se pueden configurar desde la interfaz
 let JSONBIN_API_KEY = '';
 let JSONBIN_BIN_ID = '';
 
@@ -1041,9 +1040,7 @@ function cargarEstadoLocal() {
         const data = localStorage.getItem('supermercado_estado');
         if (data) {
             const parsed = JSON.parse(data);
-            // Merge profundo para no perder campos nuevos
             estado = mergeDeep(estado, parsed);
-            // Asegurar que existan arrays
             if (!estado.productos) estado.productos = [];
             if (!estado.proveedores) estado.proveedores = [];
             if (!estado.ventas) estado.ventas = [];
@@ -1056,7 +1053,6 @@ function cargarEstadoLocal() {
             if (!estado.config) estado.config = { nombreLocal: 'Supermercado Futuro', impuesto: 21, ticketHeader: '¡Gracias!', ticketFooter: 'Vuelva pronto!', autoPrint: true };
             if (!estado.nextProductoId) estado.nextProductoId = 1;
         } else {
-            // Inicializar con usuarios por defecto
             estado.usuarios = [
                 { id: 1, nombre: 'admin', clave: 'admin123', rol: 'admin', pregunta: '', respuesta: '' },
                 { id: 2, nombre: 'cajero1', clave: 'caja123', rol: 'cajero', pregunta: '', respuesta: '' }
@@ -1081,38 +1077,45 @@ function mergeDeep(target, source) {
 }
 function isObject(item) { return item && typeof item === 'object' && !Array.isArray(item); }
 
-// ID de dispositivo único
 const device_id = localStorage.getItem('supermercado_device') || 'device_' + Date.now();
 localStorage.setItem('supermercado_device', device_id);
 
 // ================================================================
-//  FUNCIONES DE SINCRONIZACIÓN CON JSONBIN
+//  FUNCIONES DE SINCRONIZACIÓN CON JSONBIN (CORREGIDAS)
 // ================================================================
 function configurarSincronizacion() {
     const apiKey = prompt('Ingresá tu API Key de JSONBin (obtenela en jsonbin.io):');
     if (!apiKey) return;
     const binId = prompt('Ingresá el ID del bin (o dejalo vacío para crear uno nuevo):');
-    JSONBIN_API_KEY = apiKey;
-    if (binId) {
-        JSONBIN_BIN_ID = binId;
+    JSONBIN_API_KEY = apiKey.trim();
+
+    // Detectar si es Access Key (empieza con $2a$10$) o Master Key
+    const isAccessKey = JSONBIN_API_KEY.startsWith('$2a$10$');
+    const headerName = isAccessKey ? 'X-Access-Key' : 'X-Master-Key';
+
+    if (binId && binId.trim()) {
+        JSONBIN_BIN_ID = binId.trim();
+        guardarConfiguracionSync();
         toast('Configuración guardada. Sincronizando...', 'info');
         sincronizarAhora();
     } else {
         // Crear un nuevo bin
+        toast('Creando nuevo bin...', 'info');
         fetch('https://api.jsonbin.io/v3/b', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Master-Key': apiKey
+                [headerName]: JSONBIN_API_KEY
             },
-            body: JSON.stringify(estado)
+            body: JSON.stringify({})
         })
         .then(res => res.json())
         .then(data => {
             if (data.record) {
                 JSONBIN_BIN_ID = data.record;
-                toast('Bin creado. ID: ' + JSONBIN_BIN_ID, 'success');
                 guardarConfiguracionSync();
+                toast('Bin creado. ID: ' + JSONBIN_BIN_ID, 'success');
+                // Subir datos iniciales
                 sincronizarAhora();
             } else {
                 toast('Error al crear bin: ' + JSON.stringify(data), 'error');
@@ -1151,16 +1154,22 @@ function sincronizarAhora() {
     statusEl.textContent = '⏳ Sincronizando...';
     statusEl.className = 'sync-status syncing';
 
-    // Primero, subir los datos locales al bin
+    const isAccessKey = JSONBIN_API_KEY.startsWith('$2a$10$');
+    const headerName = isAccessKey ? 'X-Access-Key' : 'X-Master-Key';
+
+    // Subir datos al bin
     fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            'X-Master-Key': JSONBIN_API_KEY
+            [headerName]: JSONBIN_API_KEY
         },
         body: JSON.stringify(estado)
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        return res.json();
+    })
     .then(data => {
         if (data.record) {
             estado.lastSync = new Date().toISOString();
@@ -1168,7 +1177,6 @@ function sincronizarAhora() {
             toast('✅ Datos subidos a la nube', 'success');
             statusEl.textContent = '✅ Sincronizado';
             statusEl.className = 'sync-status synced';
-            // Ahora descargamos para obtener el último estado (en caso de cambios desde otro dispositivo)
             return descargarEstado();
         } else {
             throw new Error('Error al subir: ' + JSON.stringify(data));
@@ -1184,23 +1192,23 @@ function sincronizarAhora() {
 function descargarEstado() {
     if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return;
     const statusEl = document.getElementById('syncStatusHeader');
+    const isAccessKey = JSONBIN_API_KEY.startsWith('$2a$10$');
+    const headerName = isAccessKey ? 'X-Access-Key' : 'X-Master-Key';
+
     fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
         headers: {
-            'X-Master-Key': JSONBIN_API_KEY
+            [headerName]: JSONBIN_API_KEY
         }
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        return res.json();
+    })
     .then(data => {
         if (data.record) {
-            // Comparar y fusionar (siempre que sea más reciente)
             const remoto = data.record;
             if (!estado.lastSync || new Date(remoto.lastSync) > new Date(estado.lastSync)) {
-                // Fusionar datos: aquí decidimos qué hacer, por simplicidad reemplazamos todo
-                // Pero cuidado: si hay cambios locales no subidos, se perderán. Para evitar eso,
-                // en esta versión, la sincronización manual primero sube y luego baja.
-                // De todas formas, los datos se guardan localmente antes de subir.
                 estado = mergeDeep(estado, remoto);
-                // Asegurar arrays
                 if (!estado.productos) estado.productos = [];
                 if (!estado.proveedores) estado.proveedores = [];
                 if (!estado.ventas) estado.ventas = [];
@@ -1215,7 +1223,6 @@ function descargarEstado() {
                 estado.lastSync = new Date().toISOString();
                 guardarEstadoLocal();
                 toast('✅ Datos sincronizados desde la nube', 'success');
-                // Recargar la interfaz
                 if (usuario) recargarInterfaz();
             } else {
                 toast('ℹ️ Ya estás sincronizado', 'info');
@@ -1290,7 +1297,6 @@ function login() {
     cargarDatosIniciales();
     agregarLog('Inicio de sesión', `Usuario ${user.nombre} (${user.rol}) desde ${device_id}`);
     toast('✅ Bienvenido ' + user.nombre, 'success');
-    // Cargar configuración de sincronización
     cargarConfiguracionSync();
     if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
         descargarEstado();
@@ -1324,7 +1330,6 @@ function resetearDatos() {
     localStorage.removeItem('supermercado_device');
     localStorage.removeItem('supermercado_sync');
     if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-        // Borrar el bin remoto (opcional)
         fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
             method: 'DELETE',
             headers: { 'X-Master-Key': JSONBIN_API_KEY }
@@ -1434,7 +1439,6 @@ function cargarDatosIniciales() {
 }
 
 function recargarInterfaz() {
-    // Recarga todas las vistas
     renderProductos();
     renderVentasRecientes();
     renderCaja();
@@ -1991,7 +1995,7 @@ function renderProductos(resetPagina = true) {
             </td>
         </tr>
     `).join('');
-    document.getElementById('cargarMasProductos').style.display = 'none'; // En local todos están cargados
+    document.getElementById('cargarMasProductos').style.display = 'none';
 }
 
 function cargarMasProductos() {
@@ -3370,7 +3374,6 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
     if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
         document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
         document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
-        // Intentar sincronizar al inicio
         setTimeout(() => descargarEstado(), 1000);
     }
 })();
