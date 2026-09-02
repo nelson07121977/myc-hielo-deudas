@@ -511,14 +511,11 @@
             font-size: 0.7rem;
             padding: 4px 12px;
             border-radius: 40px;
-            background: var(--badge-bg);
-            color: var(--badge-text);
+            background: #d1fae5;
+            color: #0a7c4a;
             border: 1px solid var(--border-color);
-            cursor: pointer;
+            cursor: default;
         }
-        .sync-status.synced { background: #d1fae5; color: #0a7c4a; }
-        .sync-status.error { background: #fee2e2; color: #b91c1c; }
-        .sync-status.syncing { background: #fef3c7; color: #b45309; }
         @media (max-width:700px) {
             .row { grid-template-columns:1fr; }
             .header { flex-direction:column; }
@@ -551,8 +548,8 @@
     <button onclick="login()">Ingresar</button>
     <button onclick="registrarCajero()" class="btn-secundario"><i class="fas fa-user-plus"></i> Crear cajero</button>
     <button onclick="resetearDatos()" class="btn-danger"><i class="fas fa-undo"></i> Restablecer datos</button>
-    <div style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; font-size:0.8rem;">
-        <span id="syncStatusLabel" style="margin-left:8px; font-size:0.7rem; color:var(--text-secondary);">🔄 Esperando login...</span>
+    <div style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:12px; font-size:0.8rem; color:var(--text-secondary);">
+        <i class="fas fa-cloud"></i> Sincronización en la nube (Supabase)
     </div>
 </div>
 
@@ -568,7 +565,7 @@
         </div>
         <div class="header-actions">
             <span class="badge-rol"><i class="fas fa-user-cog"></i> <span id="rolDisplay">Admin</span></span>
-            <span id="syncStatusHeader" class="sync-status" onclick="sincronizarAhora()">🔄 Sincronizar</span>
+            <span class="sync-status"><i class="fas fa-cloud-upload-alt"></i> Sincronizado</span>
             <div class="theme-toggle" id="themeToggle" title="Cambiar tema">
                 <span class="icon active" id="themeIconLight"><i class="fas fa-sun"></i></span>
                 <span class="icon" id="themeIconDark"><i class="fas fa-moon"></i></span>
@@ -975,39 +972,41 @@
 
 <script>
 // ================================================================
-//  CONFIGURACIÓN FIJA - SOLO MASTER KEY (LA QUE SÍ FUNCIONA)
+//  CONFIGURACIÓN DE SUPABASE (HARDCODEADA)
 // ================================================================
-const CONFIG_SYNC = {
-    masterKey: '$2a$10$5N7QOeZl80b14qsVY8ZQP.OhEkwy/.MDjWCO9y9T9mT7gmySj47XW',
-    binId: '6a985d95f5f4af5e29620ebc'
-};
+const SUPABASE_URL = 'https://ziuidmibhdqnmjgfyzvu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_EcqrDX2D1IoEOfxKvAcXYw_Y3mIi9fZ';
 
 // ================================================================
-//  ESTADO GLOBAL (TODOS LOS DATOS EN UN SOLO OBJETO)
+//  FUNCIONES DE API PARA SUPABASE
 // ================================================================
-let estado = {
-    productos: [],
-    proveedores: [],
-    ventas: [],
-    clientes: [],
-    movimientosCaja: [],
-    caja: null,
-    compras: [],
-    movimientosStock: [],
-    logs: [],
-    usuarios: [],
-    config: {
-        nombreLocal: 'Supermercado Futuro',
-        impuesto: 21,
-        ticketHeader: '¡Gracias por su compra!',
-        ticketFooter: 'Vuelva pronto!',
-        autoPrint: true
-    },
-    nextProductoId: 1,
-    lastSync: null
-};
+async function supabaseFetch(endpoint, options = {}) {
+    const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+    const defaultHeaders = {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+    };
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers: { ...defaultHeaders, ...options.headers }
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        if (response.status === 204) return { success: true };
+        return await response.json();
+    } catch (err) {
+        console.error('Error en Supabase:', err);
+        throw err;
+    }
+}
 
-// Variables de sesión
+// ================================================================
+//  VARIABLES GLOBALES (SESIONES)
+// ================================================================
 let usuario = null;
 let carrito = [];
 let compraItems = [];
@@ -1022,153 +1021,88 @@ let compraProductoSeleccionadoObj = null;
 let offsetProductos = 0;
 let offsetCarnes = 0;
 let offsetFiambres = 0;
+let productosCache = [];
+let proveedoresCache = [];
+let ventasCache = [];
+let comprasCache = [];
+let cajaCache = null;
+let movimientosStockCache = [];
+let logsCache = [];
+let clientesCache = [];
+let configCache = {
+    nombreLocal: 'Supermercado Futuro',
+    impuesto: 21,
+    ticketHeader: '¡Gracias por su compra!',
+    ticketFooter: 'Vuelva pronto!',
+    autoPrint: true
+};
+let nextProductoId = 1;
+
 const PRODUCTOS_POR_PAGINA = 20;
 const COMPRAS_POR_PAGINA = 15;
 const CARNES_POR_PAGINA = 50;
+const device_id = 'device_' + Date.now();
 
 // ================================================================
-//  FUNCIONES DE PERSISTENCIA LOCAL (localStorage)
+//  FUNCIONES DE CARGA Y SINCRONIZACIÓN
 // ================================================================
-function guardarEstadoLocal() {
+async function cargarDatosDesdeSupabase() {
     try {
-        localStorage.setItem('supermercado_estado', JSON.stringify(estado));
-        localStorage.setItem('supermercado_device', device_id);
-    } catch(e) { console.warn('Error guardando local:', e); }
-}
-
-function cargarEstadoLocal() {
-    try {
-        const data = localStorage.getItem('supermercado_estado');
-        if (data) {
-            const parsed = JSON.parse(data);
-            estado = mergeDeep(estado, parsed);
-            if (!estado.productos) estado.productos = [];
-            if (!estado.proveedores) estado.proveedores = [];
-            if (!estado.ventas) estado.ventas = [];
-            if (!estado.clientes) estado.clientes = [];
-            if (!estado.movimientosCaja) estado.movimientosCaja = [];
-            if (!estado.compras) estado.compras = [];
-            if (!estado.movimientosStock) estado.movimientosStock = [];
-            if (!estado.logs) estado.logs = [];
-            if (!estado.usuarios) estado.usuarios = [];
-            if (!estado.config) estado.config = { nombreLocal: 'Supermercado Futuro', impuesto: 21, ticketHeader: '¡Gracias!', ticketFooter: 'Vuelva pronto!', autoPrint: true };
-            if (!estado.nextProductoId) estado.nextProductoId = 1;
-        } else {
-            estado.usuarios = [
-                { id: 1, nombre: 'admin', clave: 'admin123', rol: 'admin', pregunta: '', respuesta: '' },
-                { id: 2, nombre: 'cajero1', clave: 'caja123', rol: 'cajero', pregunta: '', respuesta: '' }
-            ];
-            guardarEstadoLocal();
+        // Cargar productos
+        const productos = await supabaseFetch('productos?order=id.asc');
+        productosCache = productos || [];
+        if (productosCache.length > 0) {
+            nextProductoId = Math.max(...productosCache.map(p => p.id)) + 1;
         }
-    } catch(e) { console.warn('Error cargando local:', e); }
-}
 
-function mergeDeep(target, source) {
-    const output = { ...target };
-    if (isObject(target) && isObject(source)) {
-        Object.keys(source).forEach(key => {
-            if (isObject(source[key]) && key in target && isObject(target[key])) {
-                output[key] = mergeDeep(target[key], source[key]);
-            } else {
-                output[key] = source[key];
-            }
-        });
+        // Cargar proveedores
+        proveedoresCache = await supabaseFetch('proveedores?order=id.asc') || [];
+
+        // Cargar ventas
+        ventasCache = await supabaseFetch('ventas?order=id.desc&limit=500') || [];
+
+        // Cargar compras
+        comprasCache = await supabaseFetch('compras?order=id.desc&limit=200') || [];
+
+        // Cargar caja
+        const cajaResult = await supabaseFetch('caja?id=eq.1');
+        cajaCache = cajaResult && cajaResult.length > 0 ? cajaResult[0] : null;
+
+        // Cargar movimientos stock
+        movimientosStockCache = await supabaseFetch('movimientos_stock?order=id.desc&limit=100') || [];
+
+        // Cargar logs
+        logsCache = await supabaseFetch('logs?order=id.desc&limit=100') || [];
+
+        // Cargar clientes
+        clientesCache = await supabaseFetch('clientes?order=id.asc') || [];
+
+        // Cargar usuarios (para login)
+        const usuarios = await supabaseFetch('usuarios');
+        if (usuarios && usuarios.length > 0) {
+            // Guardar en localStorage para login rápido
+            localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
+        } else {
+            // Si no hay usuarios, crear los default
+            await supabaseFetch('usuarios', {
+                method: 'POST',
+                body: JSON.stringify([
+                    { nombre: 'admin', clave: 'admin123', rol: 'admin' },
+                    { nombre: 'cajero1', clave: 'caja123', rol: 'cajero' }
+                ])
+            });
+            const usuariosReload = await supabaseFetch('usuarios');
+            if (usuariosReload) localStorage.setItem('supermercado_usuarios', JSON.stringify(usuariosReload));
+        }
+
+        console.log('✅ Datos cargados desde Supabase');
+        console.log(`📦 ${productosCache.length} productos, ${ventasCache.length} ventas`);
+        return true;
+    } catch (err) {
+        console.error('❌ Error al cargar datos de Supabase:', err);
+        toast('Error al conectar con la base de datos. Verifica tu conexión.', 'error');
+        return false;
     }
-    return output;
-}
-function isObject(item) { return item && typeof item === 'object' && !Array.isArray(item); }
-
-const device_id = localStorage.getItem('supermercado_device') || 'device_' + Date.now();
-localStorage.setItem('supermercado_device', device_id);
-
-// ================================================================
-//  FUNCIONES DE SINCRONIZACIÓN (SOLO MASTER KEY)
-// ================================================================
-function sincronizarAhora() {
-    const statusEl = document.getElementById('syncStatusHeader');
-    statusEl.textContent = '⏳ Sincronizando...';
-    statusEl.className = 'sync-status syncing';
-
-    // Subir datos usando Master Key
-    subirDatos()
-        .then(() => descargarDatos())
-        .then(() => {
-            statusEl.textContent = '✅ Sincronizado';
-            statusEl.className = 'sync-status synced';
-            document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
-            document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
-            toast('✅ Sincronización completada', 'success');
-        })
-        .catch(err => {
-            console.error('Error en sincronización:', err);
-            statusEl.textContent = '❌ Error';
-            statusEl.className = 'sync-status error';
-            document.getElementById('syncStatusLabel').textContent = '🔴 Error de sincronización';
-            document.getElementById('syncStatusLabel').style.color = '#b91c1c';
-            toast('❌ Error de sincronización. Verifica tu conexión e internet.', 'error');
-        });
-}
-
-function subirDatos() {
-    const binId = CONFIG_SYNC.binId;
-    return fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': CONFIG_SYNC.masterKey
-        },
-        body: JSON.stringify(estado)
-    })
-    .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        return res.json();
-    })
-    .then(data => {
-        if (!data.record) throw new Error('Error al subir: ' + JSON.stringify(data));
-        estado.lastSync = new Date().toISOString();
-        guardarEstadoLocal();
-        console.log('✅ Datos subidos a la nube');
-    });
-}
-
-function descargarDatos() {
-    const binId = CONFIG_SYNC.binId;
-    return fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-        headers: {
-            'X-Master-Key': CONFIG_SYNC.masterKey
-        }
-    })
-    .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        return res.json();
-    })
-    .then(data => {
-        if (data.record) {
-            const remoto = data.record;
-            if (!estado.lastSync || new Date(remoto.lastSync) > new Date(estado.lastSync)) {
-                estado = mergeDeep(estado, remoto);
-                if (!estado.productos) estado.productos = [];
-                if (!estado.proveedores) estado.proveedores = [];
-                if (!estado.ventas) estado.ventas = [];
-                if (!estado.clientes) estado.clientes = [];
-                if (!estado.movimientosCaja) estado.movimientosCaja = [];
-                if (!estado.compras) estado.compras = [];
-                if (!estado.movimientosStock) estado.movimientosStock = [];
-                if (!estado.logs) estado.logs = [];
-                if (!estado.usuarios) estado.usuarios = [];
-                if (!estado.config) estado.config = { nombreLocal: 'Supermercado Futuro', impuesto: 21, ticketHeader: '¡Gracias!', ticketFooter: 'Vuelva pronto!', autoPrint: true };
-                if (!estado.nextProductoId) estado.nextProductoId = 1;
-                estado.lastSync = new Date().toISOString();
-                guardarEstadoLocal();
-                if (usuario) recargarInterfaz();
-                console.log('✅ Datos descargados y fusionados');
-            } else {
-                console.log('ℹ️ Ya estás sincronizado');
-            }
-        } else {
-            throw new Error('Error al descargar: ' + JSON.stringify(data));
-        }
-    });
 }
 
 // ================================================================
@@ -1183,11 +1117,19 @@ function toast(msg, tipo = 'info') {
     el._timer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-function agregarLog(accion, detalle = '') {
+async function agregarLog(accion, detalle = '') {
     const fecha = new Date().toISOString();
-    estado.logs.push({ fecha, usuario: usuario ? usuario.nombre : 'Sistema', accion, detalle });
-    if (estado.logs.length > 100) estado.logs.shift();
-    guardarEstadoLocal();
+    const logEntry = { fecha, usuario: usuario ? usuario.nombre : 'Sistema', accion, detalle };
+    try {
+        await supabaseFetch('logs', {
+            method: 'POST',
+            body: JSON.stringify(logEntry)
+        });
+        logsCache.unshift(logEntry);
+        if (logsCache.length > 100) logsCache.pop();
+    } catch (e) {
+        console.warn('Error guardando log en Supabase:', e);
+    }
     renderLogs();
 }
 
@@ -1212,32 +1154,39 @@ function playScanSound() { playSound(600,100,0.3); setTimeout(()=>playSound(800,
 // ================================================================
 //  LOGIN Y SEGURIDAD
 // ================================================================
-function login() {
+async function login() {
     const nombre = document.getElementById('loginNombre').value.trim();
     const clave = document.getElementById('loginClave').value.trim();
-    const user = estado.usuarios.find(u => u.nombre === nombre && u.clave === clave);
+    const usuarios = JSON.parse(localStorage.getItem('supermercado_usuarios')) || [];
+    const user = usuarios.find(u => u.nombre === nombre && u.clave === clave);
     if (!user) { toast('❌ Credenciales incorrectas.', 'error'); return; }
     usuario = user;
     document.getElementById('loginContainer').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('rolDisplay').textContent = user.rol;
-    document.getElementById('tituloLocal').innerHTML = estado.config.nombreLocal || 'SUPER<span>MERCADO</span>';
+    document.getElementById('tituloLocal').innerHTML = configCache.nombreLocal || 'SUPER<span>MERCADO</span>';
     inicializarSidebar();
     cargarDatosIniciales();
-    agregarLog('Inicio de sesión', `Usuario ${user.nombre} (${user.rol}) desde ${device_id}`);
+    await agregarLog('Inicio de sesión', `Usuario ${user.nombre} (${user.rol}) desde ${device_id}`);
     toast('✅ Bienvenido ' + user.nombre, 'success');
-    // Sincronizar automáticamente al loguearse
-    setTimeout(sincronizarAhora, 1000);
 }
 
-function registrarCajero() {
+async function registrarCajero() {
     const nombre = prompt('Nombre del nuevo cajero:'); if (!nombre) return;
     const clave = prompt('Clave para ' + nombre + ':'); if (!clave) return;
-    const id = estado.usuarios.length ? Math.max(...estado.usuarios.map(u => u.id)) + 1 : 3;
-    estado.usuarios.push({ id, nombre, clave, rol: 'cajero', pregunta: '', respuesta: '' });
-    guardarEstadoLocal();
-    agregarLog('Crear cajero', `Cajero ${nombre} creado`);
-    toast('✅ Cajero creado.', 'success');
+    try {
+        await supabaseFetch('usuarios', {
+            method: 'POST',
+            body: JSON.stringify({ nombre, clave, rol: 'cajero' })
+        });
+        // Recargar usuarios
+        const usuarios = await supabaseFetch('usuarios');
+        localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
+        await agregarLog('Crear cajero', `Cajero ${nombre} creado`);
+        toast('✅ Cajero creado.', 'success');
+    } catch (e) {
+        toast('❌ Error al crear cajero: ' + e.message, 'error');
+    }
 }
 
 function cerrarSesion() {
@@ -1252,15 +1201,9 @@ function resetearDatos() {
     const clave = prompt('Ingresá la clave maestra para restablecer TODOS los datos (07121977):');
     if (clave === null) return;
     if (clave !== '07121977') { toast('Clave incorrecta', 'error'); return; }
-    if (!confirm('⚠️ ¿Seguro? Se borrarán TODOS los datos locales Y de la nube.')) return;
-    localStorage.removeItem('supermercado_estado');
-    localStorage.removeItem('supermercado_device');
-    // Borrar bin remoto
-    fetch(`https://api.jsonbin.io/v3/b/${CONFIG_SYNC.binId}`, {
-        method: 'DELETE',
-        headers: { 'X-Master-Key': CONFIG_SYNC.masterKey }
-    }).catch(() => {});
-    location.reload();
+    if (!confirm('⚠️ ¿Seguro? Se borrarán TODOS los datos de Supabase.')) return;
+    // No implementamos borrado masivo por seguridad
+    toast('Función deshabilitada para proteger los datos.', 'error');
 }
 
 function esAdmin() { return usuario && usuario.rol === 'admin'; }
@@ -1323,7 +1266,7 @@ function inicializarSidebar() {
 }
 
 // ================================================================
-//  CARGA INICIAL Y RECARGA DE INTERFAZ
+//  CARGA INICIAL
 // ================================================================
 function cargarDatosIniciales() {
     setTimeout(() => {
@@ -1408,7 +1351,7 @@ function calcularPorcentaje() {
 }
 
 // ================================================================
-//  BUSCADOR DE CAJA (VENTAS) - VERSIÓN LOCAL
+//  BUSCADOR DE CAJA (VENTAS)
 // ================================================================
 const CATEGORIAS_BUSQUEDA = {
     'carniceria': ['carniceria', 'carnicería', 'carne'],
@@ -1472,7 +1415,7 @@ document.getElementById('buscarProducto').addEventListener('input', function() {
         filtroCategoriaActivo = null;
     }
 
-    let resultados = estado.productos;
+    let resultados = productosCache;
     if (categoria) {
         resultados = resultados.filter(p => p.categoria === categoria);
     }
@@ -1504,7 +1447,7 @@ document.getElementById('buscarProducto').addEventListener('input', function() {
     resultsDiv.querySelectorAll('.result-item').forEach(el => {
         el.addEventListener('click', function() {
             const id = parseInt(this.dataset.id);
-            const producto = estado.productos.find(p => p.id === id);
+            const producto = productosCache.find(p => p.id === id);
             if (producto) {
                 document.getElementById('buscarProducto').value = producto.nombre;
                 resultsDiv.classList.remove('active');
@@ -1549,9 +1492,9 @@ document.getElementById('buscarProducto').addEventListener('keydown', function(e
         } else {
             const texto = this.value.trim();
             if (!texto) return;
-            let encontrado = estado.productos.find(p => p.nombre.toLowerCase() === texto.toLowerCase());
+            let encontrado = productosCache.find(p => p.nombre.toLowerCase() === texto.toLowerCase());
             if (!encontrado) {
-                encontrado = estado.productos.find(p => p.codigo_barras === texto || p.codigo === texto);
+                encontrado = productosCache.find(p => p.codigo_barras === texto || p.codigo === texto);
             }
             if (encontrado) {
                 document.getElementById('buscarProducto').value = encontrado.nombre;
@@ -1611,7 +1554,7 @@ document.getElementById('agregarProductoBtn').addEventListener('click', function
 
 function agregarProductoPorId(id) {
     if (!esCajero()) { toast('No tenés permiso para vender', 'error'); return; }
-    const producto = estado.productos.find(p => p.id === id);
+    const producto = productosCache.find(p => p.id === id);
     if (!producto) { toast('Producto no encontrado', 'error'); return; }
     agregarProductoAlCarrito(producto);
 }
@@ -1620,9 +1563,9 @@ function agregarProductoPorBusqueda() {
     if (!esCajero()) { toast('No tenés permiso para vender', 'error'); return; }
     const texto = document.getElementById('buscarProducto').value.trim();
     if (!texto) return toast('Escribí un producto', 'error');
-    let encontrado = estado.productos.find(p => p.nombre.toLowerCase() === texto.toLowerCase());
+    let encontrado = productosCache.find(p => p.nombre.toLowerCase() === texto.toLowerCase());
     if (!encontrado) {
-        encontrado = estado.productos.find(p => p.codigo_barras === texto || p.codigo === texto);
+        encontrado = productosCache.find(p => p.codigo_barras === texto || p.codigo === texto);
     }
     if (!encontrado) {
         toast('Producto no encontrado', 'error');
@@ -1727,18 +1670,18 @@ document.getElementById('metodoPago').addEventListener('change', function() {
 });
 
 // ================================================================
-//  REGISTRAR VENTA (LOCAL + SINCRONIZACIÓN)
+//  REGISTRAR VENTA
 // ================================================================
-document.getElementById('registrarVentaBtn').addEventListener('click', function() {
+document.getElementById('registrarVentaBtn').addEventListener('click', async function() {
     if (!esCajero()) { toast('No tenés permiso para vender', 'error'); return; }
     if (carrito.length === 0) return toast('Carrito vacío', 'error');
-    if (!estado.caja || estado.caja.estado !== 'abierta') return toast('La caja debe estar abierta', 'error');
+    if (!cajaCache || cajaCache.estado !== 'abierta') return toast('La caja debe estar abierta', 'error');
     const metodo = document.getElementById('metodoPago').value;
     let metodoMostrar = metodo;
     if (metodo === 'otro') { metodoMostrar = document.getElementById('otroPagoTexto').value.trim() || 'Otro'; if (!metodoMostrar || metodoMostrar === 'Otro') return toast('Especificá el medio de pago', 'error'); }
     
     for (const item of carrito) {
-        const prod = estado.productos.find(p => p.id === item.producto_id);
+        const prod = productosCache.find(p => p.id === item.producto_id);
         if (!prod) { toast(`Producto ${item.nombre} ya no existe`, 'error'); return; }
         if (prod.stock < item.cantidad) {
             toast(`Stock insuficiente para ${item.nombre}. Disponible: ${prod.stock} ${prod.tipo_venta === 'kg' ? 'kg' : 'unidades'}`, 'error');
@@ -1748,12 +1691,12 @@ document.getElementById('registrarVentaBtn').addEventListener('click', function(
     const total = carrito.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
     let cliente_id = null, clienteNombre = '';
     let tarjetaInfo = null;
-    if (metodo === 'ctacte') { const nombre = document.getElementById('clienteCtacte').value.trim(); if (!nombre) return toast('Ingresá el nombre del cliente', 'error'); const cuit = document.getElementById('clienteCuit').value.trim() || ''; let cliente = estado.clientes.find(c => c.nombre === nombre); if (!cliente) { cliente = { id: estado.clientes.length + 1, nombre, cuit, saldo: 0 }; estado.clientes.push(cliente); } cliente_id = cliente.id; clienteNombre = cliente.nombre; }
+    if (metodo === 'ctacte') { const nombre = document.getElementById('clienteCtacte').value.trim(); if (!nombre) return toast('Ingresá el nombre del cliente', 'error'); const cuit = document.getElementById('clienteCuit').value.trim() || ''; let cliente = clientesCache.find(c => c.nombre === nombre); if (!cliente) { cliente = { id: clientesCache.length + 1, nombre, cuit, saldo: 0 }; clientesCache.push(cliente); } cliente_id = cliente.id; clienteNombre = cliente.nombre; }
     if (metodo === 'tarjeta') { const numero = document.getElementById('tarjetaNumero').value.trim(); const tipo = document.getElementById('tarjetaTipo').value; const cuotas = document.getElementById('tarjetaCuotas').value; if (!numero || numero.length < 4) return toast('Ingresá los últimos 4 dígitos', 'error'); tarjetaInfo = { numero: numero.slice(-4), tipo, cuotas }; }
     const fecha = new Date().toISOString().slice(0, 10);
     const timestamp = Date.now();
     const venta = { 
-        id: estado.ventas.length ? Math.max(...estado.ventas.map(v => v.id)) + 1 : 1, 
+        id: ventasCache.length ? Math.max(...ventasCache.map(v => v.id)) + 1 : 1, 
         fecha, timestamp, total, 
         medio_pago: metodoMostrar, 
         cliente_id, cliente_nombre: clienteNombre, 
@@ -1762,49 +1705,91 @@ document.getElementById('registrarVentaBtn').addEventListener('click', function(
         tarjeta: tarjetaInfo 
     };
     
-    // Procesar venta localmente
-    estado.ventas.push(venta);
-    carrito.forEach(item => {
-        const prod = estado.productos.find(p => p.id === item.producto_id);
-        if (prod) {
-            prod.stock -= item.cantidad;
-            estado.movimientosStock.push({ 
-                fecha: new Date().toISOString(), 
-                producto_id: prod.id, 
-                nombre: prod.nombre, 
-                tipo: 'venta', 
-                cantidad: -item.cantidad, 
-                stock_anterior: prod.stock + item.cantidad, 
-                stock_nuevo: prod.stock, 
-                usuario: usuario.nombre, 
-                venta_id: venta.id 
-            });
+    // Procesar venta en Supabase
+    try {
+        // Insertar venta
+        await supabaseFetch('ventas', {
+            method: 'POST',
+            body: JSON.stringify(venta)
+        });
+        ventasCache.unshift(venta);
+        if (ventasCache.length > 500) ventasCache.pop();
+
+        // Actualizar stock de productos y guardar movimientos
+        for (const item of carrito) {
+            const prod = productosCache.find(p => p.id === item.producto_id);
+            if (prod) {
+                const stockAnterior = prod.stock;
+                prod.stock = stockAnterior - item.cantidad;
+                // Actualizar producto en Supabase
+                await supabaseFetch(`productos?id=eq.${prod.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ stock: prod.stock })
+                });
+                // Insertar movimiento de stock
+                await supabaseFetch('movimientos_stock', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        fecha: new Date().toISOString(),
+                        producto_id: prod.id,
+                        nombre: prod.nombre,
+                        tipo: 'venta',
+                        cantidad: -item.cantidad,
+                        stock_anterior: stockAnterior,
+                        stock_nuevo: prod.stock,
+                        usuario: usuario.nombre,
+                        venta_id: venta.id
+                    })
+                });
+                movimientosStockCache.unshift({
+                    fecha: new Date().toISOString(),
+                    producto_id: prod.id,
+                    nombre: prod.nombre,
+                    tipo: 'venta',
+                    cantidad: -item.cantidad,
+                    stock_anterior: stockAnterior,
+                    stock_nuevo: prod.stock,
+                    usuario: usuario.nombre,
+                    venta_id: venta.id
+                });
+                if (movimientosStockCache.length > 100) movimientosStockCache.pop();
+            }
         }
-    });
-    const metodoKey = metodo === 'efectivo' ? 'total_efectivo' : metodo === 'tarjeta' ? 'total_tarjeta' : (metodo === 'mercado pago' || metodo === 'transferencia' || metodo === 'otro') ? 'total_mp' : 'total_ctacte';
-    if (estado.caja) estado.caja[metodoKey] = (estado.caja[metodoKey] || 0) + total;
-    carrito = [];
-    renderCarrito();
-    renderProductos();
-    renderVentasRecientes();
-    actualizarDashboard();
-    renderCaja();
-    renderCarniceria();
-    renderFiambres();
-    verificarStockBajo();
-    playVentaSound();
-    mostrarTicket(venta);
-    agregarLog('Venta registrada', `N°${venta.id} - Total $${venta.total}`);
-    toast('✅ Venta registrada', 'success');
-    guardarEstadoLocal();
-    // Sincronizar automáticamente después de la venta
-    sincronizarAhora();
+
+        // Actualizar caja
+        const metodoKey = metodo === 'efectivo' ? 'total_efectivo' : metodo === 'tarjeta' ? 'total_tarjeta' : (metodo === 'mercado pago' || metodo === 'transferencia' || metodo === 'otro') ? 'total_mp' : 'total_ctacte';
+        if (cajaCache) {
+            const newValue = (cajaCache[metodoKey] || 0) + total;
+            await supabaseFetch('caja?id=eq.1', {
+                method: 'PATCH',
+                body: JSON.stringify({ [metodoKey]: newValue })
+            });
+            cajaCache[metodoKey] = newValue;
+        }
+
+        carrito = [];
+        renderCarrito();
+        renderProductos();
+        renderVentasRecientes();
+        actualizarDashboard();
+        renderCaja();
+        renderCarniceria();
+        renderFiambres();
+        verificarStockBajo();
+        playVentaSound();
+        mostrarTicket(venta);
+        await agregarLog('Venta registrada', `N°${venta.id} - Total $${venta.total}`);
+        toast('✅ Venta registrada y sincronizada', 'success');
+    } catch (err) {
+        toast('❌ Error al registrar venta: ' + err.message, 'error');
+        console.error(err);
+    }
 });
 
 function mostrarTicket(venta) {
     const html = generarTicketHTML(venta);
     document.getElementById('ticketPrint').innerHTML = html;
-    if (estado.config.autoPrint !== false) {
+    if (configCache.autoPrint !== false) {
         setTimeout(() => {
             const ventana = window.open('', '_blank');
             ventana.document.write(html);
@@ -1822,11 +1807,11 @@ function mostrarTicket(venta) {
 function generarTicketHTML(venta) {
     const items = venta.items;
     const ahora = new Date(venta.timestamp).toLocaleString();
-    const subtotal = venta.total / (1 + (estado.config.impuesto || 21) / 100);
+    const subtotal = venta.total / (1 + (configCache.impuesto || 21) / 100);
     const iva = venta.total - subtotal;
-    const impuesto = estado.config.impuesto || 21;
+    const impuesto = configCache.impuesto || 21;
     let html = `<div id="ticketPrint" style="font-family:'Courier New',monospace;font-size:10px;width:80mm;padding:10px;background:white;color:black;">
-        <div class="centered"><strong>${estado.config.nombreLocal || 'Supermercado'}</strong></div>
+        <div class="centered"><strong>${configCache.nombreLocal || 'Supermercado'}</strong></div>
         <div class="centered" style="font-size:9px;">${ahora}</div>
         <div class="centered">Cajero: ${venta.cajero}</div>
         <div class="centered">N° Venta: ${venta.id}</div>
@@ -1834,7 +1819,7 @@ function generarTicketHTML(venta) {
         <div class="line"></div>
         <table><thead><tr><th>Cant</th><th>Producto</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>`;
     items.forEach(item => {
-        const producto = estado.productos.find(p => p.id === item.producto_id);
+        const producto = productosCache.find(p => p.id === item.producto_id);
         const nombre = producto ? producto.nombre : 'Producto';
         let cantidadMostrar = item.cantidad;
         let unidad = '';
@@ -1858,8 +1843,8 @@ function generarTicketHTML(venta) {
     }
     if (venta.cliente_nombre) html += `<div style="text-align:right;">Cliente: ${venta.cliente_nombre}</div>`;
     html += `<div class="line"></div>
-        <div class="centered">${estado.config.ticketHeader || '¡Gracias por su compra!'}</div>
-        <div class="centered">${estado.config.ticketFooter || 'Vuelva pronto!'}</div>
+        <div class="centered">${configCache.ticketHeader || '¡Gracias por su compra!'}</div>
+        <div class="centered">${configCache.ticketFooter || 'Vuelva pronto!'}</div>
         <div class="line"></div>
         <div class="centered" style="font-size:8px;">Sistema de Gestión de Supermercado</div>
     </div>`;
@@ -1867,12 +1852,12 @@ function generarTicketHTML(venta) {
 }
 
 // ================================================================
-//  PRODUCTOS (CRUD) - CON SINCRONIZACIÓN TRAS CADA CAMBIO
+//  PRODUCTOS (CRUD)
 // ================================================================
 function getProductosFiltrados() {
     const filtro = document.getElementById('filtroProductos').value.toLowerCase();
     const rubro = document.getElementById('filtroRubro').value;
-    let lista = estado.productos.slice();
+    let lista = productosCache.slice();
     return lista.filter(p => {
         let ok = true;
         if (filtro && !p.nombre.toLowerCase().includes(filtro) && !(p.codigo_barras || '').includes(filtro) && !String(p.codigo || '').includes(filtro)) ok = false;
@@ -1922,7 +1907,7 @@ function renderProductos(resetPagina = true) {
 }
 
 function cargarMasProductos() {
-    toast('Todos los productos ya están cargados localmente', 'info');
+    toast('Todos los productos ya están cargados', 'info');
 }
 
 document.getElementById('filtroProductos').addEventListener('input', function() {
@@ -1930,7 +1915,7 @@ document.getElementById('filtroProductos').addEventListener('input', function() 
 });
 document.getElementById('filtroRubro').addEventListener('change', function() { renderProductos(true); });
 
-document.getElementById('nuevoProductoBtn').addEventListener('click', function() {
+document.getElementById('nuevoProductoBtn').addEventListener('click', async function() {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     const metodo = confirm('¿Precio por porcentaje de ganancia? (Aceptar = Porcentaje, Cancelar = Precio Fijo)');
     let porcentaje = 0;
@@ -1952,46 +1937,58 @@ document.getElementById('nuevoProductoBtn').addEventListener('click', function()
     const codigo_barras = prompt('Código de barras:') || '';
     const categoria = prompt('Categoría (carniceria, fiambres, almacen, lacteos, bebidas, limpieza, otros):') || 'otros';
     const tipo_venta = confirm('¿Se vende por kilogramo?') ? 'kg' : 'unidad';
-    const id = estado.nextProductoId++;
     const nuevoProducto = {
-        id, codigo, codigo_barras, nombre, categoria, 
+        codigo, codigo_barras, nombre, categoria, 
         precio_final, stock, tipo_venta, 
         costo_s_iva, tipo_iva:21, precio_s_iva:0,
         stock_disponible: stock, stock_minimo:0, marca:'', ubicacion:'', seccion:'', activo:1,
         metodo_precio: metodo ? 'porcentaje' : 'fijo',
         porcentaje_ganancia: metodo ? porcentaje : 0
     };
-    estado.productos.push(nuevoProducto);
-    renderProductos(true);
-    renderCarniceria();
-    renderFiambres();
-    verificarStockBajo();
-    guardarEstadoLocal();
-    agregarLog('Nuevo producto', `${nombre} agregado (${metodo ? 'porcentaje' : 'fijo'})`);
-    toast('Producto agregado', 'success');
-    sincronizarAhora();
+    try {
+        const result = await supabaseFetch('productos', {
+            method: 'POST',
+            body: JSON.stringify(nuevoProducto)
+        });
+        const newId = result[0]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
+        const productoFinal = { ...nuevoProducto, id: newId };
+        productosCache.push(productoFinal);
+        renderProductos(true);
+        renderCarniceria();
+        renderFiambres();
+        verificarStockBajo();
+        await agregarLog('Nuevo producto', `${nombre} agregado (${metodo ? 'porcentaje' : 'fijo'})`);
+        toast('Producto agregado', 'success');
+    } catch (err) {
+        toast('❌ Error al agregar producto: ' + err.message, 'error');
+    }
 });
 
-function eliminarProducto(id) {
+async function eliminarProducto(id) {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     if (!confirm('¿Eliminar producto?')) return;
-    const idx = estado.productos.findIndex(p => p.id === id);
+    const idx = productosCache.findIndex(p => p.id === id);
     if (idx === -1) { toast('Producto no encontrado', 'error'); return; }
-    const nombre = estado.productos[idx].nombre;
-    estado.productos.splice(idx, 1);
-    renderProductos(true);
-    renderCarniceria();
-    renderFiambres();
-    verificarStockBajo();
-    guardarEstadoLocal();
-    agregarLog('Eliminar producto', `${nombre} eliminado`);
-    toast('Producto eliminado', 'success');
-    sincronizarAhora();
+    const nombre = productosCache[idx].nombre;
+    try {
+        await supabaseFetch(`productos?id=eq.${id}`, {
+            method: 'DELETE'
+        });
+        productosCache.splice(idx, 1);
+        renderProductos(true);
+        renderCarniceria();
+        renderFiambres();
+        verificarStockBajo();
+        await agregarLog('Eliminar producto', `${nombre} eliminado`);
+        toast('Producto eliminado', 'success');
+    } catch (err) {
+        toast('❌ Error al eliminar producto: ' + err.message, 'error');
+    }
 }
 
-function editarProducto(id) {
+async function editarProducto(id) {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
-    const p = estado.productos.find(pr => pr.id === id);
+    const p = productosCache.find(pr => pr.id === id);
     if (!p) return;
     const cambiarMetodo = confirm('¿Cambiar método de precio? (Aceptar = Porcentaje, Cancelar = Mantener actual)');
     let metodo = p.metodo_precio === 'porcentaje';
@@ -2017,23 +2014,30 @@ function editarProducto(id) {
     const codigo_barras = prompt('Código de barras:', p.codigo_barras) || p.codigo_barras;
     const categoria = prompt('Categoría:', p.categoria) || p.categoria;
     const tipo_venta = confirm('¿Se vende por kilogramo?') ? 'kg' : 'unidad';
-    Object.assign(p, { 
+    const updates = { 
         nombre, precio_final, stock, codigo, codigo_barras, categoria, tipo_venta, costo_s_iva,
         metodo_precio: metodo ? 'porcentaje' : 'fijo',
         porcentaje_ganancia: metodo ? porcentaje : 0
-    });
-    renderProductos(true);
-    renderCarniceria();
-    renderFiambres();
-    verificarStockBajo();
-    guardarEstadoLocal();
-    agregarLog('Editar producto', `${nombre} actualizado`);
-    toast('Producto actualizado', 'success');
-    sincronizarAhora();
+    };
+    try {
+        await supabaseFetch(`productos?id=eq.${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+        });
+        Object.assign(p, updates);
+        renderProductos(true);
+        renderCarniceria();
+        renderFiambres();
+        verificarStockBajo();
+        await agregarLog('Editar producto', `${nombre} actualizado`);
+        toast('Producto actualizado', 'success');
+    } catch (err) {
+        toast('❌ Error al editar producto: ' + err.message, 'error');
+    }
 }
 
 // ================================================================
-//  CARNICERÍA Y FIAMBRES (VERSIÓN LOCAL) - CON SINCRONIZACIÓN
+//  CARNICERÍA Y FIAMBRES
 // ================================================================
 const CORTES_PREDEFINIDOS_CARNICERIA = [
     'Bife de chorizo', 'Bife de costilla', 'Lomo', 'Cuadril', 'Paleta', 'Peceto', 'Aguja', 'Tapa de asado',
@@ -2054,7 +2058,7 @@ const CORTES_PREDEFINIDOS_FIAMBRES = [
 function renderCarniceria() {
     if (!esAlmacenero()) return;
     const tbody = document.getElementById('tbodyCarnes');
-    const carnes = estado.productos.filter(p => p.categoria === 'carniceria').slice(0, 200);
+    const carnes = productosCache.filter(p => p.categoria === 'carniceria').slice(0, 200);
     if (carnes.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">No hay cortes cargados.</td></tr>';
         document.getElementById('cargarMasCarnes').style.display = 'none';
@@ -2082,7 +2086,7 @@ function renderCarniceria() {
 function renderFiambres() {
     if (!esAlmacenero()) return;
     const tbody = document.getElementById('tbodyFiambres');
-    const fiambres = estado.productos.filter(p => p.categoria === 'fiambres').slice(0, 200);
+    const fiambres = productosCache.filter(p => p.categoria === 'fiambres').slice(0, 200);
     if (fiambres.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">No hay fiambres cargados.</td></tr>';
         document.getElementById('cargarMasFiambres').style.display = 'none';
@@ -2107,10 +2111,10 @@ function renderFiambres() {
     document.getElementById('cargarMasFiambres').style.display = 'none';
 }
 
-function cargarMasCarnes() { toast('Todas las carnes ya están cargadas localmente', 'info'); }
-function cargarMasFiambres() { toast('Todos los fiambres ya están cargados localmente', 'info'); }
+function cargarMasCarnes() { toast('Todas las carnes ya están cargadas', 'info'); }
+function cargarMasFiambres() { toast('Todos los fiambres ya están cargados', 'info'); }
 
-function agregarCorte(nombre, categoria) {
+async function agregarCorte(nombre, categoria) {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     const metodo = confirm(`¿Precio por porcentaje de ganancia para ${nombre}? (Aceptar = Porcentaje, Cancelar = Precio Fijo)`);
     let porcentaje = 0;
@@ -2127,52 +2131,63 @@ function agregarCorte(nombre, categoria) {
         toast(`Precio calculado: $${precioFinal.toFixed(2)} (${porcentaje}% de ganancia sobre costo)`, 'info');
     }
     const stock = parseFloat(prompt('Stock inicial (kg):', '0')) || 0;
-    const id = estado.nextProductoId++;
     const nuevo = {
-        id, codigo: '', codigo_barras: '', nombre, categoria,
+        codigo: '', codigo_barras: '', nombre, categoria,
         precio_final: precioFinal, stock, tipo_venta: 'kg',
         costo_s_iva, tipo_iva:21, precio_s_iva:0,
         stock_disponible:stock, stock_minimo:0, marca:'', ubicacion:'', seccion:'', activo:1,
         metodo_precio: metodo ? 'porcentaje' : 'fijo',
         porcentaje_ganancia: metodo ? porcentaje : 0
     };
-    estado.productos.push(nuevo);
-    renderProductos();
-    renderCarniceria();
-    renderFiambres();
-    guardarEstadoLocal();
-    agregarLog('Agregar corte', `${nombre} agregado a ${categoria}`);
-    toast(`✅ ${nombre} agregado a ${categoria}`, 'success');
-    sincronizarAhora();
+    try {
+        const result = await supabaseFetch('productos', {
+            method: 'POST',
+            body: JSON.stringify(nuevo)
+        });
+        const newId = result[0]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
+        const productoFinal = { ...nuevo, id: newId };
+        productosCache.push(productoFinal);
+        renderProductos();
+        renderCarniceria();
+        renderFiambres();
+        await agregarLog('Agregar corte', `${nombre} agregado a ${categoria}`);
+        toast(`✅ ${nombre} agregado a ${categoria}`, 'success');
+    } catch (err) {
+        toast('❌ Error al agregar corte: ' + err.message, 'error');
+    }
 }
 
-function cargarCortesPredefinidos(categoria) {
+async function cargarCortesPredefinidos(categoria) {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     const lista = categoria === 'carniceria' ? CORTES_PREDEFINIDOS_CARNICERIA : CORTES_PREDEFINIDOS_FIAMBRES;
     let agregados = 0;
-    lista.forEach(c => {
-        if (!estado.productos.find(p => p.nombre === c && p.categoria === categoria)) {
-            const id = estado.nextProductoId++;
+    for (const c of lista) {
+        if (!productosCache.find(p => p.nombre === c && p.categoria === categoria)) {
             const nuevo = {
-                id, codigo: '', codigo_barras: '', nombre: c, categoria,
+                codigo: '', codigo_barras: '', nombre: c, categoria,
                 precio_final: 0, stock: 0, tipo_venta: 'kg',
                 costo_s_iva:0, tipo_iva:21, precio_s_iva:0,
                 stock_disponible:0, stock_minimo:0, marca:'', ubicacion:'', seccion:'', activo:1,
                 metodo_precio: 'fijo',
                 porcentaje_ganancia: 0
             };
-            estado.productos.push(nuevo);
-            agregados++;
+            try {
+                const result = await supabaseFetch('productos', {
+                    method: 'POST',
+                    body: JSON.stringify(nuevo)
+                });
+                const newId = result[0]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
+                productosCache.push({ ...nuevo, id: newId });
+                agregados++;
+            } catch (e) { console.warn('Error agregando corte:', e); }
         }
-    });
+    }
     if (agregados > 0) {
         renderCarniceria();
         renderFiambres();
         renderProductos();
-        guardarEstadoLocal();
-        agregarLog('Cargar cortes predefinidos', `${agregados} ${categoria} agregados`);
+        await agregarLog('Cargar cortes predefinidos', `${agregados} ${categoria} agregados`);
         toast(`✅ ${agregados} ${categoria} agregados. Ahora podés editar cada uno.`, 'success');
-        sincronizarAhora();
     } else {
         toast(`Todos los ${categoria} ya estaban cargados`, 'info');
     }
@@ -2186,15 +2201,15 @@ function agregarCortePersonalizado(categoria) {
 }
 
 // ================================================================
-//  PROVEEDORES Y COMPRAS (LOCAL) - CON SINCRONIZACIÓN
+//  PROVEEDORES Y COMPRAS
 // ================================================================
 function renderProveedores() {
     const tbody = document.getElementById('tbodyProveedores');
-    if (estado.proveedores.length === 0) {
+    if (proveedoresCache.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);">Sin proveedores</td></tr>';
         return;
     }
-    tbody.innerHTML = estado.proveedores.map(p => `
+    tbody.innerHTML = proveedoresCache.map(p => `
         <tr>
             <td><strong>${p.nombre}</strong></td>
             <td>${p.cuit || '-'}</td>
@@ -2206,32 +2221,43 @@ function renderProveedores() {
     `).join('');
 }
 
-function agregarProveedor() {
+async function agregarProveedor() {
     const nombre = prompt('Nombre del proveedor:'); if (!nombre) return;
     const cuit = prompt('CUIT:') || '';
     const telefono = prompt('Teléfono:') || '';
-    const id = estado.proveedores.length ? Math.max(...estado.proveedores.map(p => p.id)) + 1 : 1;
-    estado.proveedores.push({ id, nombre, cuit, telefono });
-    guardarEstadoLocal();
-    renderProveedores();
-    cargarSelectoresCompra();
-    agregarLog('Agregar proveedor', `${nombre} agregado`);
-    toast('Proveedor agregado', 'success');
-    sincronizarAhora();
-}
-
-function eliminarProveedor(id) {
-    if (!confirm('¿Eliminar proveedor?')) return;
-    const idx = estado.proveedores.findIndex(p => p.id === id);
-    if (idx !== -1) {
-        const nombre = estado.proveedores[idx].nombre;
-        estado.proveedores.splice(idx, 1);
-        guardarEstadoLocal();
+    try {
+        const result = await supabaseFetch('proveedores', {
+            method: 'POST',
+            body: JSON.stringify({ nombre, cuit, telefono })
+        });
+        const newId = result[0]?.id || (proveedoresCache.length ? Math.max(...proveedoresCache.map(p => p.id)) + 1 : 1);
+        proveedoresCache.push({ id: newId, nombre, cuit, telefono });
         renderProveedores();
         cargarSelectoresCompra();
-        agregarLog('Eliminar proveedor', `${nombre} eliminado`);
-        toast('Proveedor eliminado', 'success');
-        sincronizarAhora();
+        await agregarLog('Agregar proveedor', `${nombre} agregado`);
+        toast('Proveedor agregado', 'success');
+    } catch (err) {
+        toast('❌ Error al agregar proveedor: ' + err.message, 'error');
+    }
+}
+
+async function eliminarProveedor(id) {
+    if (!confirm('¿Eliminar proveedor?')) return;
+    const idx = proveedoresCache.findIndex(p => p.id === id);
+    if (idx !== -1) {
+        const nombre = proveedoresCache[idx].nombre;
+        try {
+            await supabaseFetch(`proveedores?id=eq.${id}`, {
+                method: 'DELETE'
+            });
+            proveedoresCache.splice(idx, 1);
+            renderProveedores();
+            cargarSelectoresCompra();
+            await agregarLog('Eliminar proveedor', `${nombre} eliminado`);
+            toast('Proveedor eliminado', 'success');
+        } catch (err) {
+            toast('❌ Error al eliminar proveedor: ' + err.message, 'error');
+        }
     }
 }
 
@@ -2239,11 +2265,44 @@ function cargarSelectoresCompra() {
     const selectProv = document.getElementById('compraProveedor');
     if (selectProv) {
         selectProv.innerHTML = '<option value="">Seleccionar</option>';
-        estado.proveedores.forEach(p => { selectProv.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
+        proveedoresCache.forEach(p => { selectProv.innerHTML += `<option value="${p.id}">${p.nombre}</option>`; });
     }
 }
 
-// Compra
+function buscarProductosCompra(query) {
+    if (!query || query.length < 2) {
+        document.getElementById('compraResultados').innerHTML = '';
+        return;
+    }
+    const resultados = productosCache.filter(p => 
+        p.nombre.toLowerCase().includes(query.toLowerCase()) || 
+        (p.codigo_barras || '').includes(query)
+    ).slice(0, 20);
+    const container = document.getElementById('compraResultados');
+    if (resultados.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-secondary);font-size:0.8rem;">No encontrado</div>';
+        return;
+    }
+    let html = '<div style="position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;max-height:200px;overflow-y:auto;z-index:999;box-shadow:var(--shadow);">';
+    resultados.forEach(p => {
+        html += `<div class="result-item" style="padding:6px 12px;cursor:pointer;border-bottom:1px solid var(--border-color);" data-id="${p.id}">${p.nombre} ($${p.precio_final})</div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+    container.querySelectorAll('.result-item').forEach(el => {
+        el.addEventListener('click', function() {
+            const id = parseInt(this.dataset.id);
+            const producto = productosCache.find(p => p.id === id);
+            if (producto) {
+                compraProductoSeleccionadoId = id;
+                compraProductoSeleccionadoObj = producto;
+                document.getElementById('compraBuscarProducto').value = producto.nombre;
+                container.innerHTML = '';
+            }
+        });
+    });
+}
+
 document.getElementById('agregarItemCompraBtn').addEventListener('click', function() {
     if (!compraProductoSeleccionadoId) {
         toast('Seleccioná un producto de la búsqueda', 'error');
@@ -2255,7 +2314,7 @@ document.getElementById('agregarItemCompraBtn').addEventListener('click', functi
         toast('Complete los datos', 'error');
         return;
     }
-    const producto = compraProductoSeleccionadoObj || estado.productos.find(p => p.id === compraProductoSeleccionadoId);
+    const producto = compraProductoSeleccionadoObj || productosCache.find(p => p.id === compraProductoSeleccionadoId);
     if (!producto) { toast('Producto no encontrado', 'error'); return; }
     compraItems.push({
         producto_id: producto.id,
@@ -2296,7 +2355,7 @@ function renderCompraItems() {
 
 function eliminarItemCompra(idx) { compraItems.splice(idx, 1); renderCompraItems(); }
 
-document.getElementById('finalizarCompraBtn').addEventListener('click', function() {
+document.getElementById('finalizarCompraBtn').addEventListener('click', async function() {
     if (compraItems.length === 0) { toast('Agregá items', 'error'); return; }
     const proveedor_id = parseInt(document.getElementById('compraProveedor').value);
     if (!proveedor_id) { toast('Seleccioná proveedor', 'error'); return; }
@@ -2305,56 +2364,94 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', function
     compraItems.forEach(item => { totalCalculado += item.cantidad * item.precio_costo; });
     let totalPagado = parseFloat(document.getElementById('compraTotalPagado').value);
     if (isNaN(totalPagado) || totalPagado <= 0) totalPagado = totalCalculado;
-    const proveedor = estado.proveedores.find(p => p.id === proveedor_id);
+    const proveedor = proveedoresCache.find(p => p.id === proveedor_id);
 
-    compraItems.forEach(item => {
-        let prod = estado.productos.find(p => p.id === item.producto_id);
-        if (item.es_manual || !prod) {
-            const id = estado.nextProductoId++;
-            const nuevo = {
-                id, codigo: '', codigo_barras: '', nombre: item.nombre,
-                categoria: item.categoria || 'otros', precio_final: item.precio_costo * 1.5,
-                stock: 0, tipo_venta: item.tipo_venta || 'unidad',
-                costo_s_iva: item.precio_costo, tipo_iva:21, precio_s_iva:0,
-                stock_disponible:0, stock_minimo:0, marca:'', ubicacion:'', seccion:'', activo:1,
-                metodo_precio: 'fijo', porcentaje_ganancia:0
-            };
-            estado.productos.push(nuevo);
-            prod = nuevo;
+    try {
+        for (const item of compraItems) {
+            let prod = productosCache.find(p => p.id === item.producto_id);
+            if (item.es_manual || !prod) {
+                const nuevo = {
+                    codigo: '', codigo_barras: '', nombre: item.nombre,
+                    categoria: item.categoria || 'otros', precio_final: item.precio_costo * 1.5,
+                    stock: 0, tipo_venta: item.tipo_venta || 'unidad',
+                    costo_s_iva: item.precio_costo, tipo_iva:21, precio_s_iva:0,
+                    stock_disponible:0, stock_minimo:0, marca:'', ubicacion:'', seccion:'', activo:1,
+                    metodo_precio: 'fijo', porcentaje_ganancia:0
+                };
+                const result = await supabaseFetch('productos', {
+                    method: 'POST',
+                    body: JSON.stringify(nuevo)
+                });
+                const newId = result[0]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 : 1);
+                prod = { ...nuevo, id: newId };
+                productosCache.push(prod);
+            }
+            const stockAnterior = prod.stock || 0;
+            prod.stock = stockAnterior + item.cantidad;
+            const costoAnterior = prod.costo_s_iva || 0;
+            const nuevoCosto = (costoAnterior * stockAnterior + item.precio_costo * item.cantidad) / prod.stock;
+            prod.costo_s_iva = Math.round(nuevoCosto * 100) / 100;
+            if (prod.metodo_precio === 'porcentaje' && prod.porcentaje_ganancia > 0) {
+                prod.precio_final = prod.costo_s_iva * (1 + prod.porcentaje_ganancia / 100);
+            }
+            // Actualizar producto
+            await supabaseFetch(`productos?id=eq.${prod.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ stock: prod.stock, costo_s_iva: prod.costo_s_iva, precio_final: prod.precio_final })
+            });
+            // Registrar movimiento de stock
+            await supabaseFetch('movimientos_stock', {
+                method: 'POST',
+                body: JSON.stringify({
+                    fecha: new Date().toISOString(),
+                    producto_id: prod.id,
+                    nombre: prod.nombre,
+                    tipo: 'compra',
+                    cantidad: item.cantidad,
+                    stock_anterior: stockAnterior,
+                    stock_nuevo: prod.stock,
+                    usuario: usuario.nombre
+                })
+            });
+            movimientosStockCache.unshift({
+                fecha: new Date().toISOString(),
+                producto_id: prod.id,
+                nombre: prod.nombre,
+                tipo: 'compra',
+                cantidad: item.cantidad,
+                stock_anterior: stockAnterior,
+                stock_nuevo: prod.stock,
+                usuario: usuario.nombre
+            });
+            if (movimientosStockCache.length > 100) movimientosStockCache.pop();
         }
-        const stockAnterior = prod.stock || 0;
-        prod.stock = stockAnterior + item.cantidad;
-        const costoAnterior = prod.costo_s_iva || 0;
-        const nuevoCosto = (costoAnterior * stockAnterior + item.precio_costo * item.cantidad) / prod.stock;
-        prod.costo_s_iva = Math.round(nuevoCosto * 100) / 100;
-        if (prod.metodo_precio === 'porcentaje' && prod.porcentaje_ganancia > 0) {
-            prod.precio_final = prod.costo_s_iva * (1 + prod.porcentaje_ganancia / 100);
-        }
-        estado.movimientosStock.push({
-            fecha: new Date().toISOString(),
-            producto_id: prod.id, nombre: prod.nombre, tipo: 'compra',
-            cantidad: item.cantidad, stock_anterior: stockAnterior,
-            stock_nuevo: prod.stock, usuario: usuario.nombre
+
+        // Guardar compra
+        const compraData = { fecha, proveedor: proveedor ? proveedor.nombre : 'ID ' + proveedor_id, total: totalPagado, items: compraItems.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_costo })) };
+        await supabaseFetch('compras', {
+            method: 'POST',
+            body: JSON.stringify(compraData)
         });
-    });
+        comprasCache.unshift(compraData);
+        if (comprasCache.length > 200) comprasCache.pop();
 
-    estado.compras.push({ fecha, proveedor: proveedor ? proveedor.nombre : 'ID ' + proveedor_id, total: totalPagado, items: compraItems.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_costo })) });
-    compraItems = [];
-    renderCompraItems();
-    renderProductos();
-    renderCompras();
-    renderCarniceria();
-    renderFiambres();
-    verificarStockBajo();
-    guardarEstadoLocal();
-    agregarLog('Compra registrada', `Total $${totalPagado} de ${proveedor ? proveedor.nombre : ''}`);
-    toast('✅ Compra registrada y stock actualizado', 'success');
-    sincronizarAhora();
+        compraItems = [];
+        renderCompraItems();
+        renderProductos();
+        renderCompras();
+        renderCarniceria();
+        renderFiambres();
+        verificarStockBajo();
+        await agregarLog('Compra registrada', `Total $${totalPagado} de ${proveedor ? proveedor.nombre : ''}`);
+        toast('✅ Compra registrada y stock actualizado', 'success');
+    } catch (err) {
+        toast('❌ Error al registrar compra: ' + err.message, 'error');
+    }
 });
 
 function renderCompras() {
     const filtro = document.getElementById('filtroCompras').value.toLowerCase();
-    let lista = estado.compras.slice();
+    let lista = comprasCache.slice();
     if (filtro) {
         lista = lista.filter(c => 
             c.proveedor.toLowerCase().includes(filtro) ||
@@ -2386,15 +2483,15 @@ function renderCompras() {
 function cargarMasCompras() { paginaComprasActual++; renderCompras(); }
 
 // ================================================================
-//  CAJA - CON SINCRONIZACIÓN
+//  CAJA
 // ================================================================
 function renderCaja() {
-    if (estado.caja && estado.caja.estado === 'abierta') {
+    if (cajaCache && cajaCache.estado === 'abierta') {
         document.getElementById('estadoCajaTexto').textContent = 'Abierta';
-        document.getElementById('cajaEfectivo').textContent = estado.caja.total_efectivo || 0;
-        document.getElementById('cajaTarjeta').textContent = estado.caja.total_tarjeta || 0;
-        document.getElementById('cajaMP').textContent = estado.caja.total_mp || 0;
-        document.getElementById('cajaCtacte').textContent = estado.caja.total_ctacte || 0;
+        document.getElementById('cajaEfectivo').textContent = cajaCache.total_efectivo || 0;
+        document.getElementById('cajaTarjeta').textContent = cajaCache.total_tarjeta || 0;
+        document.getElementById('cajaMP').textContent = cajaCache.total_mp || 0;
+        document.getElementById('cajaCtacte').textContent = cajaCache.total_ctacte || 0;
     } else {
         document.getElementById('estadoCajaTexto').textContent = 'Cerrada';
         document.getElementById('cajaEfectivo').textContent = '0';
@@ -2404,12 +2501,13 @@ function renderCaja() {
     }
 }
 
-document.getElementById('abrirCajaBtn').addEventListener('click', function() {
+document.getElementById('abrirCajaBtn').addEventListener('click', async function() {
     if (!esCajero()) return toast('No tenés permiso', 'error');
-    if (estado.caja && estado.caja.estado === 'abierta') return toast('Ya hay caja abierta', 'error');
+    if (cajaCache && cajaCache.estado === 'abierta') return toast('Ya hay caja abierta', 'error');
     const monto = parseFloat(prompt('Monto inicial en efectivo:', '0'));
     if (isNaN(monto) || monto < 0) return toast('Monto inválido', 'error');
-    estado.caja = {
+    const cajaData = {
+        id: 1,
         estado: 'abierta',
         monto_inicial: monto,
         total_efectivo: monto,
@@ -2419,36 +2517,62 @@ document.getElementById('abrirCajaBtn').addEventListener('click', function() {
         fecha_apertura: new Date().toISOString().slice(0, 10),
         hora_apertura: new Date().toLocaleTimeString()
     };
-    guardarEstadoLocal();
-    renderCaja();
-    actualizarDashboard();
-    agregarLog('Abrir caja', `Monto inicial $${monto}`);
-    toast('✅ Caja abierta', 'success');
-    sincronizarAhora();
+    try {
+        const existing = await supabaseFetch('caja?id=eq.1');
+        if (existing && existing.length > 0) {
+            await supabaseFetch('caja?id=eq.1', {
+                method: 'PATCH',
+                body: JSON.stringify(cajaData)
+            });
+        } else {
+            await supabaseFetch('caja', {
+                method: 'POST',
+                body: JSON.stringify(cajaData)
+            });
+        }
+        cajaCache = cajaData;
+        renderCaja();
+        actualizarDashboard();
+        await agregarLog('Abrir caja', `Monto inicial $${monto}`);
+        toast('✅ Caja abierta', 'success');
+    } catch (err) {
+        toast('❌ Error al abrir caja: ' + err.message, 'error');
+    }
 });
 
 document.getElementById('cierreXBtn').addEventListener('click', function() {
     if (!esCajero()) return toast('No tenés permiso', 'error');
-    if (!estado.caja || estado.caja.estado !== 'abierta') return toast('No hay caja abierta', 'error');
-    const total = (estado.caja.total_efectivo || 0) + (estado.caja.total_tarjeta || 0) + (estado.caja.total_mp || 0) + (estado.caja.total_ctacte || 0);
-    alert(`📊 CIERRE X\nEfectivo: $${estado.caja.total_efectivo}\nTarjeta: $${estado.caja.total_tarjeta}\nMP/Transferencias: $${estado.caja.total_mp}\nCta. Cte.: $${estado.caja.total_ctacte}\nTotal: $${total}`);
+    if (!cajaCache || cajaCache.estado !== 'abierta') return toast('No hay caja abierta', 'error');
+    const total = (cajaCache.total_efectivo || 0) + (cajaCache.total_tarjeta || 0) + (cajaCache.total_mp || 0) + (cajaCache.total_ctacte || 0);
+    alert(`📊 CIERRE X\nEfectivo: $${cajaCache.total_efectivo}\nTarjeta: $${cajaCache.total_tarjeta}\nMP/Transferencias: $${cajaCache.total_mp}\nCta. Cte.: $${cajaCache.total_ctacte}\nTotal: $${total}`);
 });
 
-document.getElementById('cierreZBtn').addEventListener('click', function() {
+document.getElementById('cierreZBtn').addEventListener('click', async function() {
     if (!esGerente()) return toast('Solo gerentes o admin', 'error');
-    if (!estado.caja || estado.caja.estado !== 'abierta') return toast('No hay caja abierta', 'error');
+    if (!cajaCache || cajaCache.estado !== 'abierta') return toast('No hay caja abierta', 'error');
     if (!confirm('¿Cerrar caja definitivamente?')) return;
-    const total = (estado.caja.total_efectivo || 0) + (estado.caja.total_tarjeta || 0) + (estado.caja.total_mp || 0) + (estado.caja.total_ctacte || 0);
-    estado.caja.estado = 'cerrada';
-    estado.caja.fecha_cierre = new Date().toISOString().slice(0, 10);
-    estado.caja.hora_cierre = new Date().toLocaleTimeString();
-    estado.caja.total_cierre = total;
-    guardarEstadoLocal();
-    renderCaja();
-    actualizarDashboard();
-    agregarLog('Cierre Z', `Total $${total}`);
-    toast('✅ Caja cerrada', 'success');
-    sincronizarAhora();
+    const total = (cajaCache.total_efectivo || 0) + (cajaCache.total_tarjeta || 0) + (cajaCache.total_mp || 0) + (cajaCache.total_ctacte || 0);
+    try {
+        await supabaseFetch('caja?id=eq.1', {
+            method: 'PATCH',
+            body: JSON.stringify({
+                estado: 'cerrada',
+                fecha_cierre: new Date().toISOString().slice(0, 10),
+                hora_cierre: new Date().toLocaleTimeString(),
+                total_cierre: total
+            })
+        });
+        cajaCache.estado = 'cerrada';
+        cajaCache.fecha_cierre = new Date().toISOString().slice(0, 10);
+        cajaCache.hora_cierre = new Date().toLocaleTimeString();
+        cajaCache.total_cierre = total;
+        renderCaja();
+        actualizarDashboard();
+        await agregarLog('Cierre Z', `Total $${total}`);
+        toast('✅ Caja cerrada', 'success');
+    } catch (err) {
+        toast('❌ Error al cerrar caja: ' + err.message, 'error');
+    }
 });
 
 // ================================================================
@@ -2459,13 +2583,13 @@ function actualizarDashboard() {
     const fechaLimite = new Date();
     fechaLimite.setDate(fechaLimite.getDate() - 30);
     const limiteStr = fechaLimite.toISOString().slice(0, 10);
-    const ventasRecientes = estado.ventas.filter(v => v.fecha >= limiteStr);
+    const ventasRecientes = ventasCache.filter(v => v.fecha >= limiteStr);
     const ventasHoy = ventasRecientes.filter(v => v.fecha === hoy);
     
     const totalVentasHoy = ventasHoy.reduce((acc, v) => acc + v.total, 0);
-    const totalCostoHoy = ventasHoy.reduce((acc, v) => acc + v.items.reduce((a, item) => { const prod = estado.productos.find(p => p.id === item.producto_id); return a + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0), 0);
-    const gastosHoy = estado.movimientosCaja.filter(m => m.fecha === hoy && m.tipo.startsWith('gasto'));
-    const totalGastosHoy = gastosHoy.reduce((acc, g) => acc + g.monto, 0);
+    const totalCostoHoy = ventasHoy.reduce((acc, v) => acc + v.items.reduce((a, item) => { const prod = productosCache.find(p => p.id === item.producto_id); return a + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0), 0);
+    const gastosHoy = []; // No tenemos gastos en la versión actual
+    const totalGastosHoy = 0;
     const gananciaNetaHoy = totalVentasHoy - totalCostoHoy - totalGastosHoy;
     document.getElementById('kpiGananciaHoy').textContent = '$' + (gananciaNetaHoy || 0);
     document.getElementById('kpiGananciaHoy').className = 'value ' + (gananciaNetaHoy >= 0 ? 'green' : 'red');
@@ -2473,7 +2597,7 @@ function actualizarDashboard() {
     let gananciaCarniceria = 0, gananciaFiambres = 0, gananciaOtros = 0;
     ventasHoy.forEach(v => {
         v.items.forEach(item => {
-            const prod = estado.productos.find(p => p.id === item.producto_id);
+            const prod = productosCache.find(p => p.id === item.producto_id);
             if (prod) {
                 const gananciaItem = (item.precio - (prod.costo_s_iva || 0)) * item.cantidad;
                 if (prod.categoria === 'carniceria') gananciaCarniceria += gananciaItem;
@@ -2489,16 +2613,16 @@ function actualizarDashboard() {
     const semanaAtras = new Date(); semanaAtras.setDate(semanaAtras.getDate() - 7);
     const semanaStr = semanaAtras.toISOString().slice(0, 10);
     const ventasSemana = ventasRecientes.filter(v => v.fecha >= semanaStr);
-    const gananciaSemana = ventasSemana.reduce((acc, v) => { const costo = v.items.reduce((a, item) => { const prod = estado.productos.find(p => p.id === item.producto_id); return a + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0); return acc + v.total - costo; }, 0);
+    const gananciaSemana = ventasSemana.reduce((acc, v) => { const costo = v.items.reduce((a, item) => { const prod = productosCache.find(p => p.id === item.producto_id); return a + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0); return acc + v.total - costo; }, 0);
     document.getElementById('kpiGananciaSemana').textContent = '$' + gananciaSemana;
 
-    const gananciaMes = ventasRecientes.reduce((acc, v) => { const costo = v.items.reduce((a, item) => { const prod = estado.productos.find(p => p.id === item.producto_id); return a + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0); return acc + v.total - costo; }, 0);
+    const gananciaMes = ventasRecientes.reduce((acc, v) => { const costo = v.items.reduce((a, item) => { const prod = productosCache.find(p => p.id === item.producto_id); return a + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0); return acc + v.total - costo; }, 0);
     document.getElementById('kpiGananciaMes').textContent = '$' + gananciaMes;
 
-    document.getElementById('kpiProductos').textContent = estado.productos.length;
-    const stockBajo = estado.productos.filter(p => p.stock < 5).length;
+    document.getElementById('kpiProductos').textContent = productosCache.length;
+    const stockBajo = productosCache.filter(p => p.stock < 5).length;
     document.getElementById('kpiStockBajo').textContent = stockBajo;
-    document.getElementById('kpiCajaEstado').textContent = (estado.caja && estado.caja.estado === 'abierta') ? 'Abierta' : 'Cerrada';
+    document.getElementById('kpiCajaEstado').textContent = (cajaCache && cajaCache.estado === 'abierta') ? 'Abierta' : 'Cerrada';
     document.getElementById('kpiDeviceId').textContent = device_id.slice(-8);
 
     document.getElementById('resumenVentasHoy').textContent = '$' + totalVentasHoy;
@@ -2524,7 +2648,7 @@ function actualizarGrafico() {
         d.setDate(d.getDate() - i);
         const fechaStr = d.toISOString().slice(0, 10);
         dias.push(fechaStr);
-        const totalDia = estado.ventas.filter(v => v.fecha === fechaStr).reduce((acc, v) => acc + v.total, 0);
+        const totalDia = ventasCache.filter(v => v.fecha === fechaStr).reduce((acc, v) => acc + v.total, 0);
         montos.push(totalDia);
     }
     const isDark = document.body.classList.contains('dark-mode');
@@ -2549,7 +2673,7 @@ function actualizarGrafico() {
 }
 
 function verificarStockBajo() {
-    const bajos = estado.productos.filter(p => p.stock < 5);
+    const bajos = productosCache.filter(p => p.stock < 5);
     const alertDiv = document.getElementById('stockAlert');
     const msgSpan = document.getElementById('stockAlertMsg');
     if (bajos.length > 0) {
@@ -2564,11 +2688,11 @@ function verificarStockBajo() {
 
 function renderStockHistory() {
     const container = document.getElementById('stockHistory');
-    if (estado.movimientosStock.length === 0) {
+    if (movimientosStockCache.length === 0) {
         container.innerHTML = '<div style="color:var(--text-secondary); font-size:0.8rem;">Sin movimientos</div>';
         return;
     }
-    const ultimos = estado.movimientosStock.slice(-15).reverse();
+    const ultimos = movimientosStockCache.slice(-15).reverse();
     container.innerHTML = ultimos.map(m => `
         <div class="stock-history-item">
             <span style="font-weight:600;">${m.nombre}</span>
@@ -2580,13 +2704,13 @@ function renderStockHistory() {
 
 function renderVentasRecientes() {
     const tbody = document.querySelector('#ultimasVentas');
-    if (estado.ventas.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">Sin ventas</td></tr>'; return; }
-    const ultimas = estado.ventas.slice(-10).reverse();
+    if (ventasCache.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">Sin ventas</td></tr>'; return; }
+    const ultimas = ventasCache.slice(-10).reverse();
     tbody.innerHTML = ultimas.map(v => {
-        const costo = v.items.reduce((acc, item) => { const prod = estado.productos.find(p => p.id === item.producto_id); return acc + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0);
+        const costo = v.items.reduce((acc, item) => { const prod = productosCache.find(p => p.id === item.producto_id); return acc + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0);
         const ganancia = v.total - costo;
         const categorias = v.items.map(item => {
-            const prod = estado.productos.find(p => p.id === item.producto_id);
+            const prod = productosCache.find(p => p.id === item.producto_id);
             return prod ? prod.categoria : 'otros';
         }).filter((v,i,a) => a.indexOf(v) === i).join(', ');
         return `<tr><td>${new Date(v.timestamp).toLocaleTimeString()}</td><td>$${v.total}</td><td>${v.medio_pago}</td><td class="${ganancia >= 0 ? 'text-green' : 'text-red'}">$${ganancia}</td><td>${categorias || 'otros'}</td></tr>`;
@@ -2596,8 +2720,8 @@ function renderVentasRecientes() {
 function renderLogs() {
     const c = document.getElementById('logContainer');
     if (!c) return;
-    if (!estado.logs.length) { c.innerHTML = '<div style="color:var(--text-secondary);font-size:0.8rem;">Sin actividades</div>'; return; }
-    c.innerHTML = estado.logs.slice(-15).reverse().map(l => `<div class="log-item"><span style="font-weight:600;">${l.usuario}</span> ${l.accion} ${l.detalle ? '<span style="color:var(--text-secondary);">'+l.detalle+'</span>' : ''} <span style="float:right;font-size:0.7rem;color:var(--text-secondary);">${new Date(l.fecha).toLocaleString()}</span></div>`).join('');
+    if (!logsCache.length) { c.innerHTML = '<div style="color:var(--text-secondary);font-size:0.8rem;">Sin actividades</div>'; return; }
+    c.innerHTML = logsCache.slice(-15).reverse().map(l => `<div class="log-item"><span style="font-weight:600;">${l.usuario}</span> ${l.accion} ${l.detalle ? '<span style="color:var(--text-secondary);">'+l.detalle+'</span>' : ''} <span style="float:right;font-size:0.7rem;color:var(--text-secondary);">${new Date(l.fecha).toLocaleString()}</span></div>`).join('');
 }
 
 // ================================================================
@@ -2619,7 +2743,7 @@ document.getElementById('generarReporteBtn').addEventListener('click', function(
 
 function generarReporte(desde, hasta) {
     if (!desde || !hasta) return;
-    const filtradas = estado.ventas.filter(v => v.fecha >= desde && v.fecha <= hasta).slice(-200);
+    const filtradas = ventasCache.filter(v => v.fecha >= desde && v.fecha <= hasta).slice(-200);
     let totalVentas = 0, totalEfectivo = 0, totalTarjeta = 0, totalMP = 0, totalCtacte = 0, cantidad = filtradas.length;
     let productosVendidos = {}, totalCosto = 0;
     let gananciaCarniceria = 0, gananciaFiambres = 0, gananciaOtros = 0;
@@ -2631,7 +2755,7 @@ function generarReporte(desde, hasta) {
         else if (metodo === 'mercado pago' || metodo === 'transferencia' || metodo === 'otro') totalMP += v.total || 0;
         else if (metodo === 'ctacte') totalCtacte += v.total || 0;
         (v.items || []).forEach(item => {
-            const prod = estado.productos.find(p => p.id === item.producto_id);
+            const prod = productosCache.find(p => p.id === item.producto_id);
             if (prod) {
                 const nombre = prod.nombre;
                 productosVendidos[nombre] = (productosVendidos[nombre] || 0) + item.cantidad;
@@ -2673,13 +2797,13 @@ function generarReporte(desde, hasta) {
 function formatearFecha(fecha) { if (!fecha) return ''; const partes = fecha.split('-'); return partes[2] + '/' + partes[1] + '/' + partes[0]; }
 
 // ================================================================
-//  ARCA
+//  ARCA (Facturación Electrónica)
 // ================================================================
 function cargarFacturasARCA() {
     const desde = document.getElementById('arcaDesde').value;
     const hasta = document.getElementById('arcaHasta').value;
     if (!desde || !hasta) { toast('Seleccioná ambas fechas', 'error'); return; }
-    const filtradas = estado.ventas.filter(v => v.fecha >= desde && v.fecha <= hasta).slice(-200);
+    const filtradas = ventasCache.filter(v => v.fecha >= desde && v.fecha <= hasta).slice(-200);
     const container = document.getElementById('arcaResultado');
     if (filtradas.length === 0) {
         container.innerHTML = '<div style="color:var(--text-secondary);">No hay facturas en el período seleccionado.</div>';
@@ -2699,11 +2823,11 @@ function exportarFacturasARCA() {
     const desde = document.getElementById('arcaDesde').value;
     const hasta = document.getElementById('arcaHasta').value;
     if (!desde || !hasta) { toast('Seleccioná ambas fechas', 'error'); return; }
-    const filtradas = estado.ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
+    const filtradas = ventasCache.filter(v => v.fecha >= desde && v.fecha <= hasta);
     if (filtradas.length === 0) { toast('No hay facturas en el período', 'error'); return; }
     
     const facturas = filtradas.map(v => {
-        const cliente = v.cliente_id ? estado.clientes.find(c => c.id === v.cliente_id) : null;
+        const cliente = v.cliente_id ? clientesCache.find(c => c.id === v.cliente_id) : null;
         return {
             id_venta: v.id,
             fecha: v.fecha,
@@ -2712,7 +2836,7 @@ function exportarFacturasARCA() {
             medio_pago: v.medio_pago,
             cliente: cliente ? { nombre: cliente.nombre, cuit: cliente.cuit || '' } : null,
             items: v.items.map(i => {
-                const prod = estado.productos.find(p => p.id === i.producto_id);
+                const prod = productosCache.find(p => p.id === i.producto_id);
                 return {
                     producto: prod ? prod.nombre : 'Producto',
                     cantidad: i.cantidad,
@@ -2720,9 +2844,9 @@ function exportarFacturasARCA() {
                     subtotal: i.cantidad * i.precio
                 };
             }),
-            subtotal: v.total / (1 + (estado.config.impuesto || 21) / 100),
-            iva: v.total - (v.total / (1 + (estado.config.impuesto || 21) / 100)),
-            impuesto: estado.config.impuesto || 21,
+            subtotal: v.total / (1 + (configCache.impuesto || 21) / 100),
+            iva: v.total - (v.total / (1 + (configCache.impuesto || 21) / 100)),
+            impuesto: configCache.impuesto || 21,
             cajero: v.cajero,
             dispositivo: device_id
         };
@@ -2744,14 +2868,14 @@ function exportarFacturasCSV() {
     const desde = document.getElementById('arcaDesde').value;
     const hasta = document.getElementById('arcaHasta').value;
     if (!desde || !hasta) { toast('Seleccioná ambas fechas', 'error'); return; }
-    const filtradas = estado.ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
+    const filtradas = ventasCache.filter(v => v.fecha >= desde && v.fecha <= hasta);
     if (filtradas.length === 0) { toast('No hay facturas en el período', 'error'); return; }
     
     let csv = 'Nro,Fecha,Hora,Total,Pago,Cliente,CUIT,Dispositivo,Items\n';
     filtradas.forEach(v => {
-        const cliente = v.cliente_id ? estado.clientes.find(c => c.id === v.cliente_id) : null;
+        const cliente = v.cliente_id ? clientesCache.find(c => c.id === v.cliente_id) : null;
         const itemsStr = v.items.map(i => {
-            const prod = estado.productos.find(p => p.id === i.producto_id);
+            const prod = productosCache.find(p => p.id === i.producto_id);
             return `${prod ? prod.nombre : 'Producto'} x${i.cantidad}`;
         }).join('; ');
         csv += `${v.id},${v.fecha},${new Date(v.timestamp).toLocaleTimeString()},${v.total},${v.medio_pago},${cliente ? cliente.nombre : ''},${cliente ? cliente.cuit : ''},${device_id},"${itemsStr}"\n`;
@@ -2769,7 +2893,7 @@ function exportarFacturasCSV() {
 }
 
 // ================================================================
-//  IMPORTAR PRODUCTOS
+//  IMPORTAR PRODUCTOS (desde archivo)
 // ================================================================
 function importarProductos() {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
@@ -2990,7 +3114,7 @@ function mostrarModalImport() {
             </div>`;
         document.getElementById('confirmarImportBtn').disabled = true;
 
-        function procesarLote() {
+        async function procesarLote() {
             const fin = Math.min(procesados + BATCH_SIZE, total);
             const nuevos = [];
             for (let i = procesados; i < fin; i++) {
@@ -3021,9 +3145,8 @@ function mostrarModalImport() {
                     metodo_precio = 'fijo';
                 }
 
-                const id = estado.nextProductoId++;
                 const nuevo = {
-                    id, codigo, codigo_barras, nombre, categoria,
+                    codigo, codigo_barras, nombre, categoria,
                     precio_final: precio_final, stock, tipo_venta,
                     costo_s_iva, tipo_iva:21, precio_s_iva:0,
                     stock_disponible: stock, stock_minimo:0,
@@ -3035,8 +3158,19 @@ function mostrarModalImport() {
                 importados++;
             }
             if (nuevos.length > 0) {
-                estado.productos.push(...nuevos);
-                guardarEstadoLocal();
+                try {
+                    const result = await supabaseFetch('productos', {
+                        method: 'POST',
+                        body: JSON.stringify(nuevos)
+                    });
+                    // Actualizar caché con los nuevos IDs
+                    for (let i = 0; i < nuevos.length; i++) {
+                        const newId = result[i]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 + i : 1 + i);
+                        productosCache.push({ ...nuevos[i], id: newId });
+                    }
+                } catch (e) {
+                    console.warn('Error importando productos:', e);
+                }
             }
             procesados = fin;
 
@@ -3061,7 +3195,6 @@ function mostrarModalImport() {
                     verificarStockBajo();
                     agregarLog('Importar productos', `${importados} productos importados`);
                     toast(`✅ ${importados} productos importados${omitidos > 0 ? ` (${omitidos} omitidos)` : ''}`, 'success');
-                    sincronizarAhora();
                 }, 50);
                 cerrarModalImport();
             }
@@ -3079,7 +3212,7 @@ function cerrarModalImport() {
 function exportarProductosCSV() {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     let csv = 'codigo,codigo_barras,nombre,categoria,precio_final,stock,tipo_venta,costo_s_iva,metodo_precio,porcentaje_ganancia\n';
-    const exportData = estado.productos.slice(0, 1000);
+    const exportData = productosCache.slice(0, 1000);
     exportData.forEach(p => {
         csv += `${p.codigo||''},${p.codigo_barras||''},${p.nombre},${p.categoria||'otros'},${p.precio_final||0},${p.stock||0},${p.tipo_venta||'unidad'},${p.costo_s_iva||0},${p.metodo_precio||'fijo'},${p.porcentaje_ganancia||0}\n`;
     });
@@ -3096,19 +3229,20 @@ function exportarProductosCSV() {
 // ================================================================
 function cargarConfiguracion() {
     if (!esAdmin()) return;
-    document.getElementById('nombreLocal').value = estado.config.nombreLocal || '';
-    document.getElementById('impuesto').value = estado.config.impuesto || 21;
-    document.getElementById('autoPrintTicket').checked = estado.config.autoPrint !== false;
-    document.getElementById('ticketHeader').value = estado.config.ticketHeader || '';
-    document.getElementById('ticketFooter').value = estado.config.ticketFooter || '';
+    document.getElementById('nombreLocal').value = configCache.nombreLocal || '';
+    document.getElementById('impuesto').value = configCache.impuesto || 21;
+    document.getElementById('autoPrintTicket').checked = configCache.autoPrint !== false;
+    document.getElementById('ticketHeader').value = configCache.ticketHeader || '';
+    document.getElementById('ticketFooter').value = configCache.ticketFooter || '';
     cargarUsuariosEnSelect();
 }
 
 function cargarUsuariosEnSelect() {
     const select = document.getElementById('usuarioRolSelect');
     if (!select) return;
+    const usuarios = JSON.parse(localStorage.getItem('supermercado_usuarios')) || [];
     select.innerHTML = '';
-    estado.usuarios.forEach(u => {
+    usuarios.forEach(u => {
         const option = document.createElement('option');
         option.value = u.id;
         option.textContent = `${u.nombre} (${u.rol})`;
@@ -3116,53 +3250,56 @@ function cargarUsuariosEnSelect() {
     });
 }
 
-function cambiarRolUsuario() {
+async function cambiarRolUsuario() {
     if (!esAdmin()) return toast('Solo administradores', 'error');
     const userId = parseInt(document.getElementById('usuarioRolSelect').value);
     const nuevoRol = document.getElementById('usuarioRolNuevo').value;
-    const user = estado.usuarios.find(u => u.id === userId);
-    if (!user) return toast('Usuario no encontrado', 'error');
-    if (user.nombre === 'admin' && nuevoRol !== 'admin') {
-        toast('No podés cambiar el rol del administrador principal', 'error');
-        return;
+    try {
+        await supabaseFetch(`usuarios?id=eq.${userId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ rol: nuevoRol })
+        });
+        const usuarios = await supabaseFetch('usuarios');
+        localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
+        await agregarLog('Cambio de rol', `Usuario ID ${userId} ahora es ${nuevoRol}`);
+        toast('Rol actualizado', 'success');
+        cargarUsuariosEnSelect();
+    } catch (err) {
+        toast('❌ Error al cambiar rol: ' + err.message, 'error');
     }
-    user.rol = nuevoRol;
-    guardarEstadoLocal();
-    agregarLog('Cambio de rol', `${user.nombre} ahora es ${nuevoRol}`);
-    toast('Rol actualizado', 'success');
-    cargarUsuariosEnSelect();
-    sincronizarAhora();
 }
 
-function guardarPreguntaSecreta() {
+async function guardarPreguntaSecreta() {
     if (!esAdmin()) return toast('Solo administradores', 'error');
     const userId = parseInt(document.getElementById('usuarioRolSelect').value);
     const pregunta = document.getElementById('preguntaSecreta').value.trim();
     const respuesta = document.getElementById('respuestaSecreta').value.trim();
-    const user = estado.usuarios.find(u => u.id === userId);
-    if (!user) return toast('Usuario no encontrado', 'error');
-    user.pregunta = pregunta;
-    user.respuesta = respuesta;
-    guardarEstadoLocal();
-    agregarLog('Guardar pregunta secreta', `${user.nombre} actualizó su pregunta`);
-    toast('Pregunta guardada', 'success');
-    sincronizarAhora();
+    try {
+        await supabaseFetch(`usuarios?id=eq.${userId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ pregunta, respuesta })
+        });
+        const usuarios = await supabaseFetch('usuarios');
+        localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
+        await agregarLog('Guardar pregunta secreta', `Usuario ID ${userId} actualizó su pregunta`);
+        toast('Pregunta guardada', 'success');
+    } catch (err) {
+        toast('❌ Error al guardar pregunta: ' + err.message, 'error');
+    }
 }
 
 document.getElementById('guardarConfigBtn').addEventListener('click', function() {
     if (!esAdmin()) return toast('Solo administradores', 'error');
     const claveMaestra = document.getElementById('claveMaestraInput')?.value || '';
     if (claveMaestra !== '07121977') return toast('Clave maestra incorrecta', 'error');
-    estado.config.nombreLocal = document.getElementById('nombreLocal').value.trim() || 'Supermercado Futuro';
-    estado.config.impuesto = parseFloat(document.getElementById('impuesto').value) || 21;
-    estado.config.autoPrint = document.getElementById('autoPrintTicket').checked;
-    estado.config.ticketHeader = document.getElementById('ticketHeader').value.trim();
-    estado.config.ticketFooter = document.getElementById('ticketFooter').value.trim();
-    guardarEstadoLocal();
-    document.getElementById('tituloLocal').innerHTML = estado.config.nombreLocal || 'SUPER<span>MERCADO</span>';
+    configCache.nombreLocal = document.getElementById('nombreLocal').value.trim() || 'Supermercado Futuro';
+    configCache.impuesto = parseFloat(document.getElementById('impuesto').value) || 21;
+    configCache.autoPrint = document.getElementById('autoPrintTicket').checked;
+    configCache.ticketHeader = document.getElementById('ticketHeader').value.trim();
+    configCache.ticketFooter = document.getElementById('ticketFooter').value.trim();
+    document.getElementById('tituloLocal').innerHTML = configCache.nombreLocal || 'SUPER<span>MERCADO</span>';
     agregarLog('Configuración guardada', '');
     toast('Configuración guardada', 'success');
-    sincronizarAhora();
 });
 
 // ================================================================
@@ -3170,7 +3307,15 @@ document.getElementById('guardarConfigBtn').addEventListener('click', function()
 // ================================================================
 document.getElementById('exportarBackupBtn').addEventListener('click', function() {
     if (!esAdmin()) return toast('Solo administradores', 'error');
-    const data = { ...estado };
+    const data = {
+        productos: productosCache,
+        proveedores: proveedoresCache,
+        ventas: ventasCache,
+        clientes: clientesCache,
+        caja: cajaCache,
+        compras: comprasCache,
+        config: configCache
+    };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -3187,11 +3332,15 @@ document.getElementById('importBackupInput').addEventListener('change', function
     reader.onload = function(ev) {
         try {
             const data = JSON.parse(ev.target.result);
-            Object.assign(estado, data);
-            guardarEstadoLocal();
+            if (data.productos) productosCache = data.productos;
+            if (data.proveedores) proveedoresCache = data.proveedores;
+            if (data.ventas) ventasCache = data.ventas;
+            if (data.clientes) clientesCache = data.clientes;
+            if (data.caja) cajaCache = data.caja;
+            if (data.compras) comprasCache = data.compras;
+            if (data.config) configCache = data.config;
             recargarInterfaz();
-            toast('✅ Backup importado', 'success');
-            sincronizarAhora();
+            toast('✅ Backup importado localmente (no subido a Supabase)', 'success');
         } catch (err) {
             toast('❌ Error al leer archivo', 'error');
         }
@@ -3201,7 +3350,7 @@ document.getElementById('importBackupInput').addEventListener('change', function
 });
 
 // ================================================================
-//  FUNCIONES AUXILIARES
+//  FUNCIONES AUXILIARES (copiar, imprimir)
 // ================================================================
 function copiarTabla(tablaId) { /* implementar si se desea */ }
 function copiarReporte() {
@@ -3255,7 +3404,7 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
                     modal.remove();
                     document.getElementById('buscarProducto').value = code;
                     document.getElementById('buscarProducto').focus();
-                    let encontrado = estado.productos.find(p => p.codigo_barras === code || p.codigo === code);
+                    let encontrado = productosCache.find(p => p.codigo_barras === code || p.codigo === code);
                     if (encontrado) {
                         productoSeleccionadoId = encontrado.id;
                         const label = document.getElementById('unidadCantidadLabel');
@@ -3288,14 +3437,27 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
 // ================================================================
 //  INICIALIZACIÓN
 // ================================================================
-(function init() {
-    cargarEstadoLocal();
-    document.getElementById('kpiDeviceId').textContent = device_id.slice(-8);
-    console.log('🛒 Supermercado - Sistema con sincronización automática (solo Master Key)');
+(async function init() {
+    console.log('🛒 Supermercado - Sistema con sincronización en Supabase');
     console.log(`📱 Device ID: ${device_id}`);
-    console.log(`🔑 Usando Bin ID: ${CONFIG_SYNC.binId}`);
-    // La sincronización se activa al hacer login
-    document.getElementById('syncStatusLabel').textContent = '🔑 Esperando login...';
+    console.log(`🔗 Conectando a: ${SUPABASE_URL}`);
+    const success = await cargarDatosDesdeSupabase();
+    if (success) {
+        document.getElementById('kpiDeviceId').textContent = device_id.slice(-8);
+        // Cargar usuarios en login
+        const usuarios = JSON.parse(localStorage.getItem('supermercado_usuarios')) || [];
+        if (usuarios.length === 0) {
+            // Intentar cargar desde Supabase
+            const usuariosDB = await supabaseFetch('usuarios');
+            if (usuariosDB && usuariosDB.length > 0) {
+                localStorage.setItem('supermercado_usuarios', JSON.stringify(usuariosDB));
+            }
+        }
+        console.log('✅ Sistema listo. Esperando login...');
+    } else {
+        console.error('❌ No se pudo cargar los datos de Supabase. Verifica conexión.');
+        toast('⚠️ No se pudo conectar a la base de datos. Usuario cajero1/caja123', 'error');
+    }
 })();
 </script>
 </body>
