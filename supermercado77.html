@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* ===== TODOS LOS ESTILOS (COMPLETOS) ===== */
         :root {
             --bg-primary: #f0f4f9;
             --bg-secondary: #ffffff;
@@ -539,7 +538,6 @@
     </style>
 </head>
 <body>
-<!-- Pantalla de Login -->
 <div id="loginContainer" class="login-container">
     <h2><i class="fas fa-store-alt"></i> Supermercado</h2>
     <p>Ingresá tus credenciales</p>
@@ -552,8 +550,6 @@
         <i class="fas fa-cloud"></i> Sincronización en la nube (Supabase)
     </div>
 </div>
-
-<!-- App principal -->
 <div id="app" class="app" style="display:none;">
     <header class="header">
         <div class="header-left">
@@ -574,7 +570,6 @@
         </div>
     </header>
     <nav class="sidebar" id="sidebar"></nav>
-    <!-- Dashboard -->
     <div id="tab-dashboard" class="tab-content active">
         <div id="stockAlert" class="stock-alert">
             <i class="fas fa-exclamation-triangle"></i> <span id="stockAlertMsg"></span>
@@ -645,7 +640,6 @@
             </div>
         </div>
     </div>
-    <!-- Ventas -->
     <div id="tab-ventas" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -691,7 +685,6 @@
             </div>
         </div>
     </div>
-    <!-- Productos -->
     <div id="tab-productos" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -734,7 +727,6 @@
             </div>
         </div>
     </div>
-    <!-- Carnicería -->
     <div id="tab-carniceria" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -757,7 +749,6 @@
             </div>
         </div>
     </div>
-    <!-- Fiambres -->
     <div id="tab-fiambres" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -780,7 +771,6 @@
             </div>
         </div>
     </div>
-    <!-- Proveedores -->
     <div id="tab-proveedores" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -834,7 +824,6 @@
             </div>
         </div>
     </div>
-    <!-- Caja -->
     <div id="tab-caja" class="tab-content">
         <div class="card">
             <div class="card-header"><div class="card-title"><i class="fas fa-cash-register"></i> Caja</div><div><button class="btn btn-success" id="abrirCajaBtn"><i class="fas fa-unlock"></i> Abrir</button><button class="btn btn-warning" id="cierreXBtn"><i class="fas fa-chart-bar"></i> X</button><button class="btn btn-danger" id="cierreZBtn" style="display:none;"><i class="fas fa-lock"></i> Cierre Z</button></div></div>
@@ -848,7 +837,6 @@
             <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead><tbody id="tbodyMovimientosCaja"></tbody></table></div>
         </div>
     </div>
-    <!-- Reportes -->
     <div id="tab-reportes" class="tab-content">
         <div class="card">
             <div class="card-title"><i class="fas fa-file-alt"></i> Balance y Reportes</div>
@@ -864,7 +852,6 @@
             <div id="reporteResultado"></div>
         </div>
     </div>
-    <!-- ARCA -->
     <div id="tab-arca" class="tab-content">
         <div class="card">
             <div class="card-header">
@@ -884,7 +871,6 @@
             <div id="arcaResultado" style="margin-top:12px; max-height:400px; overflow-y:auto; background:var(--input-bg); border-radius:8px; padding:12px; border:1px solid var(--border-color);"></div>
         </div>
     </div>
-    <!-- Configuración -->
     <div id="tab-configuracion" class="tab-content">
         <div class="card">
             <div class="card-title"><i class="fas fa-cog"></i> Configuración</div>
@@ -919,8 +905,6 @@
         </div>
     </div>
 </div>
-
-<!-- Modal de importación -->
 <div id="importModal" class="modal-overlay">
     <div class="modal">
         <button class="close-btn" onclick="cerrarModalImport()">&times;</button>
@@ -936,8 +920,6 @@
         <div id="importStatus" style="margin-top:8px; font-size:0.85rem;"></div>
     </div>
 </div>
-
-<!-- Modal para agregar producto manual en compra -->
 <div id="modalProductoManual" class="modal-overlay">
     <div class="modal" style="max-width:500px;">
         <button class="close-btn" onclick="cerrarModalProductoManual()">&times;</button>
@@ -965,21 +947,12 @@
         <button class="btn btn-success" onclick="agregarManualCompra()"><i class="fas fa-check"></i> Agregar a la compra</button>
     </div>
 </div>
-
-<!-- Elementos auxiliares -->
 <div id="toast" class="toast"></div>
 <div id="ticketPrint" style="display:none;"></div>
-
 <script>
-// ================================================================
-//  CONFIGURACIÓN DE SUPABASE (HARDCODEADA)
-// ================================================================
 const SUPABASE_URL = 'https://ziuidmibhdqnmjgfyzvu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_EcqrDX2D1IoEOfxKvAcXYw_Y3mIi9fZ';
 
-// ================================================================
-//  FUNCIONES DE API PARA SUPABASE
-// ================================================================
 async function supabaseFetch(endpoint, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
     const defaultHeaders = {
@@ -1004,9 +977,6 @@ async function supabaseFetch(endpoint, options = {}) {
     }
 }
 
-// ================================================================
-//  VARIABLES GLOBALES (SESIONES)
-// ================================================================
 let usuario = null;
 let carrito = [];
 let compraItems = [];
@@ -1018,9 +988,6 @@ let chartInstance = null;
 let productoSeleccionadoId = null;
 let compraProductoSeleccionadoId = null;
 let compraProductoSeleccionadoObj = null;
-let offsetProductos = 0;
-let offsetCarnes = 0;
-let offsetFiambres = 0;
 let productosCache = [];
 let proveedoresCache = [];
 let ventasCache = [];
@@ -1036,54 +1003,33 @@ let configCache = {
     ticketFooter: 'Vuelva pronto!',
     autoPrint: true
 };
-let nextProductoId = 1;
-
 const PRODUCTOS_POR_PAGINA = 20;
 const COMPRAS_POR_PAGINA = 15;
 const CARNES_POR_PAGINA = 50;
 const device_id = 'device_' + Date.now();
 
-// ================================================================
-//  FUNCIONES DE CARGA Y SINCRONIZACIÓN
-// ================================================================
 async function cargarDatosDesdeSupabase() {
     try {
-        // Cargar productos
         const productos = await supabaseFetch('productos?order=id.asc');
         productosCache = productos || [];
-        if (productosCache.length > 0) {
-            nextProductoId = Math.max(...productosCache.map(p => p.id)) + 1;
-        }
-
-        // Cargar proveedores
-        proveedoresCache = await supabaseFetch('proveedores?order=id.asc') || [];
-
-        // Cargar ventas
-        ventasCache = await supabaseFetch('ventas?order=id.desc&limit=500') || [];
-
-        // Cargar compras
-        comprasCache = await supabaseFetch('compras?order=id.desc&limit=200') || [];
-
-        // Cargar caja
+        const proveedores = await supabaseFetch('proveedores?order=id.asc') || [];
+        proveedoresCache = proveedores;
+        const ventas = await supabaseFetch('ventas?order=id.desc&limit=500') || [];
+        ventasCache = ventas;
+        const compras = await supabaseFetch('compras?order=id.desc&limit=200') || [];
+        comprasCache = compras;
         const cajaResult = await supabaseFetch('caja?id=eq.1');
         cajaCache = cajaResult && cajaResult.length > 0 ? cajaResult[0] : null;
-
-        // Cargar movimientos stock
-        movimientosStockCache = await supabaseFetch('movimientos_stock?order=id.desc&limit=100') || [];
-
-        // Cargar logs
-        logsCache = await supabaseFetch('logs?order=id.desc&limit=100') || [];
-
-        // Cargar clientes
-        clientesCache = await supabaseFetch('clientes?order=id.asc') || [];
-
-        // Cargar usuarios (para login)
+        const movimientos = await supabaseFetch('movimientos_stock?order=id.desc&limit=100') || [];
+        movimientosStockCache = movimientos;
+        const logs = await supabaseFetch('logs?order=id.desc&limit=100') || [];
+        logsCache = logs;
+        const clientes = await supabaseFetch('clientes?order=id.asc') || [];
+        clientesCache = clientes;
         const usuarios = await supabaseFetch('usuarios');
         if (usuarios && usuarios.length > 0) {
-            // Guardar en localStorage para login rápido
             localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
         } else {
-            // Si no hay usuarios, crear los default
             await supabaseFetch('usuarios', {
                 method: 'POST',
                 body: JSON.stringify([
@@ -1094,7 +1040,6 @@ async function cargarDatosDesdeSupabase() {
             const usuariosReload = await supabaseFetch('usuarios');
             if (usuariosReload) localStorage.setItem('supermercado_usuarios', JSON.stringify(usuariosReload));
         }
-
         console.log('✅ Datos cargados desde Supabase');
         console.log(`📦 ${productosCache.length} productos, ${ventasCache.length} ventas`);
         return true;
@@ -1105,9 +1050,6 @@ async function cargarDatosDesdeSupabase() {
     }
 }
 
-// ================================================================
-//  FUNCIONES AUXILIARES (toast, logs, etc.)
-// ================================================================
 function toast(msg, tipo = 'info') {
     const el = document.getElementById('toast');
     if (!el) return;
@@ -1151,9 +1093,6 @@ function playSound(frecuencia = 800, duracion = 150, volumen = 0.3) {
 function playVentaSound() { playSound(880,200,0.4); setTimeout(()=>playSound(1100,150,0.3),150); }
 function playScanSound() { playSound(600,100,0.3); setTimeout(()=>playSound(800,100,0.3),100); }
 
-// ================================================================
-//  LOGIN Y SEGURIDAD
-// ================================================================
 async function login() {
     const nombre = document.getElementById('loginNombre').value.trim();
     const clave = document.getElementById('loginClave').value.trim();
@@ -1179,7 +1118,6 @@ async function registrarCajero() {
             method: 'POST',
             body: JSON.stringify({ nombre, clave, rol: 'cajero' })
         });
-        // Recargar usuarios
         const usuarios = await supabaseFetch('usuarios');
         localStorage.setItem('supermercado_usuarios', JSON.stringify(usuarios));
         await agregarLog('Crear cajero', `Cajero ${nombre} creado`);
@@ -1202,7 +1140,6 @@ function resetearDatos() {
     if (clave === null) return;
     if (clave !== '07121977') { toast('Clave incorrecta', 'error'); return; }
     if (!confirm('⚠️ ¿Seguro? Se borrarán TODOS los datos de Supabase.')) return;
-    // No implementamos borrado masivo por seguridad
     toast('Función deshabilitada para proteger los datos.', 'error');
 }
 
@@ -1222,9 +1159,6 @@ document.getElementById('themeToggle').addEventListener('click', function() {
     if (chartInstance) { chartInstance.destroy(); chartInstance = null; actualizarGrafico(); }
 });
 
-// ================================================================
-//  SIDEBAR
-// ================================================================
 function inicializarSidebar() {
     const sidebar = document.getElementById('sidebar');
     const tabs = [
@@ -1265,9 +1199,6 @@ function inicializarSidebar() {
     });
 }
 
-// ================================================================
-//  CARGA INICIAL
-// ================================================================
 function cargarDatosIniciales() {
     setTimeout(() => {
         renderProductos();
@@ -1323,9 +1254,6 @@ function recargarInterfaz() {
     calcularPorcentaje();
 }
 
-// ================================================================
-//  CALCULADORA DE PORCENTAJE
-// ================================================================
 function calcularPorcentaje() {
     const pct = parseFloat(document.getElementById('porcentajeInput').value) || 0;
     if (pct <= 0) {
@@ -1350,9 +1278,6 @@ function calcularPorcentaje() {
     document.getElementById('pctGananciaMes').textContent = '$' + (gananciaMes * factor).toFixed(2);
 }
 
-// ================================================================
-//  BUSCADOR DE CAJA (VENTAS)
-// ================================================================
 const CATEGORIAS_BUSQUEDA = {
     'carniceria': ['carniceria', 'carnicería', 'carne'],
     'fiambres': ['fiambres', 'fiambre', 'fiambreria', 'fiambería'],
@@ -1380,7 +1305,6 @@ const NOMBRES_CATEGORIAS = {
     'limpieza': 'Limpieza',
     'otros': 'Otros'
 };
-
 let filtroCategoriaActivo = null;
 
 document.getElementById('buscarProducto').addEventListener('input', function() {
@@ -1527,9 +1451,6 @@ document.getElementById('buscarProducto').addEventListener('keydown', function(e
     }
 });
 
-// ================================================================
-//  AGREGAR PRODUCTO AL CARRITO
-// ================================================================
 document.getElementById('cantidadProducto').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         if (productoSeleccionadoId !== null) {
@@ -1669,9 +1590,6 @@ document.getElementById('metodoPago').addEventListener('change', function() {
     document.getElementById('clienteCtacteGroup').style.display = val === 'ctacte' ? 'block' : 'none';
 });
 
-// ================================================================
-//  REGISTRAR VENTA
-// ================================================================
 document.getElementById('registrarVentaBtn').addEventListener('click', async function() {
     if (!esCajero()) { toast('No tenés permiso para vender', 'error'); return; }
     if (carrito.length === 0) return toast('Carrito vacío', 'error');
@@ -1705,9 +1623,7 @@ document.getElementById('registrarVentaBtn').addEventListener('click', async fun
         tarjeta: tarjetaInfo 
     };
     
-    // Procesar venta en Supabase
     try {
-        // Insertar venta
         await supabaseFetch('ventas', {
             method: 'POST',
             body: JSON.stringify(venta)
@@ -1715,18 +1631,15 @@ document.getElementById('registrarVentaBtn').addEventListener('click', async fun
         ventasCache.unshift(venta);
         if (ventasCache.length > 500) ventasCache.pop();
 
-        // Actualizar stock de productos y guardar movimientos
         for (const item of carrito) {
             const prod = productosCache.find(p => p.id === item.producto_id);
             if (prod) {
                 const stockAnterior = prod.stock;
                 prod.stock = stockAnterior - item.cantidad;
-                // Actualizar producto en Supabase
                 await supabaseFetch(`productos?id=eq.${prod.id}`, {
                     method: 'PATCH',
                     body: JSON.stringify({ stock: prod.stock })
                 });
-                // Insertar movimiento de stock
                 await supabaseFetch('movimientos_stock', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -1756,7 +1669,6 @@ document.getElementById('registrarVentaBtn').addEventListener('click', async fun
             }
         }
 
-        // Actualizar caja
         const metodoKey = metodo === 'efectivo' ? 'total_efectivo' : metodo === 'tarjeta' ? 'total_tarjeta' : (metodo === 'mercado pago' || metodo === 'transferencia' || metodo === 'otro') ? 'total_mp' : 'total_ctacte';
         if (cajaCache) {
             const newValue = (cajaCache[metodoKey] || 0) + total;
@@ -1851,9 +1763,6 @@ function generarTicketHTML(venta) {
     return html;
 }
 
-// ================================================================
-//  PRODUCTOS (CRUD)
-// ================================================================
 function getProductosFiltrados() {
     const filtro = document.getElementById('filtroProductos').value.toLowerCase();
     const rubro = document.getElementById('filtroRubro').value;
@@ -2036,9 +1945,6 @@ async function editarProducto(id) {
     }
 }
 
-// ================================================================
-//  CARNICERÍA Y FIAMBRES
-// ================================================================
 const CORTES_PREDEFINIDOS_CARNICERIA = [
     'Bife de chorizo', 'Bife de costilla', 'Lomo', 'Cuadril', 'Paleta', 'Peceto', 'Aguja', 'Tapa de asado',
     'Matambre', 'Falda', 'Molleja', 'Entraña', 'Colita de cuadril', 'Ojo de bife', 'Tira de asado', 'Vacío',
@@ -2200,9 +2106,6 @@ function agregarCortePersonalizado(categoria) {
     agregarCorte(nombre, categoria);
 }
 
-// ================================================================
-//  PROVEEDORES Y COMPRAS
-// ================================================================
 function renderProveedores() {
     const tbody = document.getElementById('tbodyProveedores');
     if (proveedoresCache.length === 0) {
@@ -2394,12 +2297,10 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', async fu
             if (prod.metodo_precio === 'porcentaje' && prod.porcentaje_ganancia > 0) {
                 prod.precio_final = prod.costo_s_iva * (1 + prod.porcentaje_ganancia / 100);
             }
-            // Actualizar producto
             await supabaseFetch(`productos?id=eq.${prod.id}`, {
                 method: 'PATCH',
                 body: JSON.stringify({ stock: prod.stock, costo_s_iva: prod.costo_s_iva, precio_final: prod.precio_final })
             });
-            // Registrar movimiento de stock
             await supabaseFetch('movimientos_stock', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -2426,7 +2327,6 @@ document.getElementById('finalizarCompraBtn').addEventListener('click', async fu
             if (movimientosStockCache.length > 100) movimientosStockCache.pop();
         }
 
-        // Guardar compra
         const compraData = { fecha, proveedor: proveedor ? proveedor.nombre : 'ID ' + proveedor_id, total: totalPagado, items: compraItems.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio_costo })) };
         await supabaseFetch('compras', {
             method: 'POST',
@@ -2482,9 +2382,6 @@ function renderCompras() {
 
 function cargarMasCompras() { paginaComprasActual++; renderCompras(); }
 
-// ================================================================
-//  CAJA
-// ================================================================
 function renderCaja() {
     if (cajaCache && cajaCache.estado === 'abierta') {
         document.getElementById('estadoCajaTexto').textContent = 'Abierta';
@@ -2575,9 +2472,6 @@ document.getElementById('cierreZBtn').addEventListener('click', async function()
     }
 });
 
-// ================================================================
-//  DASHBOARD
-// ================================================================
 function actualizarDashboard() {
     const hoy = new Date().toISOString().slice(0, 10);
     const fechaLimite = new Date();
@@ -2588,7 +2482,6 @@ function actualizarDashboard() {
     
     const totalVentasHoy = ventasHoy.reduce((acc, v) => acc + v.total, 0);
     const totalCostoHoy = ventasHoy.reduce((acc, v) => acc + v.items.reduce((a, item) => { const prod = productosCache.find(p => p.id === item.producto_id); return a + (prod ? (prod.costo_s_iva || 0) * item.cantidad : 0); }, 0), 0);
-    const gastosHoy = []; // No tenemos gastos en la versión actual
     const totalGastosHoy = 0;
     const gananciaNetaHoy = totalVentasHoy - totalCostoHoy - totalGastosHoy;
     document.getElementById('kpiGananciaHoy').textContent = '$' + (gananciaNetaHoy || 0);
@@ -2724,9 +2617,6 @@ function renderLogs() {
     c.innerHTML = logsCache.slice(-15).reverse().map(l => `<div class="log-item"><span style="font-weight:600;">${l.usuario}</span> ${l.accion} ${l.detalle ? '<span style="color:var(--text-secondary);">'+l.detalle+'</span>' : ''} <span style="float:right;font-size:0.7rem;color:var(--text-secondary);">${new Date(l.fecha).toLocaleString()}</span></div>`).join('');
 }
 
-// ================================================================
-//  REPORTES
-// ================================================================
 function setPeriodo(tipo) {
     const hoy = new Date();
     let desde, hasta;
@@ -2796,9 +2686,6 @@ function generarReporte(desde, hasta) {
 }
 function formatearFecha(fecha) { if (!fecha) return ''; const partes = fecha.split('-'); return partes[2] + '/' + partes[1] + '/' + partes[0]; }
 
-// ================================================================
-//  ARCA (Facturación Electrónica)
-// ================================================================
 function cargarFacturasARCA() {
     const desde = document.getElementById('arcaDesde').value;
     const hasta = document.getElementById('arcaHasta').value;
@@ -2892,9 +2779,6 @@ function exportarFacturasCSV() {
     toast('✅ Facturas exportadas a CSV', 'success');
 }
 
-// ================================================================
-//  IMPORTAR PRODUCTOS (desde archivo)
-// ================================================================
 function importarProductos() {
     if (!esAlmacenero()) return toast('No tenés permiso', 'error');
     const input = document.createElement('input');
@@ -3163,7 +3047,6 @@ function mostrarModalImport() {
                         method: 'POST',
                         body: JSON.stringify(nuevos)
                     });
-                    // Actualizar caché con los nuevos IDs
                     for (let i = 0; i < nuevos.length; i++) {
                         const newId = result[i]?.id || (productosCache.length ? Math.max(...productosCache.map(p => p.id)) + 1 + i : 1 + i);
                         productosCache.push({ ...nuevos[i], id: newId });
@@ -3224,9 +3107,6 @@ function exportarProductosCSV() {
     toast('✅ Productos exportados', 'success');
 }
 
-// ================================================================
-//  CONFIGURACIÓN
-// ================================================================
 function cargarConfiguracion() {
     if (!esAdmin()) return;
     document.getElementById('nombreLocal').value = configCache.nombreLocal || '';
@@ -3302,9 +3182,6 @@ document.getElementById('guardarConfigBtn').addEventListener('click', function()
     toast('Configuración guardada', 'success');
 });
 
-// ================================================================
-//  BACKUP
-// ================================================================
 document.getElementById('exportarBackupBtn').addEventListener('click', function() {
     if (!esAdmin()) return toast('Solo administradores', 'error');
     const data = {
@@ -3349,9 +3226,6 @@ document.getElementById('importBackupInput').addEventListener('change', function
     e.target.value = '';
 });
 
-// ================================================================
-//  FUNCIONES AUXILIARES (copiar, imprimir)
-// ================================================================
 function copiarTabla(tablaId) { /* implementar si se desea */ }
 function copiarReporte() {
     const cont = document.getElementById('reporteResultado');
@@ -3367,9 +3241,6 @@ function imprimirReporte() {
     setTimeout(() => { ventana.print(); ventana.close(); }, 500);
 }
 
-// ================================================================
-//  ESCÁNER
-// ================================================================
 document.getElementById('scanBtn').addEventListener('click', async function() {
     if (!esCajero()) { toast('No tenés permiso', 'error'); return; }
     if (!('BarcodeDetector' in window)) {
@@ -3434,9 +3305,6 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
     }
 });
 
-// ================================================================
-//  INICIALIZACIÓN
-// ================================================================
 (async function init() {
     console.log('🛒 Supermercado - Sistema con sincronización en Supabase');
     console.log(`📱 Device ID: ${device_id}`);
@@ -3444,10 +3312,8 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
     const success = await cargarDatosDesdeSupabase();
     if (success) {
         document.getElementById('kpiDeviceId').textContent = device_id.slice(-8);
-        // Cargar usuarios en login
         const usuarios = JSON.parse(localStorage.getItem('supermercado_usuarios')) || [];
         if (usuarios.length === 0) {
-            // Intentar cargar desde Supabase
             const usuariosDB = await supabaseFetch('usuarios');
             if (usuariosDB && usuariosDB.length > 0) {
                 localStorage.setItem('supermercado_usuarios', JSON.stringify(usuariosDB));
@@ -3456,7 +3322,7 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
         console.log('✅ Sistema listo. Esperando login...');
     } else {
         console.error('❌ No se pudo cargar los datos de Supabase. Verifica conexión.');
-        toast('⚠️ No se pudo conectar a la base de datos. Usuario cajero1/caja123', 'error');
+        toast('⚠️ No se pudo conectar a la base de datos. Verifica conexión.', 'error');
     }
 })();
 </script>
