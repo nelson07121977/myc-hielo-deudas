@@ -1081,7 +1081,7 @@ const device_id = localStorage.getItem('supermercado_device') || 'device_' + Dat
 localStorage.setItem('supermercado_device', device_id);
 
 // ================================================================
-//  FUNCIONES DE SINCRONIZACIÓN CON JSONBIN (CORREGIDAS)
+//  FUNCIONES DE SINCRONIZACIÓN CON JSONBIN
 // ================================================================
 function configurarSincronizacion() {
     const apiKey = prompt('Ingresá tu API Key de JSONBin (obtenela en jsonbin.io):');
@@ -1089,7 +1089,6 @@ function configurarSincronizacion() {
     const binId = prompt('Ingresá el ID del bin (o dejalo vacío para crear uno nuevo):');
     JSONBIN_API_KEY = apiKey.trim();
 
-    // Detectar si es Access Key (empieza con $2a$10$) o Master Key
     const isAccessKey = JSONBIN_API_KEY.startsWith('$2a$10$');
     const headerName = isAccessKey ? 'X-Access-Key' : 'X-Master-Key';
 
@@ -1099,7 +1098,6 @@ function configurarSincronizacion() {
         toast('Configuración guardada. Sincronizando...', 'info');
         sincronizarAhora();
     } else {
-        // Crear un nuevo bin
         toast('Creando nuevo bin...', 'info');
         fetch('https://api.jsonbin.io/v3/b', {
             method: 'POST',
@@ -1115,7 +1113,6 @@ function configurarSincronizacion() {
                 JSONBIN_BIN_ID = data.record;
                 guardarConfiguracionSync();
                 toast('Bin creado. ID: ' + JSONBIN_BIN_ID, 'success');
-                // Subir datos iniciales
                 sincronizarAhora();
             } else {
                 toast('Error al crear bin: ' + JSON.stringify(data), 'error');
@@ -1157,7 +1154,6 @@ function sincronizarAhora() {
     const isAccessKey = JSONBIN_API_KEY.startsWith('$2a$10$');
     const headerName = isAccessKey ? 'X-Access-Key' : 'X-Master-Key';
 
-    // Subir datos al bin
     fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
         method: 'PUT',
         headers: {
@@ -1298,9 +1294,11 @@ function login() {
     agregarLog('Inicio de sesión', `Usuario ${user.nombre} (${user.rol}) desde ${device_id}`);
     toast('✅ Bienvenido ' + user.nombre, 'success');
     cargarConfiguracionSync();
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-        descargarEstado();
-    }
+    // SINCRONIZACIÓN AUTOMÁTICA DESACTIVADA PARA EVITAR ERRORES
+    // if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
+    //     descargarEstado();
+    // }
+    console.log('🔴 Sincronización automática desactivada. Usá el botón "Sincronizar" manualmente.');
 }
 
 function registrarCajero() {
@@ -3371,11 +3369,13 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
     document.getElementById('kpiDeviceId').textContent = device_id.slice(-8);
     console.log('🛒 Supermercado - Sistema autónomo con sincronización');
     console.log(`📱 Device ID: ${device_id}`);
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-        document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
-        document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
-        setTimeout(() => descargarEstado(), 1000);
-    }
+    // SINCRONIZACIÓN AUTOMÁTICA DESACTIVADA PARA EVITAR ERRORES
+    // if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
+    //     document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado';
+    //     document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
+    //     setTimeout(() => descargarEstado(), 1000);
+    // }
+    console.log('🔴 Sincronización automática desactivada. Usá el botón "Sincronizar" manualmente.');
 })();
 </script>
 </body>
