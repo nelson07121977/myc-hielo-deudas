@@ -975,13 +975,11 @@
 
 <script>
 // ================================================================
-//  CONFIGURACIÓN FIJA (HARDCODEADA) DE SINCRONIZACIÓN
+//  CONFIGURACIÓN FIJA - SOLO MASTER KEY (LA QUE SÍ FUNCIONA)
 // ================================================================
-// NUNCA se modifican desde localStorage
 const CONFIG_SYNC = {
-    apiKey: '$2a$10$eUk6BVx77f6orQ0uFzUet.xBmuQJ9jAYQK007TL2.cc6WMc722Fgy',
-    binId: '6a985d95f5f4af5e29620ebc',  // <--- NUEVO ID del contenedor SistemaSupermercado
-    masterKey: '$2a$10$5N7QOeZl80b14qsVY8ZQP.OhEkwy/.MDjWCO9y9T9mT7gmySj47XW'
+    masterKey: '$2a$10$5N7QOeZl80b14qsVY8ZQP.OhEkwy/.MDjWCO9y9T9mT7gmySj47XW',
+    binId: '6a985d95f5f4af5e29620ebc'
 };
 
 // ================================================================
@@ -1084,19 +1082,16 @@ const device_id = localStorage.getItem('supermercado_device') || 'device_' + Dat
 localStorage.setItem('supermercado_device', device_id);
 
 // ================================================================
-//  FUNCIONES DE SINCRONIZACIÓN CON JSONBIN (CON FALLBACK)
+//  FUNCIONES DE SINCRONIZACIÓN (SOLO MASTER KEY)
 // ================================================================
 function sincronizarAhora() {
     const statusEl = document.getElementById('syncStatusHeader');
     statusEl.textContent = '⏳ Sincronizando...';
     statusEl.className = 'sync-status syncing';
 
-    // Intentar con Access Key primero
-    subirDatos(CONFIG_SYNC.apiKey, 'X-Access-Key')
-        .then(() => {
-            // Éxito: descargar para fusionar
-            return descargarDatos(CONFIG_SYNC.apiKey, 'X-Access-Key');
-        })
+    // Subir datos usando Master Key
+    subirDatos()
+        .then(() => descargarDatos())
         .then(() => {
             statusEl.textContent = '✅ Sincronizado';
             statusEl.className = 'sync-status synced';
@@ -1105,36 +1100,22 @@ function sincronizarAhora() {
             toast('✅ Sincronización completada', 'success');
         })
         .catch(err => {
-            // Si falla la Access Key, probar con Master Key
-            console.warn('Access Key falló, probando con Master Key...', err);
-            subirDatos(CONFIG_SYNC.masterKey, 'X-Master-Key')
-                .then(() => descargarDatos(CONFIG_SYNC.masterKey, 'X-Master-Key'))
-                .then(() => {
-                    statusEl.textContent = '✅ Sincronizado (Master Key)';
-                    statusEl.className = 'sync-status synced';
-                    document.getElementById('syncStatusLabel').textContent = '🟢 Sincronizado (Master)';
-                    document.getElementById('syncStatusLabel').style.color = '#0a7c4a';
-                    toast('✅ Sincronización completada con Master Key', 'success');
-                })
-                .catch(err2 => {
-                    // Si ambas fallan, error
-                    console.error('Error con ambas claves:', err2);
-                    statusEl.textContent = '❌ Error';
-                    statusEl.className = 'sync-status error';
-                    document.getElementById('syncStatusLabel').textContent = '🔴 Error de sincronización';
-                    document.getElementById('syncStatusLabel').style.color = '#b91c1c';
-                    toast('❌ Error de sincronización. Verifica tu conexión.', 'error');
-                });
+            console.error('Error en sincronización:', err);
+            statusEl.textContent = '❌ Error';
+            statusEl.className = 'sync-status error';
+            document.getElementById('syncStatusLabel').textContent = '🔴 Error de sincronización';
+            document.getElementById('syncStatusLabel').style.color = '#b91c1c';
+            toast('❌ Error de sincronización. Verifica tu conexión e internet.', 'error');
         });
 }
 
-function subirDatos(apiKey, headerName) {
+function subirDatos() {
     const binId = CONFIG_SYNC.binId;
     return fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            [headerName]: apiKey
+            'X-Master-Key': CONFIG_SYNC.masterKey
         },
         body: JSON.stringify(estado)
     })
@@ -1150,11 +1131,11 @@ function subirDatos(apiKey, headerName) {
     });
 }
 
-function descargarDatos(apiKey, headerName) {
+function descargarDatos() {
     const binId = CONFIG_SYNC.binId;
     return fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
         headers: {
-            [headerName]: apiKey
+            'X-Master-Key': CONFIG_SYNC.masterKey
         }
     })
     .then(res => {
@@ -3310,7 +3291,7 @@ document.getElementById('scanBtn').addEventListener('click', async function() {
 (function init() {
     cargarEstadoLocal();
     document.getElementById('kpiDeviceId').textContent = device_id.slice(-8);
-    console.log('🛒 Supermercado - Sistema con sincronización automática (hardcodeada)');
+    console.log('🛒 Supermercado - Sistema con sincronización automática (solo Master Key)');
     console.log(`📱 Device ID: ${device_id}`);
     console.log(`🔑 Usando Bin ID: ${CONFIG_SYNC.binId}`);
     // La sincronización se activa al hacer login
