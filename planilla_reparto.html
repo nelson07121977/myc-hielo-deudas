@@ -408,7 +408,7 @@ async function guardarVentaEnNube(venta, reintentos = 2) {
     }
 }
 
-// ==================== AGREGAR VENTA (CON COLA DE MOVIMIENTOS) ====================
+// ==================== AGREGAR VENTA (CON COLA DE MOVIMIENTOS MEJORADA) ====================
 function agregarVenta(cliente, cantidades, pago, cobroMonto) {
     let total = (pago === "cobrocc") ? 0 : calcularTotal(cliente, cantidades);
     let nueva = {
@@ -429,12 +429,18 @@ function agregarVenta(cliente, cantidades, pago, cobroMonto) {
         if (exito) {
             // Si la venta se guardó correctamente, ahora enviamos el movimiento de deuda (si corresponde)
             if (pago === "ctacte" && total > 0) {
-                enviarMovimientoDeuda(nueva, 'deuda');
+                enviarMovimientoDeuda(nueva, 'deuda', 3);
             } else if (pago === "cobrocc" && cobroMonto > 0) {
-                enviarMovimientoDeuda(nueva, 'pago');
+                enviarMovimientoDeuda(nueva, 'pago', 3);
             }
         } else {
             toast('⚠️ Venta guardada localmente, pero no en la nube. Usá "Sincronizar" más tarde.');
+            // Aun si la venta no se guardó, intentamos enviar el movimiento de deuda (puede que la venta exista en local pero no en la nube)
+            if (pago === "ctacte" && total > 0) {
+                enviarMovimientoDeuda(nueva, 'deuda', 3);
+            } else if (pago === "cobrocc" && cobroMonto > 0) {
+                enviarMovimientoDeuda(nueva, 'pago', 3);
+            }
         }
     });
     
@@ -449,11 +455,11 @@ async function forzarEnvioDeudas() {
     let enviados = 0;
     for (let v of deudasPendientes) {
         if (v.pago === "ctacte" && v.total > 0) {
-            const ok = await enviarMovimientoDeuda(v, 'deuda');
+            const ok = await enviarMovimientoDeuda(v, 'deuda', 3);
             if (ok) enviados++;
         }
         if (v.pago === "cobrocc" && v.cobroDeuda > 0) {
-            const ok = await enviarMovimientoDeuda(v, 'pago');
+            const ok = await enviarMovimientoDeuda(v, 'pago', 3);
             if (ok) enviados++;
         }
     }
@@ -468,7 +474,7 @@ async function reenviarPendientes() {
     let enviados = 0;
     for (let i = 0; i < pendientes.length; i++) {
         const item = pendientes[i];
-        const ok = await enviarMovimientoDeuda(item.venta, item.tipo, 2);
+        const ok = await enviarMovimientoDeuda(item.venta, item.tipo, 3);
         if (ok) {
             enviados++;
             eliminarPendiente(i);
