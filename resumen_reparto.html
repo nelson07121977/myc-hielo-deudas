@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -112,6 +112,9 @@
         .btn-ghost     { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
         .btn-sm        { padding: 4px 10px; font-size: 0.68rem; }
         .btn-xs        { padding: 3px 7px; font-size: 0.62rem; gap: 3px; }
+        .alerta-coherencia { background: #fef3c7; border-left: 6px solid #f59e0b; padding: 12px 16px; border-radius: 8px; margin: 10px 0; font-size: 0.85rem; }
+        .alerta-coherencia.ok { background: #d1fae5; border-left-color: #10b981; }
+        .alerta-coherencia.error { background: #fee2e2; border-left-color: #ef4444; }
 
         #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 20px; border-radius: 40px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; backdrop-filter: blur(10px); }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
@@ -207,11 +210,13 @@
                         <button id="filtrar1234Btn" class="btn btn-primary btn-sm">Filtrar</button>
                         <button id="mostrarTodas1234Btn" class="btn btn-success btn-sm">Todas</button>
                         <button onclick="copiarTabla('tabla1234')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button>
+                        <button id="verificarCoherencia1234Btn" class="btn btn-warning btn-sm"><i class="fas fa-check-circle"></i> Verificar</button>
                     </div>
                 </div>
                 <div class="scroll-table">
                     <table id="tabla1234"><thead><tr><th>Fecha</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Efectivo</th><th>Transf.</th><th>Cobros</th><th>Clientes</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="body1234"></tbody></table>
                 </div>
+                <div id="coherencia1234Container" style="margin-top:12px;"></div>
             </div>
             <div class="card">
                 <div class="card-header">
@@ -221,11 +226,13 @@
                         <button id="filtrar5678Btn" class="btn btn-primary btn-sm">Filtrar</button>
                         <button id="mostrarTodas5678Btn" class="btn btn-success btn-sm">Todas</button>
                         <button onclick="copiarTabla('tabla5678')" class="btn btn-ghost btn-sm"><i class="fas fa-copy"></i></button>
+                        <button id="verificarCoherencia5678Btn" class="btn btn-warning btn-sm"><i class="fas fa-check-circle"></i> Verificar</button>
                     </div>
                 </div>
                 <div class="scroll-table">
                     <table id="tabla5678"><thead><tr><th>Fecha</th><th>1,7</th><th>3,5</th><th>14</th><th>20</th><th>32</th><th>Efectivo</th><th>Transf.</th><th>Cobros</th><th>Clientes</th><th>Neto</th><th class="no-print"></th></tr></thead><tbody id="body5678"></tbody></table>
                 </div>
+                <div id="coherencia5678Container" style="margin-top:12px;"></div>
             </div>
         </div>
 
@@ -405,23 +412,16 @@ function combinarProductosDetalle(cantidades, detalle) {
 
 // ==================== LIMPIAR DETALLE (extraer cantidades de JSON) ====================
 function limpiarDetalleItem(item) {
-    // Esta función toma un item (con detalle y cantidades) y:
-    // - Si el detalle es un JSON de "Venta de hielo: {...}", lo parsea y lo asigna a item.cantidades
-    // - Retorna el detalle "limpio" (sin el JSON) para que no se muestre duplicado
     let detalleUsable = item.detalle || '';
     if (detalleUsable.includes('Venta de hielo:') || detalleUsable.includes('"') || detalleUsable.includes('{')) {
-        // Si ya tiene cantidades y son >0, no necesitamos parsear
         const hasCant = item.cantidades && Object.values(item.cantidades).some(v => v > 0);
         if (!hasCant) {
             try {
                 const jsonStr = detalleUsable.replace(/^Venta de hielo:\s*/, '');
                 const parsed = JSON.parse(jsonStr);
                 item.cantidades = parsed;
-            } catch(e) {
-                // Si falla, no hacemos nada
-            }
+            } catch(e) {}
         }
-        // Retornamos vacío para que use las cantidades en su lugar
         return '';
     }
     return detalleUsable;
@@ -629,6 +629,90 @@ function updateSyncStatus(status) {
     }
 }
 
+// ==================== VERIFICACIÓN DE COHERENCIA ====================
+function verificarCoherenciaChofer(pin, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:0.75rem;">🔍 Verificando coherencia...</p>';
+
+    try {
+        // 1. Obtener ventas de este chofer desde localStorage
+        const key = `myc_${pin}_ventas`;
+        let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
+
+        // 2. Calcular neto de la planilla (efectivo + transferencias + cobros - gastos)
+        let totalEfectivo = 0, totalTransferencia = 0, totalCobrosPlanilla = 0;
+        const clientesChofer = new Set();
+        for (const v of ventasChofer) {
+            if (v.pago === "efectivo") totalEfectivo += v.total || 0;
+            if (v.pago === "transferencia") totalTransferencia += v.total || 0;
+            if (v.pago === "cobrocc") totalCobrosPlanilla += v.cobroDeuda || 0;
+            if (v.cliente) clientesChofer.add(normalizarCliente(v.cliente));
+        }
+        const gastosKey = `myc_${pin}_gastosDetalle`;
+        let gastosChofer = { nafta:0, choferes:0, otros:0 };
+        const storedGastos = localStorage.getItem(gastosKey);
+        if (storedGastos) {
+            try { gastosChofer = JSON.parse(storedGastos); } catch(e) {}
+        }
+        const totalGastosChofer = gastosChofer.nafta + gastosChofer.choferes + gastosChofer.otros;
+        const netoPlanilla = totalEfectivo + totalTransferencia + totalCobrosPlanilla - totalGastosChofer;
+
+        // 3. Calcular saldo de deuda real de los clientes de este chofer (usando movimientos de Sheets)
+        let saldoDeudaReal = 0;
+        const saldos = {};
+        for (const mov of movimientos) {
+            const cliente = mov.cliente;
+            if (!cliente) continue;
+            if (!clientesChofer.has(cliente)) continue;
+            if (!saldos[cliente]) saldos[cliente] = 0;
+            if (mov.tipo === 'deuda') {
+                saldos[cliente] += mov.monto;
+            } else if (mov.tipo === 'pago') {
+                saldos[cliente] -= mov.monto;
+            }
+        }
+        for (const [cliente, saldo] of Object.entries(saldos)) {
+            if (saldo > 0) saldoDeudaReal += saldo;
+        }
+
+        // 4. Comparar y mostrar alerta
+        const diferencia = netoPlanilla - saldoDeudaReal;
+        const fechaHoy = getHoy();
+
+        if (Math.abs(diferencia) < 1 && saldoDeudaReal === 0) {
+            container.innerHTML = `<div class="alerta-coherencia ok">✅ <strong>Coherencia OK</strong> · Chofer ${pin} · ${fechaHoy}<br>Neto planilla: ${pesos(netoPlanilla)} · Saldo deuda real: ${pesos(saldoDeudaReal)} · Diferencia: $0</div>`;
+        } else if (Math.abs(diferencia) < 1 && saldoDeudaReal > 0) {
+            container.innerHTML = `<div class="alerta-coherencia ok">✅ <strong>Coherencia OK</strong> · Chofer ${pin} · ${fechaHoy}<br>Neto planilla: ${pesos(netoPlanilla)} · Saldo deuda real: ${pesos(saldoDeudaReal)} · Diferencia: $0</div>`;
+        } else {
+            let mensaje = `⚠️ <strong>DISCREPANCIA ENCONTRADA</strong> · Chofer ${pin} · ${fechaHoy}<br>`;
+            mensaje += `📊 Neto planilla: ${pesos(netoPlanilla)}<br>`;
+            mensaje += `📘 Saldo deuda real (clientes de este chofer): ${pesos(saldoDeudaReal)}<br>`;
+            mensaje += `📉 Diferencia: <strong style="color:${diferencia > 0 ? '#16a34a' : '#ef4444'};">${pesos(diferencia)}</strong><br>`;
+            mensaje += `🔍 ${diferencia > 0 ? 'La planilla tiene más efectivo del que debería. Revisar cobros pendientes o ventas mal registradas.' : 'La planilla tiene menos efectivo del que debería. Revisar deudas no cobradas o gastos extras.'}`;
+            container.innerHTML = `<div class="alerta-coherencia error">${mensaje}</div>`;
+            toast(`⚠️ Discrepancia encontrada en chofer ${pin}: ${pesos(diferencia)}`);
+        }
+
+        // Mostrar clientes con deuda de este chofer
+        let deudaClientesHtml = '<div style="margin-top:8px; font-size:0.75rem;"><strong>Clientes con deuda de este chofer:</strong><br>';
+        const deudores = Object.entries(saldos).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]);
+        if (deudores.length === 0) {
+            deudaClientesHtml += 'Sin deudores activos.';
+        } else {
+            deudores.forEach(([cliente, saldo]) => {
+                deudaClientesHtml += `${cliente}: ${pesos(saldo)}<br>`;
+            });
+        }
+        deudaClientesHtml += '</div>';
+        container.innerHTML += deudaClientesHtml;
+
+    } catch (error) {
+        console.error('Error en verificación de coherencia:', error);
+        container.innerHTML = `<div class="alerta-coherencia error">❌ Error al verificar: ${error.message}</div>`;
+    }
+}
+
 // ==================== RENDER ====================
 function renderResumen() {
     let totalDeuda = 0, totalCobros = 0, totalGastosHoy = 0;
@@ -675,7 +759,7 @@ function calcRendicionFecha(pin, fecha) {
     return { efectivo, transfer, cobros, neto, cantidades, clientesAtendidos: clientesAtendidos.size };
 }
 
-function renderRendicionChofer(pin, tbodyId, filtroFecha = null) {
+function renderRendicionChofer(pin, tbodyId, filtroFecha = null, containerId = null) {
     const fechas = new Set();
     ventasLocal.filter(v => v.chofer === pin).forEach(v => v.fecha && fechas.add(v.fecha));
     const tbody = document.getElementById(tbodyId);
@@ -684,24 +768,29 @@ function renderRendicionChofer(pin, tbodyId, filtroFecha = null) {
     if (filtroFecha) {
         fechasArray = fechasArray.filter(f => f === filtroFecha);
     }
-    if (fechasArray.length === 0) { tbody.innerHTML = emptyRow(11, 'Sin datos'); return; }
-    tbody.innerHTML = fechasArray.map(fecha => {
-        const r = calcRendicionFecha(pin, fecha);
-        return `<tr>
-            <td>${fechaDMY(fecha)}</td>
-            <td style="text-align:center;">${r.cantidades["1,7 KG"]}</td>
-            <td style="text-align:center;">${r.cantidades["3,5 KG"]}</td>
-            <td style="text-align:center;">${r.cantidades["14 KG"]}</td>
-            <td style="text-align:center;">${r.cantidades["ESC.20KG"]}</td>
-            <td style="text-align:center;">${r.cantidades["ESC.32KG"]}</td>
-            <td>${pesos(r.efectivo)}</td>
-            <td>${pesos(r.transfer)}</td>
-            <td>${pesos(r.cobros)}</td>
-            <td style="text-align:center;">${r.clientesAtendidos}</td>
-            <td><span class="${numClass(r.neto)}">${pesos(r.neto)}</span></td>
-            <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button></td>
-        </tr>`;
-    }).join('');
+    if (fechasArray.length === 0) { tbody.innerHTML = emptyRow(11, 'Sin datos'); } else {
+        tbody.innerHTML = fechasArray.map(fecha => {
+            const r = calcRendicionFecha(pin, fecha);
+            return `<tr>
+                <td>${fechaDMY(fecha)}</td>
+                <td style="text-align:center;">${r.cantidades["1,7 KG"]}</td>
+                <td style="text-align:center;">${r.cantidades["3,5 KG"]}</td>
+                <td style="text-align:center;">${r.cantidades["14 KG"]}</td>
+                <td style="text-align:center;">${r.cantidades["ESC.20KG"]}</td>
+                <td style="text-align:center;">${r.cantidades["ESC.32KG"]}</td>
+                <td>${pesos(r.efectivo)}</td>
+                <td>${pesos(r.transfer)}</td>
+                <td>${pesos(r.cobros)}</td>
+                <td style="text-align:center;">${r.clientesAtendidos}</td>
+                <td><span class="${numClass(r.neto)}">${pesos(r.neto)}</span></td>
+                <td class="no-print"><button class="btn btn-danger btn-xs" onclick="confirmarEliminarDia('${pin}','${fecha}')"><i class="fas fa-trash-alt"></i> Eliminar día</button></td>
+            </tr>`;
+        }).join('');
+    }
+    // Verificar coherencia después de renderizar
+    if (containerId) {
+        verificarCoherenciaChofer(pin, containerId);
+    }
 }
 
 async function confirmarEliminarDia(pin, fecha) {
@@ -733,10 +822,8 @@ async function confirmarEliminarDia(pin, fecha) {
 
 // ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN DEFINITIVA ====================
 function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
-    // -------- 1. Unificar todas las fuentes --------
     let todos = [];
 
-    // Movimientos de Sheets
     for (const m of movimientos) {
         todos.push({
             id: m.id,
@@ -752,7 +839,6 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         });
     }
 
-    // Ventas locales
     for (const v of ventasLocal) {
         let tipoNormalizado = '';
         let formaPago = '';
@@ -786,7 +872,6 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         });
     }
 
-    // -------- 2. Asegurar que cada item tenga cantidades extraídas desde detalle si es necesario --------
     for (const item of todos) {
         const hasCant = Object.values(item.cantidades).some(v => v > 0);
         if (!hasCant && item.detalle) {
@@ -801,7 +886,6 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         }
     }
 
-    // -------- 3. Aplicar filtros --------
     if (fecha) {
         todos = todos.filter(t => t.fecha === fecha);
     }
@@ -816,14 +900,12 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         todos = todos.filter(t => t.cliente.includes(filtro));
     }
 
-    // -------- 4. DEDUPLICAR: agrupar por (fecha, cliente, tipo, monto) --------
     const grupos = new Map();
     for (const item of todos) {
         const key = `${item.fecha}|${item.cliente}|${item.tipo}|${item.monto}`;
         if (!grupos.has(key)) {
             grupos.set(key, item);
         } else {
-            // Si el nuevo item es local y el guardado es de sheets, reemplazar
             const guardado = grupos.get(key);
             if (item.tipoMov === 'local' && guardado.tipoMov === 'sheets') {
                 grupos.set(key, item);
@@ -831,12 +913,9 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         }
     }
 
-    // -------- 5. Generar lista final con detalle limpio --------
     const finalList = Array.from(grupos.values()).map(item => {
         let detalleUsable = item.detalle || '';
-        // Usamos la función limpiarDetalleItem para parsear JSON y extraer cantidades
         const limpio = limpiarDetalleItem(item);
-        // Si limpio es vacío, significa que el detalle era un JSON y ya se asignaron las cantidades
         if (limpio === '') {
             detalleUsable = '';
         } else {
@@ -849,10 +928,8 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         };
     });
 
-    // -------- 6. Ordenar por fecha descendente --------
     finalList.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
-    // -------- 7. Renderizar --------
     const tbody = document.getElementById("bodyMovimientos");
     if (!tbody) return;
     if (finalList.length === 0) {
@@ -952,7 +1029,7 @@ async function agregarClienteGlobal(nombre) {
     preciosClientes[nombre] = { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
     localStorage.setItem("myc_clientes_list", JSON.stringify(clientes));
     localStorage.setItem("myc_precios_globales", JSON.stringify(preciosClientes));
-    try { await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'agregarCliente', nombre }) }); } catch(e){}
+    try { await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'agregarCliente', nombre }) }); } catch(e){} 
     actualizarSelectorClientes();
     actualizarSelectoresDeudas();
     renderClientesTab();
@@ -965,7 +1042,7 @@ async function eliminarClienteGlobal(nombre) {
     delete preciosClientes[nombre];
     localStorage.setItem("myc_clientes_list", JSON.stringify(clientes));
     localStorage.setItem("myc_precios_globales", JSON.stringify(preciosClientes));
-    try { await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'eliminarCliente', nombre }) }); } catch(e){}
+    try { await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'eliminarCliente', nombre }) }); } catch(e){} 
     ventasLocal = ventasLocal.filter(v => v.cliente !== nombre);
     actualizarSelectorClientes();
     actualizarSelectoresDeudas();
@@ -1363,8 +1440,8 @@ function renderTodo() {
     renderResumen();
     const fecha1234 = document.getElementById("fecha1234").value;
     const fecha5678 = document.getElementById("fecha5678").value;
-    renderRendicionChofer("1234", "body1234", fecha1234 || null);
-    renderRendicionChofer("5678", "body5678", fecha5678 || null);
+    renderRendicionChofer("1234", "body1234", fecha1234 || null, "coherencia1234Container");
+    renderRendicionChofer("5678", "body5678", fecha5678 || null, "coherencia5678Container");
     renderMovimientos();
     renderDeudores();
     renderClientesTab();
@@ -1422,28 +1499,35 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("filtrar1234Btn").addEventListener("click", () => {
         const f = document.getElementById("fecha1234").value;
         if (!f) { toast("Seleccioná una fecha"); return; }
-        renderRendicionChofer("1234", "body1234", f);
+        renderRendicionChofer("1234", "body1234", f, "coherencia1234Container");
     });
     document.getElementById("mostrarTodas1234Btn").addEventListener("click", () => {
         document.getElementById("fecha1234").value = "";
-        renderRendicionChofer("1234", "body1234", null);
+        renderRendicionChofer("1234", "body1234", null, "coherencia1234Container");
     });
     document.getElementById("filtrar5678Btn").addEventListener("click", () => {
         const f = document.getElementById("fecha5678").value;
         if (!f) { toast("Seleccioná una fecha"); return; }
-        renderRendicionChofer("5678", "body5678", f);
+        renderRendicionChofer("5678", "body5678", f, "coherencia5678Container");
     });
     document.getElementById("mostrarTodas5678Btn").addEventListener("click", () => {
         document.getElementById("fecha5678").value = "";
-        renderRendicionChofer("5678", "body5678", null);
+        renderRendicionChofer("5678", "body5678", null, "coherencia5678Container");
     });
     document.getElementById("fecha1234").addEventListener("change", function() {
-        if (this.value) renderRendicionChofer("1234", "body1234", this.value);
-        else renderRendicionChofer("1234", "body1234", null);
+        if (this.value) renderRendicionChofer("1234", "body1234", this.value, "coherencia1234Container");
+        else renderRendicionChofer("1234", "body1234", null, "coherencia1234Container");
     });
     document.getElementById("fecha5678").addEventListener("change", function() {
-        if (this.value) renderRendicionChofer("5678", "body5678", this.value);
-        else renderRendicionChofer("5678", "body5678", null);
+        if (this.value) renderRendicionChofer("5678", "body5678", this.value, "coherencia5678Container");
+        else renderRendicionChofer("5678", "body5678", null, "coherencia5678Container");
+    });
+
+    document.getElementById("verificarCoherencia1234Btn").addEventListener("click", function() {
+        verificarCoherenciaChofer("1234", "coherencia1234Container");
+    });
+    document.getElementById("verificarCoherencia5678Btn").addEventListener("click", function() {
+        verificarCoherenciaChofer("5678", "coherencia5678Container");
     });
 
     document.getElementById("buscarClienteBtn").addEventListener("click", () => {
