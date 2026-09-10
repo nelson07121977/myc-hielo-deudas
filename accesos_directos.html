@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>MYC HIELO · Accesos Directos</title>
+
+    <!-- ═══ META TAGS PARA AGREGAR A PANTALLA DE INICIO (PWA) ═══ -->
+    <meta name="theme-color" content="#0f2a6e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MYC Hielo">
+    <meta name="application-name" content="MYC Hielo">
+
+    <!-- Ícono SVG embebido (funciona como favicon y como ícono de app) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230f2a6e' rx='20'/><text x='50' y='72' font-size='60' text-anchor='middle'>🧊</text></svg>">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f1f5fb;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 28px;
+            padding: 32px 36px 40px;
+            box-shadow: 0 20px 60px rgba(10, 62, 109, 0.12);
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e8edf3;
+            margin-bottom: 28px;
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #0f2a6e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .header h1 span { color: #1a3d9e; }
+        .header p {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px 18px 18px;
+            text-decoration: none;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 150px;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 28px rgba(10, 62, 109, 0.10);
+            border-color: #0f2a6e;
+            background: white;
+        }
+        .card:active {
+            transform: translateY(-1px);
+        }
+        .card .icono {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        .card .nombre {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #0f2a6e;
+        }
+        .card .desc {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .card .badge {
+            margin-top: 8px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            border-radius: 40px;
+            background: #e8edf3;
+            color: #475569;
+        }
+        .card .badge.admin { background: #0f2a6e; color: white; }
+        .card .badge.chofer { background: #0a7c4a; color: white; }
+        .card .badge.deudas { background: #b91c1c; color: white; }
+        .card .badge.local { background: #d97706; color: white; }
+        .card .badge.github { background: #24292e; color: white; }
+        .card .badge.drive { background: #4285f4; color: white; }
+        .card .badge.sheets { background: #0f9d58; color: white; }
+        .card .badge.excel { background: #217346; color: white; }
+        .card .badge.tienda { background: #0284c7; color: white; }
+
+        .footer {
+            text-align: center;
+            margin-top: 28px;
+            padding-top: 18px;
+            border-top: 2px solid #e8edf3;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        .footer .marca { font-weight: 700; color: #0f2a6e; }
+
+        .aviso {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 0.8rem;
+            color: #92400e;
+        }
+        .aviso strong { color: #78350f; }
+
+        @media (max-width: 600px) {
+            .container { padding: 18px 16px; border-radius: 20px; }
+            .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .header h1 { font-size: 1.6rem; }
+            .card { padding: 14px 10px; min-height: 120px; }
+            .card .icono { font-size: 2rem; }
+            .card .nombre { font-size: 0.82rem; }
+            .card .desc { font-size: 0.68rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>🧊 MYC <span>HIELO</span></h1>
+        <p>Accesos directos · Todas tus herramientas</p>
+    </div>
+
+    <div class="grid">
+
+        <!-- 🆕 Tienda Online M&C Hielo (Firebase + Netlify) -->
+        <a href="https://calm-bienenstitch-93ea6a.netlify.app/" target="_blank" class="card">
+            <div class="icono">🛒</div>
+            <div class="nombre">Tienda Online</div>
+            <div class="desc">Catálogo · Pedidos · Mayoristas</div>
+            <span class="badge tienda">TIENDA</span>
+        </a>
+
+        <!-- 1. Panel de Gestión Integral -->
+        <a href="https://nelson07121977.github.io/myc-hielo-deudas/myc-gestion.html" target="_blank" class="card">
+            <div class="icono">📊</div>
+            <div class="nombre">Panel de Gestión</div>
+            <div class="desc">Dashboard · Ventas · Gastos</div>
+            <span class="badge admin">ADMIN</span>
+        </a>
+
+        <!-- 2. Planilla de Reparto -->
+        <a href="https://nelson07121977.github.io/myc-hielo-deudas/planilla_reparto.html" target="_blank" class="card">
+            <div class="icono">🚚</div>
+            <div class="nombre">Planilla de Reparto</div>
+            <div class="desc">Choferes · Ventas y gastos</div>
+            <span class="badge chofer">CHOFER</span>
+        </a>
+
+        <!-- 3. Control de Deudas -->
+        <a href="https://nelson07121977.github.io/myc-hielo-deudas/" target="_blank" class="card">
+            <div class="icono">💰</div>
+            <div class="nombre">Control de Deudas</div>
+            <div class="desc">Resumen · Deudores · Movimientos</div>
+            <span class="badge deudas">DEUDAS</span>
+        </a>
+
+        <!-- 4. Resumen de Reparto -->
+        <a href="https://nelson07121977.github.io/myc-hielo-deudas/resumen_reparto.html" target="_blank" class="card">
+            <div class="icono">📋</div>
+            <div class="nombre">Resumen de Reparto</div>
+            <div class="desc">Ventas por chofer · KPIs</div>
+            <span class="badge admin">ADMIN</span>
+        </a>
+
+        <!-- 5. Ajustador de Precios (LOCAL) -->
+        <a href="ajustador_precios.html" target="_blank" class="card">
+            <div class="icono">⚙️</div>
+            <div class="nombre">Ajustador de Precios</div>
+            <div class="desc">Editar precios y costos</div>
+            <span class="badge local">LOCAL</span>
+        </a>
+
+        <!-- 6. Facturador (LOCAL) -->
+        <a href="facturador.html" target="_blank" class="card">
+            <div class="icono">🧾</div>
+            <div class="nombre">Facturador</div>
+            <div class="desc">Generar comprobantes X</div>
+            <span class="badge local">LOCAL</span>
+        </a>
+
+        <!-- 7. Google Sheets -->
+        <a href="https://docs.google.com/spreadsheets/d/13m7YBvSOmvPGhwPzpx60AtdDfk50MYopQrGYyOtT0Eo/edit" target="_blank" class="card">
+            <div class="icono">📗</div>
+            <div class="nombre">Google Sheets</div>
+            <div class="desc">Planilla de MYC HIELO</div>
+            <span class="badge sheets">SHEETS</span>
+        </a>
+
+        <!-- 8. Google Drive -->
+        <a href="https://drive.google.com/drive/my-drive" target="_blank" class="card">
+            <div class="icono">☁️</div>
+            <div class="nombre">Google Drive</div>
+            <div class="desc">Todos tus archivos</div>
+            <span class="badge drive">DRIVE</span>
+        </a>
+
+        <!-- 9. GitHub -->
+        <a href="https://github.com/nelson07121977/myc-hielo-deudas" target="_blank" class="card">
+            <div class="icono">🐙</div>
+            <div class="nombre">GitHub</div>
+            <div class="desc">Repositorio · Código fuente</div>
+            <span class="badge github">GITHUB</span>
+        </a>
+
+        <!-- 10. Planilla de Pago (Excel local) -->
+        <a href="file:///C:/Users/Pc/Desktop/PLANILLA_DE_PAGO_MODIFICADA%20.xlsx" target="_blank" class="card">
+            <div class="icono">📊</div>
+            <div class="nombre">Planilla de Pago</div>
+            <div class="desc">PLANILLA_DE_PAGO_MODIFICADA</div>
+            <span class="badge excel">EXCEL</span>
+        </a>
+
+    </div>
+
+    <div class="aviso">
+        <strong>📂 IMPORTANTE:</strong> 
+        <strong>Panel de Gestión</strong>, <strong>Planilla de Reparto</strong>, <strong>Control de Deudas</strong> y <strong>Resumen de Reparto</strong> usan la versión en la nube (GitHub Pages). 
+        <strong>Ajustador de Precios</strong> y <strong>Facturador</strong> usan tus archivos locales.
+        <br><br>
+        <strong>🛒 Tienda Online:</strong> hosteada en Netlify y sincronizada con Firebase. Los cambios de precios se reflejan en todos los dispositivos automáticamente.
+    </div>
+
+    <div class="footer">
+        <span class="marca">🧊 MYC HIELO</span> · Todos los accesos en un solo lugar
+    </div>
+
+</div>
+</body>
+</html>
