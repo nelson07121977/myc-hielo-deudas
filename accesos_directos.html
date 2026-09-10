@@ -13,7 +13,7 @@
     <meta name="apple-mobile-web-app-title" content="MYC Hielo">
     <meta name="application-name" content="MYC Hielo">
 
-    <!-- Ícono SVG embebido (funciona como favicon y como ícono de app) -->
+    <!-- Ícono SVG embebido -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230f2a6e' rx='20'/><text x='50' y='72' font-size='60' text-anchor='middle'>🧊</text></svg>">
 
@@ -126,6 +126,7 @@
         .card .badge.sheets { background: #0f9d58; color: white; }
         .card .badge.excel { background: #217346; color: white; }
         .card .badge.tienda { background: #0284c7; color: white; }
+        .card .badge.super { background: #7c3aed; color: white; }
 
         .footer {
             text-align: center;
@@ -169,12 +170,20 @@
 
     <div class="grid">
 
-        <!-- 🆕 Tienda Online M&C Hielo (Firebase + Netlify) -->
+        <!-- 🛒 Tienda Online M&C Hielo -->
         <a href="https://calm-bienenstitch-93ea6a.netlify.app/" target="_blank" class="card">
             <div class="icono">🛒</div>
             <div class="nombre">Tienda Online</div>
             <div class="desc">Catálogo · Pedidos · Mayoristas</div>
             <span class="badge tienda">TIENDA</span>
+        </a>
+
+        <!-- 🛍️ NUEVO: Supermercado 77 -->
+        <a href="https://nelson07121977.github.io/myc-hielo-deudas/supermercado77.html" target="_blank" class="card">
+            <div class="icono">🛍️</div>
+            <div class="nombre">Supermercado 77</div>
+            <div class="desc">Control · Productos · Precios</div>
+            <span class="badge super">SUPER</span>
         </a>
 
         <!-- 1. Panel de Gestión Integral -->
@@ -261,7 +270,7 @@
 
     <div class="aviso">
         <strong>📂 IMPORTANTE:</strong> 
-        <strong>Panel de Gestión</strong>, <strong>Planilla de Reparto</strong>, <strong>Control de Deudas</strong> y <strong>Resumen de Reparto</strong> usan la versión en la nube (GitHub Pages). 
+        <strong>Panel de Gestión</strong>, <strong>Planilla de Reparto</strong>, <strong>Control de Deudas</strong>, <strong>Resumen de Reparto</strong> y <strong>Supermercado 77</strong> usan la versión en la nube (GitHub Pages). 
         <strong>Ajustador de Precios</strong> y <strong>Facturador</strong> usan tus archivos locales.
         <br><br>
         <strong>🛒 Tienda Online:</strong> hosteada en Netlify y sincronizada con Firebase. Los cambios de precios se reflejan en todos los dispositivos automáticamente.
