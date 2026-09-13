@@ -2187,7 +2187,7 @@ function enviarFacturaEmail() {
     window.open(`mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`, '_blank');
 }
 
-// ========== FIX PDF FACTURA ==========
+// ========== EXPORTAR PDF FACTURA (FIX: sin left negativo) ==========
 function exportarFacturaPDF() {
     const factura = document.getElementById('facturaBox');
     if (factura.style.display === 'none') {
@@ -2198,7 +2198,7 @@ function exportarFacturaPDF() {
     const elemento = factura.cloneNode(true);
     elemento.style.width = '1100px';
     elemento.style.maxWidth = '1100px';
-    elemento.style.margin = '0 auto';
+    elemento.style.margin = '0';
     elemento.style.padding = '20px';
     elemento.style.boxShadow = 'none';
     elemento.style.border = '2px solid #000';
@@ -2216,15 +2216,9 @@ function exportarFacturaPDF() {
     });
     elemento.querySelectorAll('.no-print, .btn, button').forEach(b => b.remove());
 
-    // FIX: agregar el clon al DOM (fuera de la vista) para que html2canvas lo renderice bien
+    // FIX: wrapper en posición 0,0 pero detrás de todo el contenido (z-index -1)
     const wrapper = document.createElement('div');
-    wrapper.style.position = 'fixed';
-    wrapper.style.left = '-99999px';
-    wrapper.style.top = '0';
-    wrapper.style.width = '1200px';
-    wrapper.style.background = 'white';
-    wrapper.style.padding = '0';
-    wrapper.style.margin = '0';
+    wrapper.style.cssText = 'position:fixed;top:0;left:0;width:1200px;background:white;z-index:-1;pointer-events:none;';
     wrapper.appendChild(elemento);
     document.body.appendChild(wrapper);
 
