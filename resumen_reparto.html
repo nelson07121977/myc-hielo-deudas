@@ -12,7 +12,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* ==================== VARIABLES Y RESET ==================== */
         :root {
             --bg:        #0d1b2e;
             --surface:   #132238;
@@ -370,6 +369,63 @@ function pesos(n){ return '$' + n.toLocaleString('es-AR', { minimumFractionDigit
 function normalizarCliente(nombre){ return (nombre || '').trim().toUpperCase() || 'SIN CLIENTE'; }
 function montoRedondo(monto){ return Math.round(normalizarNumero(monto)); }
 
+// ==================== FIX: LIMPIAR DETALLES FEOS ====================
+// Convierte distintos formatos feos en algo legible:
+//   "Venta de hielo: {\"1,7 KG\":0,\"14 KG\":6,...}"  ->  "6 × 14 kg"
+//   "Venta productos: 1.7:0 3.5:0 14:6"              ->  "6 × 14 kg"
+//   "14kg:6 · 1,7kg:10"                              ->  "6 × 14 kg + 10 × 1,7 kg"
+//   "10 bolsas"                                       ->  "10 bolsas"  (sin tocar)
+function limpiarDetalleMovimiento(detalle) {
+    if (!detalle || typeof detalle !== 'string') return detalle || '';
+    const texto = detalle.trim();
+    if (texto === '' || texto === '—') return texto;
+
+    // Si ya está en formato "N × X kg", devolverlo tal cual
+    if (/^\d+\s*×\s*[\d,]+\s*kg(\s*\+\s*\d+\s*×\s*[\d,]+\s*kg)*$/i.test(texto)) return texto;
+
+    // --- Intento 1: parsear JSON ---
+    const jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        try {
+            const cant = JSON.parse(jsonMatch[0]);
+            const mapa = {
+                "1,7 KG": "1,7 kg",
+                "3,5 KG": "3,5 kg",
+                "14 KG": "14 kg",
+                "ESC.20KG": "20 kg",
+                "ESC.32KG": "32 kg"
+            };
+            const partes = Object.entries(mapa)
+                .filter(([k]) => (cant[k] || 0) > 0)
+                .map(([k, etiqueta]) => `${cant[k]} × ${etiqueta}`);
+            if (partes.length > 0) return partes.join(' + ');
+            return '—';
+        } catch(e) { /* sigue abajo */ }
+    }
+
+    // --- Intento 2: buscar patrones tipo "1,7:0 3,5:6 14:3" o "14kg:6" ---
+    const cant = {};
+    const re = /(1[.,\s]?7|3[.,\s]?5|14|20|32)\s*(?:kg|KG)?\s*[:=]\s*(\d+)/gi;
+    let match;
+    let encontro = false;
+    while ((match = re.exec(texto)) !== null) {
+        encontro = true;
+        const key = match[1].replace(/[.,\s]/g, '');
+        const val = parseInt(match[2]) || 0;
+        if (val > 0) cant[key] = (cant[key] || 0) + val;
+    }
+    if (encontro) {
+        const etiquetas = { "17": "1,7 kg", "35": "3,5 kg", "14": "14 kg", "20": "20 kg", "32": "32 kg" };
+        const partes = Object.keys(cant).map(k => `${cant[k]} × ${etiquetas[k] || k + ' kg'}`);
+        if (partes.length > 0) return partes.join(' + ');
+        return '—';
+    }
+
+    // Si no matchea nada, es un detalle manual → dejarlo igual
+    return texto;
+}
+// ==================== FIN FIX ====================
+
 // ==================== EXTRAER CANTIDADES DESDE DETALLE ====================
 function extraerCantidadesDeDetalle(detalle) {
     const cant = { "1,7 KG":0, "3,5 KG":0, "14 KG":0, "ESC.20KG":0, "ESC.32KG":0 };
@@ -481,12 +537,12 @@ async function cargarSheets() {
         actualizarSelectoresDeudas();
         updateSyncStatus('online');
         toast("Datos de Sheets cargados", 'success');
-    } catch(e) { 
-        console.error(e); 
+    } catch(e) {
+        console.error(e);
         updateSyncStatus('offline');
-        toast("Error al cargar Google Sheets", 'error'); 
-        clientes = []; 
-        movimientos = []; 
+        toast("Error al cargar Google Sheets", 'error');
+        clientes = [];
+        movimientos = [];
     }
 }
 
@@ -636,11 +692,9 @@ function verificarCoherenciaChofer(pin, containerId) {
     container.innerHTML = '<p style="color:var(--text-muted);font-size:0.75rem;">🔍 Verificando coherencia...</p>';
 
     try {
-        // 1. Obtener ventas de este chofer desde localStorage
         const key = `myc_${pin}_ventas`;
         let ventasChofer = JSON.parse(localStorage.getItem(key) || "[]");
 
-        // 2. Calcular neto de la planilla (efectivo + transferencias + cobros - gastos)
         let totalEfectivo = 0, totalTransferencia = 0, totalCobrosPlanilla = 0;
         const clientesChofer = new Set();
         for (const v of ventasChofer) {
@@ -658,7 +712,6 @@ function verificarCoherenciaChofer(pin, containerId) {
         const totalGastosChofer = gastosChofer.nafta + gastosChofer.choferes + gastosChofer.otros;
         const netoPlanilla = totalEfectivo + totalTransferencia + totalCobrosPlanilla - totalGastosChofer;
 
-        // 3. Calcular saldo de deuda real de los clientes de este chofer (usando movimientos de Sheets)
         let saldoDeudaReal = 0;
         const saldos = {};
         for (const mov of movimientos) {
@@ -676,7 +729,6 @@ function verificarCoherenciaChofer(pin, containerId) {
             if (saldo > 0) saldoDeudaReal += saldo;
         }
 
-        // 4. Comparar y mostrar alerta
         const diferencia = netoPlanilla - saldoDeudaReal;
         const fechaHoy = getHoy();
 
@@ -694,7 +746,6 @@ function verificarCoherenciaChofer(pin, containerId) {
             toast(`⚠️ Discrepancia encontrada en chofer ${pin}: ${pesos(diferencia)}`);
         }
 
-        // Mostrar clientes con deuda de este chofer
         let deudaClientesHtml = '<div style="margin-top:8px; font-size:0.75rem;"><strong>Clientes con deuda de este chofer:</strong><br>';
         const deudores = Object.entries(saldos).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]);
         if (deudores.length === 0) {
@@ -787,7 +838,6 @@ function renderRendicionChofer(pin, tbodyId, filtroFecha = null, containerId = n
             </tr>`;
         }).join('');
     }
-    // Verificar coherencia después de renderizar
     if (containerId) {
         verificarCoherenciaChofer(pin, containerId);
     }
@@ -820,7 +870,7 @@ async function confirmarEliminarDia(pin, fecha) {
     renderTodo();
 }
 
-// ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN DEFINITIVA ====================
+// ==================== RENDER MOVIMIENTOS CON DEDUPLICACIÓN ====================
 function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
     let todos = [];
 
@@ -921,7 +971,9 @@ function renderMovimientos(fecha = null, tipo = null, clienteFiltro = null) {
         } else {
             detalleUsable = limpio;
         }
-        const detalleFinal = combinarProductosDetalle(item.cantidades, detalleUsable);
+        const detalleCombinado = combinarProductosDetalle(item.cantidades, detalleUsable);
+        // 🔧 FIX: pasar el resultado por limpiarDetalleMovimiento como paso final
+        const detalleFinal = limpiarDetalleMovimiento(detalleCombinado);
         return {
             ...item,
             detalle: detalleFinal || '—'
@@ -1029,7 +1081,7 @@ async function agregarClienteGlobal(nombre) {
     preciosClientes[nombre] = { "1,7 KG":1500, "3,5 KG":2500, "14 KG":7000, "ESC.20KG":8000, "ESC.32KG":12000 };
     localStorage.setItem("myc_clientes_list", JSON.stringify(clientes));
     localStorage.setItem("myc_precios_globales", JSON.stringify(preciosClientes));
-    try { await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'agregarCliente', nombre }) }); } catch(e){} 
+    try { await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'agregarCliente', nombre }) }); } catch(e){}
     actualizarSelectorClientes();
     actualizarSelectoresDeudas();
     renderClientesTab();
@@ -1042,7 +1094,7 @@ async function eliminarClienteGlobal(nombre) {
     delete preciosClientes[nombre];
     localStorage.setItem("myc_clientes_list", JSON.stringify(clientes));
     localStorage.setItem("myc_precios_globales", JSON.stringify(preciosClientes));
-    try { await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'eliminarCliente', nombre }) }); } catch(e){} 
+    try { await fetch(API_URL, { method:'POST', body: new URLSearchParams({ ruta:'eliminarCliente', nombre }) }); } catch(e){}
     ventasLocal = ventasLocal.filter(v => v.cliente !== nombre);
     actualizarSelectorClientes();
     actualizarSelectoresDeudas();
@@ -1094,7 +1146,9 @@ function verHistorialCliente(cliente, desde = null, hasta = null) {
         const filas = filtrados.map(t => {
             let rowClass = badgeTipoColor(t);
             const detalleBase = limpiarDetalleItem(t);
-            const prodDetalle = combinarProductosDetalle(t.cantidades, detalleBase);
+            const prodDetalleBase = combinarProductosDetalle(t.cantidades, detalleBase);
+            // 🔧 FIX: limpiar el resultado final
+            const prodDetalle = limpiarDetalleMovimiento(prodDetalleBase);
             return `<tr class="${rowClass}">
                 <td>${fechaDMY(t.fecha)}</td>
                 <td class="productos-texto">${badgeTipo(t)}</td>
@@ -1181,7 +1235,9 @@ function copiarHistorialCliente(cliente) {
         let fechaStr = fechaDMY(t.fecha);
         let montoStr = pesos(t.monto || 0);
         const detalleBase = limpiarDetalleItem(t);
-        let prodDetalle = combinarProductosDetalle(t.cantidades, detalleBase);
+        const prodDetalleBase = combinarProductosDetalle(t.cantidades, detalleBase);
+        // 🔧 FIX: limpiar el resultado final
+        let prodDetalle = limpiarDetalleMovimiento(prodDetalleBase);
         if (prodDetalle.length > colWidths.prodDetalle - 3) prodDetalle = prodDetalle.substring(0, colWidths.prodDetalle - 3) + "…";
         texto += fechaStr.padEnd(colWidths.fecha) + ` | `;
         texto += tipo.padEnd(colWidths.tipo) + ` | `;
@@ -1271,7 +1327,8 @@ function exportarExcelCompleto() {
         ...[...movimientos, ...ventasLocal].map(t => [
             fechaDMY(t.fecha), t.cliente,
             t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')),
-            t.monto || t.total || 0, combinarProductosDetalle(t.cantidades, t.detalle)
+            t.monto || t.total || 0,
+            limpiarDetalleMovimiento(combinarProductosDetalle(t.cantidades, t.detalle))
         ])
     ];
     const wb = buildWorkbook([["Resumen", resumen], ["Movimientos", movs]]);
@@ -1304,7 +1361,8 @@ function exportarMovimientosExcel() {
         ...todos.map(t => [
             fechaDMY(t.fecha), t.cliente,
             t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')),
-            t.monto || t.total || 0, combinarProductosDetalle(t.cantidades, t.detalle)
+            t.monto || t.total || 0,
+            limpiarDetalleMovimiento(combinarProductosDetalle(t.cantidades, t.detalle))
         ])
     ];
     const wb = buildWorkbook([["Movimientos", data]]);
@@ -1334,7 +1392,7 @@ function exportarMovimientosCSV() {
     todos.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
     let csv = "Fecha,Cliente,Tipo,Monto,Productos/Detalle\n";
     todos.forEach(t => {
-        csv += `${fechaDMY(t.fecha)},${t.cliente || ''},${t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || ''))},${t.monto || t.total || 0},"${combinarProductosDetalle(t.cantidades, t.detalle)}"\n`;
+        csv += `${fechaDMY(t.fecha)},${t.cliente || ''},${t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || ''))},${t.monto || t.total || 0},"${limpiarDetalleMovimiento(combinarProductosDetalle(t.cantidades, t.detalle))}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -1368,7 +1426,8 @@ function exportarClienteExcel(cliente) {
         ...todos.map(t => [
             fechaDMY(t.fecha),
             t.tipo === "deuda" ? "Deuda" : (t.tipo === "pago" ? "Pago" : (t.pago || '')),
-            t.monto || t.total || 0, combinarProductosDetalle(t.cantidades, t.detalle)
+            t.monto || t.total || 0,
+            limpiarDetalleMovimiento(combinarProductosDetalle(t.cantidades, t.detalle))
         ])
     ];
     const wb = buildWorkbook([[cliente.slice(0, 30), data]]);
