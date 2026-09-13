@@ -2126,7 +2126,7 @@ function generarFactura() {
     if (deudasDetalle.length > 0) {
         desgloseHtml += '<strong>📋 Deudas del período:</strong><br>';
         for (const d of deudasDetalle) {
-            desgloseHtml += `📅 ${formatearFecha(d.fecha)}: ${pesos(d.monto)} (${d.detalle || 'sin detalle'})<br>`;
+            desgloseHtml += `📅 ${formatearFecha(d.fecha)}: ${pesos(d.monto)} (${limpiarDetalleMovimiento(d.detalle) || 'sin detalle'})<br>`;
         }
         const totalDeudas = deudasDetalle.reduce((acc, d) => acc + d.monto, 0);
         desgloseHtml += `<strong>💰 Total deudas del período: ${pesos(totalDeudas)}</strong>`;
@@ -2137,7 +2137,7 @@ function generarFactura() {
     if (pagosDetalle.length > 0) {
         desgloseHtml += '<br><strong>💳 Pagos aplicados en el período:</strong><br>';
         for (const p of pagosDetalle) {
-            desgloseHtml += `📅 ${formatearFecha(p.fecha)}: -${pesos(p.monto)} (${p.detalle || 'pago'})<br>`;
+            desgloseHtml += `📅 ${formatearFecha(p.fecha)}: -${pesos(p.monto)} (${limpiarDetalleMovimiento(p.detalle) || 'pago'})<br>`;
         }
         const totalPagos = pagosDetalle.reduce((acc, p) => acc + p.monto, 0);
         desgloseHtml += `<strong>💰 Total pagos del período: -${pesos(totalPagos)}</strong>`;
@@ -2158,7 +2158,7 @@ function generarFactura() {
     const todos = [...deudasDetalle, ...pagosDetalle].sort((a, b) => a.fecha.localeCompare(b.fecha));
     for (const item of todos) {
         if (item.tipo === 'deuda') {
-            html += `<tr><td>${formatearFecha(item.fecha)}</td><td>${item.detalle || 'Deuda'}</td><td>—</td><td>—</td><td>${pesos(item.monto)}</td></tr>`;
+            html += `<tr><td>${formatearFecha(item.fecha)}</td><td>${limpiarDetalleMovimiento(item.detalle) || 'Deuda'}</td><td>—</td><td>—</td><td>${pesos(item.monto)}</td></tr>`;
         } else {
             html += `<tr style="color:var(--verde);"><td>${formatearFecha(item.fecha)}</td><td>🔄 Pago</td><td>—</td><td>—</td><td style="color:var(--verde);">-${pesos(item.monto)}</td></tr>`;
         }
@@ -2673,7 +2673,7 @@ function renderTablaModificacion() {
                         <option value="" ${!m.forma_pago ? 'selected' : ''}>—</option>
                     </select>
                 </td>
-                <td><input type="text" value="${m.detalle || ''}" class="modif-detalle" data-index="${index}" placeholder="Detalle" style="width:150px;padding:4px;border-radius:6px;border:1px solid var(--borde);background:var(--bg);color:var(--texto);"></td>
+                <td><input type="text" value="${limpiarDetalleMovimiento(m.detalle) || ''}" class="modif-detalle" data-index="${index}" placeholder="Detalle" style="width:150px;padding:4px;border-radius:6px;border:1px solid var(--borde);background:var(--bg);color:var(--texto);"></td>
                 <td class="no-print">
                     <button class="btn btn-danger btn-xs" onclick="eliminarFilaModif(${index})"><i class="fas fa-trash"></i></button>
                     ${m._original ? `<button class="btn btn-outline btn-xs" onclick="restaurarFilaModif(${index})" title="Restaurar original"><i class="fas fa-undo"></i></button>` : ''}
@@ -2810,7 +2810,7 @@ function generarFacturaModif() {
                 <div style="margin-top: 4px; font-weight: 600; color: #b91c1c;">🔴 Deuda neta (período): ${pesos(saldoNeto)}</div>
                 <div style="margin-top: 6px; font-size: 0.75rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 6px;">
                     <strong>📋 Movimientos del período:</strong><br>
-                    ${activos.map(m => `📅 ${formatearFecha(m.fecha)}: ${m.tipo === 'deuda' ? 'Deuda' : 'Pago'} ${pesos(m.monto)} (${m.detalle || ''})`).join('<br>')}
+                    ${activos.map(m => `📅 ${formatearFecha(m.fecha)}: ${m.tipo === 'deuda' ? 'Deuda' : 'Pago'} ${pesos(m.monto)} (${limpiarDetalleMovimiento(m.detalle) || ''})`).join('<br>')}
                     <br><strong style="color: #b91c1c;">🔴 SALDO TOTAL ACTUAL: ${pesos(saldoNeto)}</strong>
                 </div>
             </div>
@@ -2883,7 +2883,7 @@ function exportarModifPDF() {
                 <div style="margin-top: 4px; font-weight: 600; color: #b91c1c;">🔴 Deuda neta (período): ${pesos(saldoNeto)}</div>
                 <div style="margin-top: 6px; font-size: 0.75rem; color: #64748b; border-top: 1px dashed #cbd5e1; padding-top: 6px;">
                     <strong>📋 Movimientos del período:</strong><br>
-                    ${activos.map(m => `📅 ${formatearFecha(m.fecha)}: ${m.tipo === 'deuda' ? 'Deuda' : 'Pago'} ${pesos(m.monto)} (${m.detalle || ''})`).join('<br>')}
+                    ${activos.map(m => `📅 ${formatearFecha(m.fecha)}: ${m.tipo === 'deuda' ? 'Deuda' : 'Pago'} ${pesos(m.monto)} (${limpiarDetalleMovimiento(m.detalle) || ''})`).join('<br>')}
                     <br><strong style="color: #b91c1c;">🔴 SALDO TOTAL ACTUAL: ${pesos(saldoNeto)}</strong>
                 </div>
             </div>
@@ -3041,7 +3041,6 @@ function renderMovimientosDeuda() {
         const badge = esDeuda
             ? '<span class="badge badge-deuda">➕ Deuda</span>'
             : '<span class="badge badge-pago">💸 Pago</span>';
-        // 🔧 FIX: detalle limpio
         const detalleLimpio = limpiarDetalleMovimiento(m.detalle);
         return `<tr>
             <td style="white-space:nowrap">${formatearFecha(m.fecha)}</td>
