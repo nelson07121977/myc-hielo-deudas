@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --azul: #0f2a6e;
@@ -2187,69 +2188,115 @@ function enviarFacturaEmail() {
     window.open(`mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`, '_blank');
 }
 
-// ========== EXPORTAR PDF FACTURA (FIX: sin left negativo) ==========
-function exportarFacturaPDF() {
+// ========== EXPORTAR PDF FACTURA (FIX DEFINITIVO) ==========
+// Usa html2canvas + jsPDF directamente, sin html2pdf.
+// Saca el padding/scroll del body temporalmente para que la captura empiece en 0,0.
+async function exportarFacturaPDF() {
     const factura = document.getElementById('facturaBox');
     if (factura.style.display === 'none') {
         toast('Primero genere una factura');
         return;
     }
 
-    const elemento = factura.cloneNode(true);
-    elemento.style.width = '1100px';
-    elemento.style.maxWidth = '1100px';
-    elemento.style.margin = '0';
-    elemento.style.padding = '20px';
-    elemento.style.boxShadow = 'none';
-    elemento.style.border = '2px solid #000';
-    elemento.style.background = 'white';
-    elemento.style.fontSize = '12px';
-    elemento.style.display = 'block';
-    elemento.querySelectorAll('table').forEach(t => {
-        t.style.width = '100%';
-        t.style.borderCollapse = 'collapse';
-    });
-    elemento.querySelectorAll('td, th').forEach(cell => {
-        cell.style.border = '1px solid #ccc';
-        cell.style.padding = '6px 8px';
-        cell.style.wordBreak = 'break-word';
-    });
-    elemento.querySelectorAll('.no-print, .btn, button').forEach(b => b.remove());
+    toast('📄 Generando PDF de factura...');
 
-    // FIX: wrapper en posición 0,0 pero detrás de todo el contenido (z-index -1)
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'position:fixed;top:0;left:0;width:1200px;background:white;z-index:-1;pointer-events:none;';
-    wrapper.appendChild(elemento);
-    document.body.appendChild(wrapper);
+    // Guardar estado del body
+    const bodyPaddingOrig = document.body.style.padding;
+    const bodyOverflowOrig = document.body.style.overflow;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
 
-    const opt = {
-        margin: 10,
-        filename: `Factura_${document.getElementById('facturaClienteNombre').textContent}_${hoy()}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
+    // Quitar padding y overflow del body temporalmente + reset scroll
+    document.body.style.padding = '0';
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+
+    try {
+        // Clonar la factura con estilos limpios
+        const clon = factura.cloneNode(true);
+        clon.style.cssText = 'width:1100px;max-width:1100px;margin:0;padding:24px;background:white;border:2px solid #0f2a6e;border-radius:16px;box-shadow:none;font-size:12px;display:block;position:static;';
+        clon.querySelectorAll('.no-print, .btn, button').forEach(b => b.remove());
+        clon.querySelectorAll('table').forEach(t => {
+            t.style.width = '100%';
+            t.style.borderCollapse = 'collapse';
+        });
+        clon.querySelectorAll('td, th').forEach(cell => {
+            cell.style.border = '1px solid #ccc';
+            cell.style.padding = '6px 8px';
+            cell.style.wordBreak = 'break-word';
+        });
+
+        // Contenedor posicionado en 0,0 absoluto de la página
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position:absolute;top:0;left:0;width:1148px;background:white;z-index:99999;padding:0;margin:0;';
+        wrapper.appendChild(clon);
+        document.body.appendChild(wrapper);
+
+        // Esperar a que el layout se aplique
+        await new Promise(r => setTimeout(r, 200));
+
+        // Capturar con html2canvas
+        const canvas = await html2canvas(wrapper, {
             scale: 2,
             useCORS: true,
             logging: false,
-            width: 1200,
-            windowWidth: 1200,
+            backgroundColor: '#ffffff',
+            width: 1148,
+            height: wrapper.scrollHeight,
+            windowWidth: 1148,
+            windowHeight: wrapper.scrollHeight,
             scrollX: 0,
-            scrollY: 0
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-        pagebreak: { mode: ['css', 'legacy'] }
-    };
-
-    toast('📄 Generando PDF de factura...');
-    html2pdf().set(opt).from(elemento).save()
-        .then(() => {
-            toast('✅ PDF de factura generado');
-            document.body.removeChild(wrapper);
-        })
-        .catch((err) => {
-            console.error(err);
-            toast('❌ Error al generar PDF');
-            document.body.removeChild(wrapper);
+            scrollY: 0,
+            x: 0,
+            y: 0
         });
+
+        // Remover wrapper
+        document.body.removeChild(wrapper);
+
+        // Generar PDF con jsPDF directamente
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margen = 10;
+        const imgWidth = pdfWidth - (margen * 2);
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        const alturaUtil = pdfHeight - (margen * 2);
+
+        if (imgHeight <= alturaUtil) {
+            // Cabe en una página
+            pdf.addImage(imgData, 'JPEG', margen, margen, imgWidth, imgHeight);
+        } else {
+            // Varias páginas
+            let yOffset = 0;
+            let remainingHeight = imgHeight;
+            while (remainingHeight > 0) {
+                if (yOffset > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', margen, margen - yOffset, imgWidth, imgHeight);
+                yOffset += alturaUtil;
+                remainingHeight -= alturaUtil;
+            }
+        }
+
+        pdf.save(`Factura_${document.getElementById('facturaClienteNombre').textContent}_${hoy()}.pdf`);
+        toast('✅ PDF de factura generado');
+    } catch(e) {
+        console.error('Error PDF:', e);
+        toast('❌ Error al generar PDF: ' + e.message);
+    } finally {
+        // Restaurar body
+        document.body.style.padding = bodyPaddingOrig;
+        document.body.style.overflow = bodyOverflowOrig;
+        window.scrollTo(scrollX, scrollY);
+    }
 }
 
 // ========== FÁBRICAS Y GASTOS ==========
