@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -144,6 +144,56 @@ function convertirANumero(valor) {
     if (match) { let num = parseFloat(match[0]); return isNaN(num) ? 0 : num; }
     return 0;
 }
+
+// ================= FIX: LIMPIAR DETALLES FEOS =================
+// Convierte "Venta de hielo: {\"1,7 KG\":0,\"14 KG\":6,...}" en "6 × 14 kg"
+// También maneja el formato viejo "Venta de hielo: 1,7:0 3,5:0 14:6"
+// Y deja intactos los detalles escritos a mano (ej: "10 bolsas")
+function limpiarDetalleMovimiento(detalle) {
+    if (!detalle || typeof detalle !== 'string') return detalle || '';
+    const texto = detalle.trim();
+
+    // Si es un detalle automático de venta, lo procesamos
+    const esVentaAuto = /^Venta (de hielo|productos):/i.test(texto) || /^\s*\{.*"1,7/i.test(texto);
+    if (!esVentaAuto) return texto;
+
+    // --- Intento 1: parsear como JSON ---
+    const jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+        try {
+            const cant = JSON.parse(jsonMatch[0]);
+            const mapa = {
+                "1,7 KG": "1,7 kg",
+                "3,5 KG": "3,5 kg",
+                "14 KG": "14 kg",
+                "ESC.20KG": "20 kg",
+                "ESC.32KG": "32 kg"
+            };
+            const partes = Object.entries(mapa)
+                .filter(([k]) => (cant[k] || 0) > 0)
+                .map(([k, etiqueta]) => `${cant[k]} × ${etiqueta}`);
+            if (partes.length > 0) return partes.join(' + ');
+            return '—';
+        } catch(e) { /* sigue abajo */ }
+    }
+
+    // --- Intento 2: buscar patrones tipo "1,7KG:0 3,5KG:6 14KG:3" ---
+    const cant = {};
+    const re = /(1[.,\s]?7|3[.,\s]?5|14|20|32)\s*(?:KG)?\s*[:=]\s*(\d+)/gi;
+    let match;
+    while ((match = re.exec(texto)) !== null) {
+        const key = match[1].replace(/[.,\s]/g, '');
+        const val = parseInt(match[2]) || 0;
+        if (val > 0) cant[key] = (cant[key] || 0) + val;
+    }
+    if (Object.keys(cant).length === 0) return '—';
+
+    const etiquetas = { "17": "1,7 kg", "35": "3,5 kg", "14": "14 kg", "20": "20 kg", "32": "32 kg" };
+    return Object.keys(cant)
+        .map(k => `${cant[k]} × ${etiquetas[k] || k + ' kg'}`)
+        .join(' + ');
+}
+// ================= FIN FIX =================
 
 async function obtenerClientes() {
   const res = await fetch(`${API_URL}?ruta=clientes`);
@@ -318,20 +368,22 @@ function renderMovimientos() {
   const tbody = document.querySelector('#tablaMovimientos tbody');
   if (!tbody) return;
   if (filtrados.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</div><div>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Sin movimientos</td></tr>';
     return;
   }
   tbody.innerHTML = filtrados.map(m => {
     const montoSeguro = m.monto;
+    // 🔧 FIX: detalle limpio
+    const detalleLimpio = limpiarDetalleMovimiento(m.detalle);
     return `
     <tr>
-      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</div><div>
-      <td>${m.cliente_nombre || '?'}</div><div>
-      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></div><div>
-      <td>$${montoSeguro.toLocaleString('es-AR')}</div><div>
-      <td>${m.forma_pago || '—'}</div><div>
-      <td>${m.detalle || ''}</div><div>
-      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento('${m.id}')">🗑️</button></div><div>
+      <td style="white-space:nowrap">${formatearFechaLocal(m.fecha)}</td>
+      <td>${m.cliente_nombre || '?'}</td>
+      <td><span class="badge ${m.tipo==='deuda'?'badge-deuda':'badge-pago'}">${m.tipo==='deuda'?'➕ Deuda':'💸 Pago'}</span></td>
+      <td>$${montoSeguro.toLocaleString('es-AR')}</td>
+      <td>${m.forma_pago || '—'}</td>
+      <td>${detalleLimpio}</td>
+      <td class="no-print"><button class="btn btn-red btn-sm" onclick="eliminarMovimiento('${m.id}')">🗑️</button></td>
     </tr>`;
   }).join('');
 }
