@@ -212,7 +212,7 @@ h1,h2,h3,.display{font-family:'Fraunces',Georgia,serif;letter-spacing:-.02em}
   <div class="splash-logo">M&C</div>
   <div class="splash-title">M&C <span>ENTERPRISE</span></div>
   <div class="splash-sub">Panel Privado de Ganancias</div>
-  <div class="splash-version">v1.0 · ❄️ Hielo</div>
+  <div class="splash-version">v1.1 · ❄️ Hielo</div>
   <div class="splash-bar"><div class="splash-bar-inner"></div></div>
 </div>
 
@@ -366,10 +366,10 @@ function gananciaOrder(o) {
   return gan;
 }
 
-/* Totales de un día */
+/* Totales de un día — AHORA CUENTA TODAS LAS VENTAS (cerradas o no) */
 function totalesDia(fecha) {
-  const sales = DATA.driverSales.filter(s => s.date === fecha && !s.closed);
-  const gastosChofer = DATA.driverGastos.filter(g => g.date === fecha && !g.closed);
+  const sales = DATA.driverSales.filter(s => s.date === fecha);
+  const gastosChofer = DATA.driverGastos.filter(g => g.date === fecha);
   const gastosAdmin = DATA.expenses.filter(g => g.date === fecha);
   const gastosExtra = DATA.enterpriseExpenses.filter(g => g.date === fecha);
 
@@ -389,7 +389,7 @@ function totalesDia(fecha) {
 
   const gastos = gastosChofer.reduce((a,g) => a + Number(g.amount||0), 0)
     + gastosAdmin.reduce((a,g) => a + Number(g.amount||0), 0)
-    + gastosExtra.reduce((a,g) => a + Number(g.amount||0), 0);
+    + gastosExtra.reduce((a,g) => a + Number(g.monto||0), 0);
 
   const gananciaBruta = ventas - costo;
   const gananciaNeta = gananciaBruta - gastos;
@@ -761,8 +761,8 @@ function cambiarMes(delta) {
 
 function verDetalleDia(fecha) {
   const t = totalesDia(fecha);
-  const sales = DATA.driverSales.filter(s => s.date === fecha && !s.closed);
-  const gastosC = DATA.driverGastos.filter(g => g.date === fecha && !g.closed);
+  const sales = DATA.driverSales.filter(s => s.date === fecha);
+  const gastosC = DATA.driverGastos.filter(g => g.date === fecha);
   const gastosA = DATA.expenses.filter(g => g.date === fecha);
   const gastosE = DATA.enterpriseExpenses.filter(g => g.date === fecha);
 
@@ -826,7 +826,6 @@ function renderProductos() {
   const ranking = PROD_KEYS.map(k => {
     let cant = 0, venta = 0, costo = 0;
     DATA.driverSales.forEach(s => {
-      if (s.closed) return;
       const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
       if (q <= 0) return;
       cant += q;
@@ -982,7 +981,6 @@ function guardarEditCliente(id) {
   c.name = $('ecNombre').value.trim().toUpperCase();
   c.phone = $('ecTel').value.trim();
   c.addresses = [$('ecDir').value.trim()].filter(Boolean);
-  // Si es de enterprise, actualizar también
   const ent = DATA.enterpriseClients.find(x => x.id === id);
   if (ent) Object.assign(ent, c);
   guardarEnFirebase('enterpriseClients', DATA.enterpriseClients).then(() => {
@@ -1006,8 +1004,8 @@ function renderChoferes() {
   const pins = new Set();
   DATA.driverSales.forEach(s => pins.add(s.pin));
   const choferes = Array.from(pins).map(pin => {
-    const ventas = DATA.driverSales.filter(s => s.pin === pin && !s.closed);
-    const gastos = DATA.driverGastos.filter(g => g.pin === pin && !g.closed);
+    const ventas = DATA.driverSales.filter(s => s.pin === pin);
+    const gastos = DATA.driverGastos.filter(g => g.pin === pin);
     let total = 0, gan = 0, bolsas = 0;
     ventas.forEach(s => {
       total += Number(s.total||0) + Number(s.collection||0);
@@ -1015,7 +1013,6 @@ function renderChoferes() {
       PROD_KEYS.forEach(k => bolsas += Number((s.qty||{})[QTY_KEYS[k]]||0));
     });
     const gast = gastos.reduce((a,g) => a + Number(g.amount||0), 0);
-    const nombre = ventas[0]?.clientName ? pin : pin;
     return { pin, total, gan, gast, bolsas, ventasCount: ventas.length, neto: gan - gast };
   }).sort((a,b) => b.neto - a.neto);
 
@@ -1393,25 +1390,20 @@ function crearParticulas() {
 document.addEventListener('DOMContentLoaded', async () => {
   crearParticulas();
 
-  // Splash 2.2s
   setTimeout(async () => {
     $('splash').classList.add('hidden');
-    // Cargar datos de Firebase antes de mostrar login
     await cargarDesdeFirebase();
     $('loginContainer').style.display = 'block';
     $('claveInput').focus();
   }, 2400);
 });
 
-// Enter en el login
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && $('loginContainer') && $('loginContainer').style.display !== 'none') {
     validarClave();
   }
 });
-/* ============================================================
-   FUNCIONES EXTRA
-   ============================================================ */
+
 window.validarClave = validarClave;
 window.cerrarSesion = cerrarSesion;
 window.cambiarSeccion = cambiarSeccion;
