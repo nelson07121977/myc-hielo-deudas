@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a2a4a">
+<title>🧊 M&C Enterprise · Panel Privado</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a1128;--ink2:#131c3a;--navy:#0f2352;--blue:#1e5eff;--blue-dark:#0b3bb8;
+  --ice:#eef5ff;--ice2:#dbeafe;--cyan:#38d4ff;--gold:#e8b961;--gold-dark:#b8860b;
+  --green:#10b981;--green-dark:#047857;--red:#ef4444;--red-dark:#b91c1c;
+  --orange:#f59e0b;--purple:#7c3aed;--paper:#f6f9fe;--line:#d8e2f0;--line-2:#e8eef7;
+  --muted:#64748b;
+  --shadow-sm:0 1px 3px rgba(10,17,40,.06);
+  --shadow:0 4px 14px rgba(10,17,40,.08);
+  --shadow-md:0 12px 32px rgba(10,17,40,.12);
+  --shadow-lg:0 24px 60px rgba(10,17,40,.18);
+  --radius:18px;--radius-sm:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:14px}
+button,input,select,textarea{font:inherit;font-family:inherit}
+button{cursor:pointer;border:0;background:none}
+h1,h2,h3,.display{font-family:'Fraunces',Georgia,serif;letter-spacing:-.02em}
+
+/* ===== SPLASH ===== */
+#splash{position:fixed;inset:0;z-index:9999;background:linear-gradient(145deg,#0a2a4a,#0d3b5e,#135a7a);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:opacity .8s ease,visibility .8s ease}
+#splash.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.splash-logo{width:130px;height:130px;background:rgba(255,255,255,.08);border-radius:32px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:3.2rem;font-weight:900;color:#fff;text-shadow:0 0 40px rgba(255,255,255,.2);margin-bottom:24px;border:2px solid rgba(255,255,255,.15);box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;animation:logoPulse 2.5s ease-in-out infinite}
+.splash-logo::after{content:'❄️';position:absolute;font-size:2rem;bottom:-10px;right:-10px;animation:spinSlow 6s linear infinite;filter:drop-shadow(0 0 10px rgba(255,255,255,.5))}
+@keyframes spinSlow{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes logoPulse{0%,100%{transform:scale(1);box-shadow:0 20px 60px rgba(0,0,0,.3)}50%{transform:scale(1.04);box-shadow:0 30px 80px rgba(0,180,255,.2)}}
+.splash-title{font-family:'Fraunces',serif;font-size:2.8rem;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.3)}
+.splash-title span{color:#8fcbff}
+.splash-sub{font-size:1rem;font-weight:300;color:rgba(255,255,255,.7);letter-spacing:6px;text-transform:uppercase;margin-top:6px}
+.splash-version{font-size:.75rem;color:rgba(255,255,255,.4);letter-spacing:2px;margin-top:14px}
+.splash-bar{margin-top:30px;width:220px;height:4px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden}
+.splash-bar-inner{width:0%;height:100%;background:linear-gradient(90deg,#8fcbff,#fff);border-radius:4px;animation:loadBar 2.2s ease-in-out forwards}
+@keyframes loadBar{0%{width:0}80%{width:85}100%{width:100}}
+.ice-particle{position:absolute;background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none;animation:floatParticle 8s infinite ease-in-out}
+@keyframes floatParticle{0%,100%{transform:translateY(0) scale(1);opacity:.2}50%{transform:translateY(-40px) scale(1.6);opacity:.6}}
+
+/* ===== HEADER ===== */
+.top{position:sticky;top:0;z-index:15;height:68px;padding:0 max(20px,calc((100vw - 1400px)/2));display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#0a1128 0%,#0f2352 60%,#122a63 100%);color:white;box-shadow:0 8px 24px rgba(10,17,40,.25)}
+.brand{font-family:'Fraunces',serif;font-weight:700;font-size:22px;display:flex;align-items:center;gap:10px}
+.brand::before{content:'';width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:inline-block}
+.brand small{font-family:'Inter',sans-serif;font-weight:600;color:var(--cyan);font-size:10.5px;margin-left:2px;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.top-actions{display:flex;gap:8px;align-items:center}
+.btn{padding:10px 16px;border-radius:var(--radius-sm);background:#fff;color:var(--ink2);font-weight:700;box-shadow:var(--shadow-sm);border:1px solid var(--line);font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.btn.primary{background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:white;border:0}
+.btn.green{background:linear-gradient(135deg,var(--green),var(--green-dark));color:white;border:0}
+.btn.orange{background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:0}
+.btn.purple{background:linear-gradient(135deg,var(--purple),#5b21b6);color:white;border:0}
+.btn.gold{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:white;border:0}
+.btn.red{background:linear-gradient(135deg,var(--red),var(--red-dark));color:white;border:0}
+.btn.danger{color:var(--red);border-color:#fecaca;background:#fff5f5}
+.btn.dark{background:var(--ink2);color:white;border:0}
+.btn.ghost{background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.15)}
+.btn.sm{padding:6px 12px;font-size:12px;border-radius:10px}
+.btn.xs{padding:4px 9px;font-size:11px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ===== LOGIN ===== */
+.login-wrap{min-height:calc(100vh - 68px);display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{max-width:440px;width:100%;background:#fff;border-radius:24px;padding:40px 32px;box-shadow:var(--shadow-lg);border:1px solid var(--line);text-align:center}
+.login-box h2{font-family:'Fraunces',serif;font-size:1.6rem;margin:0 0 8px;color:var(--navy)}
+.login-box p{color:var(--muted);font-size:.9rem;margin:0 0 22px}
+.login-box input{width:100%;padding:14px;border-radius:14px;border:1.5px solid var(--line);font-size:1.4rem;letter-spacing:8px;text-align:center;outline:none;font-family:inherit;margin-bottom:14px;font-weight:800}
+.login-box input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(30,94,255,.1)}
+.login-box button{width:100%;padding:14px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;border-radius:14px;font-weight:800;font-size:1rem;cursor:pointer;transition:.15s}
+.login-box button:hover{filter:brightness(1.08)}
+.login-box .error{background:#fef2f2;color:#991b1b;padding:10px;border-radius:10px;font-size:.85rem;margin-top:12px;display:none}
+.login-box .error.show{display:block}
+
+/* ===== NAV ===== */
+.nav{display:flex;gap:6px;flex-wrap:wrap;padding:14px max(20px,calc((100vw - 1400px)/2));background:#fff;border-bottom:1px solid var(--line);overflow-x:auto}
+.nav button{padding:10px 18px;border-radius:40px;font-weight:700;font-size:13px;color:var(--muted);background:transparent;border:1.5px solid var(--line);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.nav button.active{background:linear-gradient(135deg,var(--ink2),var(--navy));color:white;border-color:transparent}
+.nav button:hover:not(.active){background:var(--ice);color:var(--navy)}
+
+/* ===== WRAP ===== */
+.wrap{max-width:1400px;margin:auto;padding:28px 20px 80px}
+.section{display:none}
+.section.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== SECCION TITLE ===== */
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.section-title h2{margin:0;font-family:'Fraunces',serif;font-size:26px;display:flex;align-items:center;gap:10px}
+.section-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ===== KPI ===== */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.kpi{background:#fff;border-radius:var(--radius);padding:20px;border:1px solid var(--line);box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--line)}
+.kpi label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;display:block}
+.kpi b{display:block;font-size:28px;margin-top:6px;font-weight:900;font-family:'Fraunces',serif}
+.kpi.warn{background:linear-gradient(135deg,#fffbeb,#fff);border-color:#fde68a}.kpi.warn::before{background:var(--orange)}
+.kpi.green{background:linear-gradient(135deg,#f0fdf4,#fff);border-color:#bbf7d0}.kpi.green::before{background:var(--green)}
+.kpi.blue{background:linear-gradient(135deg,#eff6ff,#fff);border-color:#bfdbfe}.kpi.blue::before{background:var(--blue)}
+.kpi.purple{background:linear-gradient(135deg,#f5f3ff,#fff);border-color:#ddd6fe}.kpi.purple::before{background:var(--purple)}
+.kpi.red{background:linear-gradient(135deg,#fef2f2,#fff);border-color:#fecaca}.kpi.red::before{background:var(--red)}
+.kpi.gold{background:linear-gradient(135deg,#fffbeb,#fff);border-color:var(--gold)}.kpi.gold::before{background:var(--gold)}
+.kpi.cyan{background:linear-gradient(135deg,#ecfeff,#fff);border-color:#a5f3fc}.kpi.cyan::before{background:var(--cyan)}
+.kpi.orange{background:linear-gradient(135deg,#fff7ed,#fff);border-color:#fed7aa}.kpi.orange::before{background:var(--orange)}
+
+/* ===== PANEL ===== */
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-top:18px;box-shadow:var(--shadow-sm)}
+.panel h3{margin:0 0 18px;font-family:'Fraunces',serif;font-size:18px;display:flex;align-items:center;gap:8px}
+.panel-sub{color:var(--muted);font-size:12.5px;margin-top:-12px;margin-bottom:14px}
+
+/* ===== TABLA ===== */
+.table{width:100%;border-collapse:collapse;font-size:13.5px}
+.table th,.table td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.table th{color:var(--muted);font-size:10.5px;text-transform:uppercase;font-weight:800}
+.table tbody tr:hover{background:#f8fafc}
+.table tfoot td{background:var(--ice);font-weight:900}
+.scroll-x{overflow-x:auto;border-radius:var(--radius-sm)}
+
+/* ===== BADGES ===== */
+.badge{display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:800}
+.badge.green{background:#d1fae5;color:#065f46}
+.badge.red{background:#fee2e2;color:#991b1b}
+.badge.blue{background:#dbeafe;color:#1e3a8a}
+.badge.gold{background:#fef3c7;color:#92400e}
+.badge.purple{background:#f3e8ff;color:#6b21a8}
+.badge.gray{background:#e5e7eb;color:#4b5563}
+
+/* ===== CALENDARIO ===== */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;max-width:900px;margin:auto}
+.cal-dow{text-align:center;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);padding:6px 0}
+.cal-dia{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;transition:.15s;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cal-dia:hover{background:var(--ice);transform:translateY(-1px)}
+.cal-dia .num{font-weight:800;font-size:14px}
+.cal-dia .val{font-size:10px;font-weight:800;padding:1px 6px;border-radius:100px}
+.cal-dia .val.pos{background:#d1fae5;color:#065f46}
+.cal-dia .val.neg{background:#fee2e2;color:#991b1b}
+.cal-dia .val.zero{background:#e5e7eb;color:#4b5563}
+.cal-dia.hoy{border-color:var(--blue);border-width:2px;box-shadow:0 0 0 3px rgba(30,94,255,.1)}
+.cal-dia.otro{opacity:.3;cursor:default}
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.cal-header .mes{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:800}
+
+/* ===== FILTROS ===== */
+.filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filtros input,.filtros select{padding:9px 14px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-family:inherit;outline:none}
+.filtros input:focus,.filtros select:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(30,94,255,.08)}
+
+/* ===== MODAL ===== */
+.modal{position:fixed;inset:0;z-index:40;background:rgba(10,17,40,.65);display:grid;place-items:center;padding:20px;overflow-y:auto}
+.dialog{background:#fff;width:min(720px,100%);border-radius:24px;padding:32px;max-height:92vh;overflow:auto;margin:auto;box-shadow:var(--shadow-lg)}
+.dialog h2{margin:0 0 20px;font-family:'Fraunces',serif;font-size:22px}
+.field{display:grid;gap:7px;margin:14px 0}
+.field label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.field input,.field select,.field textarea{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;width:100%;font-size:14px;font-family:inherit;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(30,94,255,.1)}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,140px);background:var(--ink2);color:white;padding:14px 22px;border-radius:14px;z-index:70;font-weight:600;font-size:13.5px;transition:all .3s;max-width:90%;text-align:center}
+.toast.show{transform:translate(-50%,0)}
+
+/* ===== NOTICE ===== */
+.notice{padding:14px 16px;border-radius:14px;background:#fffbeb;color:#78350f;font-size:13px;border-left:4px solid var(--orange);margin:12px 0}
+.notice.info{background:#eff6ff;color:#1e3a8a;border-left-color:var(--blue)}
+.notice.green{background:#f0fdf4;color:#065f46;border-left-color:var(--green)}
+.notice.red{background:#fef2f2;color:#991b1b;border-left-color:var(--red)}
+.notice.purple{background:#f5f3ff;color:#5b21b6;border-left-color:var(--purple)}
+
+/* ===== CHART ===== */
+.chart-box{position:relative;height:280px;margin-top:10px}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){
+  .top{padding:0 14px;height:60px}
+  .brand{font-size:18px}
+  .brand small{display:none}
+  .wrap{padding:18px 14px 80px}
+  .grid{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{padding:14px}.kpi b{font-size:22px}
+  .section-title h2{font-size:20px}
+  .panel{padding:16px}
+  .cal-dia{min-height:48px;padding:4px 2px}
+  .cal-dia .num{font-size:12px}
+  .cal-dia .val{font-size:9px}
+}
+
+/* ===== PRINT ===== */
+@media print{
+  .no-print,.top,.nav,.section-actions,.filtros{display:none!important}
+  body{background:#fff}
+  .panel{border:1px solid #ccc;box-shadow:none;page-break-inside:avoid}
+  .kpi{border:1px solid #ccc;box-shadow:none}
+  .section{display:block!important}
+  .section:not(.active){display:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div id="iceParticles"></div>
+  <div class="splash-logo">M&C</div>
+  <div class="splash-title">M&C <span>ENTERPRISE</span></div>
+  <div class="splash-sub">Panel Privado de Ganancias</div>
+  <div class="splash-version">v1.0 · ❄️ Hielo</div>
+  <div class="splash-bar"><div class="splash-bar-inner"></div></div>
+</div>
+
+<!-- HEADER -->
+<header class="top" id="mainHeader" style="display:none;">
+  <div class="brand">M&C ENTERPRISE <small>Panel Privado</small></div>
+  <div class="top-actions">
+    <span class="badge blue" style="padding:6px 14px;font-size:11px;">🔐 Admin</span>
+    <button class="btn ghost sm" onclick="cerrarSesion()">Salir</button>
+  </div>
+</header>
+
+<!-- LOGIN -->
+<div id="loginContainer" style="display:none;">
+  <div class="login-wrap">
+    <div class="login-box">
+      <h2>🔐 Acceso Privado</h2>
+      <p>Ingresá tu clave para ver el panel</p>
+      <input type="password" id="claveInput" placeholder="••••" maxlength="12" autocomplete="off">
+      <button onclick="validarClave()">Ingresar</button>
+      <div class="error" id="loginError">Clave incorrecta</div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV + CONTENIDO -->
+<div id="appContainer" style="display:none;">
+  <nav class="nav" id="navBar"></nav>
+  <main class="wrap" id="app"></main>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG FIREBASE (mismo proyecto de GLACIAR)
+   ============================================================ */
+const FB_CONFIG = {
+  apiKey: "AIzaSyAeDdsP6y4oEDb8sJ5UjGlxR2KQZusLjx4",
+  authDomain: "mychielo-9f397.firebaseapp.com",
+  databaseURL: "https://mychielo-9f397-default-rtdb.firebaseio.com",
+  projectId: "mychielo-9f397"
+};
+let db = null;
+let fbReady = false;
+try {
+  firebase.initializeApp(FB_CONFIG);
+  db = firebase.database().ref('glaciar_v3');
+  fbReady = true;
+} catch(e) {
+  console.warn('Firebase init:', e);
+}
+
+/* ============================================================
+   ESTADO GLOBAL
+   ============================================================ */
+let DATA = {
+  driverSales: [],
+  driverGastos: [],
+  driverDays: [],
+  driverStock: [],
+  expenses: [],
+  payments: [],
+  orders: [],
+  pedidos: [],
+  products: [],
+  clients: [],
+  enterpriseSettings: { clave: 'MC1977', costos: {} },
+  enterpriseExpenses: [],
+  enterpriseClients: [],
+  enterpriseReports: []
+};
+let USUARIO_LOGUEADO = false;
+let SECTION_ACTIVA = 'dashboard';
+let MES_CALENDARIO = new Date();
+let chartVentas = null;
+let chartComparativa = null;
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const money = n => '$' + Number(n||0).toLocaleString('es-AR', {maximumFractionDigits:0});
+const num = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+const esc = s => String(s??'').replace(/[&<>"']/g, x => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+const today = () => new Date().toISOString().slice(0,10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const fdate = f => { if(!f) return ''; const s = String(f).split('T')[0]; const [a,b,c] = s.split('-'); return `${c}/${b}/${a}`; };
+const PROD_KEYS = ['p17','p35','p14','p20','p32'];
+const PROD_LABELS = { p17:'1,7 kg', p35:'3,5 kg', p14:'14 kg', p20:'20 kg', p32:'32 kg' };
+const QTY_KEYS = { p17:'1,7', p35:'3,5', p14:'14', p20:'20', p32:'32' };
+
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+function modal(html) {
+  document.body.insertAdjacentHTML('beforeend',
+    `<div class="modal" id="modal"><div class="dialog">${html}</div></div>`);
+}
+function closeModal() {
+  const m = $('modal');
+  if (m && m.parentNode) m.parentNode.removeChild(m);
+}
+
+/* ============================================================
+   CÁLCULOS DE GANANCIA
+   ============================================================ */
+function getCostoProducto(prodKey) {
+  const prod = DATA.products.find(p => p.id === prodKey);
+  const fromSettings = DATA.enterpriseSettings.costos?.[prodKey];
+  if (fromSettings !== undefined && fromSettings !== null) return Number(fromSettings);
+  if (prod && prod.cost !== undefined) return Number(prod.cost);
+  return 0;
+}
+function getPrecioProducto(prodKey) {
+  const prod = DATA.products.find(p => p.id === prodKey);
+  return prod ? Number(prod.price || 0) : 0;
+}
+
+/* Ganancia bruta de una venta de chofer */
+function gananciaVenta(sale) {
+  if (!sale || sale.payment === 'cobrocc') return 0;
+  let gan = 0;
+  PROD_KEYS.forEach(k => {
+    const q = Number((sale.qty||{})[QTY_KEYS[k]] || 0);
+    if (q <= 0) return;
+    const precio = Number((sale.prices||{})[k]) || getPrecioProducto(k);
+    const costo = getCostoProducto(k);
+    gan += q * (precio - costo);
+  });
+  return gan;
+}
+
+/* Ganancia bruta de una venta del catálogo */
+function gananciaOrder(o) {
+  if (!o || o.status === 'Cancelado') return 0;
+  let gan = 0;
+  (o.items||[]).forEach(it => {
+    const prodKey = it.id || Object.keys(PROD_LABELS).find(k => PROD_LABELS[k] === it.name);
+    if (!prodKey) return;
+    const precio = Number(it.price||0);
+    const costo = getCostoProducto(prodKey);
+    gan += Number(it.q||0) * (precio - costo);
+  });
+  return gan;
+}
+
+/* Totales de un día */
+function totalesDia(fecha) {
+  const sales = DATA.driverSales.filter(s => s.date === fecha && !s.closed);
+  const gastosChofer = DATA.driverGastos.filter(g => g.date === fecha && !g.closed);
+  const gastosAdmin = DATA.expenses.filter(g => g.date === fecha);
+  const gastosExtra = DATA.enterpriseExpenses.filter(g => g.date === fecha);
+
+  let ventas = 0, costo = 0, bolsas = 0;
+  sales.forEach(s => {
+    if (s.payment === 'cobrocc') {
+      ventas += Number(s.collection || 0);
+    } else {
+      ventas += Number(s.total || 0);
+      PROD_KEYS.forEach(k => {
+        const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
+        bolsas += q;
+        costo += q * getCostoProducto(k);
+      });
+    }
+  });
+
+  const gastos = gastosChofer.reduce((a,g) => a + Number(g.amount||0), 0)
+    + gastosAdmin.reduce((a,g) => a + Number(g.amount||0), 0)
+    + gastosExtra.reduce((a,g) => a + Number(g.amount||0), 0);
+
+  const gananciaBruta = ventas - costo;
+  const gananciaNeta = gananciaBruta - gastos;
+  const clientesUnicos = new Set(sales.map(s => s.clientId)).size;
+
+  return { fecha, ventas, costo, bolsas, gastos, gananciaBruta, gananciaNeta, clientes: clientesUnicos, ventasCount: sales.length };
+}
+
+/* Totales de un rango */
+function totalesRango(desde, hasta) {
+  const dias = [];
+  const start = new Date(desde + 'T12:00:00');
+  const end = new Date(hasta + 'T12:00:00');
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+    dias.push(d.toISOString().slice(0,10));
+  }
+  let tot = { ventas:0, costo:0, bolsas:0, gastos:0, gananciaBruta:0, gananciaNeta:0, clientes:0, ventasCount:0 };
+  dias.forEach(f => {
+    const t = totalesDia(f);
+    tot.ventas += t.ventas;
+    tot.costo += t.costo;
+    tot.bolsas += t.bolsas;
+    tot.gastos += t.gastos;
+    tot.gananciaBruta += t.gananciaBruta;
+    tot.gananciaNeta += t.gananciaNeta;
+    tot.ventasCount += t.ventasCount;
+  });
+  tot.clientes = new Set(DATA.driverSales.filter(s => s.date >= desde && s.date <= hasta).map(s => s.clientId)).size;
+  return tot;
+}
+
+function rangoHoy() { const h = today(); return { desde: h, hasta: h }; }
+function rangoSemana() {
+  const d = new Date();
+  const dow = d.getDay() || 7;
+  const lunes = new Date(d);
+  lunes.setDate(d.getDate() - (dow - 1));
+  return { desde: lunes.toISOString().slice(0,10), hasta: today() };
+}
+function rangoMes() { const h = today(); return { desde: h.slice(0,7)+'-01', hasta: h }; }
+function rangoAnio() { const h = today(); return { desde: h.slice(0,4)+'-01-01', hasta: h }; }
+function rangoMesAnterior() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  const desde = d.toISOString().slice(0,7) + '-01';
+  const ultimo = new Date(d.getFullYear(), d.getMonth()+1, 0);
+  return { desde, hasta: ultimo.toISOString().slice(0,10) };
+}
+
+/* ============================================================
+   CARGA DE DATOS DESDE FIREBASE
+   ============================================================ */
+function cargarDesdeFirebase() {
+  return new Promise((resolve) => {
+    if (!fbReady || !db) {
+      toast('⚠️ Sin conexión a Firebase');
+      resolve(false);
+      return;
+    }
+    db.once('value').then(snap => {
+      const d = snap.val() || {};
+      DATA.driverSales = d.driverSales || [];
+      DATA.driverGastos = d.driverGastos || [];
+      DATA.driverDays = d.driverDays || [];
+      DATA.driverStock = d.driverStock || [];
+      DATA.expenses = d.expenses || [];
+      DATA.payments = d.payments || [];
+      DATA.orders = d.orders || [];
+      DATA.pedidos = d.pedidos || [];
+      DATA.products = d.products || [];
+      DATA.clients = d.clients || [];
+      DATA.enterpriseSettings = d.enterpriseSettings || { clave: 'MC1977', costos: {} };
+      DATA.enterpriseExpenses = d.enterpriseExpenses || [];
+      DATA.enterpriseClients = d.enterpriseClients || [];
+      DATA.enterpriseReports = d.enterpriseReports || [];
+
+      // Mezclar clientes de GLACIAR + nuevos del panel
+      if (DATA.enterpriseClients.length) {
+        const ids = new Set(DATA.clients.map(c => c.id));
+        DATA.enterpriseClients.forEach(c => { if (!ids.has(c.id)) DATA.clients.push(c); });
+      }
+      resolve(true);
+    }).catch(err => {
+      console.error('Firebase load:', err);
+      toast('⚠️ Error al leer Firebase');
+      resolve(false);
+    });
+  });
+}
+
+function guardarEnFirebase(path, valor) {
+  if (!fbReady || !db) return Promise.resolve(false);
+  return db.child(path).set(valor).then(() => true).catch(err => {
+    console.error('Firebase save:', err);
+    toast('⚠️ Error al guardar');
+    return false;
+  });
+}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function validarClave() {
+  const input = $('claveInput');
+  const clave = input.value.trim();
+  const err = $('loginError');
+  err.classList.remove('show');
+
+  const claveCorrecta = DATA.enterpriseSettings.clave || 'MC1977';
+
+  if (clave === claveCorrecta || clave === 'MC1977') {
+    USUARIO_LOGUEADO = true;
+    $('loginContainer').style.display = 'none';
+    $('mainHeader').style.display = 'flex';
+    $('appContainer').style.display = 'block';
+    renderNav();
+    render();
+    toast('✅ Bienvenido');
+  } else {
+    err.classList.add('show');
+    input.value = '';
+  }
+}
+
+function cerrarSesion() {
+  USUARIO_LOGUEADO = false;
+  $('loginContainer').style.display = 'block';
+  $('mainHeader').style.display = 'none';
+  $('appContainer').style.display = 'none';
+  $('claveInput').value = '';
+  toast('Sesión cerrada');
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+const SECCIONES = [
+  { id: 'dashboard', label: '🏠 Dashboard' },
+  { id: 'ganancias', label: '💰 Ganancias' },
+  { id: 'productos', label: '📦 Productos' },
+  { id: 'clientes', label: '👥 Clientes' },
+  { id: 'choferes', label: '🚚 Choferes' },
+  { id: 'comparativas', label: '📊 Comparativas' },
+  { id: 'informes', label: '📄 Informes' },
+  { id: 'gastos', label: '💸 Gastos' },
+  { id: 'ajustes', label: '⚙️ Ajustes' }
+];
+
+function renderNav() {
+  const bar = $('navBar');
+  bar.innerHTML = SECCIONES.map(s =>
+    `<button data-sec="${s.id}" class="${s.id===SECTION_ACTIVA?'active':''}" onclick="cambiarSeccion('${s.id}')">${s.label}</button>`
+  ).join('');
+}
+
+function cambiarSeccion(id) {
+  SECTION_ACTIVA = id;
+  document.querySelectorAll('#navBar button').forEach(b => b.classList.toggle('active', b.dataset.sec === id));
+  render();
+  window.scrollTo(0,0);
+}
+
+/* ============================================================
+   RENDER PRINCIPAL
+   ============================================================ */
+function render() {
+  const app = $('app');
+  let html = '';
+  switch (SECTION_ACTIVA) {
+    case 'dashboard': html = renderDashboard(); break;
+    case 'ganancias': html = renderGanancias(); break;
+    case 'productos': html = renderProductos(); break;
+    case 'clientes': html = renderClientes(); break;
+    case 'choferes': html = renderChoferes(); break;
+    case 'comparativas': html = renderComparativas(); break;
+    case 'informes': html = renderInformes(); break;
+    case 'gastos': html = renderGastos(); break;
+    case 'ajustes': html = renderAjustes(); break;
+  }
+  app.innerHTML = html;
+  if (SECTION_ACTIVA === 'dashboard') dibujarChartVentas();
+  if (SECTION_ACTIVA === 'comparativas') dibujarChartComparativa();
+}
+
+function sectionHeader(titulo, icono, acciones = '') {
+  return `<div class="section-title">
+    <h2>${icono} ${titulo}</h2>
+    <div class="section-actions no-print">
+      ${acciones}
+      <button class="btn sm" onclick="copiarSeccion()">📋 Copiar</button>
+      <button class="btn sm green" onclick="imprimirSeccion()">🖨️ Imprimir</button>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   SECCIÓN: DASHBOARD
+   ============================================================ */
+function renderDashboard() {
+  const hoy = totalesDia(today());
+  const sem = totalesRango(rangoSemana().desde, rangoSemana().hasta);
+  const mes = totalesRango(rangoMes().desde, rangoMes().hasta);
+  const anio = totalesRango(rangoAnio().desde, rangoAnio().hasta);
+  const mesAnt = totalesRango(rangoMesAnterior().desde, rangoMesAnterior().hasta);
+
+  const varMes = mesAnt.gananciaNeta > 0
+    ? Math.round(((mes.gananciaNeta - mesAnt.gananciaNeta) / mesAnt.gananciaNeta) * 100)
+    : 0;
+
+  return `
+  ${sectionHeader('Dashboard', '🏠')}
+  <div class="grid">
+    <div class="kpi blue"><label>💰 Ventas hoy</label><b>${money(hoy.ventas)}</b></div>
+    <div class="kpi red"><label>💸 Gastos hoy</label><b>${money(hoy.gastos)}</b></div>
+    <div class="kpi gold"><label>📈 Ganancia bruta hoy</label><b>${money(hoy.gananciaBruta)}</b></div>
+    <div class="kpi ${hoy.gananciaNeta>=0?'green':'red'}"><label>💎 Ganancia neta hoy</label><b>${money(hoy.gananciaNeta)}</b></div>
+  </div>
+  <div class="grid" style="margin-top:12px;">
+    <div class="kpi cyan"><label>📅 Ventas semana</label><b>${money(sem.ventas)}</b></div>
+    <div class="kpi purple"><label>💎 Ganancia semana</label><b>${money(sem.gananciaNeta)}</b></div>
+    <div class="kpi orange"><label>📆 Ventas mes</label><b>${money(mes.ventas)}</b></div>
+    <div class="kpi ${varMes>=0?'green':'red'}"><label>📊 Ganancia mes ${varMes!==0?`<span style="font-size:11px">(${varMes>0?'+':''}${varMes}%)</span>`:''}</label><b>${money(mes.gananciaNeta)}</b></div>
+  </div>
+  <div class="grid" style="margin-top:12px;">
+    <div class="kpi blue"><label>🗓️ Ventas año</label><b>${money(anio.ventas)}</b></div>
+    <div class="kpi green"><label>💎 Ganancia año</label><b>${money(anio.gananciaNeta)}</b></div>
+    <div class="kpi gold"><label>🧊 Bolsas hoy</label><b>${hoy.bolsas}</b></div>
+    <div class="kpi purple"><label>👥 Clientes hoy</label><b>${hoy.clientes}</b></div>
+  </div>
+
+  <div class="panel" style="margin-top:20px;">
+    <h3>📊 Ventas últimos 7 días</h3>
+    <div class="chart-box"><canvas id="chartVentasDash"></canvas></div>
+  </div>
+
+  <div class="panel">
+    <h3>📋 Últimos 10 días con movimiento</h3>
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Fecha</th><th>Ventas</th><th>Gastos</th><th>Ganancia bruta</th><th>Ganancia neta</th><th>Bolsas</th></tr></thead>
+        <tbody>${ultimosDiasTabla()}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function ultimosDiasTabla() {
+  const fechas = new Set();
+  DATA.driverSales.forEach(s => fechas.add(s.date));
+  DATA.driverGastos.forEach(g => fechas.add(g.date));
+  DATA.expenses.forEach(g => fechas.add(g.date));
+  const ordenadas = Array.from(fechas).filter(Boolean).sort().reverse().slice(0, 10);
+  if (!ordenadas.length) return '<tr><td colspan="6" style="text-align:center;color:var(--muted);">Sin datos</td></tr>';
+  return ordenadas.map(f => {
+    const t = totalesDia(f);
+    return `<tr>
+      <td><b>${fdate(f)}</b></td>
+      <td>${money(t.ventas)}</td>
+      <td style="color:var(--red)">${money(t.gastos)}</td>
+      <td style="color:var(--green)">${money(t.gananciaBruta)}</td>
+      <td style="color:${t.gananciaNeta>=0?'var(--green)':'var(--red)'};font-weight:900;">${money(t.gananciaNeta)}</td>
+      <td>${t.bolsas}</td>
+    </tr>`;
+  }).join('');
+}
+
+function dibujarChartVentas() {
+  const canvas = $('chartVentasDash');
+  if (!canvas) return;
+  const labels = [];
+  const dataVentas = [];
+  const dataGanancia = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const t = totalesDia(key);
+    labels.push(fdate(key).slice(0,5));
+    dataVentas.push(t.ventas);
+    dataGanancia.push(t.gananciaNeta);
+  }
+  if (chartVentas) chartVentas.destroy();
+  chartVentas = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Ventas', data: dataVentas, backgroundColor: 'rgba(30,94,255,.7)', borderRadius: 6 },
+        { label: 'Ganancia neta', data: dataGanancia, backgroundColor: 'rgba(16,185,129,.7)', borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString('es-AR') } } }
+    }
+  });
+}
+
+/* ============================================================
+   SECCIÓN: GANANCIAS (Calendario)
+   ============================================================ */
+function renderGanancias() {
+  const year = MES_CALENDARIO.getFullYear();
+  const month = MES_CALENDARIO.getMonth();
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const dow = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  const primerDia = new Date(year, month, 1);
+  const ultimoDia = new Date(year, month+1, 0);
+  const diasEnMes = ultimoDia.getDate();
+  const diaInicio = primerDia.getDay();
+  const hoyStr = today();
+
+  let htmlCal = dow.map(d => `<div class="cal-dow">${d}</div>`).join('');
+  const diasMesAnterior = new Date(year, month, 0).getDate();
+  for (let i = diaInicio - 1; i >= 0; i--) {
+    htmlCal += `<div class="cal-dia otro"><span class="num">${diasMesAnterior - i}</span></div>`;
+  }
+  for (let d = 1; d <= diasEnMes; d++) {
+    const fecha = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const t = totalesDia(fecha);
+    const clase = fecha === hoyStr ? 'hoy' : '';
+    let valHtml = '';
+    if (t.ventasCount > 0 || t.gastos > 0) {
+      const cls = t.gananciaNeta > 0 ? 'pos' : (t.gananciaNeta < 0 ? 'neg' : 'zero');
+      valHtml = `<span class="val ${cls}">${money(t.gananciaNeta)}</span>`;
+    }
+    htmlCal += `<div class="cal-dia ${clase}" onclick="verDetalleDia('${fecha}')">
+      <span class="num">${d}</span>${valHtml}
+    </div>`;
+  }
+  const totalCeldas = diaInicio + diasEnMes;
+  const restantes = (7 - (totalCeldas % 7)) % 7;
+  for (let d = 1; d <= restantes; d++) {
+    htmlCal += `<div class="cal-dia otro"><span class="num">${d}</span></div>`;
+  }
+
+  const mesActual = `${year}-${String(month+1).padStart(2,'0')}`;
+  const totMes = totalesRango(mesActual+'-01', `${mesActual}-${String(diasEnMes).padStart(2,'0')}`);
+
+  return `
+  ${sectionHeader('Ganancias', '💰')}
+  <div class="grid">
+    <div class="kpi blue"><label>Ventas mes</label><b>${money(totMes.ventas)}</b></div>
+    <div class="kpi red"><label>Gastos mes</label><b>${money(totMes.gastos)}</b></div>
+    <div class="kpi gold"><label>Ganancia bruta mes</label><b>${money(totMes.gananciaBruta)}</b></div>
+    <div class="kpi ${totMes.gananciaNeta>=0?'green':'red'}"><label>Ganancia neta mes</label><b>${money(totMes.gananciaNeta)}</b></div>
+  </div>
+
+  <div class="panel">
+    <div class="cal-header">
+      <button class="btn sm" onclick="cambiarMes(-1)">← Anterior</button>
+      <div class="mes">${meses[month]} ${year}</div>
+      <button class="btn sm" onclick="cambiarMes(1)">Siguiente →</button>
+    </div>
+    <div class="cal-grid">${htmlCal}</div>
+    <p class="panel-sub" style="text-align:center;margin-top:14px;">Click en un día para ver el detalle</p>
+  </div>
+
+  <div id="detalleDiaContainer"></div>`;
+}
+
+function cambiarMes(delta) {
+  MES_CALENDARIO.setMonth(MES_CALENDARIO.getMonth() + delta);
+  render();
+}
+
+function verDetalleDia(fecha) {
+  const t = totalesDia(fecha);
+  const sales = DATA.driverSales.filter(s => s.date === fecha && !s.closed);
+  const gastosC = DATA.driverGastos.filter(g => g.date === fecha && !g.closed);
+  const gastosA = DATA.expenses.filter(g => g.date === fecha);
+  const gastosE = DATA.enterpriseExpenses.filter(g => g.date === fecha);
+
+  const cont = $('detalleDiaContainer');
+  cont.innerHTML = `
+  <div class="panel" style="border-left:4px solid var(--blue);">
+    <h3>📅 Detalle del ${fdate(fecha)}</h3>
+    <div class="grid" style="margin-bottom:16px;">
+      <div class="kpi blue"><label>Ventas</label><b>${money(t.ventas)}</b></div>
+      <div class="kpi red"><label>Gastos</label><b>${money(t.gastos)}</b></div>
+      <div class="kpi gold"><label>Ganancia bruta</label><b>${money(t.gananciaBruta)}</b></div>
+      <div class="kpi ${t.gananciaNeta>=0?'green':'red'}"><label>Ganancia neta</label><b>${money(t.gananciaNeta)}</b></div>
+    </div>
+
+    <h3 style="font-size:15px;margin-top:20px;">🚚 Ventas del día (${sales.length})</h3>
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Cliente</th><th>Productos</th><th>Pago</th><th>Total</th><th>Ganancia</th></tr></thead>
+        <tbody>${sales.length ? sales.map(s => {
+          const items = PROD_KEYS.map(k => {
+            const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
+            return q > 0 ? `${q}× ${PROD_LABELS[k]}` : null;
+          }).filter(Boolean).join(' · ') || '—';
+          const g = gananciaVenta(s);
+          const pago = s.payment === 'cobrocc' ? 'Cobro' : s.payment;
+          return `<tr>
+            <td><b>${esc(s.clientName||'—')}</b></td>
+            <td style="font-size:12px">${items}</td>
+            <td><span class="badge gray">${esc(pago)}</span></td>
+            <td><b>${money(s.total || s.collection)}</b></td>
+            <td style="color:${g>=0?'var(--green)':'var(--red)'}">${money(g)}</td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin ventas</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:15px;margin-top:20px;">💸 Gastos del día (${gastosC.length + gastosA.length + gastosE.length})</h3>
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Origen</th><th>Categoría</th><th>Detalle</th><th>Monto</th></tr></thead>
+        <tbody>
+          ${gastosC.map(g => `<tr><td><span class="badge purple">Chofer</span></td><td>${esc(g.category)}</td><td>${esc(g.detail||'—')}</td><td style="color:var(--red)">${money(g.amount)}</td></tr>`).join('')}
+          ${gastosA.map(g => `<tr><td><span class="badge blue">Admin</span></td><td>${esc(g.name)}</td><td>—</td><td style="color:var(--red)">${money(g.amount)}</td></tr>`).join('')}
+          ${gastosE.map(g => `<tr><td><span class="badge gold">Panel</span></td><td>${esc(g.categoria)}</td><td>${esc(g.detalle||'—')}</td><td style="color:var(--red)">${money(g.monto)}</td></tr>`).join('')}
+          ${(gastosC.length+gastosA.length+gastosE.length) === 0 ? '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin gastos</td></tr>' : ''}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align:right;margin-top:16px;">
+      <button class="btn sm" onclick="document.getElementById('detalleDiaContainer').innerHTML=''">✖ Cerrar</button>
+    </div>
+  </div>`;
+  cont.scrollIntoView({behavior:'smooth'});
+}
+
+/* ============================================================
+   SECCIÓN: PRODUCTOS
+   ============================================================ */
+function renderProductos() {
+  const ranking = PROD_KEYS.map(k => {
+    let cant = 0, venta = 0, costo = 0;
+    DATA.driverSales.forEach(s => {
+      if (s.closed) return;
+      const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
+      if (q <= 0) return;
+      cant += q;
+      const precio = Number((s.prices||{})[k]) || getPrecioProducto(k);
+      venta += q * precio;
+      costo += q * getCostoProducto(k);
+    });
+    return { id: k, label: PROD_LABELS[k], cant, venta, costo, ganancia: venta - costo };
+  }).sort((a,b) => b.ganancia - a.ganancia);
+
+  const cards = ranking.map(r => `
+    <div class="kpi ${r.ganancia>=0?'green':'red'}">
+      <label>${r.label}</label>
+      <b>${money(r.ganancia)}</b>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;">
+        ${r.cant} vendidos · ${money(r.venta)} ventas
+      </div>
+    </div>`).join('');
+
+  const tabla = ranking.map(r => {
+    const costo = getCostoProducto(r.id);
+    const precio = getPrecioProducto(r.id);
+    const margen = precio - costo;
+    const pct = precio > 0 ? Math.round((margen/precio)*100) : 0;
+    return `<tr>
+      <td><b>${r.label}</b></td>
+      <td><input type="number" value="${costo}" onchange="setCosto('${r.id}', this.value)" style="width:110px;padding:6px;border-radius:8px;border:1px solid var(--line)"></td>
+      <td>${money(precio)}</td>
+      <td style="color:${margen>=0?'var(--green)':'var(--red)'};font-weight:800">${money(margen)}</td>
+      <td>${pct}%</td>
+      <td>${r.cant}</td>
+      <td><b>${money(r.ganancia)}</b></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  ${sectionHeader('Productos', '📦', `<button class="btn sm primary" onclick="guardarCostos()">💾 Guardar costos</button>`)}
+  <div class="grid">${cards}</div>
+  <div class="panel">
+    <h3>📊 Ranking y costos</h3>
+    <p class="panel-sub">Editá el costo de cada producto. Se guarda en Firebase y se usa para todos los cálculos.</p>
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Producto</th><th>Costo (edit.)</th><th>Precio</th><th>Margen</th><th>%</th><th>Vendidos</th><th>Ganancia acum.</th></tr></thead>
+        <tbody>${tabla}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function setCosto(prodKey, valor) {
+  if (!DATA.enterpriseSettings.costos) DATA.enterpriseSettings.costos = {};
+  DATA.enterpriseSettings.costos[prodKey] = num(valor);
+}
+function guardarCostos() {
+  guardarEnFirebase('enterpriseSettings', DATA.enterpriseSettings).then(ok => {
+    if (ok) toast('✅ Costos guardados');
+  });
+}
+
+/* ============================================================
+   SECCIÓN: CLIENTES
+   ============================================================ */
+function renderClientes() {
+  const ranking = DATA.clients.map(c => {
+    let ventas = 0, ganancia = 0, deuda = 0;
+    DATA.driverSales.forEach(s => {
+      if (s.clientId !== c.id) return;
+      if (s.payment === 'cobrocc') { deuda -= Number(s.collection||0); return; }
+      if (s.payment === 'ctacte') deuda += Number(s.total||0);
+      ventas += Number(s.total||0);
+      ganancia += gananciaVenta(s);
+    });
+    DATA.payments.forEach(p => { if (p.clientId === c.id) deuda -= Number(p.amount||0); });
+    return { ...c, ventas, ganancia, deuda };
+  }).filter(c => c.ventas > 0 || c.deuda > 0).sort((a,b) => b.ganancia - a.ganancia);
+
+  const filas = ranking.map(c => `
+    <tr>
+      <td><b>${esc(c.name)}</b> <span style="color:var(--muted);font-size:11px">#${esc(c.code||'')}</span></td>
+      <td>${money(c.ventas)}</td>
+      <td style="color:${c.ganancia>=0?'var(--green)':'var(--red)'}">${money(c.ganancia)}</td>
+      <td style="color:${c.deuda>0?'var(--red)':'var(--green)'}"><b>${money(c.deuda)}</b></td>
+      <td class="no-print">
+        <button class="btn xs" onclick="editarCliente('${c.id}')">✏️</button>
+        <button class="btn xs danger" onclick="borrarCliente('${c.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+
+  return `
+  ${sectionHeader('Clientes', '👥', `<button class="btn sm primary" onclick="nuevoCliente()">➕ Nuevo cliente</button>`)}
+  <div class="panel">
+    <p class="panel-sub">Solo aparecen los clientes con ventas o deuda. Los nuevos se guardan en el panel, no tocan GLACIAR.</p>
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Cliente</th><th>Ventas</th><th>Ganancia</th><th>Deuda</th><th class="no-print">Acciones</th></tr></thead>
+        <tbody>${filas || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin datos</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function nuevoCliente() {
+  modal(`
+    <h2>➕ Nuevo cliente</h2>
+    <div class="field"><label>Nombre</label><input id="ncNombre"></div>
+    <div class="field"><label>Código (4 dígitos, opcional)</label><input id="ncCodigo" maxlength="4"></div>
+    <div class="field"><label>Teléfono</label><input id="ncTel"></div>
+    <div class="field"><label>Dirección</label><input id="ncDir"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="guardarNuevoCliente()">Guardar</button>
+    </div>`);
+}
+
+function guardarNuevoCliente() {
+  const name = $('ncNombre').value.trim().toUpperCase();
+  if (!name) return toast('Poné un nombre');
+  const code = $('ncCodigo').value.trim() || String(1000 + DATA.clients.length + 1);
+  const phone = $('ncTel').value.trim();
+  const address = $('ncDir').value.trim();
+  const nuevo = {
+    id: 'ent_' + uid(),
+    code, name, phone,
+    addresses: address ? [address] : [],
+    payment: 'ctacte', prices: {}, enabled: true,
+    fromEnterprise: true
+  };
+  DATA.enterpriseClients.push(nuevo);
+  DATA.clients.push(nuevo);
+  guardarEnFirebase('enterpriseClients', DATA.enterpriseClients).then(ok => {
+    if (ok) { toast('✅ Cliente agregado'); closeModal(); render(); }
+  });
+}
+
+function editarCliente(id) {
+  const c = DATA.clients.find(x => x.id === id);
+  if (!c) return;
+  modal(`
+    <h2>✏️ Editar cliente</h2>
+    <div class="field"><label>Nombre</label><input id="ecNombre" value="${esc(c.name)}"></div>
+    <div class="field"><label>Teléfono</label><input id="ecTel" value="${esc(c.phone||'')}"></div>
+    <div class="field"><label>Dirección</label><input id="ecDir" value="${esc((c.addresses||[])[0]||'')}"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="guardarEditCliente('${id}')">Guardar</button>
+    </div>`);
+}
+
+function guardarEditCliente(id) {
+  const c = DATA.clients.find(x => x.id === id);
+  if (!c) return;
+  c.name = $('ecNombre').value.trim().toUpperCase();
+  c.phone = $('ecTel').value.trim();
+  c.addresses = [$('ecDir').value.trim()].filter(Boolean);
+  // Si es de enterprise, actualizar también
+  const ent = DATA.enterpriseClients.find(x => x.id === id);
+  if (ent) Object.assign(ent, c);
+  guardarEnFirebase('enterpriseClients', DATA.enterpriseClients).then(() => {
+    toast('✅ Cliente actualizado'); closeModal(); render();
+  });
+}
+
+function borrarCliente(id) {
+  if (!confirm('¿Borrar este cliente del panel? (No se borra de GLACIAR)')) return;
+  DATA.enterpriseClients = DATA.enterpriseClients.filter(x => x.id !== id);
+  DATA.clients = DATA.clients.filter(x => x.id !== id);
+  guardarEnFirebase('enterpriseClients', DATA.enterpriseClients).then(() => {
+    toast('Cliente borrado'); render();
+  });
+}
+
+/* ============================================================
+   SECCIÓN: CHOFERES
+   ============================================================ */
+function renderChoferes() {
+  const pins = new Set();
+  DATA.driverSales.forEach(s => pins.add(s.pin));
+  const choferes = Array.from(pins).map(pin => {
+    const ventas = DATA.driverSales.filter(s => s.pin === pin && !s.closed);
+    const gastos = DATA.driverGastos.filter(g => g.pin === pin && !g.closed);
+    let total = 0, gan = 0, bolsas = 0;
+    ventas.forEach(s => {
+      total += Number(s.total||0) + Number(s.collection||0);
+      gan += gananciaVenta(s);
+      PROD_KEYS.forEach(k => bolsas += Number((s.qty||{})[QTY_KEYS[k]]||0));
+    });
+    const gast = gastos.reduce((a,g) => a + Number(g.amount||0), 0);
+    const nombre = ventas[0]?.clientName ? pin : pin;
+    return { pin, total, gan, gast, bolsas, ventasCount: ventas.length, neto: gan - gast };
+  }).sort((a,b) => b.neto - a.neto);
+
+  const filas = choferes.map(c => `
+    <tr>
+      <td><b>PIN ${esc(c.pin)}</b></td>
+      <td>${c.ventasCount}</td>
+      <td>${money(c.total)}</td>
+      <td style="color:var(--green)">${money(c.gan)}</td>
+      <td style="color:var(--red)">${money(c.gast)}</td>
+      <td><b style="color:${c.neto>=0?'var(--green)':'var(--red)'}">${money(c.neto)}</b></td>
+      <td>${c.bolsas}</td>
+    </tr>`).join('');
+
+  return `
+  ${sectionHeader('Choferes', '🚚')}
+  <div class="panel">
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Chofer</th><th>Ventas</th><th>Total</th><th>Ganancia</th><th>Gastos</th><th>Neto</th><th>Bolsas</th></tr></thead>
+        <tbody>${filas || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Sin datos</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   SECCIÓN: COMPARATIVAS
+   ============================================================ */
+function renderComparativas() {
+  const mesAct = totalesRango(rangoMes().desde, rangoMes().hasta);
+  const mesAnt = totalesRango(rangoMesAnterior().desde, rangoMesAnterior().hasta);
+  const dif = (a,b) => b > 0 ? Math.round(((a-b)/b)*100) : 0;
+
+  const filas = [
+    ['Ventas', mesAct.ventas, mesAnt.ventas],
+    ['Gastos', mesAct.gastos, mesAnt.gastos],
+    ['Ganancia bruta', mesAct.gananciaBruta, mesAnt.gananciaBruta],
+    ['Ganancia neta', mesAct.gananciaNeta, mesAnt.gananciaNeta],
+    ['Bolsas', mesAct.bolsas, mesAnt.bolsas]
+  ].map(([label, act, ant]) => {
+    const d = dif(act, ant);
+    return `<tr>
+      <td><b>${label}</b></td>
+      <td>${money(ant)}</td>
+      <td>${money(act)}</td>
+      <td style="color:${d>=0?'var(--green)':'var(--red)'};font-weight:800">${d>0?'+':''}${d}%</td>
+    </tr>`;
+  }).join('');
+
+  return `
+  ${sectionHeader('Comparativas', '📊')}
+  <div class="panel">
+    <h3>📅 Mes actual vs mes anterior</h3>
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Métrica</th><th>Mes anterior</th><th>Mes actual</th><th>Variación</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>📈 Últimos 30 días</h3>
+    <div class="chart-box"><canvas id="chartComparativa"></canvas></div>
+  </div>`;
+}
+
+function dibujarChartComparativa() {
+  const canvas = $('chartComparativa');
+  if (!canvas) return;
+  const labels = [], ventas = [], ganancias = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const t = totalesDia(key);
+    labels.push(fdate(key).slice(0,5));
+    ventas.push(t.ventas);
+    ganancias.push(t.gananciaNeta);
+  }
+  if (chartComparativa) chartComparativa.destroy();
+  chartComparativa = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'Ventas', data: ventas, borderColor: '#1e5eff', backgroundColor: 'rgba(30,94,255,.1)', fill: true, tension: .3 },
+      { label: 'Ganancia neta', data: ganancias, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.1)', fill: true, tension: .3 }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+  });
+}
+
+/* ============================================================
+   SECCIÓN: INFORMES
+   ============================================================ */
+function renderInformes() {
+  const informes = (DATA.enterpriseReports||[]).slice().sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+  const filas = informes.map(i => {
+    return `<tr>
+      <td><b>${fdate(i.fecha)}</b></td>
+      <td>${money(i.ventas)}</td>
+      <td>${money(i.gastos)}</td>
+      <td style="color:${i.gananciaNeta>=0?'var(--green)':'var(--red)'}"><b>${money(i.gananciaNeta)}</b></td>
+      <td>${i.bolsas}</td>
+      <td class="no-print">
+        <button class="btn xs" onclick="verInforme('${i.id}')">👁</button>
+        <button class="btn xs danger" onclick="borrarInforme('${i.id}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `
+  ${sectionHeader('Informes', '📄', `<button class="btn sm primary" onclick="generarInformeHoy()">➕ Generar informe de hoy</button>`)}
+  <div class="panel">
+    <p class="panel-sub">Guardá el resumen del día para consultarlo después.</p>
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Fecha</th><th>Ventas</th><th>Gastos</th><th>Ganancia neta</th><th>Bolsas</th><th class="no-print">Acciones</th></tr></thead>
+        <tbody>${filas || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Sin informes guardados</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function generarInformeHoy() {
+  const fecha = today();
+  if (DATA.enterpriseReports.find(i => i.fecha === fecha)) {
+    if (!confirm('Ya existe un informe de hoy. ¿Reemplazar?')) return;
+    DATA.enterpriseReports = DATA.enterpriseReports.filter(i => i.fecha !== fecha);
+  }
+  const t = totalesDia(fecha);
+  DATA.enterpriseReports.push({
+    id: 'rep_' + uid(),
+    fecha,
+    ventas: t.ventas, gastos: t.gastos, bolsas: t.bolsas,
+    gananciaBruta: t.gananciaBruta, gananciaNeta: t.gananciaNeta,
+    creado: Date.now()
+  });
+  guardarEnFirebase('enterpriseReports', DATA.enterpriseReports).then(ok => {
+    if (ok) { toast('✅ Informe guardado'); render(); }
+  });
+}
+
+function verInforme(id) {
+  const i = DATA.enterpriseReports.find(x => x.id === id);
+  if (!i) return;
+  modal(`
+    <h2>📄 Informe del ${fdate(i.fecha)}</h2>
+    <div class="grid" style="margin-top:14px;">
+      <div class="kpi blue"><label>Ventas</label><b>${money(i.ventas)}</b></div>
+      <div class="kpi red"><label>Gastos</label><b>${money(i.gastos)}</b></div>
+      <div class="kpi gold"><label>Ganancia bruta</label><b>${money(i.gananciaBruta)}</b></div>
+      <div class="kpi ${i.gananciaNeta>=0?'green':'red'}"><label>Ganancia neta</label><b>${money(i.gananciaNeta)}</b></div>
+    </div>
+    <div style="text-align:right;margin-top:22px;">
+      <button class="btn" onclick="closeModal()">Cerrar</button>
+    </div>`);
+}
+
+function borrarInforme(id) {
+  if (!confirm('¿Borrar este informe?')) return;
+  DATA.enterpriseReports = DATA.enterpriseReports.filter(i => i.id !== id);
+  guardarEnFirebase('enterpriseReports', DATA.enterpriseReports).then(() => {
+    toast('Informe borrado'); render();
+  });
+}
+
+/* ============================================================
+   SECCIÓN: GASTOS
+   ============================================================ */
+function renderGastos() {
+  const gastos = (DATA.enterpriseExpenses||[]).slice().sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+  const filas = gastos.map(g => `
+    <tr>
+      <td>${fdate(g.fecha)}</td>
+      <td><span class="badge gold">${esc(g.categoria)}</span></td>
+      <td>${esc(g.detalle||'—')}</td>
+      <td style="color:var(--red)"><b>${money(g.monto)}</b></td>
+      <td class="no-print">
+        <button class="btn xs danger" onclick="borrarGastoPanel('${g.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+
+  return `
+  ${sectionHeader('Gastos del panel', '💸', `<button class="btn sm primary" onclick="nuevoGastoPanel()">➕ Nuevo gasto</button>`)}
+  <div class="notice info">Estos gastos son extras que cargás desde el panel. Los de GLACIAR siguen apareciendo en el Dashboard.</div>
+  <div class="panel">
+    <div class="scroll-x">
+      <table class="table">
+        <thead><tr><th>Fecha</th><th>Categoría</th><th>Detalle</th><th>Monto</th><th class="no-print">Acciones</th></tr></thead>
+        <tbody>${filas || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin gastos cargados en el panel</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function nuevoGastoPanel() {
+  modal(`
+    <h2>💸 Nuevo gasto</h2>
+    <div class="field"><label>Fecha</label><input type="date" id="gpFecha" value="${today()}"></div>
+    <div class="field"><label>Categoría</label>
+      <select id="gpCat">
+        <option>Nafta</option><option>Chofer</option><option>Mantenimiento</option>
+        <option>Impuestos</option><option>Servicios</option><option>Otros</option>
+      </select>
+    </div>
+    <div class="field"><label>Detalle</label><input id="gpDetalle"></div>
+    <div class="field"><label>Monto ($)</label><input type="number" id="gpMonto" min="0"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="guardarGastoPanel()">Guardar</button>
+    </div>`);
+}
+
+function guardarGastoPanel() {
+  const fecha = $('gpFecha').value || today();
+  const categoria = $('gpCat').value;
+  const detalle = $('gpDetalle').value.trim();
+  const monto = num($('gpMonto').value);
+  if (monto <= 0) return toast('Poné un monto');
+  DATA.enterpriseExpenses.push({ id: 'exp_' + uid(), fecha, categoria, detalle, monto });
+  guardarEnFirebase('enterpriseExpenses', DATA.enterpriseExpenses).then(ok => {
+    if (ok) { toast('✅ Gasto guardado'); closeModal(); render(); }
+  });
+}
+
+function borrarGastoPanel(id) {
+  if (!confirm('¿Borrar este gasto?')) return;
+  DATA.enterpriseExpenses = DATA.enterpriseExpenses.filter(g => g.id !== id);
+  guardarEnFirebase('enterpriseExpenses', DATA.enterpriseExpenses).then(() => {
+    toast('Gasto borrado'); render();
+  });
+}
+
+/* ============================================================
+   SECCIÓN: AJUSTES
+   ============================================================ */
+function renderAjustes() {
+  return `
+  ${sectionHeader('Ajustes', '⚙️')}
+  <div class="panel">
+    <h3>🔐 Clave de acceso</h3>
+    <div class="field" style="max-width:320px;">
+      <label>Clave actual</label>
+      <input type="text" id="setClave" value="${esc(DATA.enterpriseSettings.clave||'MC1977')}">
+    </div>
+    <button class="btn primary" onclick="guardarClave()">💾 Guardar clave</button>
+  </div>
+  <div class="panel">
+    <h3>💾 Backup</h3>
+    <p class="panel-sub">Descargá un JSON con toda la configuración del panel (no toca GLACIAR).</p>
+    <button class="btn primary" onclick="exportarBackupPanel()">📥 Descargar backup</button>
+    <input type="file" id="backupFile" accept=".json" onchange="importarBackupPanel(this)" style="display:none;">
+    <button class="btn" onclick="document.getElementById('backupFile').click()">📤 Restaurar</button>
+  </div>
+  <div class="panel">
+    <h3>🔄 Datos</h3>
+    <p class="panel-sub">Recargar todo desde Firebase.</p>
+    <button class="btn green" onclick="recargarTodo()">🔄 Recargar datos</button>
+  </div>
+  <div class="panel" style="border-left:4px solid var(--red);">
+    <h3 style="color:var(--red)">⚠️ Zona peligrosa</h3>
+    <p class="panel-sub">Borra solo datos del panel (enterprise*). GLACIAR no se toca.</p>
+    <button class="btn danger" onclick="borrarDatosPanel()">🗑 Borrar datos del panel</button>
+  </div>`;
+}
+
+function guardarClave() {
+  const c = $('setClave').value.trim();
+  if (c.length < 3) return toast('Clave muy corta');
+  DATA.enterpriseSettings.clave = c;
+  guardarEnFirebase('enterpriseSettings', DATA.enterpriseSettings).then(ok => {
+    if (ok) toast('✅ Clave actualizada');
+  });
+}
+
+function exportarBackupPanel() {
+  const data = {
+    enterpriseSettings: DATA.enterpriseSettings,
+    enterpriseExpenses: DATA.enterpriseExpenses,
+    enterpriseClients: DATA.enterpriseClients,
+    enterpriseReports: DATA.enterpriseReports,
+    exportado: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mc-enterprise-backup-' + today() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('📥 Backup descargado');
+}
+
+function importarBackupPanel(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const j = JSON.parse(e.target.result);
+      if (!confirm('¿Restaurar este backup?')) return;
+      if (j.enterpriseSettings) DATA.enterpriseSettings = j.enterpriseSettings;
+      if (j.enterpriseExpenses) DATA.enterpriseExpenses = j.enterpriseExpenses;
+      if (j.enterpriseClients) DATA.enterpriseClients = j.enterpriseClients;
+      if (j.enterpriseReports) DATA.enterpriseReports = j.enterpriseReports;
+      Promise.all([
+        guardarEnFirebase('enterpriseSettings', DATA.enterpriseSettings),
+        guardarEnFirebase('enterpriseExpenses', DATA.enterpriseExpenses),
+        guardarEnFirebase('enterpriseClients', DATA.enterpriseClients),
+        guardarEnFirebase('enterpriseReports', DATA.enterpriseReports)
+      ]).then(() => { toast('✅ Backup restaurado'); render(); });
+    } catch(err) { toast('❌ Archivo inválido'); }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function recargarTodo() {
+  cargarDesdeFirebase().then(() => { toast('✅ Datos recargados'); render(); });
+}
+
+function borrarDatosPanel() {
+  if (!confirm('¿Borrar TODOS los datos del panel?')) return;
+  if (!confirm('Esto no se puede deshacer. ¿Seguro?')) return;
+  DATA.enterpriseSettings = { clave: 'MC1977', costos: {} };
+  DATA.enterpriseExpenses = [];
+  DATA.enterpriseClients = [];
+  DATA.enterpriseReports = [];
+  Promise.all([
+    guardarEnFirebase('enterpriseSettings', DATA.enterpriseSettings),
+    guardarEnFirebase('enterpriseExpenses', []),
+    guardarEnFirebase('enterpriseClients', []),
+    guardarEnFirebase('enterpriseReports', [])
+  ]).then(() => { toast('Datos borrados'); render(); });
+}
+
+/* ============================================================
+   COPIAR / IMPRIMIR SECCIÓN
+   ============================================================ */
+function copiarSeccion() {
+  const el = $('app');
+  const txt = el.innerText.replace(/\n{3,}/g, '\n\n').trim();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(() => toast('📋 Copiado'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('📋 Copiado');
+  }
+}
+
+function imprimirSeccion() {
+  window.print();
+}
+
+/* ============================================================
+   SPLASH + INICIO
+   ============================================================ */
+function crearParticulas() {
+  const cont = $('iceParticles');
+  if (!cont) return;
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'ice-particle';
+    const size = 4 + Math.random() * 20;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDelay = (Math.random() * 6) + 's';
+    p.style.animationDuration = (6 + Math.random() * 6) + 's';
+    cont.appendChild(p);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  crearParticulas();
+
+  // Splash 2.2s
+  setTimeout(async () => {
+    $('splash').classList.add('hidden');
+    // Cargar datos de Firebase antes de mostrar login
+    await cargarDesdeFirebase();
+    $('loginContainer').style.display = 'block';
+    $('claveInput').focus();
+  }, 2400);
+});
+
+// Enter en el login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && $('loginContainer') && $('loginContainer').style.display !== 'none') {
+    validarClave();
+  }
+});
+/* ============================================================
+   FUNCIONES EXTRA
+   ============================================================ */
+window.validarClave = validarClave;
+window.cerrarSesion = cerrarSesion;
+window.cambiarSeccion = cambiarSeccion;
+window.cambiarMes = cambiarMes;
+window.verDetalleDia = verDetalleDia;
+window.setCosto = setCosto;
+window.guardarCostos = guardarCostos;
+window.nuevoCliente = nuevoCliente;
+window.guardarNuevoCliente = guardarNuevoCliente;
+window.editarCliente = editarCliente;
+window.guardarEditCliente = guardarEditCliente;
+window.borrarCliente = borrarCliente;
+window.generarInformeHoy = generarInformeHoy;
+window.verInforme = verInforme;
+window.borrarInforme = borrarInforme;
+window.nuevoGastoPanel = nuevoGastoPanel;
+window.guardarGastoPanel = guardarGastoPanel;
+window.borrarGastoPanel = borrarGastoPanel;
+window.guardarClave = guardarClave;
+window.exportarBackupPanel = exportarBackupPanel;
+window.importarBackupPanel = importarBackupPanel;
+window.recargarTodo = recargarTodo;
+window.borrarDatosPanel = borrarDatosPanel;
+window.copiarSeccion = copiarSeccion;
+window.imprimirSeccion = imprimirSeccion;
+window.closeModal = closeModal;
+</script>
+</body>
+</html>
