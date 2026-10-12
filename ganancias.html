@@ -212,7 +212,7 @@ h1,h2,h3,.display{font-family:'Fraunces',Georgia,serif;letter-spacing:-.02em}
   <div class="splash-logo">M&C</div>
   <div class="splash-title">M&C <span>ENTERPRISE</span></div>
   <div class="splash-sub">Panel Privado de Ganancias</div>
-  <div class="splash-version">v1.1 · ❄️ Hielo</div>
+  <div class="splash-version">v1.2 · ❄️ Hielo</div>
   <div class="splash-bar"><div class="splash-bar-inner"></div></div>
 </div>
 
@@ -291,6 +291,7 @@ let SECTION_ACTIVA = 'dashboard';
 let MES_CALENDARIO = new Date();
 let chartVentas = null;
 let chartComparativa = null;
+let INFORME_RANGO = { desde: '', hasta: '' };
 
 /* ============================================================
    HELPERS
@@ -366,16 +367,17 @@ function gananciaOrder(o) {
   return gan;
 }
 
-/* Totales de un día — AHORA CUENTA TODAS LAS VENTAS (cerradas o no) */
+/* Totales de un día — CUENTA TODAS LAS VENTAS */
 function totalesDia(fecha) {
   const sales = DATA.driverSales.filter(s => s.date === fecha);
   const gastosChofer = DATA.driverGastos.filter(g => g.date === fecha);
   const gastosAdmin = DATA.expenses.filter(g => g.date === fecha);
   const gastosExtra = DATA.enterpriseExpenses.filter(g => g.date === fecha);
 
-  let ventas = 0, costo = 0, bolsas = 0;
+  let ventas = 0, costo = 0, bolsas = 0, cobros = 0;
   sales.forEach(s => {
     if (s.payment === 'cobrocc') {
+      cobros += Number(s.collection || 0);
       ventas += Number(s.collection || 0);
     } else {
       ventas += Number(s.total || 0);
@@ -395,7 +397,7 @@ function totalesDia(fecha) {
   const gananciaNeta = gananciaBruta - gastos;
   const clientesUnicos = new Set(sales.map(s => s.clientId)).size;
 
-  return { fecha, ventas, costo, bolsas, gastos, gananciaBruta, gananciaNeta, clientes: clientesUnicos, ventasCount: sales.length };
+  return { fecha, ventas, cobros, costo, bolsas, gastos, gananciaBruta, gananciaNeta, clientes: clientesUnicos, ventasCount: sales.length };
 }
 
 /* Totales de un rango */
@@ -406,10 +408,11 @@ function totalesRango(desde, hasta) {
   for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
     dias.push(d.toISOString().slice(0,10));
   }
-  let tot = { ventas:0, costo:0, bolsas:0, gastos:0, gananciaBruta:0, gananciaNeta:0, clientes:0, ventasCount:0 };
+  let tot = { ventas:0, cobros:0, costo:0, bolsas:0, gastos:0, gananciaBruta:0, gananciaNeta:0, clientes:0, ventasCount:0 };
   dias.forEach(f => {
     const t = totalesDia(f);
     tot.ventas += t.ventas;
+    tot.cobros += t.cobros;
     tot.costo += t.costo;
     tot.bolsas += t.bolsas;
     tot.gastos += t.gastos;
@@ -438,6 +441,71 @@ function rangoMesAnterior() {
   const desde = d.toISOString().slice(0,7) + '-01';
   const ultimo = new Date(d.getFullYear(), d.getMonth()+1, 0);
   return { desde, hasta: ultimo.toISOString().slice(0,10) };
+}
+
+/* ============================================================
+   CÁLCULO DE INFORME POR RANGO (con cobros y ganancia real)
+   ============================================================ */
+function calcularInformeRango(desde, hasta) {
+  const dias = [];
+  const start = new Date(desde + 'T12:00:00');
+  const end = new Date(hasta + 'T12:00:00');
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+    dias.push(d.toISOString().slice(0,10));
+  }
+
+  let totalVentas = 0;      // ventas normales (no cobros)
+  let totalCobros = 0;      // cobros de cuenta corriente
+  let totalCosto = 0;       // costo de productos vendidos
+  let totalGastos = 0;      // todos los gastos
+  let totalBolsas = 0;
+  let ventasCount = 0;
+  let cobrosCount = 0;
+
+  dias.forEach(f => {
+    const sales = DATA.driverSales.filter(s => s.date === f);
+    const gastosChofer = DATA.driverGastos.filter(g => g.date === f);
+    const gastosAdmin = DATA.expenses.filter(g => g.date === f);
+    const gastosExtra = DATA.enterpriseExpenses.filter(g => g.date === f);
+
+    sales.forEach(s => {
+      if (s.payment === 'cobrocc') {
+        totalCobros += Number(s.collection || 0);
+        cobrosCount++;
+      } else {
+        totalVentas += Number(s.total || 0);
+        ventasCount++;
+        PROD_KEYS.forEach(k => {
+          const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
+          totalBolsas += q;
+          totalCosto += q * getCostoProducto(k);
+        });
+      }
+    });
+
+    totalGastos += gastosChofer.reduce((a,g) => a + Number(g.amount||0), 0)
+      + gastosAdmin.reduce((a,g) => a + Number(g.amount||0), 0)
+      + gastosExtra.reduce((a,g) => a + Number(g.monto||0), 0);
+  });
+
+  // GANANCIA REAL = (Ventas + Cobros) - Costo de lo vendido - Gastos
+  const gananciaBruta = totalVentas + totalCobros - totalCosto;
+  const gananciaReal = gananciaBruta - totalGastos;
+
+  return {
+    desde, hasta,
+    ventas: totalVentas,
+    cobros: totalCobros,
+    costo: totalCosto,
+    gastos: totalGastos,
+    bolsas: totalBolsas,
+    ventasCount,
+    cobrosCount,
+    gananciaBruta,
+    gananciaNeta: gananciaReal,
+    gananciaReal: gananciaReal,
+    dias: dias.length
+  };
 }
 
 /* ============================================================
@@ -1104,51 +1172,142 @@ function dibujarChartComparativa() {
 }
 
 /* ============================================================
-   SECCIÓN: INFORMES
+   SECCIÓN: INFORMES (con selección de rango y ganancia real)
    ============================================================ */
 function renderInformes() {
+  const desde = INFORME_RANGO.desde || today();
+  const hasta = INFORME_RANGO.hasta || today();
+
+  // Tabla de informes guardados
   const informes = (DATA.enterpriseReports||[]).slice().sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
-  const filas = informes.map(i => {
-    return `<tr>
+  const filasGuardados = informes.map(i => `
+    <tr>
       <td><b>${fdate(i.fecha)}</b></td>
       <td>${money(i.ventas)}</td>
+      <td style="color:var(--green)">${money(i.cobros||0)}</td>
       <td>${money(i.gastos)}</td>
-      <td style="color:${i.gananciaNeta>=0?'var(--green)':'var(--red)'}"><b>${money(i.gananciaNeta)}</b></td>
+      <td style="color:${i.gananciaReal>=0?'var(--green)':'var(--red)'}"><b>${money(i.gananciaReal || i.gananciaNeta)}</b></td>
       <td>${i.bolsas}</td>
       <td class="no-print">
         <button class="btn xs" onclick="verInforme('${i.id}')">👁</button>
         <button class="btn xs danger" onclick="borrarInforme('${i.id}')">🗑</button>
       </td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
 
   return `
-  ${sectionHeader('Informes', '📄', `<button class="btn sm primary" onclick="generarInformeHoy()">➕ Generar informe de hoy</button>`)}
+  ${sectionHeader('Informes', '📄')}
+
+  <!-- SELECTOR DE RANGO -->
   <div class="panel">
-    <p class="panel-sub">Guardá el resumen del día para consultarlo después.</p>
+    <h3>📅 Elegir período</h3>
+    <p class="panel-sub">Seleccioná los días y calculá la ganancia real (ventas + cobros − costos − gastos).</p>
+    <div class="filtros">
+      <label style="font-size:12px;font-weight:700;color:var(--muted);margin-right:4px;">Desde</label>
+      <input type="date" id="infDesde" value="${desde}">
+      <label style="font-size:12px;font-weight:700;color:var(--muted);margin:0 4px;">Hasta</label>
+      <input type="date" id="infHasta" value="${hasta}">
+      <button class="btn primary" onclick="calcularYMostrarInforme()">📊 Calcular ganancia real</button>
+      <button class="btn" onclick="setRangoRapido('hoy')">Hoy</button>
+      <button class="btn" onclick="setRangoRapido('semana')">Esta semana</button>
+      <button class="btn" onclick="setRangoRapido('mes')">Este mes</button>
+      <button class="btn" onclick="setRangoRapido('mesAnt')">Mes anterior</button>
+    </div>
+    <div id="resultadoInforme"></div>
+  </div>
+
+  <!-- INFORMES GUARDADOS -->
+  <div class="panel">
+    <h3>📂 Informes guardados</h3>
+    <p class="panel-sub">Guardá el resumen del período para consultarlo después.</p>
     <div class="scroll-x">
       <table class="table">
-        <thead><tr><th>Fecha</th><th>Ventas</th><th>Gastos</th><th>Ganancia neta</th><th>Bolsas</th><th class="no-print">Acciones</th></tr></thead>
-        <tbody>${filas || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Sin informes guardados</td></tr>'}</tbody>
+        <thead><tr><th>Fecha</th><th>Ventas</th><th>Cobros</th><th>Gastos</th><th>Ganancia real</th><th>Bolsas</th><th class="no-print">Acciones</th></tr></thead>
+        <tbody>${filasGuardados || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Sin informes guardados</td></tr>'}</tbody>
       </table>
     </div>
   </div>`;
 }
 
-function generarInformeHoy() {
-  const fecha = today();
-  if (DATA.enterpriseReports.find(i => i.fecha === fecha)) {
-    if (!confirm('Ya existe un informe de hoy. ¿Reemplazar?')) return;
-    DATA.enterpriseReports = DATA.enterpriseReports.filter(i => i.fecha !== fecha);
+function setRangoRapido(tipo) {
+  let r;
+  if (tipo === 'hoy') r = rangoHoy();
+  else if (tipo === 'semana') r = rangoSemana();
+  else if (tipo === 'mes') r = rangoMes();
+  else if (tipo === 'mesAnt') r = rangoMesAnterior();
+  else r = rangoHoy();
+  INFORME_RANGO.desde = r.desde;
+  INFORME_RANGO.hasta = r.hasta;
+  $('infDesde').value = r.desde;
+  $('infHasta').value = r.hasta;
+  calcularYMostrarInforme();
+}
+
+function calcularYMostrarInforme() {
+  const desde = $('infDesde').value;
+  const hasta = $('infHasta').value;
+  if (!desde || !hasta) return toast('Elegí las fechas');
+  if (desde > hasta) return toast('La fecha "Desde" no puede ser mayor que "Hasta"');
+
+  INFORME_RANGO.desde = desde;
+  INFORME_RANGO.hasta = hasta;
+
+  const r = calcularInformeRango(desde, hasta);
+  const cont = $('resultadoInforme');
+
+  cont.innerHTML = `
+    <div class="notice info" style="margin-top:16px;">
+      📆 Período: <b>${fdate(desde)}</b> al <b>${fdate(hasta)}</b> (${r.dias} días)
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="kpi blue"><label>💰 Ventas (productos)</label><b>${money(r.ventas)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">${r.ventasCount} ventas</div></div>
+      <div class="kpi cyan"><label>💵 Cobros (cta. cte.)</label><b>${money(r.cobros)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">${r.cobrosCount} cobros</div></div>
+      <div class="kpi red"><label>💸 Gastos</label><b>${money(r.gastos)}</b></div>
+      <div class="kpi gold"><label>📦 Costo de productos</label><b>${money(r.costo)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">${r.bolsas} bolsas</div></div>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="kpi purple"><label>📈 Ganancia bruta</label><b>${money(r.gananciaBruta)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">Ventas + Cobros − Costo</div></div>
+      <div class="kpi ${r.gananciaReal>=0?'green':'red'}" style="grid-column: span 3;"><label>💎 GANANCIA REAL</label><b style="font-size:38px;">${money(r.gananciaReal)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">(Ventas + Cobros) − Costo − Gastos</div></div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;">
+      <button class="btn green" onclick="guardarInformeRango()">💾 Guardar este informe</button>
+      <button class="btn" onclick="imprimirSeccion()">🖨️ Imprimir</button>
+    </div>`;
+}
+
+function guardarInformeRango() {
+  const desde = INFORME_RANGO.desde;
+  const hasta = INFORME_RANGO.hasta;
+  if (!desde || !hasta) return toast('Calculá primero');
+
+  const r = calcularInformeRango(desde, hasta);
+  const etiqueta = `${fdate(desde)} al ${fdate(hasta)}`;
+
+  // Reemplazar si ya existe uno con la misma etiqueta
+  const idx = DATA.enterpriseReports.findIndex(i => i.etiqueta === etiqueta);
+  if (idx >= 0) {
+    if (!confirm('Ya existe un informe para este período. ¿Reemplazar?')) return;
+    DATA.enterpriseReports.splice(idx, 1);
   }
-  const t = totalesDia(fecha);
+
   DATA.enterpriseReports.push({
     id: 'rep_' + uid(),
-    fecha,
-    ventas: t.ventas, gastos: t.gastos, bolsas: t.bolsas,
-    gananciaBruta: t.gananciaBruta, gananciaNeta: t.gananciaNeta,
+    fecha: desde,
+    hasta: hasta,
+    etiqueta,
+    ventas: r.ventas,
+    cobros: r.cobros,
+    costo: r.costo,
+    gastos: r.gastos,
+    bolsas: r.bolsas,
+    gananciaBruta: r.gananciaBruta,
+    gananciaNeta: r.gananciaReal,
+    gananciaReal: r.gananciaReal,
     creado: Date.now()
   });
+
   guardarEnFirebase('enterpriseReports', DATA.enterpriseReports).then(ok => {
     if (ok) { toast('✅ Informe guardado'); render(); }
   });
@@ -1157,13 +1316,19 @@ function generarInformeHoy() {
 function verInforme(id) {
   const i = DATA.enterpriseReports.find(x => x.id === id);
   if (!i) return;
+  const desde = i.fecha;
+  const hasta = i.hasta || i.fecha;
   modal(`
-    <h2>📄 Informe del ${fdate(i.fecha)}</h2>
+    <h2>📄 Informe del ${fdate(desde)} al ${fdate(hasta)}</h2>
     <div class="grid" style="margin-top:14px;">
       <div class="kpi blue"><label>Ventas</label><b>${money(i.ventas)}</b></div>
+      <div class="kpi cyan"><label>Cobros</label><b>${money(i.cobros||0)}</b></div>
       <div class="kpi red"><label>Gastos</label><b>${money(i.gastos)}</b></div>
-      <div class="kpi gold"><label>Ganancia bruta</label><b>${money(i.gananciaBruta)}</b></div>
-      <div class="kpi ${i.gananciaNeta>=0?'green':'red'}"><label>Ganancia neta</label><b>${money(i.gananciaNeta)}</b></div>
+      <div class="kpi gold"><label>Costo productos</label><b>${money(i.costo||0)}</b></div>
+    </div>
+    <div class="grid" style="margin-top:12px;">
+      <div class="kpi purple"><label>Ganancia bruta</label><b>${money(i.gananciaBruta)}</b></div>
+      <div class="kpi ${i.gananciaReal>=0?'green':'red'}" style="grid-column: span 3;"><label>💎 Ganancia real</label><b style="font-size:32px;">${money(i.gananciaReal || i.gananciaNeta)}</b></div>
     </div>
     <div style="text-align:right;margin-top:22px;">
       <button class="btn" onclick="closeModal()">Cerrar</button>
@@ -1430,6 +1595,9 @@ window.borrarDatosPanel = borrarDatosPanel;
 window.copiarSeccion = copiarSeccion;
 window.imprimirSeccion = imprimirSeccion;
 window.closeModal = closeModal;
+window.setRangoRapido = setRangoRapido;
+window.calcularYMostrarInforme = calcularYMostrarInforme;
+window.guardarInformeRango = guardarInformeRango;
 </script>
 </body>
 </html>
