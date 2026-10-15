@@ -44,7 +44,7 @@ h1,h2,h3,.display{font-family:'Fraunces',Georgia,serif;letter-spacing:-.02em}
 .splash-version{font-size:.75rem;color:rgba(255,255,255,.4);letter-spacing:2px;margin-top:14px}
 .splash-bar{margin-top:30px;width:220px;height:4px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden}
 .splash-bar-inner{width:0%;height:100%;background:linear-gradient(90deg,#8fcbff,#fff);border-radius:4px;animation:loadBar 2.2s ease-in-out forwards}
-@keyframes loadBar{0%{width:0}80%{width:85}100%{width:100}}
+@keyframes loadBar{0%{width:0}80%{width:85}100%{width:100%}}
 .ice-particle{position:absolute;background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none;animation:floatParticle 8s infinite ease-in-out}
 @keyframes floatParticle{0%,100%{transform:translateY(0) scale(1);opacity:.2}50%{transform:translateY(-40px) scale(1.6);opacity:.6}}
 
@@ -212,7 +212,7 @@ h1,h2,h3,.display{font-family:'Fraunces',Georgia,serif;letter-spacing:-.02em}
   <div class="splash-logo">M&C</div>
   <div class="splash-title">M&C <span>ENTERPRISE</span></div>
   <div class="splash-sub">Panel Privado de Ganancias</div>
-  <div class="splash-version">v1.2 · ❄️ Hielo</div>
+  <div class="splash-version">v1.3 · ❄️ Hielo</div>
   <div class="splash-bar"><div class="splash-bar-inner"></div></div>
 </div>
 
@@ -292,6 +292,9 @@ let MES_CALENDARIO = new Date();
 let chartVentas = null;
 let chartComparativa = null;
 let INFORME_RANGO = { desde: '', hasta: '' };
+let HISTORIAL_CLIENTE_ID = '';
+let HISTORIAL_DESDE = '';
+let HISTORIAL_HASTA = '';
 
 /* ============================================================
    HELPERS
@@ -454,10 +457,10 @@ function calcularInformeRango(desde, hasta) {
     dias.push(d.toISOString().slice(0,10));
   }
 
-  let totalVentas = 0;      // ventas normales (no cobros)
-  let totalCobros = 0;      // cobros de cuenta corriente
-  let totalCosto = 0;       // costo de productos vendidos
-  let totalGastos = 0;      // todos los gastos
+  let totalVentas = 0;
+  let totalCobros = 0;
+  let totalCosto = 0;
+  let totalGastos = 0;
   let totalBolsas = 0;
   let ventasCount = 0;
   let cobrosCount = 0;
@@ -488,7 +491,6 @@ function calcularInformeRango(desde, hasta) {
       + gastosExtra.reduce((a,g) => a + Number(g.monto||0), 0);
   });
 
-  // GANANCIA REAL = (Ventas + Cobros) - Costo de lo vendido - Gastos
   const gananciaBruta = totalVentas + totalCobros - totalCosto;
   const gananciaReal = gananciaBruta - totalGastos;
 
@@ -535,7 +537,6 @@ function cargarDesdeFirebase() {
       DATA.enterpriseClients = d.enterpriseClients || [];
       DATA.enterpriseReports = d.enterpriseReports || [];
 
-      // Mezclar clientes de GLACIAR + nuevos del panel
       if (DATA.enterpriseClients.length) {
         const ids = new Set(DATA.clients.map(c => c.id));
         DATA.enterpriseClients.forEach(c => { if (!ids.has(c.id)) DATA.clients.push(c); });
@@ -600,6 +601,7 @@ const SECCIONES = [
   { id: 'ganancias', label: '💰 Ganancias' },
   { id: 'productos', label: '📦 Productos' },
   { id: 'clientes', label: '👥 Clientes' },
+  { id: 'historial', label: '📜 Historial cliente' },
   { id: 'choferes', label: '🚚 Choferes' },
   { id: 'comparativas', label: '📊 Comparativas' },
   { id: 'informes', label: '📄 Informes' },
@@ -632,6 +634,7 @@ function render() {
     case 'ganancias': html = renderGanancias(); break;
     case 'productos': html = renderProductos(); break;
     case 'clientes': html = renderClientes(); break;
+    case 'historial': html = renderHistorialCliente(); break;
     case 'choferes': html = renderChoferes(); break;
     case 'comparativas': html = renderComparativas(); break;
     case 'informes': html = renderInformes(); break;
@@ -978,6 +981,7 @@ function renderClientes() {
       <td style="color:${c.ganancia>=0?'var(--green)':'var(--red)'}">${money(c.ganancia)}</td>
       <td style="color:${c.deuda>0?'var(--red)':'var(--green)'}"><b>${money(c.deuda)}</b></td>
       <td class="no-print">
+        <button class="btn xs" onclick="verHistorialDeCliente('${c.id}')">📜</button>
         <button class="btn xs" onclick="editarCliente('${c.id}')">✏️</button>
         <button class="btn xs danger" onclick="borrarCliente('${c.id}')">🗑</button>
       </td>
@@ -986,7 +990,7 @@ function renderClientes() {
   return `
   ${sectionHeader('Clientes', '👥', `<button class="btn sm primary" onclick="nuevoCliente()">➕ Nuevo cliente</button>`)}
   <div class="panel">
-    <p class="panel-sub">Solo aparecen los clientes con ventas o deuda. Los nuevos se guardan en el panel, no tocan GLACIAR.</p>
+    <p class="panel-sub">Solo aparecen los clientes con ventas o deuda. Los nuevos se guardan en el panel, no tocan GLACIAR. Click en 📜 para ver el historial completo.</p>
     <div class="scroll-x">
       <table class="table">
         <thead><tr><th>Cliente</th><th>Ventas</th><th>Ganancia</th><th>Deuda</th><th class="no-print">Acciones</th></tr></thead>
@@ -1063,6 +1067,271 @@ function borrarCliente(id) {
   guardarEnFirebase('enterpriseClients', DATA.enterpriseClients).then(() => {
     toast('Cliente borrado'); render();
   });
+}
+
+function verHistorialDeCliente(id) {
+  HISTORIAL_CLIENTE_ID = id;
+  cambiarSeccion('historial');
+  setTimeout(() => buscarHistorialCliente(), 100);
+}
+
+/* ============================================================
+   SECCIÓN: HISTORIAL POR CLIENTE
+   ============================================================ */
+function renderHistorialCliente() {
+  if (!HISTORIAL_DESDE) HISTORIAL_DESDE = rangoMes().desde;
+  if (!HISTORIAL_HASTA) HISTORIAL_HASTA = rangoMes().hasta;
+
+  const clientesConMovimiento = DATA.clients.filter(c => {
+    return DATA.driverSales.some(s => s.clientId === c.id)
+        || DATA.payments.some(p => p.clientId === c.id);
+  }).sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+  const opciones = clientesConMovimiento.map(c =>
+    `<option value="${esc(c.id)}" ${c.id===HISTORIAL_CLIENTE_ID?'selected':''}>${esc(c.name)} ${c.code?'#'+esc(c.code):''}</option>`
+  ).join('');
+
+  return `
+  ${sectionHeader('Historial por cliente', '📜')}
+
+  <div class="panel">
+    <h3>🔍 Buscar movimientos</h3>
+    <p class="panel-sub">Elegí un cliente y un rango de fechas para ver todo lo que se le vendió y cobró.</p>
+    <div class="filtros">
+      <label style="font-size:12px;font-weight:700;color:var(--muted);margin-right:4px;">Cliente</label>
+      <select id="hcCliente" style="min-width:220px;">
+        <option value="">— Elegí un cliente —</option>
+        ${opciones}
+      </select>
+      <label style="font-size:12px;font-weight:700;color:var(--muted);margin:0 4px;">Desde</label>
+      <input type="date" id="hcDesde" value="${HISTORIAL_DESDE}">
+      <label style="font-size:12px;font-weight:700;color:var(--muted);margin:0 4px;">Hasta</label>
+      <input type="date" id="hcHasta" value="${HISTORIAL_HASTA}">
+      <button class="btn primary" onclick="buscarHistorialCliente()">🔎 Buscar</button>
+      <button class="btn" onclick="setRangoHistorial('mes')">Este mes</button>
+      <button class="btn" onclick="setRangoHistorial('mesAnt')">Mes anterior</button>
+      <button class="btn" onclick="setRangoHistorial('anio')">Este año</button>
+      <button class="btn" onclick="setRangoHistorial('todo')">Todo</button>
+    </div>
+    <div id="resultadoHistorial"></div>
+  </div>`;
+}
+
+function setRangoHistorial(tipo) {
+  let r;
+  if (tipo === 'mes') r = rangoMes();
+  else if (tipo === 'mesAnt') r = rangoMesAnterior();
+  else if (tipo === 'anio') r = rangoAnio();
+  else if (tipo === 'todo') {
+    const fechas = [];
+    DATA.driverSales.forEach(s => s.date && fechas.push(s.date));
+    DATA.payments.forEach(p => p.date && fechas.push(p.date));
+    fechas.sort();
+    r = { desde: fechas[0] || today(), hasta: today() };
+  } else r = rangoMes();
+
+  HISTORIAL_DESDE = r.desde;
+  HISTORIAL_HASTA = r.hasta;
+  const elD = $('hcDesde'); const elH = $('hcHasta');
+  if (elD) elD.value = r.desde;
+  if (elH) elH.value = r.hasta;
+  buscarHistorialCliente();
+}
+
+function buscarHistorialCliente() {
+  const clientId = $('hcCliente') ? $('hcCliente').value : HISTORIAL_CLIENTE_ID;
+  const desde = $('hcDesde') ? $('hcDesde').value : HISTORIAL_DESDE;
+  const hasta = $('hcHasta') ? $('hcHasta').value : HISTORIAL_HASTA;
+
+  if (!clientId) return toast('Elegí un cliente');
+  if (!desde || !hasta) return toast('Elegí las fechas');
+  if (desde > hasta) return toast('La fecha "Desde" no puede ser mayor que "Hasta"');
+
+  HISTORIAL_CLIENTE_ID = clientId;
+  HISTORIAL_DESDE = desde;
+  HISTORIAL_HASTA = hasta;
+
+  const cliente = DATA.clients.find(c => c.id === clientId);
+  if (!cliente) return toast('Cliente no encontrado');
+
+  const ventas = DATA.driverSales
+    .filter(s => s.clientId === clientId && s.date >= desde && s.date <= hasta)
+    .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+  const pagos = (DATA.payments||[])
+    .filter(p => p.clientId === clientId && p.date >= desde && p.date <= hasta)
+    .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+  let totalVentas = 0, totalCobros = 0, totalCosto = 0;
+  let totalBolsas = 0;
+  let bolsasPorProducto = { p17:0, p35:0, p14:0, p20:0, p32:0 };
+  let deudaGenerada = 0;
+  let ventasCount = 0;
+
+  ventas.forEach(s => {
+    if (s.payment === 'cobrocc') {
+      totalCobros += Number(s.collection || 0);
+    } else {
+      totalVentas += Number(s.total || 0);
+      ventasCount++;
+      PROD_KEYS.forEach(k => {
+        const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
+        if (q > 0) {
+          totalBolsas += q;
+          bolsasPorProducto[k] += q;
+          totalCosto += q * getCostoProducto(k);
+        }
+      });
+      if (s.payment === 'ctacte') deudaGenerada += Number(s.total||0);
+    }
+  });
+  pagos.forEach(p => { totalCobros += Number(p.amount || 0); });
+
+  const gananciaReal = totalVentas + totalCobros - totalCosto;
+
+  const movimientos = [
+    ...ventas.map(s => ({ tipo: 'venta', fecha: s.date, data: s })),
+    ...pagos.map(p => ({ tipo: 'pago', fecha: p.date, data: p }))
+  ].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+
+  const filas = movimientos.length ? movimientos.map(m => {
+    if (m.tipo === 'venta') {
+      const s = m.data;
+      const items = PROD_KEYS.map(k => {
+        const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
+        return q > 0 ? `<span class="badge blue" style="margin:2px 3px 2px 0;">${q} × ${PROD_LABELS[k]}</span>` : '';
+      }).filter(Boolean).join('') || '<span style="color:var(--muted)">—</span>';
+
+      const pago = s.payment === 'cobrocc' ? 'cobrocc'
+                 : s.payment === 'ctacte' ? 'ctacte'
+                 : s.payment || '—';
+      const badgeColor = s.payment === 'cobrocc' ? 'green'
+                       : s.payment === 'ctacte' ? 'gold'
+                       : 'gray';
+      const g = gananciaVenta(s);
+
+      return `<tr>
+        <td>${fdate(s.date)}</td>
+        <td><span class="badge ${badgeColor}">${esc(pago)}</span></td>
+        <td style="font-size:12px;">${items}</td>
+        <td><b>${money(s.total || s.collection)}</b></td>
+        <td style="color:${g>=0?'var(--green)':'var(--red)'}">${g!==0?money(g):'—'}</td>
+        <td><span class="badge purple">Chofer ${esc(s.pin||'—')}</span></td>
+      </tr>`;
+    } else {
+      const p = m.data;
+      return `<tr style="background:#f0fdf4;">
+        <td>${fdate(p.date)}</td>
+        <td><span class="badge green">pago</span></td>
+        <td style="font-size:12px;color:var(--muted);">${esc(p.detail || p.note || 'Pago a cuenta')}</td>
+        <td style="color:var(--green)"><b>${money(p.amount)}</b></td>
+        <td>—</td>
+        <td><span class="badge gray">Manual</span></td>
+      </tr>`;
+    }
+  }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Sin movimientos en el período</td></tr>';
+
+  const cont = $('resultadoHistorial');
+  if (!cont) return;
+  cont.innerHTML = `
+    <div class="notice info" style="margin-top:16px;">
+      👤 <b>${esc(cliente.name)}</b> ${cliente.code?'#'+esc(cliente.code):''} ·
+      📆 <b>${fdate(desde)}</b> al <b>${fdate(hasta)}</b>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="kpi blue"><label>💰 Ventas</label><b>${money(totalVentas)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">${ventasCount} ventas</div></div>
+      <div class="kpi cyan"><label>💵 Cobros</label><b>${money(totalCobros)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">${pagos.length + ventas.filter(v=>v.payment==='cobrocc').length} cobros</div></div>
+      <div class="kpi red"><label>📦 Costo productos</label><b>${money(totalCosto)}</b></div>
+      <div class="kpi ${gananciaReal>=0?'green':'red'}"><label>💎 Ganancia del período</label><b>${money(gananciaReal)}</b></div>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="kpi gold"><label>🧊 Bolsas totales</label><b>${totalBolsas}</b></div>
+      <div class="kpi orange"><label>1,7 kg</label><b>${bolsasPorProducto.p17}</b></div>
+      <div class="kpi orange"><label>3,5 kg</label><b>${bolsasPorProducto.p35}</b></div>
+      <div class="kpi orange"><label>14 kg</label><b>${bolsasPorProducto.p14}</b></div>
+    </div>
+    <div class="grid" style="margin-top:12px;">
+      <div class="kpi orange"><label>20 kg</label><b>${bolsasPorProducto.p20}</b></div>
+      <div class="kpi orange"><label>32 kg</label><b>${bolsasPorProducto.p32}</b></div>
+      <div class="kpi red"><label>📋 Deuda generada</label><b>${money(deudaGenerada)}</b></div>
+      <div class="kpi purple"><label>📊 Promedio venta</label><b>${money(ventasCount ? totalVentas / ventasCount : 0)}</b></div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin:18px 0;flex-wrap:wrap;">
+      <button class="btn green" onclick="exportarHistorialCSV()">📥 Exportar CSV</button>
+      <button class="btn purple" onclick="imprimirSeccion()">🖨️ Imprimir</button>
+      <button class="btn" onclick="document.getElementById('resultadoHistorial').innerHTML=''">✖ Limpiar</button>
+    </div>
+
+    <h3 style="font-size:15px;margin-top:20px;">📋 Detalle de movimientos (${movimientos.length})</h3>
+    <div class="scroll-x">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Detalle de bolsas</th>
+            <th>Monto</th>
+            <th>Ganancia</th>
+            <th>Origen</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align:right;">TOTALES</td>
+            <td>${money(totalVentas + totalCobros)}</td>
+            <td style="color:${gananciaReal>=0?'var(--green)':'var(--red)'}">${money(gananciaReal)}</td>
+            <td>${totalBolsas} bolsas</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+
+  cont.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function exportarHistorialCSV() {
+  const clientId = HISTORIAL_CLIENTE_ID;
+  const desde = HISTORIAL_DESDE;
+  const hasta = HISTORIAL_HASTA;
+  if (!clientId) return toast('Buscá primero un cliente');
+
+  const cliente = DATA.clients.find(c => c.id === clientId);
+  const ventas = DATA.driverSales.filter(s => s.clientId === clientId && s.date >= desde && s.date <= hasta);
+  const pagos = (DATA.payments||[]).filter(p => p.clientId === clientId && p.date >= desde && p.date <= hasta);
+
+  const rows = [['Fecha','Tipo','Detalle','Monto','Forma de pago','PIN chofer']];
+  ventas.forEach(s => {
+    const items = PROD_KEYS.map(k => {
+      const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
+      return q > 0 ? `${q}x ${PROD_LABELS[k]}` : null;
+    }).filter(Boolean).join(' | ') || '';
+    rows.push([
+      s.date,
+      'VENTA',
+      items,
+      s.total || s.collection || 0,
+      s.payment || '',
+      s.pin || ''
+    ]);
+  });
+  pagos.forEach(p => {
+    rows.push([p.date, 'PAGO', p.detail || 'Pago a cuenta', p.amount || 0, 'pago', '']);
+  });
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `historial-${(cliente?.name||'cliente').replace(/\s+/g,'_')}-${desde}_${hasta}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('📥 CSV descargado');
 }
 
 /* ============================================================
@@ -1178,15 +1447,14 @@ function renderInformes() {
   const desde = INFORME_RANGO.desde || today();
   const hasta = INFORME_RANGO.hasta || today();
 
-  // Tabla de informes guardados
   const informes = (DATA.enterpriseReports||[]).slice().sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
   const filasGuardados = informes.map(i => `
     <tr>
-      <td><b>${fdate(i.fecha)}</b></td>
+      <td><b>${fdate(i.fecha)}${i.hasta && i.hasta !== i.fecha ? ' al '+fdate(i.hasta) : ''}</b></td>
       <td>${money(i.ventas)}</td>
       <td style="color:var(--green)">${money(i.cobros||0)}</td>
       <td>${money(i.gastos)}</td>
-      <td style="color:${i.gananciaReal>=0?'var(--green)':'var(--red)'}"><b>${money(i.gananciaReal || i.gananciaNeta)}</b></td>
+      <td style="color:${(i.gananciaReal||i.gananciaNeta)>=0?'var(--green)':'var(--red)'}"><b>${money(i.gananciaReal || i.gananciaNeta)}</b></td>
       <td>${i.bolsas}</td>
       <td class="no-print">
         <button class="btn xs" onclick="verInforme('${i.id}')">👁</button>
@@ -1197,7 +1465,6 @@ function renderInformes() {
   return `
   ${sectionHeader('Informes', '📄')}
 
-  <!-- SELECTOR DE RANGO -->
   <div class="panel">
     <h3>📅 Elegir período</h3>
     <p class="panel-sub">Seleccioná los días y calculá la ganancia real (ventas + cobros − costos − gastos).</p>
@@ -1215,7 +1482,6 @@ function renderInformes() {
     <div id="resultadoInforme"></div>
   </div>
 
-  <!-- INFORMES GUARDADOS -->
   <div class="panel">
     <h3>📂 Informes guardados</h3>
     <p class="panel-sub">Guardá el resumen del período para consultarlo después.</p>
@@ -1285,7 +1551,6 @@ function guardarInformeRango() {
   const r = calcularInformeRango(desde, hasta);
   const etiqueta = `${fdate(desde)} al ${fdate(hasta)}`;
 
-  // Reemplazar si ya existe uno con la misma etiqueta
   const idx = DATA.enterpriseReports.findIndex(i => i.etiqueta === etiqueta);
   if (idx >= 0) {
     if (!confirm('Ya existe un informe para este período. ¿Reemplazar?')) return;
@@ -1328,7 +1593,7 @@ function verInforme(id) {
     </div>
     <div class="grid" style="margin-top:12px;">
       <div class="kpi purple"><label>Ganancia bruta</label><b>${money(i.gananciaBruta)}</b></div>
-      <div class="kpi ${i.gananciaReal>=0?'green':'red'}" style="grid-column: span 3;"><label>💎 Ganancia real</label><b style="font-size:32px;">${money(i.gananciaReal || i.gananciaNeta)}</b></div>
+      <div class="kpi ${(i.gananciaReal||i.gananciaNeta)>=0?'green':'red'}" style="grid-column: span 3;"><label>💎 Ganancia real</label><b style="font-size:32px;">${money(i.gananciaReal || i.gananciaNeta)}</b></div>
     </div>
     <div style="text-align:right;margin-top:22px;">
       <button class="btn" onclick="closeModal()">Cerrar</button>
@@ -1581,6 +1846,7 @@ window.guardarNuevoCliente = guardarNuevoCliente;
 window.editarCliente = editarCliente;
 window.guardarEditCliente = guardarEditCliente;
 window.borrarCliente = borrarCliente;
+window.verHistorialDeCliente = verHistorialDeCliente;
 window.generarInformeHoy = generarInformeHoy;
 window.verInforme = verInforme;
 window.borrarInforme = borrarInforme;
@@ -1598,6 +1864,9 @@ window.closeModal = closeModal;
 window.setRangoRapido = setRangoRapido;
 window.calcularYMostrarInforme = calcularYMostrarInforme;
 window.guardarInformeRango = guardarInformeRango;
+window.buscarHistorialCliente = buscarHistorialCliente;
+window.setRangoHistorial = setRangoHistorial;
+window.exportarHistorialCSV = exportarHistorialCSV;
 </script>
 </body>
 </html>
