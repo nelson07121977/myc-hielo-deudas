@@ -192,6 +192,9 @@ const APP = {
 const KEY = "glaciar_v4";
 let fbRef = null;
 let fbListener = null;
+// IDs creados localmente que todavía no confirmaron en Firebase.
+// Sirven para que el listener no los pise mientras se sincronizan.
+const pendingLocalIds = new Set();
 function getDeviceId(){ let id=localStorage.getItem(APP.storage.deviceId); if(!id){ id='dev_'+Math.random().toString(36).slice(2,10); localStorage.setItem(APP.storage.deviceId,id);} return id; }
 function isBootstrapDone(){ return localStorage.getItem(APP.storage.bootstrap)==="1"; }
 function markBootstrapDone(){ localStorage.setItem(APP.storage.bootstrap,"1"); }
@@ -204,6 +207,16 @@ function sanitizeForFirebase(obj){
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){} if(window.__invalidateDebtCache) window.__invalidateDebtCache(); }
 function dbSet(path, value){ if(!fbRef) return; try{ fbRef.child(path).set(sanitizeForFirebase(value)).catch(e=>console.warn('fbSet',path,e.message)); }catch(e){console.warn('fbSet',path,e.message);} }
 function dbUpdate(path, patch){ if(!fbRef) return; try{ fbRef.child(path).update(sanitizeForFirebase(patch)).catch(e=>console.warn('fbUpdate',path,e.message)); }catch(e){console.warn('fbUpdate',path,e.message);} }
+// Escribe un ítem y registra su id como "pendiente" hasta que Firebase confirme
+function dbSetItem(collection, item){
+  if(!fbRef || !item || !item.id) return;
+  pendingLocalIds.add(String(item.id));
+  try{
+    fbRef.child(collection+'/'+item.id).set(sanitizeForFirebase(item))
+      .then(()=>{ pendingLocalIds.delete(String(item.id)); })
+      .catch(e=>{ pendingLocalIds.delete(String(item.id)); console.warn('dbSetItem',collection,e.message); });
+  }catch(e){ pendingLocalIds.delete(String(item.id)); console.warn('dbSetItem',collection,e.message); }
+}
 function initFirebase(){
   try{
     if(typeof firebase==='undefined'){ console.warn('Firebase SDK no cargado'); return false; }
@@ -213,7 +226,18 @@ function initFirebase(){
   }catch(e){ console.warn('Firebase init fail:',e); return false; }
 }
 
-// MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL (optimizado: sin JSON.stringify masivo)
+// Fusiona arrays por id: base (remota) + items locales que todavía no llegaron.
+// Si el item local ya está en la remota, se usa la remota (que es la verdad).
+function mergeById(remoteArr, localArr){
+  const remote = Array.isArray(remoteArr) ? remoteArr : [];
+  const local  = Array.isArray(localArr)  ? localArr  : [];
+  const remoteIds = new Set(remote.map(x=>x&&x.id).filter(Boolean).map(String));
+  const extras = local.filter(x => x && x.id && !remoteIds.has(String(x.id)));
+  // Mantenemos el orden: primero los locales pendientes (más nuevos), luego los remotos
+  return extras.concat(remote);
+}
+
+// MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL
 function attachListener(){
   if(!fbRef) return;
   if(fbListener) fbRef.off("value", fbListener);
@@ -231,14 +255,15 @@ function attachListener(){
     const remoto = snap.val();
     if(!remoto) return;
 
-    // Firebase es la fuente de verdad: asignamos directo sin comparar strings.
-    // Comparar con JSON.stringify arrays grandes causa "Maximum call stack size exceeded".
-    const keys = ['clients','orders','payments','driverSales','driverDays',
-                  'driverGastos','driverStock','pedidos','expenses','leads','visits'];
-    for(let i=0;i<keys.length;i++){
-      const k = keys[i];
-      if(remoto[k] !== undefined) data[k] = remoto[k];
+    // Arrays que se fusionan por id para no perder escrituras locales recién hechas
+    const mergeCollections = ['orders','payments','driverSales','pedidos','driverGastos','driverDays','driverStock','visits','leads','expenses'];
+    for(let i=0;i<mergeCollections.length;i++){
+      const k = mergeCollections[i];
+      if(remoto[k] !== undefined) data[k] = mergeById(remoto[k], data[k]);
     }
+    // clients: fusionar también para no perder clientes nuevos recién creados
+    if(remoto.clients !== undefined) data.clients = mergeById(remoto.clients, data.clients);
+    // products, settings, paymentSheet: reemplazo directo (no son colecciones de "creación rápida")
     if(remoto.products !== undefined)     data.products     = remoto.products;
     if(remoto.settings !== undefined)     data.settings     = remoto.settings;
     if(remoto.paymentSheet !== undefined) data.paymentSheet = remoto.paymentSheet;
@@ -265,7 +290,7 @@ async function pushSeedOnce(seedData){
 }
 async function loadSeedFile(){ const res=await fetch(APP.seedUrl,{cache:"no-store"}); if(!res.ok) throw new Error("No se pudo leer seed.json"); return await res.json(); }
 
-// BOTÓN DE RESCATE: Forzar Sincronización
+// BOTÓN DE RESCATE
 window.forzarSincronizacion = function() {
     if(!confirm("Esto borrará la memoria local del dispositivo y volverá a descargar todo de la nube. ¿Continuar?")) return;
     try {
@@ -482,7 +507,6 @@ function clientDebt(clientId,forDriver){
   return owed-paid;
 }
 
-// VERSIÓN OPTIMIZADA PARA EVITAR CUALQUIER TIPO DE COLGADO (AHOGO) EN EL CELULAR O PC
 function clientDebtInfo(clientId,forDriver){
   const cid=String(clientId);
   const c=(data.clients||[]).find(x=>String(x.id)===cid);
@@ -643,7 +667,7 @@ function getVisitorId(){let vid=localStorage.getItem('glaciar_vid');if(!vid){vid
 function logVisit(){try{const vid=getVisitorId();const date=today();const existing=(data.visits||[]).find(v=>v.visitorId===vid&&v.date===date);if(existing){existing.lastTime=Date.now();existing.count=(existing.count||1)+1;save();return;}let referrer='Directo';try{if(document.referrer){const r=new URL(document.referrer);const h=r.hostname.toLowerCase();if(h.includes('facebook')||h.includes('fb.'))referrer='Facebook';else if(h.includes('instagram'))referrer='Instagram';else if(h.includes('whatsapp')||h.includes('wa.me'))referrer='WhatsApp';else if(h.includes('google'))referrer='Google';else if(h.includes('tiktok'))referrer='TikTok';else if(h.includes('twitter')||h.includes('x.com'))referrer='Twitter/X';else referrer=r.hostname;}}catch(e){}const url=new URL(location.href);const utm=url.searchParams.get('utm')||url.searchParams.get('utm_source')||'';if(utm){const u=utm.toLowerCase();referrer=u.charAt(0).toUpperCase()+u.slice(1);}const ua=navigator.userAgent||'';const isMobile=/Mobi|Android|iPhone|iPad/i.test(ua);const device=isMobile?'Móvil':'Escritorio';const browser=ua.includes('Edg')?'Edge':ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':'Otro';const nuevo={id:uid(),visitorId:vid,date,firstTime:Date.now(),lastTime:Date.now(),count:1,referrer,utm,device,browser,path:url.pathname};data.visits.unshift(nuevo);dbSet('visits/'+nuevo.id,nuevo);if(data.visits.length>1000)data.visits=data.visits.slice(0,1000);save();}catch(e){}}
 function visitsStats(period){const v=data.visits||[];const hoy=today();const ws=new Date();ws.setDate(ws.getDate()-6);const wss=ws.toISOString().slice(0,10);const ms=hoy.slice(0,7)+'-01';const ys=hoy.slice(0,4)+'-01-01';let filtered=v;if(period==='today')filtered=v.filter(x=>x.date===hoy);else if(period==='week')filtered=v.filter(x=>x.date>=wss);else if(period==='month')filtered=v.filter(x=>x.date>=ms);else if(period==='year')filtered=v.filter(x=>x.date>=ys);const unique=new Set(filtered.map(x=>x.visitorId)).size;const byRef={};filtered.forEach(x=>{byRef[x.referrer]=(byRef[x.referrer]||0)+1;});const byDevice={Móvil:0,Escritorio:0};filtered.forEach(x=>{byDevice[x.device]=(byDevice[x.device]||0)+1;});return {total:filtered.length,unique,byRef,byDevice,list:filtered};}
 function openContactForm(){const wa=data.settings.whatsapp||'5492612125599';modal(`<h2>💬 Contactanos</h2><a class="btn wa" style="display:flex;justify-content:center;margin-top:16px;padding:16px;font-size:15px;" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola M&C Hielo!')}" target="_blank">📱 Escribirnos por WhatsApp</a><div class="field"><label>Tu nombre</label><input id="cfName"></div><div class="field"><label>Tu teléfono</label><input id="cfPhone" inputmode="tel"></div><div class="field"><label>Consulta (opcional)</label><textarea id="cfMsg" rows="3"></textarea></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Cerrar</button><button class="btn green" onclick="saveContactLead()">✅ Enviar</button></div>`);}
-function saveContactLead(){const name=$('cfName').value.trim();const phone=$('cfPhone').value.trim();const msg=$('cfMsg').value.trim();if(!name||!phone)return toast('Completá nombre y teléfono');if(!data.leads)data.leads=[];const nuevo={id:uid(),name,phone,msg,date:today(),created:Date.now()};data.leads.unshift(nuevo);dbSet('leads/'+nuevo.id,nuevo);save();closeModal();toast('✅ ¡Gracias '+name+'!');}
+function saveContactLead(){const name=$('cfName').value.trim();const phone=$('cfPhone').value.trim();const msg=$('cfMsg').value.trim();if(!name||!phone)return toast('Completá nombre y teléfono');if(!data.leads)data.leads=[];const nuevo={id:uid(),name,phone,msg,date:today(),created:Date.now()};data.leads.unshift(nuevo);dbSetItem('leads',nuevo);save();closeModal();toast('✅ ¡Gracias '+name+'!');}
 function render(){
   let contenido;
   if(mode==='admin') contenido=adminView();
@@ -687,8 +711,8 @@ function placeOrder(){
   const payMap={'Efectivo':'Efectivo','Transferencia':'Transferencia','Cuenta corriente':'Cuenta corriente'};
   const o={id:uid(),date:today(),created:Date.now(),clientId:client.id,name,phone,address,payment:payMap[$('oPay').value]||'Efectivo',items:cartItems().map(({id,name,price,q})=>({id,name,price,q})),total:cartTotal(),status:'Pendiente',note:''};
   data.orders.unshift(o);data.cart={};
-  if(isNewClient) dbSet('clients/'+client.id,client);
-  dbSet('orders/'+o.id,o);
+  if(isNewClient) dbSetItem('clients',client);
+  dbSetItem('orders',o);
   save();closeModal();toast('Pedido enviado');render();
 }
 function openAdmin(){modal(`<h2>🔒 Administración</h2><div class="field"><label>Clave</label><input id="pass" type="password"></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn primary" onclick="loginAdmin()">Ingresar</button></div>`);}
@@ -710,7 +734,6 @@ function driverView(){
   const myPedidos=(data.pedidos||[]).filter(p=>String(p.driver)===String(pin)&&p.status==='pendiente').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const totals=calcDriverTotals(mySales,myGastos);
   
-  // --- Cálculo de deudas (ya optimizado, no bloquea) ---
   const debts = clientsWithDebt(true);
   const debtsTotal = debts.reduce((a,d)=>a+d.info.total,0);
   let debtsHtml;
@@ -722,7 +745,6 @@ function driverView(){
       return `<div class="debt-card ${info.isOverdue?'overdue':''}"><div class="top"><div><div class="name">${esc(client.name)} <span class="muted" style="font-weight:400;font-size:12px;">· #${esc(client.code)}</span></div>${badges?`<div style="margin-top:6px;">${badges}</div>`:''}</div><div style="text-align:right;"><div class="amount">${money(info.total)}</div><button class="btn xs green" style="margin-top:8px;" onclick="driverQuickCollect('${client.id}')">💰 Cobrar</button></div></div></div>`;
     }).join('');
   }
-  // --------------------------------------------------------------------------------------
 
   const st=ensureOpenStock(pin);const sold=calcSoldByProduct(pin);
   const mismatches=[];PROD_KEYS.forEach(k=>{const c=Number(st.carga[k])||0;const v=Number(sold[k])||0;const d=Number(st.devuelta[k])||0;if(c>0&&d!==(c-v))mismatches.push({product:k,cargado:c,vendido:v,devuelto:d,esperado:c-v,diff:d-(c-v)});});
@@ -889,7 +911,7 @@ function driverAddSale(){
   const collectionMethod=payment==='cobrocc'?($('dCollectionMethod')?.value||'efectivo'):'';
   const sale={id:uid(),date:today(),created:Date.now(),pin:currentDriverPin,clientId:cid,clientName:c.name,qty,prices,payment,total:payment==='cobrocc'?0:total,collection:payment==='cobrocc'?collection:0,collectionMethod,cost,note,closed:false};
   data.driverSales.unshift(sale);
-  dbSet('driverSales/'+sale.id,sale);
+  dbSetItem('driverSales',sale);
   (data.pedidos||[]).filter(p=>String(p.driver)===String(currentDriverPin)&&p.status==='pendiente'&&p.clientId===cid).forEach(p=>{p.status='entregado';p.entregadoEn=Date.now();dbSet('pedidos/'+p.id,p);});
   save();
   ['dQ17','dQ35','dQ14','dQ20','dQ32','dCollection'].forEach(id=>{if($(id))$(id).value=0;});
@@ -905,7 +927,7 @@ function driverConfirmCollect(clientId){
   const collectionMethod=$('qcMethod')?.value||'efectivo';
   const sale={id:uid(),date:today(),created:Date.now(),pin:currentDriverPin,clientId,clientName:c.name,qty:{},prices:{},payment:'cobrocc',total:0,collection:amount,collectionMethod,cost:0,note:($('qcNote').value||'').trim(),closed:false};
   data.driverSales.unshift(sale);
-  dbSet('driverSales/'+sale.id,sale);
+  dbSetItem('driverSales',sale);
   if(window.__invalidateDebtCache) window.__invalidateDebtCache();
   save();closeModal();toast('✅ Cobro '+collectionMethod+': '+money(amount));render();
 }
@@ -938,7 +960,7 @@ function driverEditSale(id){const s=(data.driverSales||[]).find(x=>x.id===id);if
     <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn primary" onclick="driverSaveSale('${id}')">💾 Guardar</button></div>`);}
 function driverSaveSale(id){const s=(data.driverSales||[]).find(x=>x.id===id);if(!s)return;s.payment=$('esPay').value;s.qty={'1,7':Number($('esQ17').value)||0,'3,5':Number($('esQ35').value)||0,'14':Number($('esQ14').value)||0,'20':Number($('esQ20').value)||0,'32':Number($('esQ32').value)||0};s.prices={p17:Number($('esP17').value)||0,p35:Number($('esP35').value)||0,p14:Number($('esP14').value)||0,p20:Number($('esP20').value)||0,p32:Number($('esP32').value)||0};s.total=Number($('esTotal').value)||0;s.collection=Number($('esCol')?.value)||0;s.collectionMethod=s.payment==='cobrocc'?($('esCollMethod')?.value||'efectivo'):'';s.note=$('esNote').value.trim();dbSet('driverSales/'+s.id,s);if(window.__invalidateDebtCache) window.__invalidateDebtCache();save();closeModal();toast('✅ Actualizada');render();}
 function driverDeleteSale(id){if(!confirm('¿Eliminar?'))return;data.driverSales=data.driverSales.filter(x=>x.id!==id);dbSet('driverSales/'+id,null);if(window.__invalidateDebtCache) window.__invalidateDebtCache();save();toast('Eliminada');render();}
-function driverAddGasto(){const n=Number($('gNafta').value)||0,ch=Number($('gChofer').value)||0,ot=Number($('gOtros').value)||0;const od=($('gOtrosDetail').value||'').trim();if(n<=0&&ch<=0&&ot<=0)return toast('Cargá un gasto');if(ot>0&&!od)return toast('Detalle "Otros" obligatorio');const base={date:today(),pin:currentDriverPin,created:Date.now(),closed:false};const nuevos=[];if(n>0){const g={...base,id:uid(),category:'Nafta',amount:n,detail:''};data.driverGastos.unshift(g);nuevos.push(g);}if(ch>0){const g={...base,id:uid(),category:'Chofer',amount:ch,detail:''};data.driverGastos.unshift(g);nuevos.push(g);}if(ot>0){const g={...base,id:uid(),category:'Otros',amount:ot,detail:od};data.driverGastos.unshift(g);nuevos.push(g);}nuevos.forEach(g=>dbSet('driverGastos/'+g.id,g));save();$('gNafta').value=0;$('gChofer').value=0;$('gOtros').value=0;$('gOtrosDetail').value='';toast('Gastos cargados');render();}
+function driverAddGasto(){const n=Number($('gNafta').value)||0,ch=Number($('gChofer').value)||0,ot=Number($('gOtros').value)||0;const od=($('gOtrosDetail').value||'').trim();if(n<=0&&ch<=0&&ot<=0)return toast('Cargá un gasto');if(ot>0&&!od)return toast('Detalle "Otros" obligatorio');const base={date:today(),pin:currentDriverPin,created:Date.now(),closed:false};const nuevos=[];if(n>0){const g={...base,id:uid(),category:'Nafta',amount:n,detail:''};data.driverGastos.unshift(g);nuevos.push(g);}if(ch>0){const g={...base,id:uid(),category:'Chofer',amount:ch,detail:''};data.driverGastos.unshift(g);nuevos.push(g);}if(ot>0){const g={...base,id:uid(),category:'Otros',amount:ot,detail:od};data.driverGastos.unshift(g);nuevos.push(g);}nuevos.forEach(g=>dbSetItem('driverGastos',g));save();$('gNafta').value=0;$('gChofer').value=0;$('gOtros').value=0;$('gOtrosDetail').value='';toast('Gastos cargados');render();}
 function driverDeleteGasto(id){if(!confirm('¿Eliminar?'))return;data.driverGastos=data.driverGastos.filter(x=>x.id!==id);dbSet('driverGastos/'+id,null);save();render();}
 function driverCloseDay(){
   const pin=currentDriverPin;
@@ -990,7 +1012,7 @@ function driverCloseDay(){
 function driverCopySummary(){const pin=currentDriverPin;const ms=(data.driverSales||[]).filter(s=>s.pin===pin&&!s.closed);const mg=(data.driverGastos||[]).filter(g=>g.pin===pin&&!g.closed);const t=calcDriverTotals(ms,mg);const netoEf=t.efectivo+t.cobrosEfectivo-t.gastos;const netoTot=t.efectivo+t.transferencia+t.cobrosEfectivo+t.cobrosTransferencia-t.gastos;let txt=`🧊 GLACIAR · ${today()}\n${getDrivers().find(x=>x.pin===pin)?.name||pin}\n\n💵 Efectivo: ${money(t.efectivo)}\n💳 Transf: ${money(t.transferencia)}\n📋 Cta Cte: ${money(t.ctacte)}\n🔄 Cobros Ef.: ${money(t.cobrosEfectivo)}\n🔄 Cobros Transf.: ${money(t.cobrosTransferencia)}\n💸 Gastos: ${money(t.gastos)}\n💰 NETO EN EFECTIVO: ${money(netoEf)}\n📊 NETO TOTAL: ${money(netoTot)}\n\n`;ms.slice().reverse().forEach(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}×${k}`).join(' ');const pl=s.payment==='cobrocc'?('cobro '+(s.collectionMethod==='transferencia'?'transf':'ef')):s.payment;txt+=`• ${s.clientName} · ${items||'—'} · ${money(s.total||s.collection)} (${pl})\n`;});navigator.clipboard.writeText(txt).then(()=>toast('Copiado'));}
 function driverCopyDebtsList(){const debts=clientsWithDebt(true);if(!debts.length)return toast('Sin deudas');let txt=`💳 Deudas al ${today()}\n\n`;debts.forEach(({client,info})=>{txt+=`• ${client.name} (#${client.code}) · ${money(info.total)}\n`;});txt+=`\n💰 TOTAL: ${money(debts.reduce((a,d)=>a+d.info.total,0))}`;navigator.clipboard.writeText(txt).then(()=>toast('Copiado'));}
 function driverAddClientForm(){modal(`<h2>👤 Nuevo cliente</h2><div class="field"><label>Nombre</label><input id="ncName"></div><div class="field"><label>Teléfono</label><input id="ncPhone"></div><div class="field"><label>Dirección</label><input id="ncAddress"></div><div class="field"><label>Pago</label><select id="ncPay"><option value="ctacte">📋 Cta Cte</option><option value="efectivo">💵 Efectivo</option><option value="transferencia">💳 Transf</option></select></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn green" onclick="driverSaveNewClient()">Crear</button></div>`);}
-function driverSaveNewClient(){const name=$('ncName').value.trim();if(!name)return toast('Nombre');const code=nextFreeClientCode();const addr=$('ncAddress').value.trim();const nc={id:uid(),code,name,phone:$('ncPhone').value.trim(),addresses:addr?[addr]:[],payment:$('ncPay').value,creditLimit:0,notes:'',enabled:true,comodato:false,equipo:'',equipoCantidad:0,prices:{},hideDebtFromDriver:false};data.clients.push(nc);dbSet('clients/'+nc.id,nc);save();closeModal();toast(`✅ ${name} · #${code}`);render();setTimeout(()=>{const s=$('dSelClient');if(s){s.value=nc.id;driverOnClientChange();}},80);}
+function driverSaveNewClient(){const name=$('ncName').value.trim();if(!name)return toast('Nombre');const code=nextFreeClientCode();const addr=$('ncAddress').value.trim();const nc={id:uid(),code,name,phone:$('ncPhone').value.trim(),addresses:addr?[addr]:[],payment:$('ncPay').value,creditLimit:0,notes:'',enabled:true,comodato:false,equipo:'',equipoCantidad:0,prices:{},hideDebtFromDriver:false};data.clients.push(nc);dbSetItem('clients',nc);save();closeModal();toast(`✅ ${name} · #${code}`);render();setTimeout(()=>{const s=$('dSelClient');if(s){s.value=nc.id;driverOnClientChange();}},80);}
 document.addEventListener('input',e=>{if(mode==='driver'&&e.target&&['dQ17','dQ35','dQ14','dQ20','dQ32','dP17','dP35','dP14','dP20','dP32'].includes(e.target.id))driverUpdateTotal();});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
@@ -1105,14 +1127,14 @@ function adminDebts(){
   </section>
   <section class="panel" style="border-left:4px solid var(--red);">
     <div class="row space no-print" style="flex-wrap:wrap;gap:8px;margin-bottom:10px;"><button class="btn sm orange" onclick="recargarDeudasIniciales()">🔄 Recargar deudas iniciales</button></div>
-    <div class="notice purple no-print" style="margin-bottom:14px;font-size:12.5px;">🔒 Tocá <b>🔓/🔒</b> al lado de cada cliente para ocultarlo o mostrarlo al chofer. ✏️ para editar el monto total de la deuda.</div>
+    <div class="notice purple no-print" style="margin-bottom:14px;font-size:12.5px;">🔒 Tocá <b>🔓/🔒</b> al lado de cada cliente para ocultarlo o mostrarlo al chofer. ✏️ para <b>ajustar</b> el monto (suma o resta, no borra nada).</div>
     <table class="table" style="margin-top:14px;"><thead><tr><th>#</th><th>Cliente</th><th>Deuda</th><th>Días</th><th>Desde</th><th class="no-print">Acciones</th></tr></thead><tbody>
       ${debts.length?debts.map(({client,info},i)=>{
         const atr=info.isOverdue?`<span class="status overdue">⚠️ ${info.businessDays}d</span>`:(info.businessDays>0?`<span class="status debt">${info.businessDays}d</span>`:'<span class="status delivered">al día</span>');
         const hid=client.hideDebtFromDriver;
         const toggleBtn=hid?`<button class="btn xs orange" onclick="toggleHideDebt('${client.id}')">🔒</button>`:`<button class="btn xs" onclick="toggleHideDebt('${client.id}')">🔓</button>`;
         const badges=eqBadges(client);
-        return `<tr><td>${i+1}</td><td><b>${esc(client.name)}</b> <span class="muted" style="font-size:11px;">#${esc(client.code)}</span>${hid?' <span class="status locked">🔒</span>':''}${badges?`<div style="margin-top:4px;">${badges}</div>`:''}</td><td><b style="color:var(--red);font-family:'Fraunces',serif;font-size:15px;">${money(info.total)}</b></td><td>${atr}</td><td style="font-size:12px;">${info.oldest||'—'}</td><td style="white-space:nowrap;" class="no-print">${toggleBtn} <button class="btn xs green" onclick="paymentForm('${client.id}')">💰</button> <button class="btn xs" onclick="editarDeudaManual('${client.id}')" title="Editar monto de la deuda">✏️</button> <button class="btn xs" onclick="clientHistory('${client.id}')">📋</button> <button class="btn xs danger" onclick="borrarDeudaManual('${client.id}')">🗑 Borrar Deuda</button></td></tr>`;
+        return `<tr><td>${i+1}</td><td><b>${esc(client.name)}</b> <span class="muted" style="font-size:11px;">#${esc(client.code)}</span>${hid?' <span class="status locked">🔒</span>':''}${badges?`<div style="margin-top:4px;">${badges}</div>`:''}</td><td><b style="color:var(--red);font-family:'Fraunces',serif;font-size:15px;">${money(info.total)}</b></td><td>${atr}</td><td style="font-size:12px;">${info.oldest||'—'}</td><td style="white-space:nowrap;" class="no-print">${toggleBtn} <button class="btn xs green" onclick="paymentForm('${client.id}')">💰</button> <button class="btn xs" onclick="ajustarDeudaManual('${client.id}')" title="Ajustar monto (no borra)">✏️</button> <button class="btn xs" onclick="clientHistory('${client.id}')">📋</button> <button class="btn xs danger" onclick="borrarDeudaManual('${client.id}')">🗑 Borrar Deuda</button></td></tr>`;
       }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">🎉 Sin deudas</td></tr>'}
     </tbody><tfoot>${debts.length?`<tr><td></td><td style="font-weight:900;">TOTAL</td><td style="font-weight:900;color:var(--red);font-family:'Fraunces',serif;font-size:18px;">${money(total)}</td><td colspan="3"></td></tr>`:''}</tfoot></table>
   </section>`;
@@ -1120,7 +1142,7 @@ function adminDebts(){
 }
 
 function borrarDeudaManual(clientId) {
-    if(!confirm("⚠️ ¿Estás seguro que querés borrar TODA la deuda de este cliente? Esto borrará las ventas a cuenta corriente y los pagos pendientes de la nube.")) return;
+    if(!confirm("⚠️ ¿Estás seguro que querés borrar TODA la deuda de este cliente? Esto borrará las ventas a cuenta corriente y las deudas manuales del cliente en la nube. Los pagos registrados quedan.")) return;
     data.orders = (data.orders || []).filter(o => !(String(o.clientId) === String(clientId) && o.payment === 'Cuenta corriente'));
     data.driverSales = (data.driverSales || []).filter(s => !(String(s.clientId) === String(clientId) && s.payment === 'ctacte'));
     if (fbRef) {
@@ -1133,40 +1155,43 @@ function borrarDeudaManual(clientId) {
     render();
 }
 
-function editarDeudaManual(clientId){
+// NUEVO: ajustar deuda SIN borrar. Suma o resta un monto al total existente.
+function ajustarDeudaManual(clientId){
   const c = findClient(clientId);
   if(!c) return;
   const info = clientDebtInfo(clientId);
-  modal(`<h2>✏️ Editar monto de deuda</h2>
+  modal(`<h2>✏️ Ajustar monto de deuda</h2>
   <p class="muted" style="margin-bottom:14px;"><b>${esc(c.name)}</b> · #${esc(c.code)}</p>
-  <div class="notice red" style="margin-bottom:14px;">
-    Deuda actual: <b>${money(info.total)}</b>
+  <div class="notice info" style="margin-bottom:14px;">
+    Deuda actual: <b>${money(info.total)}</b><br>
+    <span style="font-size:12px;">Este ajuste <b>no borra</b> nada: se suma o resta al total.</span>
   </div>
   <div class="field">
-    <label>Nuevo monto total de la deuda ($)</label>
-    <input type="number" id="edMonto" value="${info.total}" min="0" inputmode="numeric">
+    <label>Monto del ajuste ($)</label>
+    <input type="number" id="ajMonto" value="" min="0" inputmode="numeric" placeholder="Ej: 5000">
+    <div style="font-size:11px;color:var(--muted);margin-top:4px;">Usá signo <b>−</b> para restar (ej: -5000 baja la deuda).</div>
   </div>
-  <div class="notice info" style="margin-top:12px;font-size:12px;">
-    ⚠️ Al guardar se <b>reemplazan</b> las deudas a cuenta corriente del cliente por un único registro de ajuste con el monto ingresado. Los pagos registrados se mantienen.
+  <div class="field">
+    <label>Motivo / detalle</label>
+    <input id="ajDetalle" placeholder="Ej: corrección, descuento, error de carga…">
   </div>
   <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;">
     <button class="btn" onclick="closeModal()">Cancelar</button>
-    <button class="btn primary" onclick="guardarDeudaEditada('${clientId}')">💾 Guardar</button>
+    <button class="btn primary" onclick="guardarAjusteDeuda('${clientId}')">💾 Aplicar ajuste</button>
   </div>`);
-  setTimeout(()=>{const el=$('edMonto');if(el){el.focus();el.select();}},80);
+  setTimeout(()=>{const el=$('ajMonto');if(el)el.focus();},80);
 }
 
-function guardarDeudaEditada(clientId){
-  const nuevoMonto = Number($('edMonto').value);
-  if(isNaN(nuevoMonto) || nuevoMonto < 0) return toast('Monto inválido');
+function guardarAjusteDeuda(clientId){
+  const raw = $('ajMonto').value;
+  const monto = Number(raw);
+  if(!raw || isNaN(monto) || monto === 0) return toast('Ingresá un monto distinto de 0');
   const c = findClient(clientId);
   if(!c) return;
-  if(!confirm(`¿Reemplazar la deuda de ${c.name} por ${money(nuevoMonto)}?\n\nSe borrarán las ventas a cuenta corriente y las deudas manuales anteriores, y se dejará un único registro de ajuste.`)) return;
-
-  data.orders = (data.orders || []).filter(o => !(String(o.clientId) === String(clientId) && o.payment === 'Cuenta corriente'));
-  data.driverSales = (data.driverSales || []).filter(s => !(String(s.clientId) === String(clientId) && s.payment === 'ctacte'));
-
-  if(nuevoMonto > 0){
+  const detalle = ($('ajDetalle').value||'').trim() || 'Ajuste manual de deuda';
+  const abs = Math.abs(monto);
+  const esDeuda = monto > 0;
+  if(esDeuda){
     const ajuste = {
       id: uid(),
       date: today(),
@@ -1176,28 +1201,52 @@ function guardarDeudaEditada(clientId){
       phone: c.phone || '',
       address: '',
       payment: 'Cuenta corriente',
-      items: [{ name: 'Ajuste de deuda', q: 1, price: nuevoMonto }],
-      total: nuevoMonto,
+      items: [{ name: detalle, q: 1, price: abs }],
+      total: abs,
       status: 'Entregado',
-      note: 'Ajuste manual de deuda'
+      note: 'Ajuste de deuda'
     };
     data.orders.unshift(ajuste);
-    dbSet('orders/' + ajuste.id, ajuste);
+    dbSetItem('orders', ajuste);
+    toast('✅ Deuda ajustada +' + money(abs));
+  } else {
+    const pago = {
+      id: uid(),
+      created: Date.now(),
+      clientId: clientId,
+      amount: abs,
+      method: 'Ajuste',
+      date: today(),
+      note: detalle
+    };
+    data.payments.unshift(pago);
+    dbSetItem('payments', pago);
+    toast('✅ Deuda ajustada −' + money(abs));
   }
-
-  if(fbRef){
-    fbRef.child('orders').set(sanitizeForFirebase(data.orders)).catch(e=>console.warn(e));
-    fbRef.child('driverSales').set(sanitizeForFirebase(data.driverSales)).catch(e=>console.warn(e));
-  }
-
   if(window.__invalidateDebtCache) window.__invalidateDebtCache();
   save();
   closeModal();
-  toast('✅ Deuda actualizada: ' + money(nuevoMonto));
   render();
 }
 
-function agregarDeudaManual(){const cid=$('ndCliente').value;const fecha=$('ndFecha').value||today();const monto=Number($('ndMonto').value)||0;const detalle=($('ndDetalle').value||'').trim()||'Deuda manual';if(!cid)return toast('Elegí un cliente');if(monto<=0)return toast('Ingresá un monto');const c=findClient(cid);if(!c)return;const nueva={id:uid(),date:fecha,created:Date.now(),clientId:cid,name:c.name,phone:c.phone||'',address:'',payment:'Cuenta corriente',items:[{name:detalle,q:1,price:monto}],total:monto,status:'Entregado',note:'Deuda manual'};data.orders.unshift(nueva);dbSet('orders/'+nueva.id,nueva);if(window.__invalidateDebtCache) window.__invalidateDebtCache();save();$('ndMonto').value='';$('ndDetalle').value='';toast('✅ Deuda: '+money(monto));render();}
+function agregarDeudaManual(){
+  const cid=$('ndCliente').value;
+  const fecha=$('ndFecha').value||today();
+  const monto=Number($('ndMonto').value)||0;
+  const detalle=($('ndDetalle').value||'').trim()||'Deuda manual';
+  if(!cid)return toast('Elegí un cliente');
+  if(monto<=0)return toast('Ingresá un monto');
+  const c=findClient(cid);if(!c)return;
+  const nueva={id:uid(),date:fecha,created:Date.now(),clientId:cid,name:c.name,phone:c.phone||'',address:'',payment:'Cuenta corriente',items:[{name:detalle,q:1,price:monto}],total:monto,status:'Entregado',note:'Deuda manual'};
+  data.orders.unshift(nueva);
+  dbSetItem('orders',nueva);
+  if(window.__invalidateDebtCache) window.__invalidateDebtCache();
+  save();
+  $('ndMonto').value='';
+  $('ndDetalle').value='';
+  toast('✅ Deuda: '+money(monto));
+  render();
+}
 function registrarPagoManual(){
   const cid=$('npCliente').value;
   const fecha=$('npFecha').value||today();
@@ -1209,7 +1258,7 @@ function registrarPagoManual(){
   const c=findClient(cid);if(!c)return;
   const nuevo={id:uid(),created:Date.now(),clientId:cid,amount:monto,method:metodo,date:fecha,note:detalle};
   data.payments.unshift(nuevo);
-  dbSet('payments/'+nuevo.id,nuevo);
+  dbSetItem('payments',nuevo);
   if(window.__invalidateDebtCache) window.__invalidateDebtCache();
   save();
   $('npMonto').value='';
@@ -1310,7 +1359,7 @@ function savePedido(){
     if(!data.pedidos)data.pedidos=[];
     const newPedido={id:uid(),created:Date.now(),date,clientId:cid,clientName:name,phone:phone,address:address,driver:driver,qty:qty,note:note,status:'pendiente'};
     data.pedidos.unshift(newPedido);
-    dbSet('pedidos/'+newPedido.id,newPedido);
+    dbSetItem('pedidos',newPedido);
     save();
     closeModal();
     const dname=getDrivers().find(d=>String(d.pin)===String(driver));
@@ -1449,11 +1498,11 @@ function clientsAdmin(){const contenido=`<div class="row space no-print" style="
 function clientsList(){return (data.clients||[]).map(c=>{const info=clientDebtInfo(c.id);const debt=info.total;const badges=eqBadges(c);return `<div class="client-card"><div class="row space"><div style="flex:1;"><b>${esc(c.name)}</b> <span class="muted">· #${esc(c.code)}</span>${badges?`<div style="margin-top:6px;">${badges}</div>`:''}</div><span class="debt-chip ${debt<=0?'ok':''}">${debt<=0?'Sin deuda':money(debt)}</span></div><div class="row no-print" style="margin-top:8px;gap:6px;flex-wrap:wrap;"><button class="btn xs" onclick="clientForm('${c.id}')">✏️</button><button class="btn xs green" onclick="paymentForm('${c.id}')">💰</button><button class="btn xs" onclick="clientHistory('${c.id}')">📋</button><button class="btn xs ${c.hideDebtFromDriver?'orange':''}" onclick="toggleHideDebt('${c.id}')">${c.hideDebtFromDriver?'🔒 Oculto':'🔓 Visible'}</button></div></div>`;}).join('');}
 function filterClients(q){q=(q||'').toLowerCase();const fl=(data.clients||[]).filter(c=>![c.name,c.code,c.phone].some(v=>String(v||'').toLowerCase().includes(q))?false:true);const list=document.getElementById('clientsList');if(list)list.innerHTML=fl.map(c=>{const debt=clientDebt(c.id);const badges=eqBadges(c);return `<div class="client-card"><div class="row space"><div><b>${esc(c.name)} · #${esc(c.code)}</b>${badges?`<div style="margin-top:6px;">${badges}</div>`:''}</div><span class="debt-chip ${debt<=0?'ok':''}">${debt<=0?'Sin deuda':money(debt)}</span></div></div>`;}).join('')||'<p class="muted">Sin resultados.</p>';}
 function clientForm(id){let c=findClient(id)||{id:uid(),code:nextFreeClientCode(),name:'',phone:'',addresses:[''],payment:'ctacte',creditLimit:0,notes:'',enabled:true,comodato:false,equipo:'',equipoCantidad:0,prices:{},hideDebtFromDriver:false};const p=c.prices||{};modal(`<h2>${id?'Editar':'Nuevo'} cliente</h2><div class="twocol"><div class="field"><label>Nombre</label><input id="cn" value="${esc(c.name)}"></div><div class="field"><label>Código</label><input id="cc" value="${esc(c.code)}" maxlength="4"></div></div><div class="field"><label>Teléfono</label><input id="cp" value="${esc(c.phone)}" inputmode="tel"></div><div class="field"><label>Direcciones</label><textarea id="ca" rows="3">${esc((c.addresses||[]).join('\n'))}</textarea></div><div class="field"><label>Pago</label><select id="cpy"><option value="ctacte" ${c.payment==='ctacte'?'selected':''}>Cta Cte</option><option value="efectivo" ${c.payment==='efectivo'?'selected':''}>Efectivo</option><option value="transferencia" ${c.payment==='transferencia'?'selected':''}>Transf</option></select></div><div class="notice purple" style="margin-top:14px;"><label style="display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer;"><input type="checkbox" id="chide" ${c.hideDebtFromDriver?'checked':''} style="width:auto;margin:0;"> <b>🔒 Ocultar deuda a choferes</b></label></div><label style="margin-top:8px;display:block;"><input type="checkbox" id="ce" ${c.enabled?'checked':''}> Activo</label><div class="row" style="justify-content:space-between;margin-top:22px;gap:8px;flex-wrap:wrap;"><div>${id?`<button class="btn danger" onclick="deleteClient('${id}')">🗑 Eliminar</button>`:''}</div><div class="row" style="gap:8px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn primary" onclick="saveClient('${c.id}','${id?'old':'new'}')">💾 Guardar</button></div></div>`);}
-function saveClient(id,type){let code=String($('cc').value||'').trim();if(!/^\d{4}$/.test(code))code=nextFreeClientCode();const c={id,code,name:$('cn').value.trim(),phone:$('cp').value.trim(),addresses:$('ca').value.split('\n').map(a=>a.trim()).filter(Boolean),payment:$('cpy').value,creditLimit:0,prices:{},notes:'',enabled:$('ce').checked,hideDebtFromDriver:$('chide').checked,comodato:false,equipo:'',equipoCantidad:0};if(!c.name)return toast('Nombre');if(type==='old'){Object.assign(findClient(id),c);dbSet('clients/'+id,c);}else{data.clients.push(c);dbSet('clients/'+c.id,c);}save();closeModal();render();toast('Guardado #'+code);}
+function saveClient(id,type){let code=String($('cc').value||'').trim();if(!/^\d{4}$/.test(code))code=nextFreeClientCode();const c={id,code,name:$('cn').value.trim(),phone:$('cp').value.trim(),addresses:$('ca').value.split('\n').map(a=>a.trim()).filter(Boolean),payment:$('cpy').value,creditLimit:0,prices:{},notes:'',enabled:$('ce').checked,hideDebtFromDriver:$('chide').checked,comodato:false,equipo:'',equipoCantidad:0};if(!c.name)return toast('Nombre');if(type==='old'){Object.assign(findClient(id),c);dbSet('clients/'+id,c);}else{data.clients.push(c);dbSetItem('clients',c);}save();closeModal();render();toast('Guardado #'+code);}
 function deleteClient(id){if(!confirm('¿Eliminar?'))return;data.clients=data.clients.filter(x=>x.id!==id);dbSet('clients/'+id,null);save();closeModal();render();}
 function clientHistory(id){const c=findClient(id);if(!c)return;const sales=(data.driverSales||[]).filter(s=>s.clientId===id).sort((a,b)=>b.created-a.created);const info=clientDebtInfo(id);modal(`<h2>📋 ${esc(c.name)}</h2><p class="muted">#${esc(c.code)} · Deuda: <b style="color:var(--red)">${money(info.total)}</b></p><h3 style="margin-top:20px;">Ventas (${sales.length})</h3><div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Productos</th><th>Total</th></tr></thead><tbody>${sales.slice(0,30).map(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}`).join(' · ')||'—';return `<tr><td>${s.date}</td><td>${items}</td><td><b>${money(s.total||s.collection)}</b></td></tr>`;}).join('')||'<tr><td colspan="3">—</td></tr>'}</tbody></table></div><div class="row" style="justify-content:flex-end;margin-top:22px;"><button class="btn" onclick="closeModal()">Cerrar</button></div>`);}
 function paymentsAdmin(){const ps=(data.payments||[]).map(p=>({...p,_tipo:'manual'})).sort((a,b)=>(b.created||0)-(a.created||0));const cobros=(data.driverSales||[]).filter(s=>s.payment==='cobrocc').map(s=>({id:s.id,date:s.date,created:s.created,clientId:s.clientId,clientName:s.clientName,amount:s.collection,method:'Cobro chofer '+(s.collectionMethod==='transferencia'?'(Transf.)':'(Efectivo)'),note:(getDrivers().find(d=>d.pin===s.pin)?.name||s.pin),_tipo:'cobrochofer'}));const all=[...ps,...cobros].sort((a,b)=>(b.created||0)-(a.created||0));const total=all.reduce((a,p)=>a+Number(p.amount||0),0);const contenido=`<section class="grid"><div class="kpi green"><label>Total registrado</label><b>${money(total)}</b></div><div class="kpi purple"><label>Manuales</label><b>${ps.length}</b></div><div class="kpi gold"><label>Cobros de chofer</label><b>${cobros.length}</b></div></section><div class="row space no-print" style="margin-top:14px;margin-bottom:12px;"><button class="btn primary" onclick="paymentForm()">+ Registrar pago manual</button></div><table class="table" style="margin-top:12px;"><thead><tr><th>Fecha</th><th>Tipo</th><th>Cliente</th><th>Monto</th><th class="no-print"></th></tr></thead><tbody>${all.slice(0,150).map(p=>{const c=p.clientId?findClient(p.clientId):null;const name=p.clientName||(c?c.name:'—');const delBtn=p._tipo==='manual'?`<button class="btn xs danger" onclick="deletePayment('${p.id}')">🗑</button>`:'';return `<tr><td>${p.date}</td><td>${p._tipo==='cobrochofer'?'🚚 Chofer':'💼 Manual'}</td><td><b>${esc(name)}</b></td><td><b style="color:var(--green)">${money(p.amount)}</b></td><td class="no-print">${delBtn}</td></tr>`;}).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted)">—</td></tr>'}</tbody></table>`;return wrapSeccion('secPagos','💰 Pagos y Cobros',`<section class="panel">${contenido}</section>`);}
-function paymentForm(clientId){const opts=(data.clients||[]).map(c=>`<option value="${c.id}" ${c.id===clientId?'selected':''}>${esc(c.name)} · #${c.code}</option>`).join('');modal(`<h2>💰 Pago</h2><div class="field"><label>Cliente</label><select id="pClient">${opts}</select></div><div class="field"><label>Monto</label><input id="pAmount" type="number"></div><div class="twocol"><div class="field"><label>Método</label><select id="pMethod"><option>Efectivo</option><option>Transferencia</option></select></div><div class="field"><label>Fecha</label><input id="pDate" type="date" value="${today()}"></div></div><div class="field"><label>Nota</label><input id="pNote"></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn green" onclick="savePayment()">Registrar</button></div>`);}
+function paymentForm(clientId){const opts=(data.clients||[]).map(c=>`<option value="${c.id}" ${c.id===clientId?'selected':''}>${esc(c.name)} · #${c.code}</option>`).join('');modal(`<h2>💰 Pago</h2><div class="field"><label>Cliente</label><select id="pClient">${opts}</select></div><div class="field"><label>Monto</label><input id="pAmount" type="number"></div><div class="twocol"><div class="field"><label>Método</label><select id="pMethod"><option>Efectivo</option><option>Transferencia</option><option>Ajuste</option></select></div><div class="field"><label>Fecha</label><input id="pDate" type="date" value="${today()}"></div></div><div class="field"><label>Nota</label><input id="pNote"></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn green" onclick="savePayment()">Registrar</button></div>`);}
 function savePayment(){
   const cid=$('pClient').value;
   const a=Number($('pAmount').value);
@@ -1463,7 +1512,7 @@ function savePayment(){
   if(!cid||!a||a<=0)return toast('Completá');
   const nuevo={id:uid(),created:Date.now(),clientId:cid,amount:a,method:m,date:d,note:n};
   data.payments.unshift(nuevo);
-  dbSet('payments/'+nuevo.id,nuevo);
+  dbSetItem('payments',nuevo);
   if(window.__invalidateDebtCache) window.__invalidateDebtCache();
   save();
   closeModal();
@@ -1480,7 +1529,7 @@ function deletePayment(id){
 }
 
 function financeAdmin(){const hoy=today();const ms=hoy.slice(0,7)+'-01';const calc=(from,to)=>{let v=0,c=0,g=0;(data.driverSales||[]).forEach(s=>{if(s.date<from||s.date>to)return;if(s.payment!=='cobrocc')v+=Number(s.total||0);else v+=Number(s.collection||0);c+=Number(s.cost||0);});(data.driverGastos||[]).forEach(x=>{if(x.date>=from&&x.date<=to)g+=Number(x.amount||0);});(data.expenses||[]).forEach(x=>{if(x.date>=from&&x.date<=to)g+=Number(x.amount||0);});return {v,c,g,gn:v-c-g};};const mes=calc(ms,hoy);const contenido=`<section class="grid"><div class="kpi blue"><label>Ventas mes</label><b>${money(mes.v)}</b></div><div class="kpi warn"><label>Costo mes</label><b>${money(mes.c)}</b></div><div class="kpi red"><label>Gastos mes</label><b>${money(mes.g)}</b></div><div class="kpi ${mes.gn>=0?'green':'red'}"><label>Ganancia neta mes</label><b>${money(mes.gn)}</b></div></section><section class="panel"><h3>💼 Gastos admin</h3><div class="field no-print"><label>Concepto</label><input id="exName"></div><div class="field no-print"><label>Monto</label><input id="exAmount" type="number"></div><button class="btn primary no-print" onclick="addExpense()">+ Registrar</button><div style="margin-top:14px;">${(data.expenses||[]).slice(0,30).map(x=>`<div class="row space" style="padding:8px 0;border-bottom:1px solid var(--line-2);"><span>${esc(x.name)} <small class="muted">${x.date}</small></span><div><b>${money(x.amount)}</b> <button class="btn xs danger no-print" onclick="deleteExpense('${x.id}')">🗑</button></div></div>`).join('')||'<p class="muted">Sin gastos.</p>'}</div></section>`;return wrapSeccion('secFinanzas','💼 Finanzas',contenido);}
-function addExpense(){const n=$('exName').value.trim(),a=Number($('exAmount').value);if(!n||!a)return toast('Completá');const nuevo={id:uid(),name:n,amount:a,date:today()};data.expenses.unshift(nuevo);dbSet('expenses/'+nuevo.id,nuevo);save();render();}
+function addExpense(){const n=$('exName').value.trim(),a=Number($('exAmount').value);if(!n||!a)return toast('Completá');const nuevo={id:uid(),name:n,amount:a,date:today()};data.expenses.unshift(nuevo);dbSetItem('expenses',nuevo);save();render();}
 function deleteExpense(id){if(!confirm('¿Eliminar?'))return;data.expenses=data.expenses.filter(x=>x.id!==id);dbSet('expenses/'+id,null);save();render();}
 function adminFacturar(){const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');const hs=today();const pd=hs.slice(0,7)+'-01';return `<section class="panel"><h3 style="margin:0 0 14px;">📄 Facturar por Cliente</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="facClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="facDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="facHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="generarFactura()">📄 Generar factura</button><div id="facturaContainer" style="margin-top:18px;"></div></section>`;}
 let facturaActual=null;
@@ -1516,7 +1565,7 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
       if(remoto){
         let cambios=false;
         ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'].forEach(k=>{
-          if(remoto[k]){ data[k] = remoto[k]; cambios = true; }
+          if(remoto[k]){ data[k] = mergeById(remoto[k], data[k]); cambios = true; }
         });
         if(remoto.products) { data.products = remoto.products; cambios = true; }
         if(remoto.settings) { data.settings = remoto.settings; cambios = true; }
