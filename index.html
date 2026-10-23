@@ -213,22 +213,19 @@ function initFirebase(){
   }catch(e){ console.warn('Firebase init fail:',e); return false; }
 }
 
-// NUEVO MOTOR DE SINCRONIZACIÓN: Escucha en tiempo real y sobrescribe la verdad local
+// MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL
 function attachListener(){
   if(!fbRef) return;
   if(fbListener) fbRef.off("value", fbListener);
   
   fbListener = fbRef.on("value", snap => {
     const remoto = snap.val();
-    if(!remoto) return; // Si Firebase está vacío, no hacemos nada (esperamos el Seed)
+    if(!remoto) return; 
     
-    // 1. Sobrescribimos los datos locales EXACTAMENTE con lo que dice la nube
-    // Esto elimina automáticamente cualquier dato "zombi" en el celular.
     let cambios = false;
     const keysToSync = ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'];
     
     keysToSync.forEach(k => {
-      // Comparamos si lo que hay en la nube es distinto a lo local
       const localStr = JSON.stringify(data[k] || []);
       const remotoStr = JSON.stringify(remoto[k] || []);
       if (localStr !== remotoStr) {
@@ -241,7 +238,6 @@ function attachListener(){
     if (remoto.settings && JSON.stringify(data.settings) !== JSON.stringify(remoto.settings)) { data.settings = remoto.settings; cambios = true; }
     if (remoto.paymentSheet && JSON.stringify(data.paymentSheet) !== JSON.stringify(remoto.paymentSheet)) { data.paymentSheet = remoto.paymentSheet; cambios = true; }
 
-    // Si hubo cambios (incluyendo borrados), guardamos y renderizamos
     if(cambios){
       save();
       try{ if(typeof migrateData==='function') migrateData(); }catch(e){}
@@ -269,10 +265,10 @@ async function loadSeedFile(){ const res=await fetch(APP.seedUrl,{cache:"no-stor
 window.forzarSincronizacion = function() {
     if(!confirm("Esto borrará la memoria local del dispositivo y volverá a descargar todo de la nube. ¿Continuar?")) return;
     try {
-        firebase.database().goOffline(); // Desconectar
-        localStorage.removeItem(KEY);    // Borrar memoria
-        localStorage.removeItem(APP.storage.bootstrap); // Borrar flag de seed
-        firebase.database().goOnline();  // Reconectar
+        firebase.database().goOffline();
+        localStorage.removeItem(KEY);
+        localStorage.removeItem(APP.storage.bootstrap);
+        firebase.database().goOnline();
         setTimeout(() => window.location.reload(), 500);
     } catch (e) {
         alert("Error al forzar: " + e.message);
@@ -616,27 +612,39 @@ function updateStockDevuelta(pin,prod,val){const st=ensureOpenStock(pin);st.devu
 function calcDriverTotals(sales,gastos){let ef=0,tf=0,cc=0,cbEf=0,cbTf=0,b=0;for(const x of sales){if(x.payment==='efectivo')ef+=Number(x.total||0);if(x.payment==='transferencia')tf+=Number(x.total||0);if(x.payment==='ctacte')cc+=Number(x.total||0);if(x.payment==='cobrocc'){const m=x.collectionMethod||'efectivo';if(m==='transferencia')cbTf+=Number(x.collection||0);else cbEf+=Number(x.collection||0);}Object.values(x.qty||{}).forEach(q=>b+=Number(q||0));}const g=gastos.reduce((a,x)=>a+Number(x.amount||0),0);return {efectivo:ef,transferencia:tf,ctacte:cc,cobros:cbEf+cbTf,cobrosEfectivo:cbEf,cobrosTransferencia:cbTf,bolsas:b,gastos:g};}
 
 function driverView(){
-  const pin=currentDriverPin;const driverName=getDrivers().find(x=>x.pin===pin)?.name||pin;
+  const pin=currentDriverPin;
+  const driverName=getDrivers().find(x=>x.pin===pin)?.name||pin;
   const mySales=(data.driverSales||[]).filter(s=>s.pin===pin&&!s.closed);
   const myGastos=(data.driverGastos||[]).filter(g=>g.pin===pin&&!g.closed);
   const myPedidos=(data.pedidos||[]).filter(p=>String(p.driver)===String(pin)&&p.status==='pendiente').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const totals=calcDriverTotals(mySales,myGastos);const debts=clientsWithDebt(true);
+  const totals=calcDriverTotals(mySales,myGastos);
+  
+  // --- OPTIMIZACIÓN: Cargamos las deudas de forma asíncrona para no colgar la pantalla ---
+  let debtsHtml = '<div class="notice info">Cargando deudas...</div>';
+  setTimeout(() => {
+    try {
+      const debts = clientsWithDebt(true);
+      if(debts.length===0){
+        debtsHtml='<div class="notice green" style="margin-top:10px;">🎉 No hay clientes con deuda activa.</div>';
+      } else {
+        debtsHtml = debts.map(({client,info})=>{
+          const badges=eqBadges(client);
+          return `<div class="debt-card ${info.isOverdue?'overdue':''}"><div class="top"><div><div class="name">${esc(client.name)} <span class="muted" style="font-weight:400;font-size:12px;">· #${esc(client.code)}</span></div>${badges?`<div style="margin-top:6px;">${badges}</div>`:''}</div><div style="text-align:right;"><div class="amount">${money(info.total)}</div><button class="btn xs green" style="margin-top:8px;" onclick="driverQuickCollect('${client.id}')">💰 Cobrar</button></div></div></div>`;
+        }).join('');
+      }
+      const el = document.getElementById('driverDebtsList');
+      if(el) el.innerHTML = debtsHtml;
+    } catch(e) { console.error(e); }
+  }, 100);
+  // --------------------------------------------------------------------------------------
+
   const st=ensureOpenStock(pin);const sold=calcSoldByProduct(pin);
   const mismatches=[];PROD_KEYS.forEach(k=>{const c=Number(st.carga[k])||0;const v=Number(sold[k])||0;const d=Number(st.devuelta[k])||0;if(c>0&&d!==(c-v))mismatches.push({product:k,cargado:c,vendido:v,devuelto:d,esperado:c-v,diff:d-(c-v)});});
   const canClose=mismatches.length===0&&myPedidos.filter(p=>diasHasta(p.date)<=0).length===0;
-  const clientOpts=(data.clients||[]).filter(c=>c.enabled).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{
-    const info=clientDebtInfo(c.id,true);
-    const tag=info.total>0?` · debe ${money(info.total)}`:'';
-    let eq='';
-    if(c.equipo||c.comodato){
-      const lbl=c.equipo?(EQ_LABELS[c.equipo]||c.equipo):'';
-      const cnt=(Number(c.equipoCantidad)||0)>1?' ×'+c.equipoCantidad:'';
-      const com=c.comodato?' 📋':'';
-      eq=` · ${lbl}${cnt}${com}`;
-    }
-    return `<option value="${c.id}">${esc(c.name)} · #${c.code}${tag}${eq}</option>`;
-  }).join('');
+  const clientOpts=(data.clients||[]).filter(c=>c.enabled).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');
+  
   let ventasHtml='';if(mySales.length===0){ventasHtml='<p class="muted" style="text-align:center;padding:20px;">No hay ventas todavía.</p>';}else{ventasHtml=mySales.slice().reverse().map(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}`).join(' · ')||'—';const payLabel=s.payment==='efectivo'?'💵 Efectivo':s.payment==='transferencia'?'💳 Transf':s.payment==='ctacte'?'📋 Cta Cte':s.payment==='cobrocc'?('🔄 Cobro '+(s.collectionMethod==='transferencia'?'Transf':'Ef.')):'—';return `<div class="sale-row"><div class="row space" style="flex-wrap:wrap;gap:8px;"><div><b style="font-size:14px">${esc(s.clientName)}</b><br><span class="muted" style="font-size:12px;">${items}</span></div><div style="text-align:right;"><div style="font-weight:900;font-size:18px;font-family:'Fraunces',serif;">${money(s.total||s.collection)}</div><span class="muted" style="font-size:11px;">${payLabel}</span></div></div><div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px;"><button class="btn xs" onclick="driverEditSale('${s.id}')">✏️</button><button class="btn xs danger" onclick="driverDeleteSale('${s.id}')">🗑</button></div></div>`;}).join('');}
+  
   let gastosHtml='';let gastosTotal=0;let naftaTotal=0,choferTotal=0,otrosTotal=0;
   if(myGastos.length===0){gastosHtml='<p class="muted" style="text-align:center;padding:16px;">Sin gastos.</p>';}
   else{
@@ -650,7 +658,7 @@ function driverView(){
     }).join('');
     gastosHtml+=`<div class="gasto-total-row" style="background:linear-gradient(135deg,#fef2f2,#fff);border:2px solid #fecaca;padding:14px 20px;border-radius:12px;margin-top:14px;"><div style="display:flex;flex-direction:column;gap:4px;"><div class="gasto-cat-row" style="border:0;padding:2px 0;"><span>⛽ Nafta</span><b>${money(naftaTotal)}</b></div><div class="gasto-cat-row" style="border:0;padding:2px 0;"><span>👨‍✈️ Chofer</span><b>${money(choferTotal)}</b></div><div class="gasto-cat-row" style="border:0;padding:2px 0;"><span>📦 Otros</span><b>${money(otrosTotal)}</b></div><div style="border-top:2px solid #fecaca;padding-top:6px;margin-top:4px;display:flex;justify-content:space-between;font-size:15px;font-weight:900;color:#b91c1c;"><span>💸 TOTAL GASTOS</span><span>${money(gastosTotal)}</span></div></div></div>`;
   }
-  let debtsHtml='';if(debts.length===0){debtsHtml='<div class="notice green" style="margin-top:10px;">🎉 No hay clientes con deuda activa.</div>';}else{const overdueList=debts.filter(d=>d.info.isOverdue);const banner=overdueList.length?`<div class="notice red" style="margin-bottom:12px;">⚠️ <b>${overdueList.length} cliente(s)</b> con deuda mayor a ${DEBT_ALERT_BUSINESS_DAYS} días hábiles.</div>`:'';debtsHtml=banner+debts.map(({client,info})=>{const atraso=info.businessDays>0?`<b>${info.businessDays} días hábiles</b>`:'al día';const badges=eqBadges(client);return `<div class="debt-card ${info.isOverdue?'overdue':''}"><div class="top"><div><div class="name">${esc(client.name)} <span class="muted" style="font-weight:400;font-size:12px;">· #${esc(client.code)}</span></div><div class="muted" style="font-size:12px;margin-top:4px;">${atraso}</div>${badges?`<div style="margin-top:6px;">${badges}</div>`:''}</div><div style="text-align:right;"><div class="amount">${money(info.total)}</div><button class="btn xs green" style="margin-top:8px;" onclick="driverQuickCollect('${client.id}')">💰 Cobrar</button></div></div></div>`;}).join('');}
+
   const pedidosHoy=myPedidos.filter(p=>diasHasta(p.date)===0);
   const pedidosManana=myPedidos.filter(p=>diasHasta(p.date)===1);
   const pedidosProximos=myPedidos.filter(p=>diasHasta(p.date)>=2);
@@ -660,15 +668,17 @@ function driverView(){
   if(pedidosHoy.length){alertaHtml+=`<div class="alert-banner rojo"><span class="icon">🔔</span><span>Tenés <b>${pedidosHoy.length} pedido(s) para HOY</b></span></div>`;}
   if(pedidosManana.length){alertaHtml+=`<div class="alert-banner naranja"><span class="icon">📅</span><span>Tenés <b>${pedidosManana.length} pedido(s) para MAÑANA</b></span></div>`;}
   if(pedidosProximos.length){alertaHtml+=`<div class="alert-banner violeta"><span class="icon">📆</span><span>Tenés <b>${pedidosProximos.length} pedido(s) programado(s)</b></span></div>`;}
+  
   const stockHtml=PROD_KEYS.map(k=>{const c=Number(st.carga[k])||0;const v=Number(sold[k])||0;const d=Number(st.devuelta[k])||0;const esp=c-v;const diff=d-esp;const ok=c===0||diff===0;return `<div class="stock-cell"><div class="pname">${PROD_LABELS[k]}</div><div class="pval" style="color:var(--blue)">${c}</div><div class="muted" style="font-size:10px;">cargó · vendió ${v}</div><div class="pdiff" style="color:${ok?'var(--green)':'var(--red)'}">dev: ${d}${c>0?(ok?' ✓':' → esp '+esp):''}</div></div>`;}).join('');
   const mismatchHtml=mismatches.length?`<div class="notice red" style="margin-top:12px;"><b>⚠️ Falta cuadrar:</b><br>${mismatches.map(m=>`• <b>${PROD_LABELS[m.product]}</b>: cargó ${m.cargado}, vendió ${m.vendido}, esperado ${m.esperado}, ingresó ${m.devuelto}`).join('<br>')}</div>`:'';
   const netoEfectivo = totals.efectivo + totals.cobrosEfectivo - totals.gastos;
   const netoTotal = totals.efectivo + totals.transferencia + totals.cobrosEfectivo + totals.cobrosTransferencia - totals.gastos;
+  
   return `<div class="wrap">
   <div class="row space" style="flex-wrap:wrap;gap:10px;"><div><h1 style="margin:0;font-family:'Fraunces',serif;color:#000;">🚚 ${driverName}</h1><span class="muted">Turno abierto desde ${fdate(st.date)} · Planilla de ventas</span></div><button class="btn danger" onclick="showPublic()">Salir</button></div>
   ${alertaHtml}
   <section class="grid" style="margin-top:20px;"><div class="kpi green"><label class="driver-kpi-label">💵 Efectivo</label><b class="driver-kpi-value">${money(totals.efectivo)}</b></div><div class="kpi blue"><label class="driver-kpi-label">💳 Transf</label><b class="driver-kpi-value">${money(totals.transferencia)}</b></div><div class="kpi purple"><label class="driver-kpi-label">📋 Cta Cte</label><b class="driver-kpi-value">${money(totals.ctacte)}</b></div><div class="kpi warn"><label class="driver-kpi-label">🔄 Cobros Ef.</label><b class="driver-kpi-value">${money(totals.cobrosEfectivo)}</b></div></section>
-  <section class="grid" style="margin-top:12px;"><div class="kpi cyan"><label class="driver-kpi-label">🔄 Cobros Transf.</label><b class="driver-kpi-value">${money(totals.cobrosTransferencia)}</b></div><div class="kpi"><label class="driver-kpi-label">💸 Gastos</label><b class="driver-kpi-value">${money(totals.gastos)}</b></div><div class="kpi"><label class="driver-kpi-label">🧊 Bolsas</label><b class="driver-kpi-value">${totals.bolsas}</b></div><div class="kpi red"><label class="driver-kpi-label">💳 Deudas a cobrar</label><b class="driver-kpi-value">${money(debts.reduce((a,d)=>a+d.info.total,0))}</b></div></section>
+  <section class="grid" style="margin-top:12px;"><div class="kpi cyan"><label class="driver-kpi-label">🔄 Cobros Transf.</label><b class="driver-kpi-value">${money(totals.cobrosTransferencia)}</b></div><div class="kpi"><label class="driver-kpi-label">💸 Gastos</label><b class="driver-kpi-value">${money(totals.gastos)}</b></div><div class="kpi"><label class="driver-kpi-label">🧊 Bolsas</label><b class="driver-kpi-value">${totals.bolsas}</b></div><div class="kpi red"><label class="driver-kpi-label">💳 Deudas a cobrar</label><b class="driver-kpi-value" id="driverTotalDebt">...</b></div></section>
   <section class="grid" style="margin-top:12px;">
     <div class="kpi gold" style="border-color:#b8860b;grid-column:span 2;"><label class="driver-kpi-label">💰 NETO A ENTREGAR EN EFECTIVO</label><b class="driver-kpi-value" style="color:#b8860b;font-size:38px;">${money(netoEfectivo)}</b><span class="muted" style="font-size:12px;margin-top:4px;display:block;">💵 ${money(totals.efectivo)} + 🔄 ${money(totals.cobrosEfectivo)} − 💸 ${money(totals.gastos)}</span></div>
     <div class="kpi cyan" style="grid-column:span 2;"><label class="driver-kpi-label">📊 NETO TOTAL (con transferencias)</label><b class="driver-kpi-value" style="color:var(--blue);font-size:38px;">${money(netoTotal)}</b><span class="muted" style="font-size:12px;margin-top:4px;display:block;">Incluye 💳 ${money(totals.transferencia)} + 🔄 ${money(totals.cobrosTransferencia)}</span></div>
@@ -688,7 +698,13 @@ function driverView(){
     <div class="stock-grid" style="margin-top:16px;">${stockHtml}</div>
     ${mismatchHtml}
   </section>
-  <section class="panel"><div class="row space" style="flex-wrap:wrap;gap:8px;"><h3 class="driver-section-title" style="margin:0;">💳 A quién cobrar (${debts.length})</h3><button class="btn sm" onclick="driverCopyDebtsList()">📋 Copiar</button></div><div style="margin-top:14px;">${debtsHtml}</div></section>
+  <section class="panel">
+    <div class="row space" style="flex-wrap:wrap;gap:8px; margin-bottom:14px;">
+        <h3 class="driver-section-title" style="margin:0;">💳 A quién cobrar</h3>
+        <button class="btn sm" onclick="driverCopyDebtsList()">📋 Copiar</button>
+    </div>
+    <div id="driverDebtsList">${debtsHtml}</div>
+  </section>
   <section class="panel"><div class="row space" style="flex-wrap:wrap;gap:8px;"><h3 class="driver-section-title" style="margin:0;">➕ Cargar venta</h3><button class="btn sm green" onclick="driverAddClientForm()">👤 Nuevo cliente</button></div>
     <div class="field"><label class="driver-label">Cliente</label><select id="dSelClient" onchange="driverOnClientChange()"><option value="">— Elegí —</option>${clientOpts}</select></div>
     <div id="dClientInfo" class="notice info" style="margin:12px 0;display:none;"></div>
