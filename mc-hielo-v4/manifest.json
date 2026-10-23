@@ -1,0 +1,10 @@
+{
+  "name": "GLACIAR · M&C Hielo",
+  "short_name": "GLACIAR",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a1128",
+  "theme_color": "#0a1128",
+  "description": "Sistema operativo comercial para M&C Hielo",
+  "icons": []
+}
