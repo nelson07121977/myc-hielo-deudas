@@ -201,7 +201,7 @@ function sanitizeForFirebase(obj){
   if(typeof obj==='object'){const out={};for(const k in obj){const v=obj[k];if(v!==undefined)out[k]=sanitizeForFirebase(v);}return out;}
   return obj;
 }
-function save(){ try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){} }
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){} if(window.__invalidateDebtCache) window.__invalidateDebtCache(); }
 function dbSet(path, value){ if(!fbRef) return; try{ fbRef.child(path).set(sanitizeForFirebase(value)).catch(e=>console.warn('fbSet',path,e.message)); }catch(e){console.warn('fbSet',path,e.message);} }
 function dbUpdate(path, patch){ if(!fbRef) return; try{ fbRef.child(path).update(sanitizeForFirebase(patch)).catch(e=>console.warn('fbUpdate',path,e.message)); }catch(e){console.warn('fbUpdate',path,e.message);} }
 function initFirebase(){
@@ -213,36 +213,39 @@ function initFirebase(){
   }catch(e){ console.warn('Firebase init fail:',e); return false; }
 }
 
-// MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL
+// MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL (optimizado: sin JSON.stringify masivo)
 function attachListener(){
   if(!fbRef) return;
   if(fbListener) fbRef.off("value", fbListener);
-  
+
+  let renderTimer = null;
+  const scheduleRender = () => {
+    if(renderTimer) return;
+    renderTimer = setTimeout(() => {
+      renderTimer = null;
+      try { if(typeof render==='function') render(); } catch(e){}
+    }, 120);
+  };
+
   fbListener = fbRef.on("value", snap => {
     const remoto = snap.val();
-    if(!remoto) return; 
-    
-    let cambios = false;
-    const keysToSync = ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'];
-    
-    keysToSync.forEach(k => {
-      const localStr = JSON.stringify(data[k] || []);
-      const remotoStr = JSON.stringify(remoto[k] || []);
-      if (localStr !== remotoStr) {
-        data[k] = remoto[k] || [];
-        cambios = true;
-      }
-    });
+    if(!remoto) return;
 
-    if (remoto.products && JSON.stringify(data.products) !== JSON.stringify(remoto.products)) { data.products = remoto.products; cambios = true; }
-    if (remoto.settings && JSON.stringify(data.settings) !== JSON.stringify(remoto.settings)) { data.settings = remoto.settings; cambios = true; }
-    if (remoto.paymentSheet && JSON.stringify(data.paymentSheet) !== JSON.stringify(remoto.paymentSheet)) { data.paymentSheet = remoto.paymentSheet; cambios = true; }
-
-    if(cambios){
-      save();
-      try{ if(typeof migrateData==='function') migrateData(); }catch(e){}
-      try{ if(typeof render==='function') render(); }catch(e){}
+    // Firebase es la fuente de verdad: asignamos directo sin comparar strings.
+    // Comparar con JSON.stringify arrays grandes causa "Maximum call stack size exceeded".
+    const keys = ['clients','orders','payments','driverSales','driverDays',
+                  'driverGastos','driverStock','pedidos','expenses','leads','visits'];
+    for(let i=0;i<keys.length;i++){
+      const k = keys[i];
+      if(remoto[k] !== undefined) data[k] = remoto[k];
     }
+    if(remoto.products !== undefined)     data.products     = remoto.products;
+    if(remoto.settings !== undefined)     data.settings     = remoto.settings;
+    if(remoto.paymentSheet !== undefined) data.paymentSheet = remoto.paymentSheet;
+
+    save();
+    try { if(typeof migrateData==='function') migrateData(); } catch(e){}
+    scheduleRender();
   }, err => console.warn('[fb] listener err', err.message));
 }
 
@@ -547,7 +550,94 @@ function clientDebtInfo(clientId,forDriver){
 }
 
 function totalDebt(){return (data.clients||[]).reduce((s,c)=>s+Math.max(0,clientDebt(c.id)),0);}
-function clientsWithDebt(forDriver){return (data.clients||[]).map(c=>({client:c,info:clientDebtInfo(c.id,forDriver)})).filter(x=>x.info.total>0).sort((a,b)=>b.info.total-a.info.total);}
+
+// ===== CÁLCULO DE DEUDAS OPTIMIZADO (O(n) con cache) =====
+let _debtCache = { stamp: 0, byClient: null };
+
+function buildDebtMap(forDriver){
+  const stamp = (data.orders?.length||0) + '|' +
+                (data.driverSales?.length||0) + '|' +
+                (data.payments?.length||0) + '|' +
+                (forDriver ? '1' : '0');
+
+  if(_debtCache.byClient && _debtCache.stamp === stamp) {
+    return _debtCache.byClient;
+  }
+
+  const map = new Map();
+
+  const get = (cid) => {
+    let e = map.get(cid);
+    if(!e){ e = { owed:0, paid:0, movimientos:[] }; map.set(cid, e); }
+    return e;
+  };
+
+  const orders = data.orders || [];
+  for(let i=0;i<orders.length;i++){
+    const o = orders[i];
+    if(o.payment !== 'Cuenta corriente' || o.status === 'Cancelado') continue;
+    if(forDriver && o.hideFromDriver) continue;
+    const amt = Number(o.total||0);
+    const e = get(String(o.clientId));
+    e.owed += amt;
+    e.movimientos.push({ date:o.date, amount:amt, type:'deuda' });
+  }
+
+  const sales = data.driverSales || [];
+  for(let i=0;i<sales.length;i++){
+    const s = sales[i];
+    if(forDriver && s.hideFromDriver) continue;
+    const e = get(String(s.clientId));
+    if(s.payment === 'ctacte'){
+      const amt = Number(s.total||0);
+      e.owed += amt;
+      e.movimientos.push({ date:s.date, amount:amt, type:'deuda' });
+    } else if(s.payment === 'cobrocc'){
+      const amt = Number(s.collection||0);
+      e.paid += amt;
+      e.movimientos.push({ date:s.date, amount:amt, type:'pago' });
+    }
+  }
+
+  const payments = data.payments || [];
+  for(let i=0;i<payments.length;i++){
+    const p = payments[i];
+    if(forDriver && p.hideFromDriver) continue;
+    const e = get(String(p.clientId));
+    const amt = Number(p.amount||0);
+    e.paid += amt;
+    e.movimientos.push({ date:p.date, amount:amt, type:'pago' });
+  }
+
+  _debtCache = { stamp, byClient: map };
+  return map;
+}
+
+function clientsWithDebt(forDriver){
+  const map = buildDebtMap(forDriver);
+  const out = [];
+  const clients = data.clients || [];
+  for(let i=0;i<clients.length;i++){
+    const c = clients[i];
+    if(forDriver && c.hideDebtFromDriver) continue;
+    const e = map.get(String(c.id));
+    if(!e) continue;
+    const total = e.owed - e.paid;
+    if(total <= 0) continue;
+    out.push({ client:c, info: {
+      total,
+      oldest: null,
+      businessDays: 0,
+      isOverdue: false,
+      movimientos: e.movimientos
+    }});
+  }
+  out.sort((a,b)=>b.info.total-a.info.total);
+  return out;
+}
+
+window.__invalidateDebtCache = () => { _debtCache = { stamp:0, byClient:null }; };
+
 function getVisitorId(){let vid=localStorage.getItem('glaciar_vid');if(!vid){vid=uid();localStorage.setItem('glaciar_vid',vid);}return vid;}
 function logVisit(){try{const vid=getVisitorId();const date=today();const existing=(data.visits||[]).find(v=>v.visitorId===vid&&v.date===date);if(existing){existing.lastTime=Date.now();existing.count=(existing.count||1)+1;save();return;}let referrer='Directo';try{if(document.referrer){const r=new URL(document.referrer);const h=r.hostname.toLowerCase();if(h.includes('facebook')||h.includes('fb.'))referrer='Facebook';else if(h.includes('instagram'))referrer='Instagram';else if(h.includes('whatsapp')||h.includes('wa.me'))referrer='WhatsApp';else if(h.includes('google'))referrer='Google';else if(h.includes('tiktok'))referrer='TikTok';else if(h.includes('twitter')||h.includes('x.com'))referrer='Twitter/X';else referrer=r.hostname;}}catch(e){}const url=new URL(location.href);const utm=url.searchParams.get('utm')||url.searchParams.get('utm_source')||'';if(utm){const u=utm.toLowerCase();referrer=u.charAt(0).toUpperCase()+u.slice(1);}const ua=navigator.userAgent||'';const isMobile=/Mobi|Android|iPhone|iPad/i.test(ua);const device=isMobile?'Móvil':'Escritorio';const browser=ua.includes('Edg')?'Edge':ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':'Otro';const nuevo={id:uid(),visitorId:vid,date,firstTime:Date.now(),lastTime:Date.now(),count:1,referrer,utm,device,browser,path:url.pathname};data.visits.unshift(nuevo);dbSet('visits/'+nuevo.id,nuevo);if(data.visits.length>1000)data.visits=data.visits.slice(0,1000);save();}catch(e){}}
 function visitsStats(period){const v=data.visits||[];const hoy=today();const ws=new Date();ws.setDate(ws.getDate()-6);const wss=ws.toISOString().slice(0,10);const ms=hoy.slice(0,7)+'-01';const ys=hoy.slice(0,4)+'-01-01';let filtered=v;if(period==='today')filtered=v.filter(x=>x.date===hoy);else if(period==='week')filtered=v.filter(x=>x.date>=wss);else if(period==='month')filtered=v.filter(x=>x.date>=ms);else if(period==='year')filtered=v.filter(x=>x.date>=ys);const unique=new Set(filtered.map(x=>x.visitorId)).size;const byRef={};filtered.forEach(x=>{byRef[x.referrer]=(byRef[x.referrer]||0)+1;});const byDevice={Móvil:0,Escritorio:0};filtered.forEach(x=>{byDevice[x.device]=(byDevice[x.device]||0)+1;});return {total:filtered.length,unique,byRef,byDevice,list:filtered};}
@@ -619,23 +709,18 @@ function driverView(){
   const myPedidos=(data.pedidos||[]).filter(p=>String(p.driver)===String(pin)&&p.status==='pendiente').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const totals=calcDriverTotals(mySales,myGastos);
   
-  // --- OPTIMIZACIÓN: Cargamos las deudas de forma asíncrona para no colgar la pantalla ---
-  let debtsHtml = '<div class="notice info">Cargando deudas...</div>';
-  setTimeout(() => {
-    try {
-      const debts = clientsWithDebt(true);
-      if(debts.length===0){
-        debtsHtml='<div class="notice green" style="margin-top:10px;">🎉 No hay clientes con deuda activa.</div>';
-      } else {
-        debtsHtml = debts.map(({client,info})=>{
-          const badges=eqBadges(client);
-          return `<div class="debt-card ${info.isOverdue?'overdue':''}"><div class="top"><div><div class="name">${esc(client.name)} <span class="muted" style="font-weight:400;font-size:12px;">· #${esc(client.code)}</span></div>${badges?`<div style="margin-top:6px;">${badges}</div>`:''}</div><div style="text-align:right;"><div class="amount">${money(info.total)}</div><button class="btn xs green" style="margin-top:8px;" onclick="driverQuickCollect('${client.id}')">💰 Cobrar</button></div></div></div>`;
-        }).join('');
-      }
-      const el = document.getElementById('driverDebtsList');
-      if(el) el.innerHTML = debtsHtml;
-    } catch(e) { console.error(e); }
-  }, 100);
+  // --- Cálculo de deudas (ya optimizado, no bloquea) ---
+  const debts = clientsWithDebt(true);
+  const debtsTotal = debts.reduce((a,d)=>a+d.info.total,0);
+  let debtsHtml;
+  if(debts.length===0){
+    debtsHtml='<div class="notice green" style="margin-top:10px;">🎉 No hay clientes con deuda activa.</div>';
+  } else {
+    debtsHtml = debts.map(({client,info})=>{
+      const badges=eqBadges(client);
+      return `<div class="debt-card ${info.isOverdue?'overdue':''}"><div class="top"><div><div class="name">${esc(client.name)} <span class="muted" style="font-weight:400;font-size:12px;">· #${esc(client.code)}</span></div>${badges?`<div style="margin-top:6px;">${badges}</div>`:''}</div><div style="text-align:right;"><div class="amount">${money(info.total)}</div><button class="btn xs green" style="margin-top:8px;" onclick="driverQuickCollect('${client.id}')">💰 Cobrar</button></div></div></div>`;
+    }).join('');
+  }
   // --------------------------------------------------------------------------------------
 
   const st=ensureOpenStock(pin);const sold=calcSoldByProduct(pin);
@@ -678,7 +763,7 @@ function driverView(){
   <div class="row space" style="flex-wrap:wrap;gap:10px;"><div><h1 style="margin:0;font-family:'Fraunces',serif;color:#000;">🚚 ${driverName}</h1><span class="muted">Turno abierto desde ${fdate(st.date)} · Planilla de ventas</span></div><button class="btn danger" onclick="showPublic()">Salir</button></div>
   ${alertaHtml}
   <section class="grid" style="margin-top:20px;"><div class="kpi green"><label class="driver-kpi-label">💵 Efectivo</label><b class="driver-kpi-value">${money(totals.efectivo)}</b></div><div class="kpi blue"><label class="driver-kpi-label">💳 Transf</label><b class="driver-kpi-value">${money(totals.transferencia)}</b></div><div class="kpi purple"><label class="driver-kpi-label">📋 Cta Cte</label><b class="driver-kpi-value">${money(totals.ctacte)}</b></div><div class="kpi warn"><label class="driver-kpi-label">🔄 Cobros Ef.</label><b class="driver-kpi-value">${money(totals.cobrosEfectivo)}</b></div></section>
-  <section class="grid" style="margin-top:12px;"><div class="kpi cyan"><label class="driver-kpi-label">🔄 Cobros Transf.</label><b class="driver-kpi-value">${money(totals.cobrosTransferencia)}</b></div><div class="kpi"><label class="driver-kpi-label">💸 Gastos</label><b class="driver-kpi-value">${money(totals.gastos)}</b></div><div class="kpi"><label class="driver-kpi-label">🧊 Bolsas</label><b class="driver-kpi-value">${totals.bolsas}</b></div><div class="kpi red"><label class="driver-kpi-label">💳 Deudas a cobrar</label><b class="driver-kpi-value" id="driverTotalDebt">...</b></div></section>
+  <section class="grid" style="margin-top:12px;"><div class="kpi cyan"><label class="driver-kpi-label">🔄 Cobros Transf.</label><b class="driver-kpi-value">${money(totals.cobrosTransferencia)}</b></div><div class="kpi"><label class="driver-kpi-label">💸 Gastos</label><b class="driver-kpi-value">${money(totals.gastos)}</b></div><div class="kpi"><label class="driver-kpi-label">🧊 Bolsas</label><b class="driver-kpi-value">${totals.bolsas}</b></div><div class="kpi red"><label class="driver-kpi-label">💳 Deudas a cobrar</label><b class="driver-kpi-value">${money(debtsTotal)}</b></div></section>
   <section class="grid" style="margin-top:12px;">
     <div class="kpi gold" style="border-color:#b8860b;grid-column:span 2;"><label class="driver-kpi-label">💰 NETO A ENTREGAR EN EFECTIVO</label><b class="driver-kpi-value" style="color:#b8860b;font-size:38px;">${money(netoEfectivo)}</b><span class="muted" style="font-size:12px;margin-top:4px;display:block;">💵 ${money(totals.efectivo)} + 🔄 ${money(totals.cobrosEfectivo)} − 💸 ${money(totals.gastos)}</span></div>
     <div class="kpi cyan" style="grid-column:span 2;"><label class="driver-kpi-label">📊 NETO TOTAL (con transferencias)</label><b class="driver-kpi-value" style="color:var(--blue);font-size:38px;">${money(netoTotal)}</b><span class="muted" style="font-size:12px;margin-top:4px;display:block;">Incluye 💳 ${money(totals.transferencia)} + 🔄 ${money(totals.cobrosTransferencia)}</span></div>
