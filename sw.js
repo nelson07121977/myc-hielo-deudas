@@ -1,43 +1,36 @@
 // GLACIAR v4 - Service Worker
-// Solo cachea el shell (HTML/JS/CSS/manifest). NUNCA datos ni Firebase.
-
-const CACHE = 'glaciar-v4-shell-2';
-const CORE = ['./', './index.html', './manifest.json'];
+const CACHE = 'glaciar-v4-shell-3';
 
 self.addEventListener('install', e => {
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(CORE))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => {
+      return c.addAll(['./', './index.html', './manifest.json']).catch(err => {
+        console.warn('Algunos archivos no se pudieron cachear al inicio:', err);
+      });
+    })
   );
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
+    caches.keys().then(keys => Promise.all(
+      keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+    )).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-
   const url = new URL(e.request.url);
-
-  // NUNCA cachear Firebase, Google APIs, gstatic ni data/
+  
   if (
     url.hostname.includes('firebase') ||
     url.hostname.includes('googleapis') ||
     url.hostname.includes('gstatic') ||
     url.pathname.includes('/data/')
-  ) {
-    return;
-  }
+  ) return;
 
-  // Navegación / HTML: network-first, fallback a cache
   if (
     e.request.mode === 'navigate' ||
     (e.request.headers.get('accept') || '').includes('text/html')
@@ -54,7 +47,6 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Resto: cache-first
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request).then(res => {
       const copy = res.clone();
