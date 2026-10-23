@@ -182,7 +182,7 @@ h1,h2,h3,.display{font-family:'Fraunces',Georgia,serif;letter-spacing:-.02em}
 <div id="toast" class="toast"></div>
 <script>
 /* ============================================================
-   MOTOR DE DATOS
+   MOTOR DE DATOS Y SINCRONIZACIÓN
    ============================================================ */
 const APP = {
   firebase: { databaseURL: "https://mychielo-9f397-default-rtdb.firebaseio.com", rootNode: "glaciar_v4" },
@@ -212,11 +212,49 @@ function initFirebase(){
     return true;
   }catch(e){ console.warn('Firebase init fail:',e); return false; }
 }
-function readRemoteOnce(){
+
+// NUEVO MOTOR DE SINCRONIZACIÓN: Escucha en tiempo real y sobrescribe la verdad local
+function attachListener(){
+  if(!fbRef) return;
+  if(fbListener) fbRef.off("value", fbListener);
+  
+  fbListener = fbRef.on("value", snap => {
+    const remoto = snap.val();
+    if(!remoto) return; // Si Firebase está vacío, no hacemos nada (esperamos el Seed)
+    
+    // 1. Sobrescribimos los datos locales EXACTAMENTE con lo que dice la nube
+    // Esto elimina automáticamente cualquier dato "zombi" en el celular.
+    let cambios = false;
+    const keysToSync = ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'];
+    
+    keysToSync.forEach(k => {
+      // Comparamos si lo que hay en la nube es distinto a lo local
+      const localStr = JSON.stringify(data[k] || []);
+      const remotoStr = JSON.stringify(remoto[k] || []);
+      if (localStr !== remotoStr) {
+        data[k] = remoto[k] || [];
+        cambios = true;
+      }
+    });
+
+    if (remoto.products && JSON.stringify(data.products) !== JSON.stringify(remoto.products)) { data.products = remoto.products; cambios = true; }
+    if (remoto.settings && JSON.stringify(data.settings) !== JSON.stringify(remoto.settings)) { data.settings = remoto.settings; cambios = true; }
+    if (remoto.paymentSheet && JSON.stringify(data.paymentSheet) !== JSON.stringify(remoto.paymentSheet)) { data.paymentSheet = remoto.paymentSheet; cambios = true; }
+
+    // Si hubo cambios (incluyendo borrados), guardamos y renderizamos
+    if(cambios){
+      save();
+      try{ if(typeof migrateData==='function') migrateData(); }catch(e){}
+      try{ if(typeof render==='function') render(); }catch(e){}
+    }
+  }, err => console.warn('[fb] listener err', err.message));
+}
+
+async function readRemoteOnce(){
   return new Promise(resolve=>{
     if(!fbRef) return resolve(null);
     let done=false; const to=setTimeout(()=>{if(!done){done=true;resolve(null);}},8000);
-    fbRef.once("value",snap=>{if(done)return;done=true;clearTimeout(to);resolve(snap.val()||null);},err=>{if(done)return;done=true;clearTimeout(to);console.warn('[fb] read err (¿reglas?)',err.message);resolve(null);});
+    fbRef.once("value",snap=>{if(done)return;done=true;clearTimeout(to);resolve(snap.val()||null);},err=>{if(done)return;done=true;clearTimeout(to);console.warn('[fb] read err',err.message);resolve(null);});
   });
 }
 async function pushSeedOnce(seedData){
@@ -226,31 +264,20 @@ async function pushSeedOnce(seedData){
   await fbRef.set(payload); markBootstrapDone();
 }
 async function loadSeedFile(){ const res=await fetch(APP.seedUrl,{cache:"no-store"}); if(!res.ok) throw new Error("No se pudo leer seed.json"); return await res.json(); }
-function attachListener(){
-  if(!fbRef) return;
-  if(fbListener) fbRef.off("value",fbListener);
-  fbListener = fbRef.on("value", snap=>{
-    const remoto = snap.val();
-    if(!remoto) return;
-    let cambios = false;
-    ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'].forEach(k=>{
-      if(!Array.isArray(remoto[k])) return;
-      if(!Array.isArray(data[k])) data[k]=[];
-      const ids = new Set(data[k].map(x=>x&&x.id).filter(Boolean));
-      remoto[k].forEach(item=>{
-        if(item && item.id && !ids.has(item.id)){ data[k].push(item); ids.add(item.id); cambios=true; }
-      });
-    });
-    if((!Array.isArray(data.products)||!data.products.length) && Array.isArray(remoto.products) && remoto.products.length){ data.products=remoto.products; cambios=true; }
-    if((!data.settings||typeof data.settings!=='object') && remoto.settings){ data.settings=remoto.settings; cambios=true; }
-    if((!data.paymentSheet||!Array.isArray(data.paymentSheet.rows)||!data.paymentSheet.rows.length) && remoto.paymentSheet && Array.isArray(remoto.paymentSheet.rows) && remoto.paymentSheet.rows.length){ data.paymentSheet=remoto.paymentSheet; cambios=true; }
-    if(cambios){
-      try{ localStorage.setItem(KEY,JSON.stringify(data)); }catch(e){}
-      try{ if(typeof migrateData==='function') migrateData(); }catch(e){}
-      try{ if(typeof render==='function') render(); }catch(e){}
+
+// BOTÓN DE RESCATE: Forzar Sincronización
+window.forzarSincronizacion = function() {
+    if(!confirm("Esto borrará la memoria local del dispositivo y volverá a descargar todo de la nube. ¿Continuar?")) return;
+    try {
+        firebase.database().goOffline(); // Desconectar
+        localStorage.removeItem(KEY);    // Borrar memoria
+        localStorage.removeItem(APP.storage.bootstrap); // Borrar flag de seed
+        firebase.database().goOnline();  // Reconectar
+        setTimeout(() => window.location.reload(), 500);
+    } catch (e) {
+        alert("Error al forzar: " + e.message);
     }
-  }, err=>console.warn('[fb] listener err',err.message));
-}
+};
 
 /* ============================================================
    HELPERS GLOBALES
@@ -1190,7 +1217,16 @@ function adminModifFactura(){const co=(data.clients||[]).sort((a,b)=>a.name.loca
 let modifItems=[];
 function cargarModificacion(){const cid=$('modClient').value;const d=$('modDesde').value;const h=$('modHasta').value;if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');const r=calcularFactura(cid,d,h);modifItems=r.items.map((i,idx)=>({...i,_id:'m'+idx}));$('modifContainer').innerHTML=`<div class="factura-resumen"><span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span><span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span><span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span></div><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead><tbody>${modifItems.map(i=>`<tr><td>${fdate(i.date)}</td><td>${i.type}</td><td>${money(i.amount)}</td><td>${esc(i.detail||'')}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody></table>`;toast(`✅ ${modifItems.length} movimientos`);}
 function shareAdmin(){const link=location.href.split('?')[0];return `<section class="panel" style="background:linear-gradient(135deg,#0a1128,#0f2352);color:white;border:0;"><h2 style="font-family:'Fraunces',serif;color:white;">📤 Compartir catálogo</h2><div class="field"><label style="color:rgba(255,255,255,.75);">🔗 Link base</label><input value="${esc(link)}" readonly style="background:rgba(255,255,255,.95);"></div></section>`;}
-function settingsAdmin(){const drivers=getDrivers();const h=data.settings.hero||{};const driversHtml=drivers.map((d,i)=>`<div class="panel" style="background:var(--ice);border-left:4px solid var(--blue);margin-top:10px;"><div class="row space"><b>🚚 Chofer ${i+1}</b><button class="btn xs danger" onclick="deleteDriver(${i})">🗑 Borrar</button></div><div class="twocol" style="margin-top:10px;"><div class="field"><label>Nombre</label><input value="${esc(d.name)}" onchange="updateDriverName(${i},this.value)"></div><div class="field"><label>PIN</label><input value="${esc(d.pin)}" maxlength="6" inputmode="numeric" onchange="updateDriverPin(${i},this.value)"></div></div></div>`).join('');return `<section class="panel"><h3>⚙️ Configuración</h3><div class="twocol"><div class="field"><label>Clave admin</label><input id="adminPass" type="password" value="${esc(data.settings.adminPass)}"></div><div class="field"><label>WhatsApp</label><input id="whatsapp" value="${esc(data.settings.whatsapp||'')}"></div></div><button class="btn primary" onclick="saveAdminPass()">💾 Guardar</button></section><section class="panel"><h3>🎨 Textos Home</h3><div class="field"><label>Kicker</label><input id="hKicker" value="${esc(h.kicker||'')}"></div><div class="field"><label>Título 1</label><input id="hTitle1" value="${esc(h.title1||'')}"></div><div class="field"><label>Título 2</label><input id="hTitle2" value="${esc(h.title2||'')}"></div><div class="field"><label>Subtítulo</label><textarea id="hSubtitle" rows="2">${esc(h.subtitle||'')}</textarea></div><button class="btn primary" onclick="saveHeroSettings()">💾 Guardar</button></section><section class="panel"><h3>🚚 Choferes</h3>${driversHtml}<button class="btn green" onclick="addDriver()" style="margin-top:14px;">➕ Agregar</button></section>`;}
+function settingsAdmin(){
+  const drivers=getDrivers();const h=data.settings.hero||{};
+  const driversHtml=drivers.map((d,i)=>`<div class="panel" style="background:var(--ice);border-left:4px solid var(--blue);margin-top:10px;"><div class="row space"><b>🚚 Chofer ${i+1}</b><button class="btn xs danger" onclick="deleteDriver(${i})">🗑 Borrar</button></div><div class="twocol" style="margin-top:10px;"><div class="field"><label>Nombre</label><input value="${esc(d.name)}" onchange="updateDriverName(${i},this.value)"></div><div class="field"><label>PIN</label><input value="${esc(d.pin)}" maxlength="6" inputmode="numeric" onchange="updateDriverPin(${i},this.value)"></div></div></div>`).join('');
+  const syncPanel = `<section class="panel" style="border-left:4px solid var(--red); background:#fff5f5;">
+    <h3 style="color:var(--red);">🚨 Rescate / Forzar Sincronización</h3>
+    <p class="muted" style="margin-bottom:14px;">Si el celular o la PC muestran datos viejos que no coinciden con la nube (deudas borradas que siguen apareciendo, etc.), tocá este botón. El dispositivo olvidará todo y se bajará la verdad desde Firebase.</p>
+    <button class="btn danger" onclick="forzarSincronizacion()" style="width:100%; padding:14px; font-weight:900; font-size:15px;">🔄 FORZAR DESCARGA DESDE FIREBASE</button>
+  </section>`;
+  return `${syncPanel}<section class="panel"><h3>⚙️ Configuración</h3><div class="twocol"><div class="field"><label>Clave admin</label><input id="adminPass" type="password" value="${esc(data.settings.adminPass)}"></div><div class="field"><label>WhatsApp</label><input id="whatsapp" value="${esc(data.settings.whatsapp||'')}"></div></div><button class="btn primary" onclick="saveAdminPass()">💾 Guardar</button></section><section class="panel"><h3>🎨 Textos Home</h3><div class="field"><label>Kicker</label><input id="hKicker" value="${esc(h.kicker||'')}"></div><div class="field"><label>Título 1</label><input id="hTitle1" value="${esc(h.title1||'')}"></div><div class="field"><label>Título 2</label><input id="hTitle2" value="${esc(h.title2||'')}"></div><div class="field"><label>Subtítulo</label><textarea id="hSubtitle" rows="2">${esc(h.subtitle||'')}</textarea></div><button class="btn primary" onclick="saveHeroSettings()">💾 Guardar</button></section><section class="panel"><h3>🚚 Choferes</h3>${driversHtml}<button class="btn green" onclick="addDriver()" style="margin-top:14px;">➕ Agregar</button></section>`;
+}
 function saveAdminPass(){const p=$('adminPass').value;if(!p||p.length<4)return toast('Clave muy corta');data.settings.adminPass=p;data.settings.whatsapp=$('whatsapp').value.replace(/[^0-9]/g,'');dbSet('settings/adminPass',data.settings.adminPass);dbSet('settings/whatsapp',data.settings.whatsapp);save();toast('✅ Guardado');}
 function saveHeroSettings(){if(!data.settings.hero)data.settings.hero={};data.settings.hero.kicker=($('hKicker').value||'').trim();data.settings.hero.title1=($('hTitle1').value||'').trim();data.settings.hero.title2=($('hTitle2').value||'').trim();data.settings.hero.subtitle=($('hSubtitle').value||'').trim();dbSet('settings/hero',data.settings.hero);save();toast('✅ Guardado');render();}
 function updateDriverName(i,v){if(!data.settings.drivers[i])return;data.settings.drivers[i].name=v.trim()||('Chofer '+(i+1));dbSet('settings/drivers',data.settings.drivers);save();toast('OK');}
@@ -1205,19 +1241,19 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
     if(initFirebase()){
       const remoto = await readRemoteOnce();
       if(remoto){
+        // En el boot inicial, si hay datos en la nube, sobrescribimos la memoria local de una
         let cambios=false;
         ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'].forEach(k=>{
-          if(!Array.isArray(remoto[k])) return;
-          if(!Array.isArray(data[k])) data[k]=[];
-          const ids = new Set(data[k].map(x=>x&&x.id).filter(Boolean));
-          remoto[k].forEach(item=>{
-            if(item && item.id && !ids.has(item.id)){ data[k].push(item); ids.add(item.id); cambios=true; }
-          });
+          if(remoto[k]){ data[k] = remoto[k]; cambios = true; }
         });
-        if((!Array.isArray(data.products)||!data.products.length) && Array.isArray(remoto.products) && remoto.products.length){ data.products=remoto.products; cambios=true; }
-        if((!data.settings||typeof data.settings!=='object') && remoto.settings){ data.settings=remoto.settings; cambios=true; }
-        if((!data.paymentSheet||!Array.isArray(data.paymentSheet.rows)||!data.paymentSheet.rows.length) && remoto.paymentSheet && Array.isArray(remoto.paymentSheet.rows) && remoto.paymentSheet.rows.length){ data.paymentSheet=remoto.paymentSheet; cambios=true; }
+        if(remoto.products) { data.products = remoto.products; cambios = true; }
+        if(remoto.settings) { data.settings = remoto.settings; cambios = true; }
+        if(remoto.paymentSheet) { data.paymentSheet = remoto.paymentSheet; cambios = true; }
+        
         if(cambios){ try{ localStorage.setItem(KEY,JSON.stringify(data)); }catch(e){} try{ migrateData(); }catch(e){} }
+        attachListener();
+      } else {
+        // Si Firebase está vacío, igualmente conectamos el listener
         attachListener();
       }
     }
