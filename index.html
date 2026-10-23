@@ -234,6 +234,9 @@ function mergeById(remoteArr, localArr){
   const extras = local.filter(x => x && x.id && !remoteIds.has(String(x.id)));
   return extras.concat(remote);
 }
+function cleanDriverCollection(arr){
+  return (Array.isArray(arr) ? arr : []).filter(x => x && typeof x === 'object' && x.id && String(x.id) !== 'undefined');
+}
 function attachListener(){
   if(!fbRef) return;
   if(fbListener) fbRef.off("value", fbListener);
@@ -253,7 +256,7 @@ function attachListener(){
       const k = coleccionesChofer[i];
       if(remoto[k] !== undefined){
         const remArr = Object.values(remoto[k] || {});
-        data[k] = remArr;
+        data[k] = cleanDriverCollection(remArr);
       }
     }
     const coleccionesAdmin = ['orders','payments','visits','leads','expenses'];
@@ -492,7 +495,6 @@ function migrateData(){
   data.clients.forEach(c=>{if(!/^\d{4}$/.test(String(c.code||'')))c.code=next();});
   const seen=new Set();data.clients.forEach(c=>{if(seen.has(String(c.code)))c.code=next();seen.add(String(c.code));});
 }
-
 function toast(t){let e=document.querySelector('#toast');if(!e)return;e.textContent=t;e.classList.add('show');clearTimeout(e.x);e.x=setTimeout(()=>e.classList.remove('show'),2600);}
 function modal(html){document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="modal"><div class="dialog">${html}</div></div>`);}
 function closeModal(){var m=document.getElementById('modal');if(m&&m.parentNode)m.parentNode.removeChild(m);}
@@ -531,17 +533,13 @@ function clientDebtInfo(clientId,forDriver){
   const cid=String(clientId);
   const c=(data.clients||[]).find(x=>String(x.id)===cid);
   if(forDriver && c && c.hideDebtFromDriver) return {total:0,oldest:null,businessDays:0,isOverdue:false,movimientos:[]};
-  let owed=0;
-  let paid=0;
-  const mv=[];
+  let owed=0; let paid=0; const mv=[];
   const orders = data.orders || [];
   for(let i=0; i<orders.length; i++){
       const o = orders[i];
       if(String(o.clientId)===cid && o.payment==='Cuenta corriente' && o.status!=='Cancelado'){
           if(forDriver && o.hideFromDriver) continue;
-          const amt = Number(o.total||0);
-          owed += amt;
-          mv.push({date:o.date,amount:amt,type:'deuda'});
+          const amt = Number(o.total||0); owed += amt; mv.push({date:o.date,amount:amt,type:'deuda'});
       }
   }
   const sales = data.driverSales || [];
@@ -549,35 +547,21 @@ function clientDebtInfo(clientId,forDriver){
       const s = sales[i];
       if(String(s.clientId)!==cid) continue;
       if(forDriver && s.hideFromDriver) continue;
-      if(s.payment==='ctacte'){
-          const amt = Number(s.total||0);
-          owed += amt;
-          mv.push({date:s.date,amount:amt,type:'deuda'});
-      } else if(s.payment==='cobrocc'){
-          const amt = Number(s.collection||0);
-          paid += amt;
-          mv.push({date:s.date,amount:amt,type:'pago'});
-      }
+      if(s.payment==='ctacte'){ const amt = Number(s.total||0); owed += amt; mv.push({date:s.date,amount:amt,type:'deuda'}); }
+      else if(s.payment==='cobrocc'){ const amt = Number(s.collection||0); paid += amt; mv.push({date:s.date,amount:amt,type:'pago'}); }
   }
   const payments = data.payments || [];
   for(let i=0; i<payments.length; i++){
       const p = payments[i];
       if(String(p.clientId)===cid){
           if(forDriver && p.hideFromDriver) continue;
-          const amt = Number(p.amount||0);
-          paid += amt;
-          mv.push({date:p.date,amount:amt,type:'pago'});
+          const amt = Number(p.amount||0); paid += amt; mv.push({date:p.date,amount:amt,type:'pago'});
       }
   }
   const total = owed - paid;
   let run=0, start=null;
   const sorted = mv.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  for(const m of sorted){
-      if(m.type==='deuda') run+=m.amount;
-      else run-=m.amount;
-      if(run>0 && !start) start=m.date;
-      if(run<=0) start=null;
-  }
+  for(const m of sorted){ if(m.type==='deuda') run+=m.amount; else run-=m.amount; if(run>0 && !start) start=m.date; if(run<=0) start=null; }
   if(run<=0) start=null;
   const deudas = mv.filter(m=>m.type==='deuda');
   const oldest = start || (deudas.length ? deudas[0].date : null);
@@ -586,55 +570,32 @@ function clientDebtInfo(clientId,forDriver){
   return {total, oldest, businessDays, isOverdue, movimientos: mv};
 }
 function totalDebt(){return (data.clients||[]).reduce((s,c)=>s+Math.max(0,clientDebt(c.id)),0);}
-
 let _debtCache = { stamp: 0, byClient: null };
 function buildDebtMap(forDriver){
-  const stamp = (data.orders?.length||0) + '|' +
-                (data.driverSales?.length||0) + '|' +
-                (data.payments?.length||0) + '|' +
-                (forDriver ? '1' : '0');
-  if(_debtCache.byClient && _debtCache.stamp === stamp) {
-    return _debtCache.byClient;
-  }
+  const stamp = (data.orders?.length||0) + '|' + (data.driverSales?.length||0) + '|' + (data.payments?.length||0) + '|' + (forDriver ? '1' : '0');
+  if(_debtCache.byClient && _debtCache.stamp === stamp) { return _debtCache.byClient; }
   const map = new Map();
-  const get = (cid) => {
-    let e = map.get(cid);
-    if(!e){ e = { owed:0, paid:0, movimientos:[] }; map.set(cid, e); }
-    return e;
-  };
+  const get = (cid) => { let e = map.get(cid); if(!e){ e = { owed:0, paid:0, movimientos:[] }; map.set(cid, e); } return e; };
   const orders = data.orders || [];
   for(let i=0;i<orders.length;i++){
     const o = orders[i];
     if(o.payment !== 'Cuenta corriente' || o.status === 'Cancelado') continue;
     if(forDriver && o.hideFromDriver) continue;
-    const amt = Number(o.total||0);
-    const e = get(String(o.clientId));
-    e.owed += amt;
-    e.movimientos.push({ date:o.date, amount:amt, type:'deuda' });
+    const amt = Number(o.total||0); const e = get(String(o.clientId)); e.owed += amt; e.movimientos.push({ date:o.date, amount:amt, type:'deuda' });
   }
   const sales = data.driverSales || [];
   for(let i=0;i<sales.length;i++){
     const s = sales[i];
     if(forDriver && s.hideFromDriver) continue;
     const e = get(String(s.clientId));
-    if(s.payment === 'ctacte'){
-      const amt = Number(s.total||0);
-      e.owed += amt;
-      e.movimientos.push({ date:s.date, amount:amt, type:'deuda' });
-    } else if(s.payment === 'cobrocc'){
-      const amt = Number(s.collection||0);
-      e.paid += amt;
-      e.movimientos.push({ date:s.date, amount:amt, type:'pago' });
-    }
+    if(s.payment === 'ctacte'){ const amt = Number(s.total||0); e.owed += amt; e.movimientos.push({ date:s.date, amount:amt, type:'deuda' }); }
+    else if(s.payment === 'cobrocc'){ const amt = Number(s.collection||0); e.paid += amt; e.movimientos.push({ date:s.date, amount:amt, type:'pago' }); }
   }
   const payments = data.payments || [];
   for(let i=0;i<payments.length;i++){
     const p = payments[i];
     if(forDriver && p.hideFromDriver) continue;
-    const e = get(String(p.clientId));
-    const amt = Number(p.amount||0);
-    e.paid += amt;
-    e.movimientos.push({ date:p.date, amount:amt, type:'pago' });
+    const e = get(String(p.clientId)); const amt = Number(p.amount||0); e.paid += amt; e.movimientos.push({ date:p.date, amount:amt, type:'pago' });
   }
   _debtCache = { stamp, byClient: map };
   return map;
@@ -650,19 +611,12 @@ function clientsWithDebt(forDriver){
     if(!e) continue;
     const total = e.owed - e.paid;
     if(total <= 0) continue;
-    out.push({ client:c, info: {
-      total,
-      oldest: null,
-      businessDays: 0,
-      isOverdue: false,
-      movimientos: e.movimientos
-    }});
+    out.push({ client:c, info: { total, oldest: null, businessDays: 0, isOverdue: false, movimientos: e.movimientos } });
   }
   out.sort((a,b)=>b.info.total-a.info.total);
   return out;
 }
 window.__invalidateDebtCache = () => { _debtCache = { stamp:0, byClient:null }; };
-
 function getVisitorId(){let vid=localStorage.getItem('glaciar_vid');if(!vid){vid=uid();localStorage.setItem('glaciar_vid',vid);}return vid;}
 function logVisit(){try{const vid=getVisitorId();const date=today();const existing=(data.visits||[]).find(v=>v.visitorId===vid&&v.date===date);if(existing){existing.lastTime=Date.now();existing.count=(existing.count||1)+1;save();return;}let referrer='Directo';try{if(document.referrer){const r=new URL(document.referrer);const h=r.hostname.toLowerCase();if(h.includes('facebook')||h.includes('fb.'))referrer='Facebook';else if(h.includes('instagram'))referrer='Instagram';else if(h.includes('whatsapp')||h.includes('wa.me'))referrer='WhatsApp';else if(h.includes('google'))referrer='Google';else if(h.includes('tiktok'))referrer='TikTok';else if(h.includes('twitter')||h.includes('x.com'))referrer='Twitter/X';else referrer=r.hostname;}}catch(e){}const url=new URL(location.href);const utm=url.searchParams.get('utm')||url.searchParams.get('utm_source')||'';if(utm){const u=utm.toLowerCase();referrer=u.charAt(0).toUpperCase()+u.slice(1);}const ua=navigator.userAgent||'';const isMobile=/Mobi|Android|iPhone|iPad/i.test(ua);const device=isMobile?'Móvil':'Escritorio';const browser=ua.includes('Edg')?'Edge':ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':'Otro';const nuevo={id:uid(),visitorId:vid,date,firstTime:Date.now(),lastTime:Date.now(),count:1,referrer,utm,device,browser,path:url.pathname};data.visits.unshift(nuevo);dbSet('visits/'+nuevo.id,nuevo);if(data.visits.length>1000)data.visits=data.visits.slice(0,1000);save();}catch(e){}}
 function visitsStats(period){const v=data.visits||[];const hoy=today();const ws=new Date();ws.setDate(ws.getDate()-6);const wss=ws.toISOString().slice(0,10);const ms=hoy.slice(0,7)+'-01';const ys=hoy.slice(0,4)+'-01-01';let filtered=v;if(period==='today')filtered=v.filter(x=>x.date===hoy);else if(period==='week')filtered=v.filter(x=>x.date>=wss);else if(period==='month')filtered=v.filter(x=>x.date>=ms);else if(period==='year')filtered=v.filter(x=>x.date>=ys);const unique=new Set(filtered.map(x=>x.visitorId)).size;const byRef={};filtered.forEach(x=>{byRef[x.referrer]=(byRef[x.referrer]||0)+1;});const byDevice={Móvil:0,Escritorio:0};filtered.forEach(x=>{byDevice[x.device]=(byDevice[x.device]||0)+1;});return {total:filtered.length,unique,byRef,byDevice,list:filtered};}
@@ -676,7 +630,6 @@ function render(){
   document.querySelector('#app').innerHTML=contenido;
   if(mode==='public'&&!visitLogged){visitLogged=true;setTimeout(()=>logVisit(),600);}
 }
-
 function publicView(){
   const h=data.settings.hero||{};
   const products=(data.products||[]).filter(p=>p.active).map(p=>`<article class="card product"><span class="emoji">${p.emoji||'🧊'}</span><h3>${esc(p.name)}</h3><span class="muted" style="font-size:12.5px;">Entrega coordinada</span><div class="row space" style="margin-top:18px"><span class="price">${money(p.price)}</span><div class="qty"><button onclick="changeQ('${p.id}',-1)">−</button><b>${data.cart[p.id]||0}</b><button onclick="changeQ('${p.id}',1)">+</button></div></div></article>`).join('');
@@ -698,15 +651,11 @@ function placeOrder(){
     if(!cartItems().length)return toast('Carrito vacío');
     name=client.name;phone=client.phone||'';address=client.addresses[0]||'';
   }else{
-    name=($('oName')?.value||'').trim();
-    phone=($('oPhone')?.value||'').trim();
-    address=($('oAddress')?.value||'').trim();
+    name=($('oName')?.value||'').trim(); phone=($('oPhone')?.value||'').trim(); address=($('oAddress')?.value||'').trim();
     if(!cartItems().length||!name||!phone||!address)return toast('Completá tus datos');
     client=(data.clients||[]).find(x=>x.phone===phone);
-    if(!client){
-      client={id:uid(),code:nextFreeClientCode(),name,phone,addresses:[address],payment:'efectivo',creditLimit:0,notes:'',enabled:true,comodato:false,equipo:'',equipoCantidad:0,prices:{},hideDebtFromDriver:false};
-      data.clients.push(client);isNewClient=true;toast('Tu código es: '+client.code);
-    }else if(!client.addresses.includes(address)){client.addresses.push(address);dbSet('clients/'+client.id+'/addresses',client.addresses);}
+    if(!client){ client={id:uid(),code:nextFreeClientCode(),name,phone,addresses:[address],payment:'efectivo',creditLimit:0,notes:'',enabled:true,comodato:false,equipo:'',equipoCantidad:0,prices:{},hideDebtFromDriver:false}; data.clients.push(client);isNewClient=true;toast('Tu código es: '+client.code); }
+    else if(!client.addresses.includes(address)){client.addresses.push(address);dbSet('clients/'+client.id+'/addresses',client.addresses);}
   }
   const payMap={'Efectivo':'Efectivo','Transferencia':'Transferencia','Cuenta corriente':'Cuenta corriente'};
   const o={id:uid(),date:today(),created:Date.now(),clientId:client.id,name,phone,address,payment:payMap[$('oPay').value]||'Efectivo',items:cartItems().map(({id,name,price,q})=>({id,name,price,q})),total:cartTotal(),status:'Pendiente',note:''};
@@ -752,14 +701,7 @@ function driverView(){
   let gastosHtml='';let gastosTotal=0;let naftaTotal=0,choferTotal=0,otrosTotal=0;
   if(myGastos.length===0){gastosHtml='<p class="muted" style="text-align:center;padding:16px;">Sin gastos.</p>';}
   else{
-    gastosHtml=myGastos.map(g=>{
-      const amt=Number(g.amount)||0;gastosTotal+=amt;
-      if(g.category==='Nafta')naftaTotal+=amt;
-      else if(g.category==='Chofer')choferTotal+=amt;
-      else otrosTotal+=amt;
-      const ico=g.category==='Nafta'?'⛽':g.category==='Chofer'?'👨‍✈️':'📦';
-      return `<div class="sale-row" style="border-left:4px solid var(--orange);"><div class="row space"><div>${ico} <b>${esc(g.category)}</b>${g.detail?' · <span class="muted">'+esc(g.detail)+'</span>':''}</div><div><b>${money(amt)}</b> <button class="btn xs danger" onclick="driverDeleteGasto('${g.id}')">🗑</button></div></div></div>`;
-    }).join('');
+    gastosHtml=myGastos.map(g=>{ const amt=Number(g.amount)||0;gastosTotal+=amt; if(g.category==='Nafta')naftaTotal+=amt; else if(g.category==='Chofer')choferTotal+=amt; else otrosTotal+=amt; const ico=g.category==='Nafta'?'⛽':g.category==='Chofer'?'👨‍✈️':'📦'; return `<div class="sale-row" style="border-left:4px solid var(--orange);"><div class="row space"><div>${ico} <b>${esc(g.category)}</b>${g.detail?' · <span class="muted">'+esc(g.detail)+'</span>':''}</div><div><b>${money(amt)}</b> <button class="btn xs danger" onclick="driverDeleteGasto('${g.id}')">🗑</button></div></div></div>`; }).join('');
     gastosHtml+=`<div class="gasto-total-row" style="background:linear-gradient(135deg,#fef2f2,#fff);border:2px solid #fecaca;padding:14px 20px;border-radius:12px;margin-top:14px;"><div style="display:flex;flex-direction:column;gap:4px;"><div class="gasto-cat-row" style="border:0;padding:2px 0;"><span>⛽ Nafta</span><b>${money(naftaTotal)}</b></div><div class="gasto-cat-row" style="border:0;padding:2px 0;"><span>👨‍✈️ Chofer</span><b>${money(choferTotal)}</b></div><div class="gasto-cat-row" style="border:0;padding:2px 0;"><span>📦 Otros</span><b>${money(otrosTotal)}</b></div><div style="border-top:2px solid #fecaca;padding-top:6px;margin-top:4px;display:flex;justify-content:space-between;font-size:15px;font-weight:900;color:#b91c1c;"><span>💸 TOTAL GASTOS</span><span>${money(gastosTotal)}</span></div></div></div>`;
   }
   const pedidosHoy=myPedidos.filter(p=>diasHasta(p.date)===0);
@@ -1382,7 +1324,7 @@ function adminDriverDay(){
   const driverLabel = filt.pin ? (getDrivers().find(d=>String(d.pin)===String(filt.pin))?.name||filt.pin) : 'Todos los choferes';
   const allTime = data.driverSales||[];
   const totalHistorico = allTime.reduce((a,s)=>a+Number(s.total||0)+Number(s.collection||0),0);
-  const dias = (data.driverDays||[]).slice(0,100);
+  const dias = (data.driverDays||[]).filter(d=>d&&d.id&&d.date&&d.driverName).slice(0,100);
   const unreadCount = dias.filter(d=>d.read===false).length;
   const contenido=`
     ${unreadCount?`<div class="alert-banner naranja no-print"><span class="icon">📬</span><span>Tenés <b>${unreadCount} cierre(s) de jornada nuevo(s)</b> sin leer</span></div>`:''}
@@ -1573,7 +1515,7 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
         coleccionesChofer.forEach(k=>{
           if(remoto[k]){
             const remArr = Object.values(remoto[k]||{});
-            data[k] = remArr;
+            data[k] = cleanDriverCollection(remArr);
             cambios = true;
           }
         });
