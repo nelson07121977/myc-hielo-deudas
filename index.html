@@ -290,7 +290,7 @@ async function pushSeedOnce(seedData){
 }
 async function loadSeedFile(){ const res=await fetch(APP.seedUrl,{cache:"no-store"}); if(!res.ok) throw new Error("No se pudo leer seed.json"); return await res.json(); }
 
-// BOTÓN DE RESCATE
+// BOTÓN DE RESCATE: Forzar Sincronización
 window.forzarSincronizacion = function() {
     if(!confirm("Esto borrará la memoria local del dispositivo y volverá a descargar todo de la nube. ¿Continuar?")) return;
     try {
@@ -301,6 +301,44 @@ window.forzarSincronizacion = function() {
         setTimeout(() => window.location.reload(), 500);
     } catch (e) {
         alert("Error al forzar: " + e.message);
+    }
+};
+
+// ESTA FUNCION TOMA TODO LO DE LA PC Y LO EMPUJA A LA NUBE
+window.subirTodoANube = function() {
+    if(!confirm("⚠️ Esto va a subir TODOS los datos de esta PC (deudas, clientes, ventas) a la nube para arreglar los celulares. ¿Continuar?")) return;
+    if(!fbRef) return alert("No hay conexión a Firebase.");
+
+    try {
+        toast('Subiendo todo a la nube... esperá');
+        
+        // Agarramos la información de esta PC
+        const payload = {
+            clients: sanitizeForFirebase(data.clients || []),
+            orders: sanitizeForFirebase(data.orders || []),
+            payments: sanitizeForFirebase(data.payments || []),
+            driverSales: sanitizeForFirebase(data.driverSales || []),
+            pedidos: sanitizeForFirebase(data.pedidos || []),
+            driverGastos: sanitizeForFirebase(data.driverGastos || []),
+            driverDays: sanitizeForFirebase(data.driverDays || []),
+            driverStock: sanitizeForFirebase(data.driverStock || []),
+            expenses: sanitizeForFirebase(data.expenses || [])
+        };
+
+        // Lo subimos a Firebase de golpe
+        fbRef.update(payload)
+            .then(() => {
+                toast('✅ ¡Nube actualizada! Revisá el celular.');
+                alert("¡Listo! Los datos se subieron a la nube. Ahora andá a tu celular, entrá a la app y jalá para actualizar (o cerrá y abrí la app).");
+            })
+            .catch((e) => {
+                console.error(e);
+                alert("Error al subir: " + e.message);
+            });
+
+    } catch (e) {
+        console.error(e);
+        alert("Error inesperado: " + e.message);
     }
 };
 
@@ -1544,8 +1582,15 @@ function settingsAdmin(){
   const driversHtml=drivers.map((d,i)=>`<div class="panel" style="background:var(--ice);border-left:4px solid var(--blue);margin-top:10px;"><div class="row space"><b>🚚 Chofer ${i+1}</b><button class="btn xs danger" onclick="deleteDriver(${i})">🗑 Borrar</button></div><div class="twocol" style="margin-top:10px;"><div class="field"><label>Nombre</label><input value="${esc(d.name)}" onchange="updateDriverName(${i},this.value)"></div><div class="field"><label>PIN</label><input value="${esc(d.pin)}" maxlength="6" inputmode="numeric" onchange="updateDriverPin(${i},this.value)"></div></div></div>`).join('');
   const syncPanel = `<section class="panel" style="border-left:4px solid var(--red); background:#fff5f5;">
     <h3 style="color:var(--red);">🚨 Rescate / Forzar Sincronización</h3>
-    <p class="muted" style="margin-bottom:14px;">Si el celular o la PC muestran datos viejos que no coinciden con la nube (deudas borradas que siguen apareciendo, etc.), tocá este botón. El dispositivo olvidará todo y se bajará la verdad desde Firebase.</p>
-    <button class="btn danger" onclick="forzarSincronizacion()" style="width:100%; padding:14px; font-weight:900; font-size:15px;">🔄 FORZAR DESCARGA DESDE FIREBASE</button>
+    <p class="muted" style="margin-bottom:14px;">Si el celular o la PC muestran datos viejos que no coinciden con la nube (deudas que no aparecen en el celular, etc.), tocá este botón. Subirá TODO lo que tenés en esta PC a la nube de Firebase para que los demás aparatos se actualicen.</p>
+    
+    <button class="btn danger" onclick="subirTodoANube()" style="width:100%; padding:14px; font-weight:900; font-size:15px; margin-bottom:10px;">
+      ⬆️ FORZAR SUBIDA A FIREBASE (Reparar celulares)
+    </button>
+    
+    <button class="btn" onclick="forzarSincronizacion()" style="width:100%; padding:14px; font-weight:900; font-size:15px; color:var(--red);">
+      ⬇️ FORZAR DESCARGA DESDE FIREBASE
+    </button>
   </section>`;
   return `${syncPanel}<section class="panel"><h3>⚙️ Configuración</h3><div class="twocol"><div class="field"><label>Clave admin</label><input id="adminPass" type="password" value="${esc(data.settings.adminPass)}"></div><div class="field"><label>WhatsApp</label><input id="whatsapp" value="${esc(data.settings.whatsapp||'')}"></div></div><button class="btn primary" onclick="saveAdminPass()">💾 Guardar</button></section><section class="panel"><h3>🎨 Textos Home</h3><div class="field"><label>Kicker</label><input id="hKicker" value="${esc(h.kicker||'')}"></div><div class="field"><label>Título 1</label><input id="hTitle1" value="${esc(h.title1||'')}"></div><div class="field"><label>Título 2</label><input id="hTitle2" value="${esc(h.title2||'')}"></div><div class="field"><label>Subtítulo</label><textarea id="hSubtitle" rows="2">${esc(h.subtitle||'')}</textarea></div><button class="btn primary" onclick="saveHeroSettings()">💾 Guardar</button></section><section class="panel"><h3>🚚 Choferes</h3>${driversHtml}<button class="btn green" onclick="addDriver()" style="margin-top:14px;">➕ Agregar</button></section>`;
 }
