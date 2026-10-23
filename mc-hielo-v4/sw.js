@@ -1,7 +1,7 @@
 // GLACIAR v4 - Service Worker
 // Solo cachea el shell (HTML/JS/CSS/manifest). NUNCA datos ni Firebase.
 
-const CACHE = 'glaciar-v4-shell-1';
+const CACHE = 'glaciar-v4-shell-2';
 const CORE = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
