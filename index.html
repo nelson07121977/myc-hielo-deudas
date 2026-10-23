@@ -481,24 +481,75 @@ function clientDebt(clientId,forDriver){
   (data.payments||[]).forEach(p=>{if(String(p.clientId)===cid){if(forDriver&&p.hideFromDriver)return;paid+=Number(p.amount||0);}});
   return owed-paid;
 }
+
+// VERSIÓN OPTIMIZADA PARA EVITAR CUALQUIER TIPO DE COLGADO (AHOGO) EN EL CELULAR O PC
 function clientDebtInfo(clientId,forDriver){
-  const cid=String(clientId);const c=findClient(cid);
-  if(forDriver&&c&&c.hideDebtFromDriver)return {total:0,oldest:null,businessDays:0,isOverdue:false,movimientos:[]};
-  let owed=0,paid=0;const mv=[];
-  (data.orders||[]).forEach(o=>{if(String(o.clientId)===cid&&o.payment==='Cuenta corriente'&&o.status!=='Cancelado'){if(forDriver&&o.hideFromDriver)return;owed+=Number(o.total||0);mv.push({date:o.date,amount:Number(o.total||0),type:'deuda'});}});
-  (data.driverSales||[]).forEach(s=>{if(String(s.clientId)!==cid)return;if(forDriver&&s.hideFromDriver)return;if(s.payment==='ctacte'){owed+=Number(s.total||0);mv.push({date:s.date,amount:Number(s.total||0),type:'deuda'});}if(s.payment==='cobrocc'){paid+=Number(s.collection||0);mv.push({date:s.date,amount:Number(s.collection||0),type:'pago'});}});
-  (data.payments||[]).forEach(p=>{if(String(p.clientId)===cid){if(forDriver&&p.hideFromDriver)return;paid+=Number(p.amount||0);mv.push({date:p.date,amount:Number(p.amount||0),type:'pago'});}});
-  const total=owed-paid;
-  let run=0,start=null;
-  const sorted=mv.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  for(const m of sorted){if(m.type==='deuda')run+=m.amount;else run-=m.amount;if(run>0&&!start)start=m.date;if(run<=0)start=null;}
-  if(run<=0)start=null;
-  const deudas=mv.filter(m=>m.type==='deuda');
-  const oldest=start||(deudas.length?deudas[0].date:null);
-  const businessDays=oldest?businessDaysBetween(oldest,today()):0;
-  const isOverdue=businessDays>DEBT_ALERT_BUSINESS_DAYS&&total>0;
-  return {total,oldest,businessDays,isOverdue,movimientos:mv};
+  const cid=String(clientId);
+  const c=(data.clients||[]).find(x=>String(x.id)===cid);
+  if(forDriver && c && c.hideDebtFromDriver) return {total:0,oldest:null,businessDays:0,isOverdue:false,movimientos:[]};
+  
+  let owed=0;
+  let paid=0;
+  const mv=[];
+  
+  const orders = data.orders || [];
+  for(let i=0; i<orders.length; i++){
+      const o = orders[i];
+      if(String(o.clientId)===cid && o.payment==='Cuenta corriente' && o.status!=='Cancelado'){
+          if(forDriver && o.hideFromDriver) continue;
+          const amt = Number(o.total||0);
+          owed += amt;
+          mv.push({date:o.date,amount:amt,type:'deuda'});
+      }
+  }
+
+  const sales = data.driverSales || [];
+  for(let i=0; i<sales.length; i++){
+      const s = sales[i];
+      if(String(s.clientId)!==cid) continue;
+      if(forDriver && s.hideFromDriver) continue;
+      
+      if(s.payment==='ctacte'){
+          const amt = Number(s.total||0);
+          owed += amt;
+          mv.push({date:s.date,amount:amt,type:'deuda'});
+      } else if(s.payment==='cobrocc'){
+          const amt = Number(s.collection||0);
+          paid += amt;
+          mv.push({date:s.date,amount:amt,type:'pago'});
+      }
+  }
+
+  const payments = data.payments || [];
+  for(let i=0; i<payments.length; i++){
+      const p = payments[i];
+      if(String(p.clientId)===cid){
+          if(forDriver && p.hideFromDriver) continue;
+          const amt = Number(p.amount||0);
+          paid += amt;
+          mv.push({date:p.date,amount:amt,type:'pago'});
+      }
+  }
+
+  const total = owed - paid;
+  let run=0, start=null;
+  const sorted = mv.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  for(const m of sorted){
+      if(m.type==='deuda') run+=m.amount;
+      else run-=m.amount;
+      if(run>0 && !start) start=m.date;
+      if(run<=0) start=null;
+  }
+  if(run<=0) start=null;
+  
+  const deudas = mv.filter(m=>m.type==='deuda');
+  const oldest = start || (deudas.length ? deudas[0].date : null);
+  const businessDays = oldest ? businessDaysBetween(oldest, today()) : 0;
+  const isOverdue = businessDays > DEBT_ALERT_BUSINESS_DAYS && total > 0;
+  
+  return {total, oldest, businessDays, isOverdue, movimientos: mv};
 }
+
 function totalDebt(){return (data.clients||[]).reduce((s,c)=>s+Math.max(0,clientDebt(c.id)),0);}
 function clientsWithDebt(forDriver){return (data.clients||[]).map(c=>({client:c,info:clientDebtInfo(c.id,forDriver)})).filter(x=>x.info.total>0).sort((a,b)=>b.info.total-a.info.total);}
 function getVisitorId(){let vid=localStorage.getItem('glaciar_vid');if(!vid){vid=uid();localStorage.setItem('glaciar_vid',vid);}return vid;}
@@ -958,12 +1009,26 @@ function adminDebts(){
         const hid=client.hideDebtFromDriver;
         const toggleBtn=hid?`<button class="btn xs orange" onclick="toggleHideDebt('${client.id}')">🔒</button>`:`<button class="btn xs" onclick="toggleHideDebt('${client.id}')">🔓</button>`;
         const badges=eqBadges(client);
-        return `<tr><td>${i+1}</td><td><b>${esc(client.name)}</b> <span class="muted" style="font-size:11px;">#${esc(client.code)}</span>${hid?' <span class="status locked">🔒</span>':''}${badges?`<div style="margin-top:4px;">${badges}</div>`:''}</td><td><b style="color:var(--red);font-family:'Fraunces',serif;font-size:15px;">${money(info.total)}</b></td><td>${atr}</td><td style="font-size:12px;">${info.oldest||'—'}</td><td style="white-space:nowrap;" class="no-print">${toggleBtn} <button class="btn xs green" onclick="paymentForm('${client.id}')">💰</button> <button class="btn xs" onclick="clientHistory('${client.id}')">📋</button></td></tr>`;
+        return `<tr><td>${i+1}</td><td><b>${esc(client.name)}</b> <span class="muted" style="font-size:11px;">#${esc(client.code)}</span>${hid?' <span class="status locked">🔒</span>':''}${badges?`<div style="margin-top:4px;">${badges}</div>`:''}</td><td><b style="color:var(--red);font-family:'Fraunces',serif;font-size:15px;">${money(info.total)}</b></td><td>${atr}</td><td style="font-size:12px;">${info.oldest||'—'}</td><td style="white-space:nowrap;" class="no-print">${toggleBtn} <button class="btn xs green" onclick="paymentForm('${client.id}')">💰</button> <button class="btn xs" onclick="clientHistory('${client.id}')">📋</button> <button class="btn xs danger" onclick="borrarDeudaManual('${client.id}')">🗑 Borrar Deuda</button></td></tr>`;
       }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">🎉 Sin deudas</td></tr>'}
     </tbody><tfoot>${debts.length?`<tr><td></td><td style="font-weight:900;">TOTAL</td><td style="font-weight:900;color:var(--red);font-family:'Fraunces',serif;font-size:18px;">${money(total)}</td><td colspan="3"></td></tr>`:''}</tfoot></table>
   </section>`;
   return wrapSeccion('secDeudas','💳 Deudas',contenido);
 }
+
+function borrarDeudaManual(clientId) {
+    if(!confirm("⚠️ ¿Estás seguro que querés borrar TODA la deuda de este cliente? Esto borrará las ventas a cuenta corriente y los pagos pendientes de la nube.")) return;
+    data.orders = (data.orders || []).filter(o => !(String(o.clientId) === String(clientId) && o.payment === 'Cuenta corriente'));
+    data.driverSales = (data.driverSales || []).filter(s => !(String(s.clientId) === String(clientId) && s.payment === 'ctacte'));
+    if (fbRef) {
+        fbRef.child('orders').set(sanitizeForFirebase(data.orders)).catch(e => console.warn(e));
+        fbRef.child('driverSales').set(sanitizeForFirebase(data.driverSales)).catch(e => console.warn(e));
+    }
+    save();
+    toast("✅ Deuda eliminada correctamente");
+    render();
+}
+
 function agregarDeudaManual(){const cid=$('ndCliente').value;const fecha=$('ndFecha').value||today();const monto=Number($('ndMonto').value)||0;const detalle=($('ndDetalle').value||'').trim()||'Deuda manual';if(!cid)return toast('Elegí un cliente');if(monto<=0)return toast('Ingresá un monto');const c=findClient(cid);if(!c)return;const nueva={id:uid(),date:fecha,created:Date.now(),clientId:cid,name:c.name,phone:c.phone||'',address:'',payment:'Cuenta corriente',items:[{name:detalle,q:1,price:monto}],total:monto,status:'Entregado',note:'Deuda manual'};data.orders.unshift(nueva);dbSet('orders/'+nueva.id,nueva);save();$('ndMonto').value='';$('ndDetalle').value='';toast('✅ Deuda: '+money(monto));render();}
 function registrarPagoManual(){const cid=$('npCliente').value;const fecha=$('npFecha').value||today();const monto=Number($('npMonto').value)||0;const metodo=$('npMetodo').value;const detalle=($('npDetalle').value||'').trim()||'Pago manual';if(!cid)return toast('Elegí un cliente');if(monto<=0)return toast('Ingresá un monto');const c=findClient(cid);if(!c)return;const nuevo={id:uid(),created:Date.now(),clientId:cid,amount:monto,method:metodo,date:fecha,note:detalle};data.payments.unshift(nuevo);dbSet('payments/'+nuevo.id,nuevo);save();$('npMonto').value='';$('npDetalle').value='';toast('✅ Pago: '+money(monto));render();}
 function recargarDeudasIniciales(){if(!confirm('⚠️ ¿Recargar las 17 deudas iniciales?'))return;localStorage.removeItem('glaciar_deudas_v4_loaded');loadInitialDebts(true);toast('✅ Deudas recargadas');render();}
@@ -1241,7 +1306,6 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
     if(initFirebase()){
       const remoto = await readRemoteOnce();
       if(remoto){
-        // En el boot inicial, si hay datos en la nube, sobrescribimos la memoria local de una
         let cambios=false;
         ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'].forEach(k=>{
           if(remoto[k]){ data[k] = remoto[k]; cambios = true; }
@@ -1253,7 +1317,6 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
         if(cambios){ try{ localStorage.setItem(KEY,JSON.stringify(data)); }catch(e){} try{ migrateData(); }catch(e){} }
         attachListener();
       } else {
-        // Si Firebase está vacío, igualmente conectamos el listener
         attachListener();
       }
     }
