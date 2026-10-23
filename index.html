@@ -243,6 +243,7 @@ function attachListener(){
     if(remoto.settings !== undefined)     data.settings     = remoto.settings;
     if(remoto.paymentSheet !== undefined) data.paymentSheet = remoto.paymentSheet;
 
+    if(window.__invalidateDebtCache) window.__invalidateDebtCache();
     save();
     try { if(typeof migrateData==='function') migrateData(); } catch(e){}
     scheduleRender();
@@ -905,6 +906,7 @@ function driverConfirmCollect(clientId){
   const sale={id:uid(),date:today(),created:Date.now(),pin:currentDriverPin,clientId,clientName:c.name,qty:{},prices:{},payment:'cobrocc',total:0,collection:amount,collectionMethod,cost:0,note:($('qcNote').value||'').trim(),closed:false};
   data.driverSales.unshift(sale);
   dbSet('driverSales/'+sale.id,sale);
+  if(window.__invalidateDebtCache) window.__invalidateDebtCache();
   save();closeModal();toast('✅ Cobro '+collectionMethod+': '+money(amount));render();
 }
 function driverMarcarEntregado(id){const p=(data.pedidos||[]).find(x=>x.id===id);if(!p)return;if(!confirm('¿Marcar el pedido de "'+p.clientName+'" como ENTREGADO?'))return;p.status='entregado';p.entregadoEn=Date.now();p.entregadoPor=currentDriverPin;dbSet('pedidos/'+p.id,p);save();toast('✅ Pedido entregado: '+p.clientName);render();}
@@ -934,8 +936,8 @@ function driverEditSale(id){const s=(data.driverSales||[]).find(x=>x.id===id);if
     </div>
     <div class="field"><label>Nota</label><input id="esNote" value="${esc(s.note||'')}"></div>
     <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn primary" onclick="driverSaveSale('${id}')">💾 Guardar</button></div>`);}
-function driverSaveSale(id){const s=(data.driverSales||[]).find(x=>x.id===id);if(!s)return;s.payment=$('esPay').value;s.qty={'1,7':Number($('esQ17').value)||0,'3,5':Number($('esQ35').value)||0,'14':Number($('esQ14').value)||0,'20':Number($('esQ20').value)||0,'32':Number($('esQ32').value)||0};s.prices={p17:Number($('esP17').value)||0,p35:Number($('esP35').value)||0,p14:Number($('esP14').value)||0,p20:Number($('esP20').value)||0,p32:Number($('esP32').value)||0};s.total=Number($('esTotal').value)||0;s.collection=Number($('esCol')?.value)||0;s.collectionMethod=s.payment==='cobrocc'?($('esCollMethod')?.value||'efectivo'):'';s.note=$('esNote').value.trim();dbSet('driverSales/'+s.id,s);save();closeModal();toast('✅ Actualizada');render();}
-function driverDeleteSale(id){if(!confirm('¿Eliminar?'))return;data.driverSales=data.driverSales.filter(x=>x.id!==id);dbSet('driverSales/'+id,null);save();toast('Eliminada');render();}
+function driverSaveSale(id){const s=(data.driverSales||[]).find(x=>x.id===id);if(!s)return;s.payment=$('esPay').value;s.qty={'1,7':Number($('esQ17').value)||0,'3,5':Number($('esQ35').value)||0,'14':Number($('esQ14').value)||0,'20':Number($('esQ20').value)||0,'32':Number($('esQ32').value)||0};s.prices={p17:Number($('esP17').value)||0,p35:Number($('esP35').value)||0,p14:Number($('esP14').value)||0,p20:Number($('esP20').value)||0,p32:Number($('esP32').value)||0};s.total=Number($('esTotal').value)||0;s.collection=Number($('esCol')?.value)||0;s.collectionMethod=s.payment==='cobrocc'?($('esCollMethod')?.value||'efectivo'):'';s.note=$('esNote').value.trim();dbSet('driverSales/'+s.id,s);if(window.__invalidateDebtCache) window.__invalidateDebtCache();save();closeModal();toast('✅ Actualizada');render();}
+function driverDeleteSale(id){if(!confirm('¿Eliminar?'))return;data.driverSales=data.driverSales.filter(x=>x.id!==id);dbSet('driverSales/'+id,null);if(window.__invalidateDebtCache) window.__invalidateDebtCache();save();toast('Eliminada');render();}
 function driverAddGasto(){const n=Number($('gNafta').value)||0,ch=Number($('gChofer').value)||0,ot=Number($('gOtros').value)||0;const od=($('gOtrosDetail').value||'').trim();if(n<=0&&ch<=0&&ot<=0)return toast('Cargá un gasto');if(ot>0&&!od)return toast('Detalle "Otros" obligatorio');const base={date:today(),pin:currentDriverPin,created:Date.now(),closed:false};const nuevos=[];if(n>0){const g={...base,id:uid(),category:'Nafta',amount:n,detail:''};data.driverGastos.unshift(g);nuevos.push(g);}if(ch>0){const g={...base,id:uid(),category:'Chofer',amount:ch,detail:''};data.driverGastos.unshift(g);nuevos.push(g);}if(ot>0){const g={...base,id:uid(),category:'Otros',amount:ot,detail:od};data.driverGastos.unshift(g);nuevos.push(g);}nuevos.forEach(g=>dbSet('driverGastos/'+g.id,g));save();$('gNafta').value=0;$('gChofer').value=0;$('gOtros').value=0;$('gOtrosDetail').value='';toast('Gastos cargados');render();}
 function driverDeleteGasto(id){if(!confirm('¿Eliminar?'))return;data.driverGastos=data.driverGastos.filter(x=>x.id!==id);dbSet('driverGastos/'+id,null);save();render();}
 function driverCloseDay(){
@@ -1072,7 +1074,7 @@ function fallbackCopiar(txt){const ta=document.createElement('textarea');ta.valu
 function imprimirSeccion(id,titulo){const el=document.getElementById(id);if(!el){toast('No se encontró');return;}const w=window.open('','_blank');if(!w){toast('Permití ventanas emergentes');return;}const clon=el.cloneNode(true);clon.querySelectorAll('.no-print, button, .tabs, .btn').forEach(b=>b.remove());w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${titulo}</title><style>body{font-family:'Inter',system-ui,sans-serif;padding:24px;color:#1e293b;font-size:13px}h1,h2,h3{font-family:Georgia,serif;margin:0 0 12px}h1{font-size:22px}h2{font-size:16px;color:#0f2352;border-bottom:2px solid #0f2352;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #ddd;padding:8px 10px;text-align:left}th{background:#eef5ff;font-weight:700;color:#0f2352}tr:nth-child(even) td{background:#fafcff}.kpi{display:inline-block;margin:6px 8px 6px 0;padding:10px 16px;background:#f6f9fe;border-radius:10px;border:1px solid #d8e2f0}.kpi b{display:block;font-size:18px;font-family:Georgia,serif}.kpi label{font-size:10px;text-transform:uppercase;color:#64748b;font-weight:700}.status{padding:2px 8px;border-radius:100px;font-size:10px;font-weight:800;background:#fef3c7;color:#92400e;display:inline-block}.status.delivered{background:#d1fae5;color:#065f46}.status.debt{background:#fee2e2;color:#991b1b}.status.overdue{background:#dc2626;color:#fff}.muted{color:#64748b;font-size:11px}@media print{body{padding:12px}}</style></head><body><h1>🧊 GLACIAR · M&C Hielo</h1><h2>${titulo}</h2><p class="muted">Generado el ${new Date().toLocaleString('es-AR')}</p>${clon.outerHTML}</body></html>`);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},500);}
 function orderTable(os){return `<table class="table"><thead><tr><th>Fecha</th><th>Cliente</th><th>Total</th><th>Pago</th><th>Estado</th></tr></thead><tbody>${os.map(o=>`<tr><td>${o.date}</td><td><b>${esc(o.name)}</b></td><td><b>${money(o.total)}</b></td><td>${esc(o.payment)}</td><td><span class="status ${o.status==='Entregado'?'delivered':''}">${esc(o.status)}</span></td></tr>`).join('')||'<tr><td colspan="5">Sin pedidos.</td></tr>'}</tbody></table>`;}
 function driverSalesTable(sales){if(!sales.length)return '<p class="muted">Sin ventas.</p>';return `<table class="table"><thead><tr><th>Fecha</th><th>Chofer</th><th>Cliente</th><th>🧊 Bolsas</th><th>Total</th><th>Pago</th><th class="no-print"></th></tr></thead><tbody>${sales.map(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ')||'—';const bolsas=Object.values(s.qty||{}).reduce((a,b)=>a+Number(b||0),0);const bolsasCell=bolsas>0?`<b style="color:var(--blue)">${bolsas}</b>${items!=='—'?`<br><span class="muted" style="font-size:11px;">${items}</span>`:''}`:'—';const pl=s.payment==='cobrocc'?('cobrocc '+(s.collectionMethod==='transferencia'?'(transf)':'(ef)')):s.payment;return `<tr><td>${s.date}</td><td>${esc(getDrivers().find(d=>d.pin===s.pin)?.name||s.pin)}</td><td><b>${esc(s.clientName)}</b></td><td style="font-size:12px;">${bolsasCell}</td><td><b>${money(s.total||s.collection)}</b></td><td>${esc(pl)}</td><td class="no-print" style="white-space:nowrap;"><button class="btn xs" onclick="driverEditSale('${s.id}')">✏️</button> <button class="btn xs danger" onclick="adminDeleteDriverSale('${s.id}')">🗑</button></td></tr>`;}).join('')}</tbody></table>`;}
-function adminDeleteDriverSale(id){if(!confirm('¿Eliminar?'))return;data.driverSales=data.driverSales.filter(x=>x.id!==id);dbSet('driverSales/'+id,null);save();render();}
+function adminDeleteDriverSale(id){if(!confirm('¿Eliminar?'))return;data.driverSales=data.driverSales.filter(x=>x.id!==id);dbSet('driverSales/'+id,null);if(window.__invalidateDebtCache) window.__invalidateDebtCache();save();render();}
 
 function toggleHideDebt(clientId){const c=findClient(clientId);if(!c)return;c.hideDebtFromDriver=!c.hideDebtFromDriver;dbSet('clients/'+clientId+'/hideDebtFromDriver',c.hideDebtFromDriver);save();toast(c.hideDebtFromDriver?'🔒 Deuda oculta':'🔓 Deuda visible');render();}
 function adminDebts(){
@@ -1103,14 +1105,14 @@ function adminDebts(){
   </section>
   <section class="panel" style="border-left:4px solid var(--red);">
     <div class="row space no-print" style="flex-wrap:wrap;gap:8px;margin-bottom:10px;"><button class="btn sm orange" onclick="recargarDeudasIniciales()">🔄 Recargar deudas iniciales</button></div>
-    <div class="notice purple no-print" style="margin-bottom:14px;font-size:12.5px;">🔒 Tocá <b>🔓/🔒</b> al lado de cada cliente para ocultarlo o mostrarlo al chofer.</div>
+    <div class="notice purple no-print" style="margin-bottom:14px;font-size:12.5px;">🔒 Tocá <b>🔓/🔒</b> al lado de cada cliente para ocultarlo o mostrarlo al chofer. ✏️ para editar el monto total de la deuda.</div>
     <table class="table" style="margin-top:14px;"><thead><tr><th>#</th><th>Cliente</th><th>Deuda</th><th>Días</th><th>Desde</th><th class="no-print">Acciones</th></tr></thead><tbody>
       ${debts.length?debts.map(({client,info},i)=>{
         const atr=info.isOverdue?`<span class="status overdue">⚠️ ${info.businessDays}d</span>`:(info.businessDays>0?`<span class="status debt">${info.businessDays}d</span>`:'<span class="status delivered">al día</span>');
         const hid=client.hideDebtFromDriver;
         const toggleBtn=hid?`<button class="btn xs orange" onclick="toggleHideDebt('${client.id}')">🔒</button>`:`<button class="btn xs" onclick="toggleHideDebt('${client.id}')">🔓</button>`;
         const badges=eqBadges(client);
-        return `<tr><td>${i+1}</td><td><b>${esc(client.name)}</b> <span class="muted" style="font-size:11px;">#${esc(client.code)}</span>${hid?' <span class="status locked">🔒</span>':''}${badges?`<div style="margin-top:4px;">${badges}</div>`:''}</td><td><b style="color:var(--red);font-family:'Fraunces',serif;font-size:15px;">${money(info.total)}</b></td><td>${atr}</td><td style="font-size:12px;">${info.oldest||'—'}</td><td style="white-space:nowrap;" class="no-print">${toggleBtn} <button class="btn xs green" onclick="paymentForm('${client.id}')">💰</button> <button class="btn xs" onclick="clientHistory('${client.id}')">📋</button> <button class="btn xs danger" onclick="borrarDeudaManual('${client.id}')">🗑 Borrar Deuda</button></td></tr>`;
+        return `<tr><td>${i+1}</td><td><b>${esc(client.name)}</b> <span class="muted" style="font-size:11px;">#${esc(client.code)}</span>${hid?' <span class="status locked">🔒</span>':''}${badges?`<div style="margin-top:4px;">${badges}</div>`:''}</td><td><b style="color:var(--red);font-family:'Fraunces',serif;font-size:15px;">${money(info.total)}</b></td><td>${atr}</td><td style="font-size:12px;">${info.oldest||'—'}</td><td style="white-space:nowrap;" class="no-print">${toggleBtn} <button class="btn xs green" onclick="paymentForm('${client.id}')">💰</button> <button class="btn xs" onclick="editarDeudaManual('${client.id}')" title="Editar monto de la deuda">✏️</button> <button class="btn xs" onclick="clientHistory('${client.id}')">📋</button> <button class="btn xs danger" onclick="borrarDeudaManual('${client.id}')">🗑 Borrar Deuda</button></td></tr>`;
       }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">🎉 Sin deudas</td></tr>'}
     </tbody><tfoot>${debts.length?`<tr><td></td><td style="font-weight:900;">TOTAL</td><td style="font-weight:900;color:var(--red);font-family:'Fraunces',serif;font-size:18px;">${money(total)}</td><td colspan="3"></td></tr>`:''}</tfoot></table>
   </section>`;
@@ -1125,13 +1127,96 @@ function borrarDeudaManual(clientId) {
         fbRef.child('orders').set(sanitizeForFirebase(data.orders)).catch(e => console.warn(e));
         fbRef.child('driverSales').set(sanitizeForFirebase(data.driverSales)).catch(e => console.warn(e));
     }
+    if(window.__invalidateDebtCache) window.__invalidateDebtCache();
     save();
     toast("✅ Deuda eliminada correctamente");
     render();
 }
 
-function agregarDeudaManual(){const cid=$('ndCliente').value;const fecha=$('ndFecha').value||today();const monto=Number($('ndMonto').value)||0;const detalle=($('ndDetalle').value||'').trim()||'Deuda manual';if(!cid)return toast('Elegí un cliente');if(monto<=0)return toast('Ingresá un monto');const c=findClient(cid);if(!c)return;const nueva={id:uid(),date:fecha,created:Date.now(),clientId:cid,name:c.name,phone:c.phone||'',address:'',payment:'Cuenta corriente',items:[{name:detalle,q:1,price:monto}],total:monto,status:'Entregado',note:'Deuda manual'};data.orders.unshift(nueva);dbSet('orders/'+nueva.id,nueva);save();$('ndMonto').value='';$('ndDetalle').value='';toast('✅ Deuda: '+money(monto));render();}
-function registrarPagoManual(){const cid=$('npCliente').value;const fecha=$('npFecha').value||today();const monto=Number($('npMonto').value)||0;const metodo=$('npMetodo').value;const detalle=($('npDetalle').value||'').trim()||'Pago manual';if(!cid)return toast('Elegí un cliente');if(monto<=0)return toast('Ingresá un monto');const c=findClient(cid);if(!c)return;const nuevo={id:uid(),created:Date.now(),clientId:cid,amount:monto,method:metodo,date:fecha,note:detalle};data.payments.unshift(nuevo);dbSet('payments/'+nuevo.id,nuevo);save();$('npMonto').value='';$('npDetalle').value='';toast('✅ Pago: '+money(monto));render();}
+function editarDeudaManual(clientId){
+  const c = findClient(clientId);
+  if(!c) return;
+  const info = clientDebtInfo(clientId);
+  modal(`<h2>✏️ Editar monto de deuda</h2>
+  <p class="muted" style="margin-bottom:14px;"><b>${esc(c.name)}</b> · #${esc(c.code)}</p>
+  <div class="notice red" style="margin-bottom:14px;">
+    Deuda actual: <b>${money(info.total)}</b>
+  </div>
+  <div class="field">
+    <label>Nuevo monto total de la deuda ($)</label>
+    <input type="number" id="edMonto" value="${info.total}" min="0" inputmode="numeric">
+  </div>
+  <div class="notice info" style="margin-top:12px;font-size:12px;">
+    ⚠️ Al guardar se <b>reemplazan</b> las deudas a cuenta corriente del cliente por un único registro de ajuste con el monto ingresado. Los pagos registrados se mantienen.
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;">
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="guardarDeudaEditada('${clientId}')">💾 Guardar</button>
+  </div>`);
+  setTimeout(()=>{const el=$('edMonto');if(el){el.focus();el.select();}},80);
+}
+
+function guardarDeudaEditada(clientId){
+  const nuevoMonto = Number($('edMonto').value);
+  if(isNaN(nuevoMonto) || nuevoMonto < 0) return toast('Monto inválido');
+  const c = findClient(clientId);
+  if(!c) return;
+  if(!confirm(`¿Reemplazar la deuda de ${c.name} por ${money(nuevoMonto)}?\n\nSe borrarán las ventas a cuenta corriente y las deudas manuales anteriores, y se dejará un único registro de ajuste.`)) return;
+
+  data.orders = (data.orders || []).filter(o => !(String(o.clientId) === String(clientId) && o.payment === 'Cuenta corriente'));
+  data.driverSales = (data.driverSales || []).filter(s => !(String(s.clientId) === String(clientId) && s.payment === 'ctacte'));
+
+  if(nuevoMonto > 0){
+    const ajuste = {
+      id: uid(),
+      date: today(),
+      created: Date.now(),
+      clientId: clientId,
+      name: c.name,
+      phone: c.phone || '',
+      address: '',
+      payment: 'Cuenta corriente',
+      items: [{ name: 'Ajuste de deuda', q: 1, price: nuevoMonto }],
+      total: nuevoMonto,
+      status: 'Entregado',
+      note: 'Ajuste manual de deuda'
+    };
+    data.orders.unshift(ajuste);
+    dbSet('orders/' + ajuste.id, ajuste);
+  }
+
+  if(fbRef){
+    fbRef.child('orders').set(sanitizeForFirebase(data.orders)).catch(e=>console.warn(e));
+    fbRef.child('driverSales').set(sanitizeForFirebase(data.driverSales)).catch(e=>console.warn(e));
+  }
+
+  if(window.__invalidateDebtCache) window.__invalidateDebtCache();
+  save();
+  closeModal();
+  toast('✅ Deuda actualizada: ' + money(nuevoMonto));
+  render();
+}
+
+function agregarDeudaManual(){const cid=$('ndCliente').value;const fecha=$('ndFecha').value||today();const monto=Number($('ndMonto').value)||0;const detalle=($('ndDetalle').value||'').trim()||'Deuda manual';if(!cid)return toast('Elegí un cliente');if(monto<=0)return toast('Ingresá un monto');const c=findClient(cid);if(!c)return;const nueva={id:uid(),date:fecha,created:Date.now(),clientId:cid,name:c.name,phone:c.phone||'',address:'',payment:'Cuenta corriente',items:[{name:detalle,q:1,price:monto}],total:monto,status:'Entregado',note:'Deuda manual'};data.orders.unshift(nueva);dbSet('orders/'+nueva.id,nueva);if(window.__invalidateDebtCache) window.__invalidateDebtCache();save();$('ndMonto').value='';$('ndDetalle').value='';toast('✅ Deuda: '+money(monto));render();}
+function registrarPagoManual(){
+  const cid=$('npCliente').value;
+  const fecha=$('npFecha').value||today();
+  const monto=Number($('npMonto').value)||0;
+  const metodo=$('npMetodo').value;
+  const detalle=($('npDetalle').value||'').trim()||'Pago manual';
+  if(!cid)return toast('Elegí un cliente');
+  if(monto<=0)return toast('Ingresá un monto');
+  const c=findClient(cid);if(!c)return;
+  const nuevo={id:uid(),created:Date.now(),clientId:cid,amount:monto,method:metodo,date:fecha,note:detalle};
+  data.payments.unshift(nuevo);
+  dbSet('payments/'+nuevo.id,nuevo);
+  if(window.__invalidateDebtCache) window.__invalidateDebtCache();
+  save();
+  $('npMonto').value='';
+  $('npDetalle').value='';
+  toast('✅ Pago: '+money(monto));
+  render();
+}
 function recargarDeudasIniciales(){if(!confirm('⚠️ ¿Recargar las 17 deudas iniciales?'))return;localStorage.removeItem('glaciar_deudas_v4_loaded');loadInitialDebts(true);toast('✅ Deudas recargadas');render();}
 function adminVisitas(){
   const hoy=visitsStats('today'),sem=visitsStats('week'),mes=visitsStats('month'),anio=visitsStats('year');
@@ -1369,8 +1454,30 @@ function deleteClient(id){if(!confirm('¿Eliminar?'))return;data.clients=data.cl
 function clientHistory(id){const c=findClient(id);if(!c)return;const sales=(data.driverSales||[]).filter(s=>s.clientId===id).sort((a,b)=>b.created-a.created);const info=clientDebtInfo(id);modal(`<h2>📋 ${esc(c.name)}</h2><p class="muted">#${esc(c.code)} · Deuda: <b style="color:var(--red)">${money(info.total)}</b></p><h3 style="margin-top:20px;">Ventas (${sales.length})</h3><div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Productos</th><th>Total</th></tr></thead><tbody>${sales.slice(0,30).map(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}`).join(' · ')||'—';return `<tr><td>${s.date}</td><td>${items}</td><td><b>${money(s.total||s.collection)}</b></td></tr>`;}).join('')||'<tr><td colspan="3">—</td></tr>'}</tbody></table></div><div class="row" style="justify-content:flex-end;margin-top:22px;"><button class="btn" onclick="closeModal()">Cerrar</button></div>`);}
 function paymentsAdmin(){const ps=(data.payments||[]).map(p=>({...p,_tipo:'manual'})).sort((a,b)=>(b.created||0)-(a.created||0));const cobros=(data.driverSales||[]).filter(s=>s.payment==='cobrocc').map(s=>({id:s.id,date:s.date,created:s.created,clientId:s.clientId,clientName:s.clientName,amount:s.collection,method:'Cobro chofer '+(s.collectionMethod==='transferencia'?'(Transf.)':'(Efectivo)'),note:(getDrivers().find(d=>d.pin===s.pin)?.name||s.pin),_tipo:'cobrochofer'}));const all=[...ps,...cobros].sort((a,b)=>(b.created||0)-(a.created||0));const total=all.reduce((a,p)=>a+Number(p.amount||0),0);const contenido=`<section class="grid"><div class="kpi green"><label>Total registrado</label><b>${money(total)}</b></div><div class="kpi purple"><label>Manuales</label><b>${ps.length}</b></div><div class="kpi gold"><label>Cobros de chofer</label><b>${cobros.length}</b></div></section><div class="row space no-print" style="margin-top:14px;margin-bottom:12px;"><button class="btn primary" onclick="paymentForm()">+ Registrar pago manual</button></div><table class="table" style="margin-top:12px;"><thead><tr><th>Fecha</th><th>Tipo</th><th>Cliente</th><th>Monto</th><th class="no-print"></th></tr></thead><tbody>${all.slice(0,150).map(p=>{const c=p.clientId?findClient(p.clientId):null;const name=p.clientName||(c?c.name:'—');const delBtn=p._tipo==='manual'?`<button class="btn xs danger" onclick="deletePayment('${p.id}')">🗑</button>`:'';return `<tr><td>${p.date}</td><td>${p._tipo==='cobrochofer'?'🚚 Chofer':'💼 Manual'}</td><td><b>${esc(name)}</b></td><td><b style="color:var(--green)">${money(p.amount)}</b></td><td class="no-print">${delBtn}</td></tr>`;}).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted)">—</td></tr>'}</tbody></table>`;return wrapSeccion('secPagos','💰 Pagos y Cobros',`<section class="panel">${contenido}</section>`);}
 function paymentForm(clientId){const opts=(data.clients||[]).map(c=>`<option value="${c.id}" ${c.id===clientId?'selected':''}>${esc(c.name)} · #${c.code}</option>`).join('');modal(`<h2>💰 Pago</h2><div class="field"><label>Cliente</label><select id="pClient">${opts}</select></div><div class="field"><label>Monto</label><input id="pAmount" type="number"></div><div class="twocol"><div class="field"><label>Método</label><select id="pMethod"><option>Efectivo</option><option>Transferencia</option></select></div><div class="field"><label>Fecha</label><input id="pDate" type="date" value="${today()}"></div></div><div class="field"><label>Nota</label><input id="pNote"></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn green" onclick="savePayment()">Registrar</button></div>`);}
-function savePayment(){const cid=$('pClient').value,a=Number($('pAmount').value),m=$('pMethod').value,d=$('pDate').value||today(),n=$('pNote').value.trim();if(!cid||!a||a<=0)return toast('Completá');const nuevo={id:uid(),created:Date.now(),clientId:cid,amount:a,method:m,date:d,note:n};data.payments.unshift(nuevo);dbSet('payments/'+nuevo.id,nuevo);save();closeModal();toast('Registrado');render();}
-function deletePayment(id){if(!confirm('¿Eliminar?'))return;data.payments=data.payments.filter(p=>p.id!==id);dbSet('payments/'+id,null);save();render();}
+function savePayment(){
+  const cid=$('pClient').value;
+  const a=Number($('pAmount').value);
+  const m=$('pMethod').value;
+  const d=$('pDate').value||today();
+  const n=$('pNote').value.trim();
+  if(!cid||!a||a<=0)return toast('Completá');
+  const nuevo={id:uid(),created:Date.now(),clientId:cid,amount:a,method:m,date:d,note:n};
+  data.payments.unshift(nuevo);
+  dbSet('payments/'+nuevo.id,nuevo);
+  if(window.__invalidateDebtCache) window.__invalidateDebtCache();
+  save();
+  closeModal();
+  toast('Registrado');
+  render();
+}
+function deletePayment(id){
+  if(!confirm('¿Eliminar?'))return;
+  data.payments=data.payments.filter(p=>p.id!==id);
+  dbSet('payments/'+id,null);
+  if(window.__invalidateDebtCache) window.__invalidateDebtCache();
+  save();
+  render();
+}
 
 function financeAdmin(){const hoy=today();const ms=hoy.slice(0,7)+'-01';const calc=(from,to)=>{let v=0,c=0,g=0;(data.driverSales||[]).forEach(s=>{if(s.date<from||s.date>to)return;if(s.payment!=='cobrocc')v+=Number(s.total||0);else v+=Number(s.collection||0);c+=Number(s.cost||0);});(data.driverGastos||[]).forEach(x=>{if(x.date>=from&&x.date<=to)g+=Number(x.amount||0);});(data.expenses||[]).forEach(x=>{if(x.date>=from&&x.date<=to)g+=Number(x.amount||0);});return {v,c,g,gn:v-c-g};};const mes=calc(ms,hoy);const contenido=`<section class="grid"><div class="kpi blue"><label>Ventas mes</label><b>${money(mes.v)}</b></div><div class="kpi warn"><label>Costo mes</label><b>${money(mes.c)}</b></div><div class="kpi red"><label>Gastos mes</label><b>${money(mes.g)}</b></div><div class="kpi ${mes.gn>=0?'green':'red'}"><label>Ganancia neta mes</label><b>${money(mes.gn)}</b></div></section><section class="panel"><h3>💼 Gastos admin</h3><div class="field no-print"><label>Concepto</label><input id="exName"></div><div class="field no-print"><label>Monto</label><input id="exAmount" type="number"></div><button class="btn primary no-print" onclick="addExpense()">+ Registrar</button><div style="margin-top:14px;">${(data.expenses||[]).slice(0,30).map(x=>`<div class="row space" style="padding:8px 0;border-bottom:1px solid var(--line-2);"><span>${esc(x.name)} <small class="muted">${x.date}</small></span><div><b>${money(x.amount)}</b> <button class="btn xs danger no-print" onclick="deleteExpense('${x.id}')">🗑</button></div></div>`).join('')||'<p class="muted">Sin gastos.</p>'}</div></section>`;return wrapSeccion('secFinanzas','💼 Finanzas',contenido);}
 function addExpense(){const n=$('exName').value.trim(),a=Number($('exAmount').value);if(!n||!a)return toast('Completá');const nuevo={id:uid(),name:n,amount:a,date:today()};data.expenses.unshift(nuevo);dbSet('expenses/'+nuevo.id,nuevo);save();render();}
