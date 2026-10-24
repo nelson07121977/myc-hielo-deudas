@@ -189,6 +189,7 @@ const APP = {
 const KEY = "glaciar_v4";
 let fbRef = null;
 let fbListener = null;
+let _ignoreFirebase = false; // Candado de seguridad
 const pendingLocalIds = new Set();
 function getDeviceId(){ let id=localStorage.getItem(APP.storage.deviceId); if(!id){ id='dev_'+Math.random().toString(36).slice(2,10); localStorage.setItem(APP.storage.deviceId,id);} return id; }
 function isBootstrapDone(){ return localStorage.getItem(APP.storage.bootstrap)==="1"; }
@@ -202,22 +203,25 @@ function sanitizeForFirebase(obj){
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){} if(window.__invalidateDebtCache) window.__invalidateDebtCache(); }
 function dbSet(path, value){
   if(!fbRef) return Promise.resolve(false);
+  _ignoreFirebase = true;
   return fbRef.child(path).set(sanitizeForFirebase(value))
-    .then(()=>true)
-    .catch(e=>{ console.warn('fbSet',path,e.message); try{alert('⚠️ Error al guardar en la nube:\n'+path+'\n'+e.message);}catch(_){} return false; });
+    .then(()=>{ setTimeout(()=>{_ignoreFirebase=false;}, 1500); return true; })
+    .catch(e=>{ _ignoreFirebase=false; console.warn('fbSet',path,e.message); try{alert('⚠️ Error al guardar en la nube:\n'+path+'\n'+e.message);}catch(_){} return false; });
 }
 function dbUpdate(path, patch){
   if(!fbRef) return Promise.resolve(false);
+  _ignoreFirebase = true;
   return fbRef.child(path).update(sanitizeForFirebase(patch))
-    .then(()=>true)
-    .catch(e=>{ console.warn('fbUpdate',path,e.message); return false; });
+    .then(()=>{ setTimeout(()=>{_ignoreFirebase=false;}, 1500); return true; })
+    .catch(e=>{ _ignoreFirebase=false; console.warn('fbUpdate',path,e.message); return false; });
 }
 function dbSetItem(collection, item){
   if(!fbRef || !item || !item.id) return Promise.resolve(false);
+  _ignoreFirebase = true;
   pendingLocalIds.add(String(item.id));
   return fbRef.child(collection+'/'+item.id).set(sanitizeForFirebase(item))
-    .then(()=>{ pendingLocalIds.delete(String(item.id)); return true; })
-    .catch(e=>{ pendingLocalIds.delete(String(item.id)); console.warn('dbSetItem',collection,e.message); return false; });
+    .then(()=>{ setTimeout(()=>{_ignoreFirebase=false;}, 1500); pendingLocalIds.delete(String(item.id)); return true; })
+    .catch(e=>{ _ignoreFirebase=false; pendingLocalIds.delete(String(item.id)); console.warn('dbSetItem',collection,e.message); return false; });
 }
 function initFirebase(){
   try{
@@ -242,10 +246,11 @@ function attachListener(){
     }, 120);
   };
   fbListener = fbRef.on("value", snap => {
+    if(_ignoreFirebase) return; // Si estamos guardando, ignoramos lo que viene de la nube por 1.5s
+    
     const remoto = snap.val();
     if(!remoto) return;
 
-    // Colecciones del chofer: REEMPLAZO DIRECTO (lo que está en la nube es la verdad)
     const coleccionesChofer = ['driverSales','driverDays','driverGastos','driverStock','pedidos'];
     for(let i=0;i<coleccionesChofer.length;i++){
       const k = coleccionesChofer[i];
@@ -255,7 +260,6 @@ function attachListener(){
       }
     }
 
-    // Colecciones admin: MEZCLA (para no perder lo local recién creado)
     const coleccionesAdmin = ['orders','payments','visits','leads','expenses'];
     for(let i=0;i<coleccionesAdmin.length;i++){
       const k = coleccionesAdmin[i];
@@ -311,11 +315,13 @@ window.subirTodoANube = function() {
             driverStock: sanitizeForFirebase(data.driverStock || []),
             expenses: sanitizeForFirebase(data.expenses || [])
         };
+        _ignoreFirebase = true;
         fbRef.update(payload).then(() => {
+            setTimeout(()=>{_ignoreFirebase=false;}, 2000);
             toast('✅ ¡Nube actualizada! Revisá el celular.');
             alert("¡Listo! Los datos se subieron a la nube. Ahora andá a tu celular, entrá a la app y jalá para actualizar (o cerrá y abrí la app).");
-        }).catch((e) => { console.error(e); alert("Error al subir: " + e.message); });
-    } catch (e) { console.error(e); alert("Error inesperado: " + e.message); }
+        }).catch((e) => { _ignoreFirebase=false; console.error(e); alert("Error al subir: " + e.message); });
+    } catch (e) { _ignoreFirebase=false; console.error(e); alert("Error inesperado: " + e.message); }
 };
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const money=n=>'$'+Number(n||0).toLocaleString('es-AR');
@@ -613,7 +619,8 @@ function render(){
   else contenido=publicView();
   document.querySelector('#app').innerHTML=contenido;
   if(mode==='public'&&!visitLogged){visitLogged=true;setTimeout(()=>logVisit(),600);}
-}function publicView(){
+}
+function publicView(){
   const h=data.settings.hero||{};
   const products=(data.products||[]).filter(p=>p.active).map(p=>`<article class="card product"><span class="emoji">${p.emoji||'🧊'}</span><h3>${esc(p.name)}</h3><span class="muted" style="font-size:12.5px;">Entrega coordinada</span><div class="row space" style="margin-top:18px"><span class="price">${money(p.price)}</span><div class="qty"><button onclick="changeQ('${p.id}',-1)">−</button><b>${data.cart[p.id]||0}</b><button onclick="changeQ('${p.id}',1)">+</button></div></div></article>`).join('');
   return `<div class="wrap"><section class="hero"><div><div class="kicker">${esc(h.kicker||'Hielo · Eventos · Comercios')}</div><h1>${esc(h.title1||'Hielo listo.')}<br><span>${esc(h.title2||'Tu pedido, en marcha.')}</span></h1><p>${esc(h.subtitle||data.settings.shareText)}</p><div class="row" style="margin-top:22px;gap:10px;flex-wrap:wrap;"><button class="btn gold" style="padding:14px 26px;font-size:15px" onclick="openCart()">🛒 Hacer pedido</button><button class="btn wa" style="padding:14px 22px;font-size:15px" onclick="openContactForm()">💬 Consultanos</button></div></div><div class="hero-art">🧊</div></section><div class="section-title"><h2>Elegí tus productos</h2><span class="sub">Precios finales</span></div><section class="products">${products||'<p class="muted">No hay productos publicados.</p>'}</section></div><button class="float-cart" onclick="openCart()">🛒 Pedido · ${money(cartTotal())}</button><button class="float-wa" onclick="openContactForm()">💬 Consultanos</button>`;
@@ -747,8 +754,7 @@ function driverView(){
   <section class="panel"><h3 class="driver-section-title">📋 Ventas del turno (${mySales.length})</h3>${ventasHtml}</section>
   <section class="panel"><div class="row space" style="flex-wrap:wrap;gap:10px;"><h3 class="driver-section-title" style="margin:0;">🔚 Cierre de jornada</h3><button class="btn ${canClose?'primary':'dark'}" onclick="driverCloseDay()" ${canClose?'':'disabled style="opacity:.5;cursor:not-allowed;"'}>${canClose?'Cerrar jornada':'⚠️ Entregá los pedidos de HOY primero'}</button></div><div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap;"><button class="btn sm" onclick="driverCopySummary()">📋 Copiar resumen</button></div><p class="muted" style="font-size:12px;margin-top:10px;">Al cerrar, se envía el resumen al administrador por WhatsApp.</p></section>
 </div>`;
-}
-function driverAbrirPedidos(){driverSubView='pedidos';render();window.scrollTo(0,0);}
+}function driverAbrirPedidos(){driverSubView='pedidos';render();window.scrollTo(0,0);}
 function driverVolverPlanilla(){driverSubView='planilla';render();window.scrollTo(0,0);}
 function driverPedidosView(){
   const pin=currentDriverPin;
@@ -1366,7 +1372,15 @@ function adminDriverDay(){
 function aplicarFiltroDia(){const f=document.getElementById('ddFecha').value||today();const p=document.getElementById('ddPin').value||'';window.driverDayFilter={date:f,pin:p};render();}
 function irADiaHoy(){const cur=window.driverDayFilter||{pin:''};window.driverDayFilter={date:today(),pin:cur.pin||''};render();}
 function irADiaAyer(){const d=new Date();d.setDate(d.getDate()-1);const y=d.toISOString().slice(0,10);const cur=window.driverDayFilter||{pin:''};window.driverDayFilter={date:y,pin:cur.pin||''};render();}
-function marcarJornadaLeida(id){const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return;d.read=true;dbSet('driverDays/'+id+'/read',true);save();toast('✓ Marcada como leída');render();}
+function marcarJornadaLeida(id){
+  const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return;
+  d.read=true;
+  _ignoreFirebase = true;
+  dbSet('driverDays/'+id+'/read',true);
+  save();
+  toast('✓ Marcada como leída');
+  render();
+}
 function deleteJornada(id){if(!confirm('¿Eliminar?'))return;data.driverDays=data.driverDays.filter(x=>x.id!==id);dbSet('driverDays/'+id,null);save();render();}
 function imprimirPlanillaDia(){
   const filt=window.driverDayFilter||{date:today(),pin:''};
