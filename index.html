@@ -189,8 +189,6 @@ const APP = {
 const KEY = "glaciar_v4";
 let fbRef = null;
 let fbListener = null;
-let _ignoreFirebase = false; // Candado de seguridad
-const pendingLocalIds = new Set();
 function getDeviceId(){ let id=localStorage.getItem(APP.storage.deviceId); if(!id){ id='dev_'+Math.random().toString(36).slice(2,10); localStorage.setItem(APP.storage.deviceId,id);} return id; }
 function isBootstrapDone(){ return localStorage.getItem(APP.storage.bootstrap)==="1"; }
 function markBootstrapDone(){ localStorage.setItem(APP.storage.bootstrap,"1"); }
@@ -203,25 +201,27 @@ function sanitizeForFirebase(obj){
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){} if(window.__invalidateDebtCache) window.__invalidateDebtCache(); }
 function dbSet(path, value){
   if(!fbRef) return Promise.resolve(false);
-  _ignoreFirebase = true;
   return fbRef.child(path).set(sanitizeForFirebase(value))
-    .then(()=>{ setTimeout(()=>{_ignoreFirebase=false;}, 1500); return true; })
-    .catch(e=>{ _ignoreFirebase=false; console.warn('fbSet',path,e.message); try{alert('⚠️ Error al guardar en la nube:\n'+path+'\n'+e.message);}catch(_){} return false; });
+    .then(()=>true)
+    .catch(e=>{ console.warn('fbSet',path,e.message); try{alert('⚠️ Error al guardar en la nube:\n'+path+'\n'+e.message);}catch(_){} return false; });
 }
 function dbUpdate(path, patch){
   if(!fbRef) return Promise.resolve(false);
-  _ignoreFirebase = true;
   return fbRef.child(path).update(sanitizeForFirebase(patch))
-    .then(()=>{ setTimeout(()=>{_ignoreFirebase=false;}, 1500); return true; })
-    .catch(e=>{ _ignoreFirebase=false; console.warn('fbUpdate',path,e.message); return false; });
+    .then(()=>true)
+    .catch(e=>{ console.warn('fbUpdate',path,e.message); return false; });
 }
 function dbSetItem(collection, item){
   if(!fbRef || !item || !item.id) return Promise.resolve(false);
-  _ignoreFirebase = true;
-  pendingLocalIds.add(String(item.id));
+  if(Array.isArray(data[collection])){
+    const idx = data[collection].findIndex(x => x && String(x.id) === String(item.id));
+    if(idx >= 0) data[collection][idx] = item;
+    else data[collection].unshift(item);
+  }
+  save();
   return fbRef.child(collection+'/'+item.id).set(sanitizeForFirebase(item))
-    .then(()=>{ setTimeout(()=>{_ignoreFirebase=false;}, 1500); pendingLocalIds.delete(String(item.id)); return true; })
-    .catch(e=>{ _ignoreFirebase=false; pendingLocalIds.delete(String(item.id)); console.warn('dbSetItem',collection,e.message); return false; });
+    .then(()=>true)
+    .catch(e=>{ console.warn('dbSetItem',collection,e.message); return false; });
 }
 function initFirebase(){
   try{
@@ -234,6 +234,19 @@ function initFirebase(){
 function cleanDriverCollection(arr){
   return (Array.isArray(arr) ? arr : []).filter(x => x && typeof x === 'object' && x.id && String(x.id) !== 'undefined');
 }
+function mergeById(remoteArr, localArr){
+  const remote = Array.isArray(remoteArr) ? remoteArr : [];
+  const local  = Array.isArray(localArr)  ? localArr  : [];
+  const byId = new Map();
+  for(const x of remote){ if(x && x.id) byId.set(String(x.id), x); }
+  for(const x of local){
+    if(!x || !x.id) continue;
+    const id = String(x.id);
+    if(byId.has(id)) continue;
+    byId.set(id, x);
+  }
+  return Array.from(byId.values());
+}
 function attachListener(){
   if(!fbRef) return;
   if(fbListener) fbRef.off("value", fbListener);
@@ -245,8 +258,8 @@ function attachListener(){
       try { if(typeof render==='function') render(); } catch(e){}
     }, 120);
   };
+
   fbListener = fbRef.on("value", snap => {
-    if(_ignoreFirebase) return; // Si estamos guardando, ignoramos lo que viene de la nube por 1.5s    
     const remoto = snap.val();
     if(!remoto) return;
 
@@ -254,8 +267,28 @@ function attachListener(){
     for(let i=0;i<coleccionesChofer.length;i++){
       const k = coleccionesChofer[i];
       if(remoto[k] !== undefined){
-        const remArr = Object.values(remoto[k] || {});
-        data[k] = cleanDriverCollection(remArr);
+        const remArr = cleanDriverCollection(Object.values(remoto[k] || {}));
+
+        if(k === 'driverDays'){
+          const localMap = new Map((data.driverDays||[]).map(d => [String(d.id), d]));
+          const merged = remArr.map(r => {
+            const loc = localMap.get(String(r.id));
+            if(loc && loc.read === true && r.read !== true){
+              dbSet('driverDays/'+r.id+'/read', true);
+              return { ...r, read: true };
+            }
+            return r;
+          });
+          const remIds = new Set(remArr.map(x=>String(x.id)));
+          (data.driverDays||[]).forEach(d => {
+            if(d && d.id && !remIds.has(String(d.id)) && d.read === true){
+              merged.push(d);
+            }
+          });
+          data[k] = merged;
+        } else {
+          data[k] = remArr;
+        }
       }
     }
 
@@ -268,6 +301,7 @@ function attachListener(){
     if(remoto.products !== undefined)     data.products     = remoto.products;
     if(remoto.settings !== undefined)     data.settings     = remoto.settings;
     if(remoto.paymentSheet !== undefined) data.paymentSheet = remoto.paymentSheet;
+
     if(window.__invalidateDebtCache) window.__invalidateDebtCache();
     save();
     try { if(typeof migrateData==='function') migrateData(); } catch(e){}
@@ -280,13 +314,6 @@ async function readRemoteOnce(){
     let done=false; const to=setTimeout(()=>{if(!done){done=true;resolve(null);}},8000);
     fbRef.once("value",snap=>{if(done)return;done=true;clearTimeout(to);resolve(snap.val()||null);},err=>{if(done)return;done=true;clearTimeout(to);console.warn('[fb] read err',err.message);resolve(null);});
   });
-}
-function mergeById(remoteArr, localArr){
-  const remote = Array.isArray(remoteArr) ? remoteArr : [];
-  const local  = Array.isArray(localArr)  ? localArr  : [];
-  const remoteIds = new Set(remote.map(x=>x&&x.id).filter(Boolean).map(String));
-  const extras = local.filter(x => x && x.id && !remoteIds.has(String(x.id)));
-  return extras.concat(remote);
 }
 window.forzarSincronizacion = function() {
     if(!confirm("Esto borrará la memoria local del dispositivo y volverá a descargar todo de la nube. ¿Continuar?")) return;
@@ -314,13 +341,11 @@ window.subirTodoANube = function() {
             driverStock: sanitizeForFirebase(data.driverStock || []),
             expenses: sanitizeForFirebase(data.expenses || [])
         };
-        _ignoreFirebase = true;
         fbRef.update(payload).then(() => {
-            setTimeout(()=>{_ignoreFirebase=false;}, 2000);
             toast('✅ ¡Nube actualizada! Revisá el celular.');
             alert("¡Listo! Los datos se subieron a la nube. Ahora andá a tu celular, entrá a la app y jalá para actualizar (o cerrá y abrí la app).");
-        }).catch((e) => { _ignoreFirebase=false; console.error(e); alert("Error al subir: " + e.message); });
-    } catch (e) { _ignoreFirebase=false; console.error(e); alert("Error inesperado: " + e.message); }
+        }).catch((e) => { console.error(e); alert("Error al subir: " + e.message); });
+    } catch (e) { console.error(e); alert("Error inesperado: " + e.message); }
 };
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const money=n=>'$'+Number(n||0).toLocaleString('es-AR');
@@ -1372,11 +1397,11 @@ function aplicarFiltroDia(){const f=document.getElementById('ddFecha').value||to
 function irADiaHoy(){const cur=window.driverDayFilter||{pin:''};window.driverDayFilter={date:today(),pin:cur.pin||''};render();}
 function irADiaAyer(){const d=new Date();d.setDate(d.getDate()-1);const y=d.toISOString().slice(0,10);const cur=window.driverDayFilter||{pin:''};window.driverDayFilter={date:y,pin:cur.pin||''};render();}
 function marcarJornadaLeida(id){
-  const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return;
-  d.read=true;
-  _ignoreFirebase = true;
-  dbSet('driverDays/'+id+'/read',true);
+  const d = (data.driverDays||[]).find(x => x.id === id);
+  if(!d) return;
+  d.read = true;
   save();
+  dbSet('driverDays/'+id+'/read', true);
   toast('✓ Marcada como leída');
   render();
 }
@@ -1494,14 +1519,14 @@ function financeAdmin(){
   const todayStr = today();
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7); const weekStr = weekStart.toISOString().slice(0,10);
   const monthStart = todayStr.slice(0,7) + '-01';
-  
+
   const calc = (from) => {
     let ventasEf = 0, ventasTf = 0, ventasCc = 0;
     let cobrosEf = 0, cobrosTf = 0;
     let costoMercaderia = 0;
     let gastosCamion = 0;
     let gastosAdmin = 0;
-    
+
     (data.driverSales||[]).forEach(s => {
       if(s.date < from) return;
       if(s.payment === 'efectivo') ventasEf += Number(s.total||0);
@@ -1513,25 +1538,23 @@ function financeAdmin(){
       }
       costoMercaderia += Number(s.cost||0);
     });
-    
+
     (data.driverGastos||[]).forEach(g => { if(g.date >= from) gastosCamion += Number(g.amount||0); });
     (data.expenses||[]).forEach(g => { if(g.date >= from) gastosAdmin += Number(g.amount||0); });
-    
+
     const totalVentas = ventasEf + ventasTf + ventasCc;
     const totalCobros = cobrosEf + cobrosTf;
     const totalGastos = gastosCamion + gastosAdmin;
-    
-    // Ganancia Real = Ventas Efectivo + Ventas Transf + Cobros - Costo Mercaderia - Gastos
-    // Excluimos las ventas en Cta Cte porque no entró plata real.
+
     const gananciaReal = ventasEf + ventasTf + totalCobros - costoMercaderia - totalGastos;
-    
+
     return { ventasEf, ventasTf, ventasCc, cobrosEf, cobrosTf, costoMercaderia, gastosCamion, gastosAdmin, totalVentas, totalCobros, totalGastos, gananciaReal };
   };
-  
+
   const hoy = calc(todayStr);
   const semana = calc(weekStr);
   const mes = calc(monthStart);
-  
+
   const contenido = `
   <section class="grid" style="grid-template-columns:repeat(3, 1fr);">
     <div class="kpi blue">
@@ -1550,7 +1573,7 @@ function financeAdmin(){
       <span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(mes.totalVentas)} | Cobros: ${money(mes.totalCobros)} | Costo: ${money(mes.costoMercaderia)} | Gastos: ${money(mes.totalGastos)}</span>
     </div>
   </section>
-  
+
   <section class="panel">
     <h3>📊 Desglose del Mes (Real)</h3>
     <div class="gasto-cat-row" style="color:var(--green);font-weight:700;"><span>+ Ventas Efectivo</span><b>${money(mes.ventasEf)}</b></div>
@@ -1564,7 +1587,7 @@ function financeAdmin(){
       <span>💰 GANANCIA REAL DEL MES</span><span style="font-size:24px;">${money(mes.gananciaReal)}</span>
     </div>
   </section>
-  
+
   <section class="panel">
     <h3>💼 Gastos admin (Manuales)</h3>
     <div class="field no-print"><label>Concepto</label><input id="exName"></div>
