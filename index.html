@@ -2,8 +2,8 @@
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a1128"><title>GLACIAR · M&C Hielo</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧊</text></svg>">
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -203,7 +203,7 @@ function dbSet(path, value){
   if(!fbRef) return Promise.resolve(false);
   return fbRef.child(path).set(sanitizeForFirebase(value))
     .then(()=>true)
-    .catch(e=>{ console.warn('fbSet',path,e.message); try{alert('⚠️ Error al guardar en la nube:\n'+path+'\n'+e.message);}catch(_){} return false; });
+    .catch(e=>{ console.warn('fbSet',path,e.message); return false; });
 }
 function dbUpdate(path, patch){
   if(!fbRef) return Promise.resolve(false);
@@ -219,7 +219,7 @@ function dbSetItem(collection, item){
     else data[collection].unshift(item);
   }
   save();
-  return fbRef.child(collection+'/'+item.id).set(sanitizeForFirebase(item))
+  return fbRef.child(collection).child(String(item.id)).set(sanitizeForFirebase(item))
     .then(()=>true)
     .catch(e=>{ console.warn('dbSetItem',collection,e.message); return false; });
 }
@@ -235,15 +235,21 @@ function cleanDriverCollection(arr){
   return (Array.isArray(arr) ? arr : []).filter(x => x && typeof x === 'object' && x.id && String(x.id) !== 'undefined');
 }
 function mergeById(remoteArr, localArr){
-  const remote = Array.isArray(remoteArr) ? remoteArr : [];
-  const local  = Array.isArray(localArr)  ? localArr  : [];
+  let remote = [];
+  if(Array.isArray(remoteArr)) remote = remoteArr;
+  else if(remoteArr && typeof remoteArr === 'object') remote = Object.values(remoteArr);
+  const local = Array.isArray(localArr) ? localArr : [];
   const byId = new Map();
-  for(const x of remote){ if(x && x.id) byId.set(String(x.id), x); }
+  for(const x of remote){
+    if(x && typeof x === 'object'){
+      const id = x.id || x.key;
+      if(id) byId.set(String(id), x);
+    }
+  }
   for(const x of local){
     if(!x || !x.id) continue;
     const id = String(x.id);
-    if(byId.has(id)) continue;
-    byId.set(id, x);
+    if(!byId.has(id)) byId.set(id, x);
   }
   return Array.from(byId.values());
 }
@@ -256,19 +262,24 @@ function attachListener(){
     renderTimer = setTimeout(() => {
       renderTimer = null;
       try { if(typeof render==='function') render(); } catch(e){}
-    }, 120);
+    }, 150);
   };
 
   fbListener = fbRef.on("value", snap => {
     const remoto = snap.val();
     if(!remoto) return;
 
-    const coleccionesChofer = ['driverSales','driverDays','driverGastos','driverStock','pedidos'];
-    for(let i=0;i<coleccionesChofer.length;i++){
-      const k = coleccionesChofer[i];
-      if(remoto[k] !== undefined){
-        const remArr = cleanDriverCollection(Object.values(remoto[k] || {}));
+    const toArray = (v) => {
+      if(!v) return [];
+      if(Array.isArray(v)) return v.filter(x => x && typeof x === 'object');
+      if(typeof v === 'object') return Object.values(v).filter(x => x && typeof x === 'object');
+      return [];
+    };
 
+    const coleccionesChofer = ['driverSales','driverDays','driverGastos','driverStock','pedidos'];
+    for(const k of coleccionesChofer){
+      if(remoto[k] !== undefined){
+        const remArr = toArray(remoto[k]).filter(x => x.id && String(x.id) !== 'undefined');
         if(k === 'driverDays'){
           const localMap = new Map((data.driverDays||[]).map(d => [String(d.id), d]));
           const merged = remArr.map(r => {
@@ -292,13 +303,12 @@ function attachListener(){
       }
     }
 
-    const coleccionesAdmin = ['orders','payments','visits','leads','expenses'];
-    for(let i=0;i<coleccionesAdmin.length;i++){
-      const k = coleccionesAdmin[i];
-      if(remoto[k] !== undefined) data[k] = mergeById(remoto[k], data[k]);
+    const coleccionesAdmin = ['orders','payments','visits','leads','expenses','clients'];
+    for(const k of coleccionesAdmin){
+      if(remoto[k] !== undefined) data[k] = mergeById(remoto[k], data[k] || []);
     }
-    if(remoto.clients !== undefined) data.clients = mergeById(remoto.clients, data.clients);
-    if(remoto.products !== undefined)     data.products     = remoto.products;
+
+    if(remoto.products !== undefined)     data.products     = Array.isArray(remoto.products) ? remoto.products : Object.values(remoto.products);
     if(remoto.settings !== undefined)     data.settings     = remoto.settings;
     if(remoto.paymentSheet !== undefined) data.paymentSheet = remoto.paymentSheet;
 
@@ -312,7 +322,22 @@ async function readRemoteOnce(){
   return new Promise(resolve=>{
     if(!fbRef) return resolve(null);
     let done=false; const to=setTimeout(()=>{if(!done){done=true;resolve(null);}},8000);
-    fbRef.once("value",snap=>{if(done)return;done=true;clearTimeout(to);resolve(snap.val()||null);},err=>{if(done)return;done=true;clearTimeout(to);console.warn('[fb] read err',err.message);resolve(null);});
+    fbRef.once("value",snap=>{
+      if(done)return;done=true;clearTimeout(to);
+      const v = snap.val();
+      if(!v) return resolve(null);
+      const norm = (x) => {
+        if(!x) return [];
+        if(Array.isArray(x)) return x.filter(y=>y&&typeof y==='object');
+        if(typeof x==='object') return Object.values(x).filter(y=>y&&typeof y==='object');
+        return [];
+      };
+      const out = {...v};
+      ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'].forEach(k=>{
+        if(v[k] !== undefined) out[k] = norm(v[k]);
+      });
+      resolve(out);
+    },err=>{if(done)return;done=true;clearTimeout(to);console.warn('[fb] read err',err.message);resolve(null);});
   });
 }
 window.forzarSincronizacion = function() {
@@ -330,20 +355,25 @@ window.subirTodoANube = function() {
     if(!fbRef) return alert("No hay conexión a Firebase.");
     try {
         toast('Subiendo todo a la nube... esperá');
+        const toObj = (arr) => {
+            const out = {};
+            (arr||[]).forEach(x => { if(x && x.id) out[String(x.id)] = sanitizeForFirebase(x); });
+            return out;
+        };
         const payload = {
-            clients: sanitizeForFirebase(data.clients || []),
-            orders: sanitizeForFirebase(data.orders || []),
-            payments: sanitizeForFirebase(data.payments || []),
-            driverSales: sanitizeForFirebase(data.driverSales || []),
-            pedidos: sanitizeForFirebase(data.pedidos || []),
-            driverGastos: sanitizeForFirebase(data.driverGastos || []),
-            driverDays: sanitizeForFirebase(data.driverDays || []),
-            driverStock: sanitizeForFirebase(data.driverStock || []),
-            expenses: sanitizeForFirebase(data.expenses || [])
+            clients: toObj(data.clients),
+            orders: toObj(data.orders),
+            payments: toObj(data.payments),
+            driverSales: toObj(data.driverSales),
+            pedidos: toObj(data.pedidos),
+            driverGastos: toObj(data.driverGastos),
+            driverDays: toObj(data.driverDays),
+            driverStock: toObj(data.driverStock),
+            expenses: toObj(data.expenses)
         };
         fbRef.update(payload).then(() => {
-            toast('✅ ¡Nube actualizada! Revisá el celular.');
-            alert("¡Listo! Los datos se subieron a la nube. Ahora andá a tu celular, entrá a la app y jalá para actualizar (o cerrá y abrí la app).");
+            toast('✅ ¡Nube actualizada!');
+            alert("¡Listo! Los datos se subieron. Ahora andá al otro dispositivo y recargá.");
         }).catch((e) => { console.error(e); alert("Error al subir: " + e.message); });
     } catch (e) { console.error(e); alert("Error inesperado: " + e.message); }
 };
@@ -631,7 +661,7 @@ function clientsWithDebt(forDriver){
 }
 window.__invalidateDebtCache = () => { _debtCache = { stamp:0, byClient:null }; };
 function getVisitorId(){let vid=localStorage.getItem('glaciar_vid');if(!vid){vid=uid();localStorage.setItem('glaciar_vid',vid);}return vid;}
-function logVisit(){try{const vid=getVisitorId();const date=today();const existing=(data.visits||[]).find(v=>v.visitorId===vid&&v.date===date);if(existing){existing.lastTime=Date.now();existing.count=(existing.count||1)+1;save();return;}let referrer='Directo';try{if(document.referrer){const r=new URL(document.referrer);const h=r.hostname.toLowerCase();if(h.includes('facebook')||h.includes('fb.'))referrer='Facebook';else if(h.includes('instagram'))referrer='Instagram';else if(h.includes('whatsapp')||h.includes('wa.me'))referrer='WhatsApp';else if(h.includes('google'))referrer='Google';else if(h.includes('tiktok'))referrer='TikTok';else if(h.includes('twitter')||h.includes('x.com'))referrer='Twitter/X';else referrer=r.hostname;}}catch(e){}const url=new URL(location.href);const utm=url.searchParams.get('utm')||url.searchParams.get('utm_source')||'';if(utm){const u=utm.toLowerCase();referrer=u.charAt(0).toUpperCase()+u.slice(1);}const ua=navigator.userAgent||'';const isMobile=/Mobi|Android|iPhone|iPad/i.test(ua);const device=isMobile?'Móvil':'Escritorio';const browser=ua.includes('Edg')?'Edge':ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':'Otro';const nuevo={id:uid(),visitorId:vid,date,firstTime:Date.now(),lastTime:Date.now(),count:1,referrer,utm,device,browser,path:url.pathname};data.visits.unshift(nuevo);dbSet('visits/'+nuevo.id,nuevo);if(data.visits.length>1000)data.visits=data.visits.slice(0,1000);save();}catch(e){}}
+function logVisit(){try{const vid=getVisitorId();const date=today();const existing=(data.visits||[]).find(v=>v.visitorId===vid&&v.date===date);if(existing){existing.lastTime=Date.now();existing.count=(existing.count||1)+1;save();return;}let referrer='Directo';try{if(document.referrer){const r=new URL(document.referrer);const h=r.hostname.toLowerCase();if(h.includes('facebook')||h.includes('fb.'))referrer='Facebook';else if(h.includes('instagram'))referrer='Instagram';else if(h.includes('whatsapp')||h.includes('wa.me'))referrer='WhatsApp';else if(h.includes('google'))referrer='Google';else if(h.includes('tiktok'))referrer='TikTok';else if(h.includes('twitter')||h.includes('x.com'))referrer='Twitter/X';else referrer=r.hostname;}}catch(e){}const url=new URL(location.href);const utm=url.searchParams.get('utm')||url.searchParams.get('utm_source')||'';if(utm){const u=utm.toLowerCase();referrer=u.charAt(0).toUpperCase()+u.slice(1);}const ua=navigator.userAgent||'';const isMobile=/Mobi|Android|iPhone|iPad/i.test(ua);const device=isMobile?'Móvil':'Escritorio';const browser=ua.includes('Edg')?'Edge':ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':'Otro';const nuevo={id:uid(),visitorId:vid,date,firstTime:Date.now(),lastTime:Date.now(),count:1,referrer,utm,device,browser,path:url.pathname};data.visits.unshift(nuevo);dbSetItem('visits',nuevo);if(data.visits.length>1000)data.visits=data.visits.slice(0,1000);save();}catch(e){}}
 function visitsStats(period){const v=data.visits||[];const hoy=today();const ws=new Date();ws.setDate(ws.getDate()-6);const wss=ws.toISOString().slice(0,10);const ms=hoy.slice(0,7)+'-01';const ys=hoy.slice(0,4)+'-01-01';let filtered=v;if(period==='today')filtered=v.filter(x=>x.date===hoy);else if(period==='week')filtered=v.filter(x=>x.date>=wss);else if(period==='month')filtered=v.filter(x=>x.date>=ms);else if(period==='year')filtered=v.filter(x=>x.date>=ys);const unique=new Set(filtered.map(x=>x.visitorId)).size;const byRef={};filtered.forEach(x=>{byRef[x.referrer]=(byRef[x.referrer]||0)+1;});const byDevice={Móvil:0,Escritorio:0};filtered.forEach(x=>{byDevice[x.device]=(byDevice[x.device]||0)+1;});return {total:filtered.length,unique,byRef,byDevice,list:filtered};}
 function openContactForm(){const wa=data.settings.whatsapp||'5492612125599';modal(`<h2>💬 Contactanos</h2><a class="btn wa" style="display:flex;justify-content:center;margin-top:16px;padding:16px;font-size:15px;" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola M&C Hielo!')}" target="_blank">📱 Escribirnos por WhatsApp</a><div class="field"><label>Tu nombre</label><input id="cfName"></div><div class="field"><label>Tu teléfono</label><input id="cfPhone" inputmode="tel"></div><div class="field"><label>Consulta (opcional)</label><textarea id="cfMsg" rows="3"></textarea></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Cerrar</button><button class="btn green" onclick="saveContactLead()">✅ Enviar</button></div>`);}
 function saveContactLead(){const name=$('cfName').value.trim();const phone=$('cfPhone').value.trim();const msg=$('cfMsg').value.trim();if(!name||!phone)return toast('Completá nombre y teléfono');if(!data.leads)data.leads=[];const nuevo={id:uid(),name,phone,msg,date:today(),created:Date.now()};data.leads.unshift(nuevo);dbSetItem('leads',nuevo);save();closeModal();toast('✅ ¡Gracias '+name+'!');}
@@ -1036,9 +1066,8 @@ function renderDashboardSeedBanner(){
   if(!admin) return '';
   if(isBootstrapDone()) return '';
   if(data && data.clients && data.clients.length && data.settings && data.settings.drivers && data.settings.drivers.length){ return ''; }
-  return `<div class="seed-banner no-print"><h3>📥 Carga inicial del sistema</h3><p>Firebase está vacío. Subí el seed <b>una sola vez</b>. Después de esto, la nube será la única fuente de verdad y este botón desaparece.</p><div class="actions"><button class="btn primary" onclick="doSeedUpload()">Subir seed a Firebase (una vez)</button><button class="btn" onclick="toast('Podés subirlo más tarde')">Saltar por ahora</button></div></div>`;
+  return `<div class="seed-banner no-print"><h3>📥 Carga inicial del sistema</h3><p>Firebase está vacío. Subí el seed <b>una sola vez</b>. Después de esto, la nube será la única fuente de verdad y este botón desaparece.</p><div class="actions"><button class="btn primary" onclick="subirTodoANube()">Subir seed a Firebase (una vez)</button><button class="btn" onclick="toast('Podés subirlo más tarde')">Saltar por ahora</button></div></div>`;
 }
-async function doSeedUpload(){try{toast('Leyendo seed…');const seed=await loadSeedFile();toast('Subiendo a Firebase…');await pushSeedOnce(seed);data=Object.assign({},data,seed);try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}attachListener();toast('✅ Seed subido.',2000);render();}catch(e){console.error(e);toast('Error: '+e.message);}}
 function wrapSeccion(id,titulo,contenido){return `<div id="${id}"><div class="row space no-print" style="flex-wrap:wrap;gap:8px;margin-bottom:14px;"><h3 style="margin:0;">${titulo}</h3><div class="row" style="gap:6px;"><button class="btn sm" onclick="copiarSeccion('${id}')">📋 Copiar</button><button class="btn sm green" onclick="imprimirSeccion('${id}','${titulo}')">🖨️ Imprimir / PDF</button></div></div>${contenido}</div>`;}
 function copiarSeccion(id){const el=document.getElementById(id);if(!el)return toast('No se encontró');const clon=el.cloneNode(true);clon.querySelectorAll('.no-print, button, .btn, .tabs').forEach(b=>b.remove());const txt=clon.innerText.replace(/\n{3,}/g,'\n\n').trim();if(!txt)return toast('Nada para copiar');navigator.clipboard.writeText(txt).then(()=>toast('📋 Copiado')).catch(()=>fallbackCopiar(txt));}
 function fallbackCopiar(txt){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity=0;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('📋 Copiado');}catch(e){}document.body.removeChild(ta);}
@@ -1690,6 +1719,14 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
       }
     }
   }catch(e){ console.warn('boot:',e); }
+  
+  // CHEQUEO DE SEGURIDAD: Si Firebase no cargó, avisar en pantalla
+  setTimeout(()=>{
+    if(typeof firebase === 'undefined'){
+      document.body.insertAdjacentHTML('afterbegin', `<div style="background:#dc2626;color:white;padding:16px;text-align:center;font-weight:bold;font-size:16px;position:sticky;top:0;z-index:9999;">⚠️ ERROR: El navegador está bloqueando la conexión con Firebase. Desactivá el bloqueador de anuncios o el escudo de Brave/Edge y recargá la página.</div>`);
+    }
+  }, 2000);
+
   render();
 })();
 </script>
