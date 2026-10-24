@@ -246,8 +246,7 @@ function attachListener(){
     }, 120);
   };
   fbListener = fbRef.on("value", snap => {
-    if(_ignoreFirebase) return; // Si estamos guardando, ignoramos lo que viene de la nube por 1.5s
-    
+    if(_ignoreFirebase) return; // Si estamos guardando, ignoramos lo que viene de la nube por 1.5s    
     const remoto = snap.val();
     if(!remoto) return;
 
@@ -402,8 +401,7 @@ const defaults={
   cart:{},
   paymentSheet:{prices:{p17:1500,p35:2500,p14:6500,p20:8000,p32:12000},rows:[]}
 };
-let data = JSON.parse(localStorage.getItem(KEY) || 'null') || structuredClone(defaults);
-function nextFreeClientCode(){const used=new Set((data.clients||[]).map(c=>String(c.code||'')));let n=1001;while(used.has(String(n))) n++;return String(n);}
+let data = JSON.parse(localStorage.getItem(KEY) || 'null') || structuredClone(defaults);function nextFreeClientCode(){const used=new Set((data.clients||[]).map(c=>String(c.code||'')));let n=1001;while(used.has(String(n))) n++;return String(n);}
 function getDrivers(){return (data.settings&&data.settings.drivers)||[];}
 function loadInitialDebts(force){
   const flag=localStorage.getItem('glaciar_deudas_v4_loaded');
@@ -754,7 +752,8 @@ function driverView(){
   <section class="panel"><h3 class="driver-section-title">📋 Ventas del turno (${mySales.length})</h3>${ventasHtml}</section>
   <section class="panel"><div class="row space" style="flex-wrap:wrap;gap:10px;"><h3 class="driver-section-title" style="margin:0;">🔚 Cierre de jornada</h3><button class="btn ${canClose?'primary':'dark'}" onclick="driverCloseDay()" ${canClose?'':'disabled style="opacity:.5;cursor:not-allowed;"'}>${canClose?'Cerrar jornada':'⚠️ Entregá los pedidos de HOY primero'}</button></div><div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap;"><button class="btn sm" onclick="driverCopySummary()">📋 Copiar resumen</button></div><p class="muted" style="font-size:12px;margin-top:10px;">Al cerrar, se envía el resumen al administrador por WhatsApp.</p></section>
 </div>`;
-}function driverAbrirPedidos(){driverSubView='pedidos';render();window.scrollTo(0,0);}
+}
+function driverAbrirPedidos(){driverSubView='pedidos';render();window.scrollTo(0,0);}
 function driverVolverPlanilla(){driverSubView='planilla';render();window.scrollTo(0,0);}
 function driverPedidosView(){
   const pin=currentDriverPin;
