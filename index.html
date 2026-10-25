@@ -663,7 +663,7 @@ window.__invalidateDebtCache = () => { _debtCache = { stamp:0, byClient:null }; 
 function getVisitorId(){let vid=localStorage.getItem('glaciar_vid');if(!vid){vid=uid();localStorage.setItem('glaciar_vid',vid);}return vid;}
 function logVisit(){try{const vid=getVisitorId();const date=today();const existing=(data.visits||[]).find(v=>v.visitorId===vid&&v.date===date);if(existing){existing.lastTime=Date.now();existing.count=(existing.count||1)+1;save();return;}let referrer='Directo';try{if(document.referrer){const r=new URL(document.referrer);const h=r.hostname.toLowerCase();if(h.includes('facebook')||h.includes('fb.'))referrer='Facebook';else if(h.includes('instagram'))referrer='Instagram';else if(h.includes('whatsapp')||h.includes('wa.me'))referrer='WhatsApp';else if(h.includes('google'))referrer='Google';else if(h.includes('tiktok'))referrer='TikTok';else if(h.includes('twitter')||h.includes('x.com'))referrer='Twitter/X';else referrer=r.hostname;}}catch(e){}const url=new URL(location.href);const utm=url.searchParams.get('utm')||url.searchParams.get('utm_source')||'';if(utm){const u=utm.toLowerCase();referrer=u.charAt(0).toUpperCase()+u.slice(1);}const ua=navigator.userAgent||'';const isMobile=/Mobi|Android|iPhone|iPad/i.test(ua);const device=isMobile?'Móvil':'Escritorio';const browser=ua.includes('Edg')?'Edge':ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':'Otro';const nuevo={id:uid(),visitorId:vid,date,firstTime:Date.now(),lastTime:Date.now(),count:1,referrer,utm,device,browser,path:url.pathname};data.visits.unshift(nuevo);dbSetItem('visits',nuevo);if(data.visits.length>1000)data.visits=data.visits.slice(0,1000);save();}catch(e){}}
 function visitsStats(period){const v=data.visits||[];const hoy=today();const ws=new Date();ws.setDate(ws.getDate()-6);const wss=ws.toISOString().slice(0,10);const ms=hoy.slice(0,7)+'-01';const ys=hoy.slice(0,4)+'-01-01';let filtered=v;if(period==='today')filtered=v.filter(x=>x.date===hoy);else if(period==='week')filtered=v.filter(x=>x.date>=wss);else if(period==='month')filtered=v.filter(x=>x.date>=ms);else if(period==='year')filtered=v.filter(x=>x.date>=ys);const unique=new Set(filtered.map(x=>x.visitorId)).size;const byRef={};filtered.forEach(x=>{byRef[x.referrer]=(byRef[x.referrer]||0)+1;});const byDevice={Móvil:0,Escritorio:0};filtered.forEach(x=>{byDevice[x.device]=(byDevice[x.device]||0)+1;});return {total:filtered.length,unique,byRef,byDevice,list:filtered};}
-function openContactForm(){const wa=data.settings.whatsapp||'5492612125599';modal(`<h2>💬 Contactanos</h2><a class="btn wa" style="display:flex;justify-content:center;margin-top:16px;padding:16px;font-size:15px;" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola M&C Hielo!')}" target="_blank">📱 Escribirnos por WhatsApp</a><div class="field"><label>Tu nombre</label><input id="cfName"></div><div class="field"><label>Tu teléfono</label><input id="cfPhone" inputmode="tel"></div><div class="field"><label>Consulta (opcional)</label><textarea id="cfMsg" rows="3"></textarea></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Cerrar</button><button class="btn green" onclick="saveContactLead()">✅ Enviar</button></div>`);}
+function openContactForm(){const wa=data.settings.whatsapp||'5492612125599';modal(`<h2>💬 Contactanos</h2><a class="btn wa" style="display:flex;justify-content:center;margin-top:16px;padding:16px;font-size:15px;" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola M&C Hielo!')}" target="_blank">📱 Escribirnos por WhatsApp</a><div class="field"><label>Tu nombre</label><input id="cfName"></div><div class="field"><label>Teléfono</label><input id="cfPhone" inputmode="tel"></div><div class="field"><label>Consulta (opcional)</label><textarea id="cfMsg" rows="3"></textarea></div><div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Cerrar</button><button class="btn green" onclick="saveContactLead()">✅ Enviar</button></div>`);}
 function saveContactLead(){const name=$('cfName').value.trim();const phone=$('cfPhone').value.trim();const msg=$('cfMsg').value.trim();if(!name||!phone)return toast('Completá nombre y teléfono');if(!data.leads)data.leads=[];const nuevo={id:uid(),name,phone,msg,date:today(),created:Date.now()};data.leads.unshift(nuevo);dbSetItem('leads',nuevo);save();closeModal();toast('✅ ¡Gracias '+name+'!');}
 function render(){
   let contenido;
@@ -1839,7 +1839,6 @@ function generarFactura(){
   const r=calcularFactura(cid,d,h);
   facturaActual={client:c,desde:d,hasta:h,...r};
   
-  // Generar número de factura automático (formato: F-YYYYMMDD-XXXX)
   const hoyStr = today().replace(/-/g,'');
   const numFactura = `F-${hoyStr}-${String(Math.floor(Math.random()*9000)+1000)}`;
 
@@ -1858,6 +1857,11 @@ function generarFactura(){
       <div class="factura-resumen"><span>📊 Total: <b>${money(r.totalDeudas)}</b></span><span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span><span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span></div>
       <table class="table"><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="factura-total"><span>💰 Total: </span><span class="monto">${money(r.saldoTotal)}</span></div>
+    </div>
+    <div class="row no-print" style="justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn sm" onclick="copiarFactura()">📋 Copiar</button>
+      <button class="btn sm wa" onclick="enviarFacturaWhatsApp()">📱 WhatsApp</button>
+      <button class="btn sm primary" onclick="imprimirFactura()">🖨️ Imprimir / PDF</button>
     </div>`;
   toast('✅ Factura generada');
 }
@@ -1886,30 +1890,113 @@ function cargarModificacion(){
       </td>
       <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount = Number(this.value)" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
       <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+      <td class="no-print"><button class="btn xs danger" onclick="borrarModifItem(${idx})">🗑</button></td>
     </tr>
   `).join('');
 
   $('modifContainer').innerHTML=`
     <div class="factura-resumen"><span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span><span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span><span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span></div>
-    <div class="notice info no-print" style="margin-bottom:12px;">Editá los valores en la tabla y luego tocá "Guardar Cambios".</div>
+    <div class="notice info no-print" style="margin-bottom:12px;">Editá los valores en la tabla y luego tocá "Generar Factura Modificada".</div>
     <table class="table">
-      <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead>
-      <tbody>${filas || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th><th class="no-print"></th></tr></thead>
+      <tbody>${filas || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
     </table>
     <div style="text-align:right; margin-top:14px;">
-      <button class="btn primary" onclick="guardarModificacion('${cid}')">💾 Guardar Cambios</button>
+      <button class="btn primary" onclick="generarFacturaModificada('${cid}')">📄 Generar Factura Modificada</button>
     </div>
+    <div id="facturaModifContainer" style="margin-top:20px;"></div>
   `;
   toast(`✅ ${modifItems.length} movimientos cargados`);
 }
 
-function guardarModificacion(cid){
-  if(!confirm('¿Guardar los cambios en esta factura? Esto actualizará la deuda del cliente.')) return;
+function borrarModifItem(idx) {
+  if(!confirm('¿Quitar este movimiento de la factura modificada?')) return;
+  modifItems.splice(idx, 1);
+  // Volver a dibujar
+  const cid=$('modClient').value;
+  const d=$('modDesde').value;
+  const h=$('modHasta').value;
+  const r=calcularFactura(cid,d,h); // recalcular totales base
+  const filas = modifItems.map((i, idx) => `
+    <tr>
+      <td><input type="date" value="${i.date}" onchange="modifItems[${idx}].date = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+      <td>
+        <select onchange="modifItems[${idx}].type = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;">
+          <option value="deuda" ${i.type==='deuda'?'selected':''}>Deuda</option>
+          <option value="pago" ${i.type==='pago'?'selected':''}>Pago</option>
+        </select>
+      </td>
+      <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount = Number(this.value)" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+      <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+      <td class="no-print"><button class="btn xs danger" onclick="borrarModifItem(${idx})">🗑</button></td>
+    </tr>
+  `).join('');
+  document.querySelector('#modifContainer table tbody').innerHTML = filas || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>';
+}
+
+function generarFacturaModificada(cid) {
+  const c = findClient(cid);
+  if (!c) return toast('Cliente no encontrado');
   
-  // Lógica para actualizar los datos reales basados en modifItems
-  // (Esta función la podés adaptar según cómo guardes exactamente, pero acá te dejo la base)
-  toast('✅ Cambios guardados (simulado)');
-  render();
+  const hoyStr = today().replace(/-/g,'');
+  const numFactura = `F-MOD-${hoyStr}-${String(Math.floor(Math.random()*9000)+1000)}`;
+  
+  let totalDeudas = 0, totalPagos = 0;
+  modifItems.forEach(i => {
+    if (i.type === 'deuda') totalDeudas += Number(i.amount);
+    else totalPagos += Number(i.amount);
+  });
+  const saldo = totalDeudas - totalPagos;
+
+  const rows = modifItems.map(i => `<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join('');
+
+  $('facturaModifContainer').innerHTML = `
+    <div class="factura-box" id="facturaModifBox">
+      <div class="factura-head">
+        <div class="factura-emp">🧊 GLACIAR · M&C Hielo</div>
+        <div class="factura-num">
+          <b>N° Factura Modif.:</b> ${numFactura}<br>
+          <b>Emisión:</b> ${fdate(today())}
+        </div>
+      </div>
+      <div><b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}</div>
+      <div class="factura-resumen"><span>📊 Total Deudas: <b>${money(totalDeudas)}</b></span><span>💸 Pagos: <b style="color:var(--green)">${money(totalPagos)}</b></span><span>🔴 Saldo: <b style="color:var(--red)">${money(saldo)}</b></span></div>
+      <table class="table"><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="factura-total"><span>💰 Total: </span><span class="monto">${money(saldo)}</span></div>
+    </div>
+    <div class="row no-print" style="justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn sm" onclick="copiarFacturaModif()">📋 Copiar</button>
+      <button class="btn sm wa" onclick="enviarFacturaModifWhatsApp('${cid}')">📱 WhatsApp</button>
+      <button class="btn sm primary" onclick="imprimirFacturaModif()">🖨️ Imprimir / PDF</button>
+    </div>
+  `;
+  toast('✅ Factura modificada generada');
+}
+
+function copiarFacturaModif() {
+  const el = document.getElementById('facturaModifBox');
+  if (!el) return;
+  const clon = el.cloneNode(true);
+  navigator.clipboard.writeText(clon.innerText.trim()).then(() => toast('📋 Copiada'));
+}
+
+function enviarFacturaModifWhatsApp(cid) {
+  const c = findClient(cid);
+  if (!c) return;
+  const tel = c.phone ? String(c.phone).replace(/[^0-9]/g, '') : '';
+  const link = tel ? `https://wa.me/${tel}?text=` : `https://wa.me/?text=`;
+  const txt = `🧊 *GLACIAR · M&C Hielo*\n\nHola ${c.name}, te paso el resumen corregido de tu cuenta.`;
+  window.open(link + encodeURIComponent(txt), '_blank');
+}
+
+function imprimirFacturaModif() {
+  const el = document.getElementById('facturaModifBox');
+  if (!el) return;
+  const w = window.open('', '_blank');
+  if (!w) return toast('Permití ventanas emergentes');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Factura Modificada</title><style>body{font-family:Inter,system-ui,sans-serif;padding:24px;color:#1e293b}h1,h2,h3{font-family:Georgia,serif;margin:0 0 12px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #ddd;padding:8px 10px;text-align:left}th{background:#eef5ff;font-weight:700;color:#0f2352}tr:nth-child(even) td{background:#fafcff}.factura-box{border:2px solid #0f2352;border-radius:18px;padding:32px}.factura-head{display:flex;justify-content:space-between;border-bottom:2px solid #0f2352;padding-bottom:16px;margin-bottom:20px}.factura-emp{font-family:Georgia,serif;font-size:1.5rem;font-weight:900;color:#0f2352}.factura-total{text-align:right;font-size:1.1rem;font-weight:900;border-top:2px solid #0f2352;padding-top:16px;margin-top:16px}.monto{color:#ef4444;font-size:1.6rem}.factura-resumen{background:#eef5ff;padding:14px 20px;border-radius:12px;margin:16px 0;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:bold}@media print{body{padding:12px}}</style></head><body>${el.outerHTML}</body></html>`);
+  w.document.close();
+  setTimeout(() => { try { w.print(); } catch (e) {} }, 500);
 }
 
 function shareAdmin(){const link=location.href.split('?')[0];return `<section class="panel" style="background:linear-gradient(135deg,#0a1128,#0f2352);color:white;border:0;"><h2 style="font-family:'Fraunces',serif;color:white;">📤 Compartir catálogo</h2><div class="field"><label style="color:rgba(255,255,255,.75);">🔗 Link base</label><input value="${esc(link)}" readonly style="background:rgba(255,255,255,.95);"></div></section>`;}
@@ -1933,9 +2020,10 @@ function catalogAdmin(){
           <option value="false" ${!p.active?'selected':''}>No, oculto</option>
         </select>
       </div>
+      <button class="btn danger sm" onclick="deleteProduct('${p.id}')" style="width:100%;margin-top:10px;">🗑 Eliminar Producto</button>
     </div>
   `).join('');
-  return wrapSeccion('secCatalog','📦 Catálogo de Productos', `<section class="panel"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">${cards}</div></section>`);
+  return wrapSeccion('secCatalog','📦 Catálogo de Productos', `<section class="panel"><div class="row space no-print" style="margin-bottom:14px;"><button class="btn primary" onclick="addProductForm()">➕ Agregar Producto</button></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">${cards}</div></section>`);
 }
 function updateProduct(id, field, value) {
   const p = findProduct(id); if(!p) return;
@@ -1944,6 +2032,48 @@ function updateProduct(id, field, value) {
   save();
   toast('✅ Producto actualizado');
 }
+
+function addProductForm(){
+  modal(`<h2>➕ Agregar Producto</h2>
+  <div class="field"><label>Nombre del Producto</label><input id="npName" placeholder="Ej: Bolsa 5 kg"></div>
+  <div class="twocol">
+    <div class="field"><label>Precio de venta ($)</label><input type="number" id="npPrice" value="0"></div>
+    <div class="field"><label>Costo ($)</label><input type="number" id="npCost" value="0"></div>
+  </div>
+  <div class="twocol">
+    <div class="field"><label>Emoji</label><input id="npEmoji" value="🧊"></div>
+    <div class="field"><label>Mostrar en web</label><select id="npActive"><option value="true">Sí</option><option value="false">No</option></select></div>
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn primary" onclick="saveNewProduct()">💾 Guardar Producto</button></div>`);
+}
+
+function saveNewProduct(){
+  const name = $('npName').value.trim();
+  const price = Number($('npPrice').value) || 0;
+  const cost = Number($('npCost').value) || 0;
+  const emoji = $('npEmoji').value.trim() || '🧊';
+  const active = $('npActive').value === 'true';
+  if(!name) return toast('Falta el nombre');
+  const newProd = {
+    id: 'p_' + uid(), name, price, cost, emoji, active
+  };
+  data.products.push(newProd);
+  dbSetItem('products', newProd);
+  save();
+  closeModal();
+  render();
+  toast('✅ Producto agregado');
+}
+
+function deleteProduct(id){
+  if(!confirm('¿Eliminar este producto? Esto no borra ventas viejas, solo lo quita del catálogo.')) return;
+  data.products = data.products.filter(p => p.id !== id);
+  dbSet('products/' + id, null);
+  save();
+  render();
+  toast('✅ Producto eliminado');
+}
+
 function settingsAdmin(){
   const drivers=getDrivers();const h=data.settings.hero||{};
   const driversHtml=drivers.map((d,i)=>`<div class="panel" style="background:var(--ice);border-left:4px solid var(--blue);margin-top:10px;"><div class="row space"><b>🚚 Chofer ${i+1}</b><button class="btn xs danger" onclick="deleteDriver(${i})">🗑 Borrar</button></div><div class="twocol" style="margin-top:10px;"><div class="field"><label>Nombre</label><input value="${esc(d.name)}" onchange="updateDriverName(${i},this.value)"></div><div class="field"><label>PIN</label><input value="${esc(d.pin)}" maxlength="6" inputmode="numeric" onchange="updateDriverPin(${i},this.value)"></div></div></div>`).join('');
