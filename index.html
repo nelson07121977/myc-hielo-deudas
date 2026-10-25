@@ -1890,14 +1890,12 @@ function dibujarTablaModif(cid) {
   let totalDeudas = 0, totalPagos = 0;
   
   const filas = modifItems.map((i, idx) => {
-    // Si no está oculto, lo sumamos a los totales
-    if (!i.oculto) {
-      if (i.type === 'deuda') totalDeudas += Number(i.amount);
-      else totalPagos += Number(i.amount);
-    }
+    // AQUI EL CAMBIO: Sumamos siempre, esté oculto o no.
+    if (i.type === 'deuda') totalDeudas += Number(i.amount);
+    else totalPagos += Number(i.amount);
     
     const clsFila = i.oculto ? 'style="opacity:0.4; background:#f1f5f9;"' : '';
-    const iconoOjo = i.oculto ? '👁️‍🗨️' : '👁️'; // Ojo tachado si está oculto
+    const iconoOjo = i.oculto ? '👁️‍🗨️' : '👁️';
     
     return `
     <tr ${clsFila}>
@@ -1911,7 +1909,7 @@ function dibujarTablaModif(cid) {
       <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount = Number(this.value); dibujarTablaModif('${cid}')" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
       <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
       <td class="no-print" style="white-space:nowrap;">
-        <button class="btn xs" onclick="modifItems[${idx}].oculto = !modifItems[${idx}].oculto; dibujarTablaModif('${cid}')" title="Ocultar/Mostrar">${iconoOjo}</button>
+        <button class="btn xs" onclick="modifItems[${idx}].oculto = !modifItems[${idx}].oculto; dibujarTablaModif('${cid}')" title="Ocultar/Mostrar en la factura">${iconoOjo}</button>
         <button class="btn xs danger" onclick="borrarModifItem(${idx}, '${cid}')" title="Eliminar">🗑</button>
       </td>
     </tr>`;
@@ -1928,7 +1926,7 @@ function dibujarTablaModif(cid) {
       <span><b>🟢 Pagos:</b> ${money(totalPagos)}</span>
       <span><b>📊 Saldo:</b> ${money(saldo)}</span>
     </div>
-    <div class="notice info no-print" style="margin-bottom:12px;">Editá los valores, ocultá lo que no quieras que salga (👁️), o agregá un artículo nuevo. Luego tocá "Generar Factura Modificada".</div>
+    <div class="notice info no-print" style="margin-bottom:12px;">Editá los valores. Usá el 👁️ para ocultar una fila en la factura final (el total no cambia), o 🗑 para eliminarla definitivamente (el total sí cambia).</div>
     <table class="table">
       <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead>
       <tbody>${filas || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
@@ -1971,16 +1969,16 @@ function generarFacturaModificada(cid) {
   
   let totalDeudas = 0, totalPagos = 0;
   
-  // Solo procesamos los que NO están ocultos
-  const itemsVisibles = modifItems.filter(i => !i.oculto);
-  
-  itemsVisibles.forEach(i => {
+  // 1. Calculamos el total usando TODOS los items (ocultos o no)
+  modifItems.forEach(i => {
     if (i.type === 'deuda') totalDeudas += Number(i.amount);
     else totalPagos += Number(i.amount);
   });
   
   const saldo = totalDeudas - totalPagos;
 
+  // 2. Filtramos solo los que se van a MOSTRAR en el PDF
+  const itemsVisibles = modifItems.filter(i => !i.oculto);
   const rows = itemsVisibles.map(i => `<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join('');
 
   $('facturaModifContainer').innerHTML = `
