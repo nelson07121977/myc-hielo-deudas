@@ -351,7 +351,7 @@ window.forzarSincronizacion = function() {
     } catch (e) { alert("Error al forzar: " + e.message); }
 };
 window.subirTodoANube = function() {
-    if(!confirm("⚠️ Esto va a subir TODOS los datos de esta PC (deudas, clientes, ventas, jornadas) a la nube para arreglar los celulares. ¿Continuar?")) return;
+    if(!confirm("⚠️ Esto va a subir TODOS los datos de esta PC a la nube. ¿Continuar?")) return;
     if(!fbRef) return alert("No hay conexión a Firebase.");
     try {
         toast('Subiendo todo a la nube... esperá');
@@ -454,7 +454,8 @@ const defaults={
   orders:[],driverSales:[],driverDays:[],driverGastos:[],driverStock:[],payments:[],expenses:[],visits:[],leads:[],pedidos:[],
   initialDebts:DEUDAS_INICIALES.map(d=>({client:d[0],amount:d[1]})),
   cart:{},
-  paymentSheet:{prices:{p17:1500,p35:2500,p14:6500,p20:8000,p32:12000},rows:[]}
+  paymentSheet:{prices:{p17:1500,p35:2500,p14:6500,p20:8000,p32:12000},rows:[]},
+  invoices:{}
 };
 let data = JSON.parse(localStorage.getItem(KEY) || 'null') || structuredClone(defaults);function nextFreeClientCode(){const used=new Set((data.clients||[]).map(c=>String(c.code||'')));let n=1001;while(used.has(String(n))) n++;return String(n);}
 function getDrivers(){return (data.settings&&data.settings.drivers)||[];}
@@ -537,6 +538,7 @@ function migrateData(){
   let n=1001;const next=()=>{while(used.has(String(n)))n++;const c=String(n);used.add(c);n++;return c;};
   data.clients.forEach(c=>{if(!/^\d{4}$/.test(String(c.code||'')))c.code=next();});
   const seen=new Set();data.clients.forEach(c=>{if(seen.has(String(c.code)))c.code=next();seen.add(String(c.code));});
+  if(!data.invoices||typeof data.invoices!=='object')data.invoices={};
 }
 function toast(t){let e=document.querySelector('#toast');if(!e)return;e.textContent=t;e.classList.add('show');clearTimeout(e.x);e.x=setTimeout(()=>e.classList.remove('show'),2600);}
 function modal(html){document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="modal"><div class="dialog">${html}</div></div>`);}
@@ -1471,7 +1473,85 @@ function imprimirPlanillaDia(){
   setTimeout(()=>{try{w.print();}catch(e){}},500);
 }
 function copiarPlanillaDia(){const filt=window.driverDayFilter||{date:today(),pin:''};const sales=(data.driverSales||[]).filter(s=>s.date===filt.date&&(!filt.pin||String(s.pin)===String(filt.pin)));const gastos=(data.driverGastos||[]).filter(g=>g.date===filt.date&&(!filt.pin||String(g.pin)===String(filt.pin)));let ef=0,tf=0,cc=0,cbEf=0,cbTf=0;sales.forEach(s=>{if(s.payment==='efectivo')ef+=Number(s.total||0);if(s.payment==='transferencia')tf+=Number(s.total||0);if(s.payment==='ctacte')cc+=Number(s.total||0);if(s.payment==='cobrocc'){const m=s.collectionMethod||'efectivo';if(m==='transferencia')cbTf+=Number(s.collection||0);else cbEf+=Number(s.collection||0);}});const gastosTotal=gastos.reduce((a,g)=>a+Number(g.amount||0),0);let txt=`🧊 GLACIAR · Planilla ${fdate(filt.date)}\n\n💵 Efectivo: ${money(ef)}\n💳 Transf: ${money(tf)}\n📋 Cta Cte: ${money(cc)}\n🔄 Cobros Ef.: ${money(cbEf)}\n🔄 Cobros Transf.: ${money(cbTf)}\n💸 Gastos: ${money(gastosTotal)}\n💰 Neto efectivo: ${money(ef+cbEf-gastosTotal)}\n📊 Neto total: ${money(ef+tf+cbEf+cbTf-gastosTotal)}\n\nVENTAS:\n`;sales.forEach(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ')||'—';const pl=s.payment==='cobrocc'?('cobrocc '+(s.collectionMethod==='transferencia'?'transf':'ef')):s.payment;txt+=`• ${s.clientName} · ${items} · ${money(s.total||s.collection)} (${pl})\n`;});if(gastos.length){txt+='\nGASTOS:\n';gastos.forEach(g=>{txt+=`• ${g.category}${g.detail?' · '+g.detail:''} · ${money(g.amount)}\n`;});}navigator.clipboard.writeText(txt).then(()=>toast('📋 Copiado'));}
-function imprimirJornadaCerrada(id){const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return toast('No encontrada');const w=window.open('','_blank');if(!w){toast('Permití ventanas emergentes');return;}const sales=d.sales||[];const gastos=d.gastosList||[];const salesRows=sales.map(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ')||'—';const pl=s.payment==='efectivo'?'Efectivo':s.payment==='transferencia'?'Transf':s.payment==='ctacte'?'Cta Cte':s.payment==='cobrocc'?('Cobro '+(s.collectionMethod==='transferencia'?'Transf':'Ef')):'—';return `<tr><td>${esc(s.clientName||'—')}</td><td>${items}</td><td>${pl}</td><td style="text-align:right;">${money(s.total||s.collection)}</td></tr>`;}).join('');const gastosRows=gastos.map(g=>`<tr><td>${esc(g.category)}</td><td>${esc(g.detail||'—')}</td><td style="text-align:right;">${money(g.amount)}</td></tr>`).join('');w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Jornada '+d.date+'</title><style>body{font-family:Inter,sans-serif;padding:24px}h1{font-family:Georgia,serif}h2{font-size:15px;color:#0f2352;border-bottom:2px solid #0f2352;padding-bottom:6px;margin:22px 0 10px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ddd;padding:7px 9px}th{background:#eef5ff}</style></head><body><h1>🧊 Jornada '+fdate(d.date)+' · '+d.driverName+'</h1><p>Efectivo: '+money(d.efectivo)+' · Transf: '+money(d.transferencia)+' · Gastos: '+money(d.gastos)+' · Neto: '+money(d.neto)+'</p><h2>Ventas ('+sales.length+')</h2><table><thead><tr><th>Cliente</th><th>Bolsas</th><th>Pago</th><th style="text-align:right">Monto</th></tr></thead><tbody>'+salesRows+'</tbody></table><h2>Gastos ('+gastos.length+')</h2><table><thead><tr><th>Categoría</th><th>Detalle</th><th style="text-align:right">Monto</th></tr></thead><tbody>'+(gastosRows||'<tr><td colspan="3">Sin gastos</td></tr>')+'</tbody></table></body></html>');w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},500);}
+function imprimirJornadaCerrada(id){
+  const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return toast('No encontrada');
+  const w=window.open('','_blank');if(!w){toast('Permití ventanas emergentes');return;}
+  const sales=d.sales||[];const gastos=d.gastosList||[];
+  
+  const salesRows=sales.map(s=>{
+    const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ')||'—';
+    const pl=s.payment==='efectivo'?'Efectivo':s.payment==='transferencia'?'Transf':s.payment==='ctacte'?'Cta Cte':s.payment==='cobrocc'?('Cobro '+(s.collectionMethod==='transferencia'?'Transf':'Ef')):'—';
+    return `<tr><td>${esc(s.clientName||'—')}</td><td>${items}</td><td>${pl}</td><td style="text-align:right;">${money(s.total||s.collection)}</td></tr>`;
+  }).join('');
+  
+  const gastosRows=gastos.map(g=>`<tr><td>${esc(g.category)}</td><td>${esc(g.detail||'—')}</td><td style="text-align:right;">${money(g.amount)}</td></tr>`).join('');
+  
+  const totalVentas = sales.reduce((acc, s)=>acc+Number(s.total||s.collection||0), 0);
+  const bolsasTotales = sales.reduce((acc, s)=>acc+Object.values(s.qty||{}).reduce((a,b)=>a+Number(b||0),0), 0);
+
+  const html = `
+  <!doctype html><html><head><meta charset="utf-8"><title>Jornada ${d.date}</title>
+  <style>
+    body{font-family:'Inter',system-ui,sans-serif;padding:30px;color:#1e293b;background:#fff;}
+    h1{font-family:'Fraunces',Georgia,serif;font-size:24px;color:#0f2352;margin:0 0 5px;}
+    .sub{font-size:13px;color:#64748b;margin-bottom:20px;}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+    .kpi{border:1px solid #e2e8f0;border-radius:10px;padding:12px;background:#f8fafc;}
+    .kpi span{display:block;font-size:10px;text-transform:uppercase;color:#64748b;font-weight:bold;margin-bottom:4px;}
+    .kpi b{font-size:20px;font-family:Georgia,serif;}
+    .neto-box{border:2px solid #10b981;background:#ecfdf5;border-radius:10px;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+    .neto-box span{font-size:14px;font-weight:bold;color:#047857;text-transform:uppercase;}
+    .neto-box b{font-size:26px;font-family:Georgia,serif;color:#047857;}
+    .neto-box.blue{border-color:#3b82f6;background:#eff6ff;color:#1d4ed8;}
+    .neto-box.blue span, .neto-box.blue b{color:#1d4ed8;}
+    h2{font-size:15px;color:#0f2352;border-bottom:2px solid #0f2352;padding-bottom:6px;margin:24px 0 12px;}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left;}
+    th{background:#f1f5f9;color:#0f2352;font-size:11px;text-transform:uppercase;}
+    .footer{margin-top:30px;text-align:center;font-size:11px;color:#94a3b8;}
+    @media print{body{padding:10px;}}
+  </style></head><body>
+    <h1>🧊 GLACIAR · M&C Hielo</h1>
+    <div class="sub"><b>Jornada cerrada:</b> ${fdate(d.date)} · <b>Chofer:</b> ${d.driverName}</div>
+    
+    <div class="kpi-grid">
+      <div class="kpi"><span>💵 Efectivo</span><b>${money(d.efectivo)}</b></div>
+      <div class="kpi"><span>💳 Transferencia</span><b>${money(d.transferencia)}</b></div>
+      <div class="kpi"><span>📋 Cta Cte</span><b>${money(d.ctacte)}</b></div>
+      <div class="kpi"><span>🔄 Cobros Ef.</span><b>${money(d.cobrosEfectivo!==undefined?d.cobrosEfectivo:d.cobros)}</b></div>
+      <div class="kpi"><span>🔄 Cobros Transf.</span><b>${money(d.cobrosTransferencia||0)}</b></div>
+      <div class="kpi"><span>💸 Gastos</span><b>${money(d.gastos)}</b></div>
+      <div class="kpi"><span>🧊 Bolsas</span><b>${bolsasTotales}</b></div>
+      <div class="kpi"><span>Ventas</span><b>${sales.length}</b></div>
+    </div>
+
+    <div class="neto-box">
+      <span>💰 NETO EN EFECTIVO A ENTREGAR</span>
+      <b>${money(d.netoEntregar)}</b>
+    </div>
+    
+    <div class="neto-box blue">
+      <span>📊 NETO TOTAL (incluye transferencias)</span>
+      <b>${money(d.neto)}</b>
+    </div>
+
+    <h2>Ventas de la jornada (${sales.length})</h2>
+    <table>
+      <thead><tr><th>Cliente</th><th>Productos</th><th>Pago</th><th style="text-align:right">Monto</th></tr></thead>
+      <tbody>${salesRows||'<tr><td colspan="4" style="text-align:center">Sin ventas</td></tr>'}</tbody>
+    </table>
+
+    <h2>Gastos de la jornada (${gastos.length})</h2>
+    <table>
+      <thead><tr><th>Categoría</th><th>Detalle</th><th style="text-align:right">Monto</th></tr></thead>
+      <tbody>${gastosRows||'<tr><td colspan="3" style="text-align:center">Sin gastos</td></tr>'}</tbody>
+    </table>
+
+    <div class="footer">* No es fiscal · Generado el ${new Date().toLocaleString('es-AR')}</div>
+  </body></html>`;
+  
+  w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},500);
+}
 function copiarJornadaCerrada(id){const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return toast('No encontrada');let txt=`🧊 JORNADA ${d.date} · ${d.driverName}\n💵 ${money(d.efectivo)}\n💳 ${money(d.transferencia)}\n💸 ${money(d.gastos)}\n💰 NETO: ${money(d.neto)}`;navigator.clipboard.writeText(txt).then(()=>toast('📋 Copiado'));}
 function enviarJornadaWhatsApp(id){const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return toast('No encontrada');let txt=`🧊 *JORNADA ${d.date}*\n🚚 ${d.driverName}\n\n💵 ${money(d.efectivo)}\n💳 ${money(d.transferencia)}\n💸 ${money(d.gastos)}\n\n💰 *NETO: ${money(d.neto)}*`;const wa=data.settings.whatsapp||'5492612125599';window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(txt),'_blank');}
 function psCalcTotals(){const ps=data.paymentSheet||{prices:{},rows:[]};const pr=ps.prices||{};const calcRow=r=>(Number(r.qty?.['1,7'])||0)*(Number(pr.p17)||0)+(Number(r.qty?.['3,5'])||0)*(Number(pr.p35)||0)+(Number(r.qty?.['14'])||0)*(Number(pr.p14)||0)+(Number(r.qty?.['20'])||0)*(Number(pr.p20)||0)+(Number(r.qty?.['32'])||0)*(Number(pr.p32)||0);const totals={p17:0,p35:0,p14:0,p20:0,p32:0};let gt=0;(ps.rows||[]).forEach(r=>{PROD_KEYS.forEach(k=>{totals[k]+=Number(r.qty?.[QTY_KEYS[k]])||0;});gt+=calcRow(r);});return {totals,granTotal:gt,rows:ps.rows||[],prices:pr,calcRow};}
@@ -1628,13 +1708,219 @@ function financeAdmin(){
 }
 function addExpense(){const n=$('exName').value.trim(),a=Number($('exAmount').value);if(!n||!a)return toast('Completá');const nuevo={id:uid(),name:n,amount:a,date:today()};data.expenses.unshift(nuevo);dbSetItem('expenses',nuevo);save();render();}
 function deleteExpense(id){if(!confirm('¿Eliminar?'))return;data.expenses=data.expenses.filter(x=>x.id!==id);dbSet('expenses/'+id,null);save();render();}
-function adminFacturar(){const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');const hs=today();const pd=hs.slice(0,7)+'-01';return `<section class="panel"><h3 style="margin:0 0 14px;">📄 Facturar por Cliente</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="facClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="facDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="facHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="generarFactura()">📄 Generar factura</button><div id="facturaContainer" style="margin-top:18px;"></div></section>`;}
+function adminFacturar(){
+  const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');
+  const hs=today();const pd=hs.slice(0,7)+'-01';
+  return `<section class="panel"><h3 style="margin:0 0 14px;">📄 Facturar por Cliente</h3>
+  <div class="threecol no-print">
+    <div class="field"><label>👤 Cliente</label><select id="facClient"><option value="">— Elegí —</option>${co}</select></div>
+    <div class="field"><label>📅 Desde</label><input type="date" id="facDesde" value="${pd}"></div>
+    <div class="field"><label>📅 Hasta</label><input type="date" id="facHasta" value="${hs}"></div>
+  </div>
+  <button class="btn primary no-print" onclick="generarFactura()">📄 Generar factura</button>
+  <div id="facturaContainer" style="margin-top:18px;"></div></section>`;
+}
 let facturaActual=null;
-function calcularFactura(cid,desde,hasta){const items=[];(data.driverSales||[]).forEach(s=>{if(String(s.clientId)!==String(cid))return;if(s.date<desde||s.date>hasta)return;if(s.payment==='ctacte')items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:'Venta',source:'chofer'});if(s.payment==='cobrocc')items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});});(data.orders||[]).forEach(o=>{if(String(o.clientId)!==String(cid))return;if(o.date<desde||o.date>hasta)return;if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado')items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:o.note||'Deuda',source:'manual'});});(data.payments||[]).forEach(p=>{if(String(p.clientId)!==String(cid))return;if(p.date<desde||p.date>hasta)return;items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});});items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);return {items,totalDeudas:tD,totalPagos:tP,saldoPeriodo:tD-tP,saldoTotal:clientDebt(cid)};}
-function generarFactura(){const cid=$('facClient').value;const d=$('facDesde').value;const h=$('facHasta').value;if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');if(d>h)return toast('Fechas mal');const c=findClient(cid);if(!c)return;const r=calcularFactura(cid,d,h);facturaActual={client:c,desde:d,hasta:h,...r};const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';$('facturaContainer').innerHTML=`<div class="factura-box" id="facturaBox"><div class="factura-head"><div class="factura-emp">🧊 GLACIAR · M&C Hielo</div></div><div><b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br><span class="muted">Período: ${fdate(d)} al ${fdate(h)}</span></div><div class="factura-resumen"><span>📊 Total: <b>${money(r.totalDeudas)}</b></span><span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span><span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span></div><table class="table"><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${rows}</tbody></table><div class="factura-total"><span>💰 Total: </span><span class="monto">${money(r.saldoTotal)}</span></div></div>`;toast('✅ Factura generada');}
-function adminModifFactura(){const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');const hs=today();const pd=hs.slice(0,7)+'-01';return `<section class="panel"><h3 style="margin:0 0 14px;">✏️ Modificación de Factura</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="modClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="modDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="modHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="cargarModificacion()">📥 Cargar movimientos</button><div id="modifContainer" style="margin-top:18px;"></div></section>`;}
+function calcularFactura(cid,desde,hasta){
+  const items=[];
+  (data.driverSales||[]).forEach(s=>{if(String(s.clientId)!==String(cid))return;if(s.date<desde||s.date>hasta)return;if(s.payment==='ctacte')items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:'Venta',source:'chofer'});if(s.payment==='cobrocc')items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});});
+  (data.orders||[]).forEach(o=>{if(String(o.clientId)!==String(cid))return;if(o.date<desde||o.date>hasta)return;if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado')items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:o.note||'Deuda',source:'manual'});});
+  (data.payments||[]).forEach(p=>{if(String(p.clientId)!==String(cid))return;if(p.date<desde||p.date>hasta)return;items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});});
+  items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);
+  const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);
+  return {items,totalDeudas:tD,totalPagos:tP,saldoPeriodo:tD-tP,saldoTotal:clientDebt(cid)};
+}
+function generarFactura(){
+  const cid=$('facClient').value;const d=$('facDesde').value;const h=$('facHasta').value;
+  if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');if(d>h)return toast('Fechas mal');
+  const c=findClient(cid);if(!c)return;
+  const r=calcularFactura(cid,d,h);
+  facturaActual={client:c,desde:d,hasta:h,...r};
+  
+  // Número de factura aleatorio
+  const numFactura = Math.floor(Math.random() * 9000) + 1000;
+
+  const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td>${i.type==='deuda'?'Red':'Red'}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';
+  
+  $('facturaContainer').innerHTML=`
+  <div class="factura-box" id="facturaBox">
+    <div class="factura-head">
+      <div class="factura-emp">🧊 GLACIAR · M&C Hielo</div>
+      <div class="factura-num">Factura N° ${numFactura}</div>
+    </div>
+    <div>
+      <b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br>
+      <span class="muted">Período: ${fdate(d)} al ${fdate(h)}</span>
+    </div>
+    <div class="factura-resumen">
+      <span>📊 Total: <b>${money(r.totalDeudas)}</b></span>
+      <span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span>
+      <span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span>
+    </div>
+    <table class="table">
+      <thead><tr><th>Fecha</th><th>Detalle</th><th>Origen</th><th style="text-align:right;">Monto</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="factura-total">
+      <span>💰 Total a pagar: </span><span class="monto">${money(r.saldoTotal)}</span>
+    </div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--muted);">* No es fiscal · Generado el ${new Date().toLocaleDateString('es-AR')}</div>
+  </div>`;
+  toast('✅ Factura generada');
+}
+function adminModifFactura(){
+  const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');
+  const hs=today();const pd=hs.slice(0,7)+'-01';
+  return `<section class="panel"><h3 style="margin:0 0 14px;">✏️ Modificación de Factura</h3>
+  <div class="threecol no-print">
+    <div class="field"><label>👤 Cliente</label><select id="modClient"><option value="">— Elegí —</option>${co}</select></div>
+    <div class="field"><label>📅 Desde</label><input type="date" id="modDesde" value="${pd}"></div>
+    <div class="field"><label>📅 Hasta</label><input type="date" id="modHasta" value="${hs}"></div>
+  </div>
+  <button class="btn primary no-print" onclick="cargarModificacion()">📥 Cargar movimientos</button>
+  <div id="modifContainer" style="margin-top:18px;"></div></section>`;
+}
 let modifItems=[];
-function cargarModificacion(){const cid=$('modClient').value;const d=$('modDesde').value;const h=$('modHasta').value;if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');const r=calcularFactura(cid,d,h);modifItems=r.items.map((i,idx)=>({...i,_id:'m'+idx}));$('modifContainer').innerHTML=`<div class="factura-resumen"><span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span><span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span><span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span></div><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead><tbody>${modifItems.map(i=>`<tr><td>${fdate(i.date)}</td><td>${i.type}</td><td>${money(i.amount)}</td><td>${esc(i.detail||'')}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody></table>`;toast(`✅ ${modifItems.length} movimientos`);}
+function cargarModificacion(){
+  const cid=$('modClient').value;const d=$('modDesde').value;const h=$('modHasta').value;
+  if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');
+  const c=findClient(cid);
+  const r=calcularFactura(cid,d,h);
+  
+  // Si ya existe una modificación guardada, la usamos. Sino, la creamos.
+  const saved = data.invoices[cid] || null;
+  if(saved && saved.desde === d && saved.hasta === h){
+    modifItems = JSON.parse(JSON.stringify(saved.items));
+  } else {
+    modifItems = r.items.map((i,idx)=>({...i, _id: 'm'+idx, _hidden: false}));
+  }
+
+  $('modifContainer').innerHTML=`
+    <div class="factura-resumen">
+      <span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span>
+      <span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span>
+      <span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span>
+    </div>
+    <div class="notice info no-print" style="margin-bottom:14px;">👁️ Tocá el ojo para ocultar/mostrar en la factura final. Podés editar el monto y la fecha. Los cambios no afectan la caja real.</div>
+    <table class="table">
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Monto</th><th class="no-print">Acción</th></tr></thead>
+      <tbody>${modifItems.map((i, idx)=>{
+        const isHid = i._hidden ? 'fila-eliminada' : '';
+        return `<tr class="${isHid}">
+          <td><input type="date" value="${i.date}" onchange="modifItems[${idx}].date=this.value"></td>
+          <td>${i.type==='deuda'?'Deuda':'Pago'}</td>
+          <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail=this.value"></td>
+          <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount=Number(this.value)"></td>
+          <td class="no-print"><button class="btn sm ${i._hidden?'orange':'ghost'}" onclick="toggleModifItem(${idx})">${i._hidden?'👁️ Mostrar':'👁️ Ocultar'}</button></td>
+        </tr>`;
+      }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
+    </table>
+    <div class="row" style="justify-content:space-between; margin-top:14px;" class="no-print">
+      <button class="btn green" onclick="guardarFacturaVisual('${cid}','${d}','${h}')">💾 Guardar Cambios Visuales</button>
+      <button class="btn primary" onclick="imprimirFacturaModificada('${cid}')">🖨️ Imprimir / PDF</button>
+    </div>`;
+  toast(`✅ ${modifItems.length} movimientos cargados`);
+}
+function toggleModifItem(idx){
+  if(modifItems[idx]) {
+    modifItems[idx]._hidden = !modifItems[idx]._hidden;
+    // Re-renderizar solo la tabla visualmente para no perder los inputs
+    const tr = document.querySelectorAll('#modifContainer tbody tr')[idx];
+    if(tr) {
+      if(modifItems[idx]._hidden) tr.classList.add('fila-eliminada');
+      else tr.classList.remove('fila-eliminada');
+      const btn = tr.querySelector('button');
+      if(btn) {
+        btn.className = modifItems[idx]._hidden ? 'btn sm orange' : 'btn sm ghost';
+        btn.innerHTML = modifItems[idx]._hidden ? '👁️ Mostrar' : '👁️ Ocultar';
+      }
+    }
+  }
+}
+function guardarFacturaVisual(cid, desde, hasta){
+  if(!data.invoices) data.invoices = {};
+  data.invoices[cid] = { desde, hasta, items: modifItems, savedAt: Date.now() };
+  dbSet('invoices', data.invoices);
+  save();
+  toast('✅ Modificaciones guardadas (solo visual)');
+}
+function imprimirFacturaModificada(cid){
+  const c = findClient(cid);
+  if(!c) return;
+  
+  const itemsFiltrados = modifItems.filter(i => !i._hidden);
+  const tD = itemsFiltrados.filter(i => i.type === 'deuda').reduce((s,i)=>s+i.amount,0);
+  const tP = itemsFiltrados.filter(i => i.type === 'pago').reduce((s,i)=>s+i.amount,0);
+  const saldoPeriodo = tD - tP;
+  
+  const numFactura = Math.floor(Math.random() * 9000) + 1000;
+
+  const rows = itemsFiltrados.map(i => `
+    <tr>
+      <td>${fdate(i.date)}</td>
+      <td>${esc(i.detail)}</td>
+      <td>${i.type==='deuda'?'Deuda':'Pago'}</td>
+      <td style="text-align:right;color:${i.type==='deuda'?'#dc2626':'#10b981'};">
+        ${i.type==='deuda'?'':'-'}${money(i.amount)}
+      </td>
+    </tr>
+  `).join('');
+
+  const w = window.open('','_blank');
+  if(!w){toast('Permití ventanas emergentes');return;}
+  
+  w.document.write(`
+    <!doctype html><html><head><meta charset="utf-8"><title>Factura Visual</title>
+    <style>
+      body{font-family:'Inter',system-ui,sans-serif;padding:30px;color:#1e293b;background:#fff;}
+      .factura-box{border:2px solid #0f2352;border-radius:12px;padding:30px;max-width:800px;margin:auto;}
+      h1{font-family:Georgia,serif;font-size:24px;color:#0f2352;margin:0;}
+      .num{font-size:14px;color:#64748b;}
+      .head{display:flex;justify-content:space-between;border-bottom:2px solid #0f2352;padding-bottom:15px;margin-bottom:20px;}
+      .resumen{background:#f1f5f9;padding:15px;border-radius:10px;display:flex;justify-content:space-between;margin-bottom:20px;font-size:13px;}
+      table{width:100%;border-collapse:collapse;font-size:13px;}
+      th,td{border:1px solid #e2e8f0;padding:10px;text-align:left;}
+      th{background:#f8fafc;color:#0f2352;font-size:11px;text-transform:uppercase;}
+      .total{text-align:right;margin-top:20px;font-size:24px;font-weight:bold;font-family:Georgia,serif;color:#dc2626;}
+      .footer{text-align:center;margin-top:30px;font-size:11px;color:#94a3b8;}
+    </style></head><body>
+      <div class="factura-box">
+        <div class="head">
+          <div>
+            <h1>🧊 GLACIAR · M&C Hielo</h1>
+            <div style="font-size:12px;color:#64748b;margin-top:5px;">Comprobante No Fiscal</div>
+          </div>
+          <div class="num" style="text-align:right;">
+            <b>Factura N° ${numFactura}</b><br>
+            ${new Date().toLocaleDateString('es-AR')}
+          </div>
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br>
+          <span style="color:#64748b;font-size:12px;">Período: ${fdate($('modDesde').value)} al ${fdate($('modHasta').value)}</span>
+        </div>
+
+        <div class="resumen">
+          <span>📊 Total: <b>${money(tD)}</b></span>
+          <span>💸 Pagos: <b style="color:#10b981;">${money(tP)}</b></span>
+          <span>🔴 Período: <b style="color:#dc2626;">${money(saldoPeriodo)}</b></span>
+        </div>
+
+        <table>
+          <thead><tr><th>Fecha</th><th>Detalle</th><th>Tipo</th><th style="text-align:right;">Monto</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="4" style="text-align:center;">Sin movimientos</td></tr>'}</tbody>
+        </table>
+
+        <div class="total">Total a pagar: ${money(saldoPeriodo)}</div>
+        <div class="footer">* No es fiscal · Generado el ${new Date().toLocaleString('es-AR')}</div>
+      </div>
+    </body></html>
+  `);
+  w.document.close();
+  setTimeout(()=>{try{w.print();}catch(e){}},500);
+}
 function shareAdmin(){const link=location.href.split('?')[0];return `<section class="panel" style="background:linear-gradient(135deg,#0a1128,#0f2352);color:white;border:0;"><h2 style="font-family:'Fraunces',serif;color:white;">📤 Compartir catálogo</h2><div class="field"><label style="color:rgba(255,255,255,.75);">🔗 Link base</label><input value="${esc(link)}" readonly style="background:rgba(255,255,255,.95);"></div></section>`;}
 function catalogAdmin(){
   const prods = data.products || [];
@@ -1712,6 +1998,7 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
         if(remoto.products) { data.products = remoto.products; cambios = true; }
         if(remoto.settings) { data.settings = remoto.settings; cambios = true; }
         if(remoto.paymentSheet) { data.paymentSheet = remoto.paymentSheet; cambios = true; }
+        if(remoto.invoices) { data.invoices = remoto.invoices; cambios = true; }
         if(cambios){ try{ localStorage.setItem(KEY,JSON.stringify(data)); }catch(e){} try{ migrateData(); }catch(e){} }
         attachListener();
       } else {
@@ -1720,7 +2007,6 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
     }
   }catch(e){ console.warn('boot:',e); }
   
-  // CHEQUEO DE SEGURIDAD: Si Firebase no cargó, avisar en pantalla
   setTimeout(()=>{
     if(typeof firebase === 'undefined'){
       document.body.insertAdjacentHTML('afterbegin', `<div style="background:#dc2626;color:white;padding:16px;text-align:center;font-weight:bold;font-size:16px;position:sticky;top:0;z-index:9999;">⚠️ ERROR: El navegador está bloqueando la conexión con Firebase. Desactivá el bloqueador de anuncios o el escudo de Brave/Edge y recargá la página.</div>`);
