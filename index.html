@@ -1830,7 +1830,38 @@ function adminFacturar(){
 }
 
 let facturaActual=null;
-function calcularFactura(cid,desde,hasta){const items=[];(data.driverSales||[]).forEach(s=>{if(String(s.clientId)!==String(cid))return;if(s.date<desde||s.date>hasta)return;if(s.payment==='ctacte')items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:'Venta',source:'chofer'});if(s.payment==='cobrocc')items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});});(data.orders||[]).forEach(o=>{if(String(o.clientId)!==String(cid))return;if(o.date<desde||o.date>hasta)return;if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado')items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:o.note||'Deuda',source:'manual'});});(data.payments||[]).forEach(p=>{if(String(p.clientId)!==String(cid))return;if(p.date<desde||p.date>hasta)return;items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});});items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);return {items,totalDeudas:tD,totalPagos:tP,saldoPeriodo:tD-tP,saldoTotal:clientDebt(cid)};}
+function calcularFactura(cid,desde,hasta){
+  const items=[];
+  (data.driverSales||[]).forEach(s=>{
+    if(String(s.clientId)!==String(cid))return;
+    if(s.date<desde||s.date>hasta)return;
+    
+    // ARMAMOS EL DETALLE DE BOLSAS
+    let detalle = Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' + ');
+    if(s.payment==='ctacte') items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:detalle||'Venta',source:'chofer'});
+    if(s.payment==='cobrocc') items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});
+  });
+  
+  (data.orders||[]).forEach(o=>{
+    if(String(o.clientId)!==String(cid))return;
+    if(o.date<desde||o.date>hasta)return;
+    if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado') {
+      const det = (o.items||[]).map(i=>`${i.q}x ${i.name}`).join(' + ');
+      items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:det||o.note||'Deuda',source:'manual'});
+    }
+  });
+
+  (data.payments||[]).forEach(p=>{
+    if(String(p.clientId)!==String(cid))return;
+    if(p.date<desde||p.date>hasta)return;
+    items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});
+  });
+  
+  items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);
+  const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);
+  return {items,totalDeudas:tD,totalPagos:tP,saldoPeriodo:tD-tP,saldoTotal:clientDebt(cid)};
+}
 
 function generarFactura(){
   const cid=$('facClient').value;const d=$('facDesde').value;const h=$('facHasta').value;
@@ -1878,14 +1909,12 @@ function cargarModificacion(){
   if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');
   const r=calcularFactura(cid,d,h);
   
-  // Agregamos la propiedad 'oculto' por defecto en false
   modifItems=r.items.map((i,idx)=>({...i,_id:'m'+idx, oculto: false}));
   
   dibujarTablaModif(cid);
   toast(`✅ ${modifItems.length} movimientos cargados`);
 }
 
-// Nueva función para dibujar la tabla y recalcular totales en tiempo real
 function dibujarTablaModif(cid) {
   let totalDeudas = 0, totalPagos = 0;
   
@@ -1938,26 +1967,81 @@ function dibujarTablaModif(cid) {
   `;
 }
 
-// Función para borrar un ítem
 function borrarModifItem(idx, cid) {
   if(!confirm('¿Quitar este movimiento de la factura modificada?')) return;
   modifItems.splice(idx, 1);
   dibujarTablaModif(cid);
 }
 
-// Función para agregar un ítem nuevo
 function agregarItemModif(cid) {
   const hoy = today();
+  // Agregar un select de productos o cantidad
+  const prodOpts = Object.entries(PROD_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  
+  modal(`<h2>➕ Agregar Artículo / Deuda</h2>
+    <div class="field"><label>Tipo</label>
+      <select id="newItemType" onchange="toggleNewItemType()">
+        <option value="deuda">🔴 Deuda (suma a la factura)</option>
+        <option value="pago">🟢 Pago / Crédito (resta de la factura)</option>
+      </select>
+    </div>
+    <div class="field"><label>Detalle</label><input id="newItemDetail" placeholder="Ej: prepizzas grandes o Pago a cuenta"></div>
+    
+    <div id="newItemProdWrap" class="twocol" style="margin-top:10px;">
+      <div class="field"><label>Producto (opcional)</label><select id="newItemProd" onchange="calcNewItemTotal()"><option value="">— Manual —</option>${prodOpts}</select></div>
+      <div class="field"><label>Cantidad</label><input type="number" id="newItemQty" value="1" min="1" onchange="calcNewItemTotal()"></div>
+    </div>
+    
+    <div class="field"><label>Monto Total ($)</label><input type="number" id="newItemAmount" value="0"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveNewItemModif('${cid}')">💾 Agregar a la factura</button>
+    </div>
+  `);
+  setTimeout(()=>{const el=$('newItemDetail');if(el)el.focus();},80);
+}
+
+function toggleNewItemType() {
+  const tipo = $('newItemType').value;
+  $('newItemProdWrap').style.display = tipo === 'deuda' ? 'grid' : 'none';
+}
+
+function calcNewItemTotal() {
+  const prodKey = $('newItemProd').value;
+  const qty = Number($('newItemQty').value) || 1;
+  if(prodKey) {
+    const p = findProduct(prodKey);
+    if(p) $('newItemAmount').value = (p.price * qty);
+  }
+}
+
+function saveNewItemModif(cid) {
+  const tipo = $('newItemType').value;
+  const detail = $('newItemDetail').value.trim() || (tipo === 'deuda' ? 'Deuda manual' : 'Pago manual');
+  const amount = Number($('newItemAmount').value) || 0;
+  
+  if(amount <= 0) return toast('Ingresá un monto mayor a 0');
+
+  // Si eligió un producto, agregamos el detalle automático
+  let finalDetail = detail;
+  const prodKey = $('newItemProd').value;
+  if(prodKey && tipo === 'deuda') {
+    const qty = Number($('newItemQty').value) || 1;
+    finalDetail = `${qty}x ${PROD_LABELS[prodKey]} - ${detail}`;
+  }
+
   modifItems.push({
     _id: 'nuevo_' + uid(),
-    date: hoy,
-    type: 'deuda',
-    amount: 0,
-    detail: 'Artículo / Deuda manual',
+    date: today(),
+    type: tipo,
+    amount: amount,
+    detail: finalDetail,
     oculto: false
   });
+  
+  closeModal();
   dibujarTablaModif(cid);
-  toast('➕ Artículo agregado. Completá el monto.');
+  toast('➕ Artículo agregado');
 }
 
 function generarFacturaModificada(cid) {
@@ -1965,7 +2049,7 @@ function generarFacturaModificada(cid) {
   if (!c) return toast('Cliente no encontrado');
   
   const hoyStr = today().replace(/-/g,'');
-  const numFactura = `F-MOD-${hoyStr}-${String(Math.floor(Math.random()*9000)+1000)}`;
+  const numFactura = `F-${hoyStr}-${String(Math.floor(Math.random()*9000)+1000)}`;
   
   let totalDeudas = 0, totalPagos = 0;
   
@@ -1986,7 +2070,7 @@ function generarFacturaModificada(cid) {
       <div class="factura-head">
         <div class="factura-emp">🧊 GLACIAR · M&C Hielo</div>
         <div class="factura-num">
-          <b>N° Factura Modif.:</b> ${numFactura}<br>
+          <b>N° Factura:</b> ${numFactura}<br>
           <b>Emisión:</b> ${fdate(today())}
         </div>
       </div>
@@ -2001,7 +2085,7 @@ function generarFacturaModificada(cid) {
       <button class="btn sm primary" onclick="imprimirFacturaModif()">🖨️ Imprimir / PDF</button>
     </div>
   `;
-  toast('✅ Factura modificada generada');
+  toast('✅ Factura generada');
 }
 
 function copiarFacturaModif() {
@@ -2025,7 +2109,7 @@ function imprimirFacturaModif() {
   if (!el) return;
   const w = window.open('', '_blank');
   if (!w) return toast('Permití ventanas emergentes');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Factura Modificada</title><style>body{font-family:Inter,system-ui,sans-serif;padding:24px;color:#1e293b}h1,h2,h3{font-family:Georgia,serif;margin:0 0 12px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #ddd;padding:8px 10px;text-align:left}th{background:#eef5ff;font-weight:700;color:#0f2352}tr:nth-child(even) td{background:#fafcff}.factura-box{border:2px solid #0f2352;border-radius:18px;padding:32px}.factura-head{display:flex;justify-content:space-between;border-bottom:2px solid #0f2352;padding-bottom:16px;margin-bottom:20px}.factura-emp{font-family:Georgia,serif;font-size:1.5rem;font-weight:900;color:#0f2352}.factura-total{text-align:right;font-size:1.1rem;font-weight:900;border-top:2px solid #0f2352;padding-top:16px;margin-top:16px}.monto{color:#ef4444;font-size:1.6rem}.factura-resumen{background:#eef5ff;padding:14px 20px;border-radius:12px;margin:16px 0;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:bold}@media print{body{padding:12px}}</style></head><body>${el.outerHTML}</body></html>`);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Factura</title><style>body{font-family:Inter,system-ui,sans-serif;padding:24px;color:#1e293b}h1,h2,h3{font-family:Georgia,serif;margin:0 0 12px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #ddd;padding:8px 10px;text-align:left}th{background:#eef5ff;font-weight:700;color:#0f2352}tr:nth-child(even) td{background:#fafcff}.factura-box{border:2px solid #0f2352;border-radius:18px;padding:32px}.factura-head{display:flex;justify-content:space-between;border-bottom:2px solid #0f2352;padding-bottom:16px;margin-bottom:20px}.factura-emp{font-family:Georgia,serif;font-size:1.5rem;font-weight:900;color:#0f2352}.factura-total{text-align:right;font-size:1.1rem;font-weight:900;border-top:2px solid #0f2352;padding-top:16px;margin-top:16px}.monto{color:#ef4444;font-size:1.6rem}.factura-resumen{background:#eef5ff;padding:14px 20px;border-radius:12px;margin:16px 0;display:flex;justify-content:space-between;font-size:0.85rem;font-weight:bold}@media print{body{padding:12px}}</style></head><body>${el.outerHTML}</body></html>`);
   w.document.close();
   setTimeout(() => { try { w.print(); } catch (e) {} }, 500);
 }
