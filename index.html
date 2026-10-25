@@ -1060,7 +1060,8 @@ function adminSections(t){
   if(t==='backup')return backupAdmin();
   if(t==='share')return shareAdmin();
   return settingsAdmin();
-}function renderDashboardSeedBanner(){
+}
+function renderDashboardSeedBanner(){
   if(!admin) return '';
   if(isBootstrapDone()) return '';
   if(data && data.clients && data.clients.length && data.settings && data.settings.drivers && data.settings.drivers.length){ return ''; }
@@ -1541,11 +1542,12 @@ function deletePayment(id){
   if(window.__invalidateDebtCache) window.__invalidateDebtCache();
   save();
   render();
-}/* ============================================================
-   FINANZAS — Estilo Ganancias/Informes (página privada)
+}
+/* ============================================================
+   FINANZAS — Estilo Ganancias/Informes
    ============================================================ */
 
-// Calcula todo un rango de fechas con ganancia real
+// Calcula todo un rango de fechas con ganancia real y flujo de caja
 function calcGananciaRango(desde, hasta) {
   const dias = [];
   const start = new Date(desde + 'T12:00:00');
@@ -1573,7 +1575,19 @@ function calcGananciaRango(desde, hasta) {
         else cobrosEf += Number(s.collection||0);
         cobrosCount++;
       }
-      costoMercaderia += Number(s.cost||0);
+      
+      // AQUI ESTA EL CAMBIO CLAVE: Usamos el costo guardado en la venta o el actual
+      let costoSale = Number(s.cost || 0);
+      if (costoSale === 0) {
+          // Si la venta vieja no tiene costo guardado, buscamos el costo actual
+          PROD_KEYS.forEach(k => {
+             const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
+             const p = findProduct(k);
+             if (p && q > 0) costoSale += q * (Number(p.cost) || 0);
+          });
+      }
+      costoMercaderia += costoSale;
+      
       Object.values(s.qty||{}).forEach(q => bolsas += Number(q||0));
     });
     (data.driverGastos || []).forEach(g => { if (g.date === f) gastosCamion += Number(g.amount||0); });
@@ -1583,8 +1597,13 @@ function calcGananciaRango(desde, hasta) {
   const totalVentas = ventasEf + ventasTf + ventasCc;
   const totalCobros = cobrosEf + cobrosTf;
   const totalGastos = gastosCamion + gastosAdmin;
-  const gananciaBruta = ventasEf + ventasTf + totalCobros - costoMercaderia;
-  const gananciaReal = gananciaBruta - totalGastos;
+  
+  // 1. GANANCIA REAL DE LA MERCADERÍA (Lo que ganaste por vender el hielo)
+  const gananciaBruta = totalVentas - costoMercaderia;
+  const gananciaReal = gananciaBruta; 
+
+  // 2. PLATA NETA EN MANO (La plata que te quedó líquida después de pagar gastos)
+  const plataEnMano = ventasEf + ventasTf + totalCobros - totalGastos;
 
   return {
     desde, hasta, dias: dias.length,
@@ -1592,7 +1611,7 @@ function calcGananciaRango(desde, hasta) {
     cobrosEf, cobrosTf,
     totalVentas, totalCobros, costoMercaderia,
     gastosCamion, gastosAdmin, totalGastos,
-    gananciaBruta, gananciaReal,
+    gananciaBruta, gananciaReal, plataEnMano,
     ventasCount, cobrosCount, bolsas
   };
 }
@@ -1621,7 +1640,7 @@ function finRango(tipo) {
   return { desde: h, hasta: h };
 }
 
-// Guardar informe en Firebase (nodo enterpriseReports de glaciar_v4)
+// Guardar informe en Firebase
 function guardarInformeFinanzas() {
   const r = window.__finRangoActual;
   if (!r) return toast('Calculá primero un rango');
@@ -1644,7 +1663,7 @@ function guardarInformeFinanzas() {
     bolsas: r.bolsas,
     gananciaBruta: r.gananciaBruta,
     gananciaReal: r.gananciaReal,
-    gananciaNeta: r.gananciaReal,
+    plataEnMano: r.plataEnMano,
     creado: Date.now()
   };
 
@@ -1653,7 +1672,6 @@ function guardarInformeFinanzas() {
     .catch(e => { console.error(e); toast('❌ Error al guardar'); });
 }
 
-// Borrar informe guardado
 function borrarInformeFinanzas(id) {
   if (!confirm('¿Borrar este informe?')) return;
   if (!fbRef) return;
@@ -1662,7 +1680,6 @@ function borrarInformeFinanzas(id) {
     .catch(e => console.warn(e));
 }
 
-// Render del informe de rango
 function renderRangoFinanzas(desde, hasta) {
   const r = calcGananciaRango(desde, hasta);
   window.__finRangoActual = r;
@@ -1680,12 +1697,9 @@ function renderRangoFinanzas(desde, hasta) {
     </div>
 
     <div class="grid" style="margin-top:12px;">
-      <div class="kpi purple"><label>📈 Ganancia bruta</label><b>${money(r.gananciaBruta)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">Ventas + Cobros − Costo</div></div>
-      <div class="kpi ${r.gananciaReal >= 0 ? 'green' : 'red'}" style="grid-column: span 3;">
-        <label>💎 GANANCIA REAL</label>
-        <b style="font-size:38px;">${money(r.gananciaReal)}</b>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">(Ventas + Cobros) − Costo − Gastos</div>
-      </div>
+      <div class="kpi purple"><label>📈 GANANCIA REAL (Mercadería)</label><b>${money(r.gananciaReal)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">Ventas Totales − Costo</div></div>
+      <div class="kpi blue"><label>💵 PLATA NETA EN MANO</label><b>${money(r.plataEnMano)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">(Efectivo + Transf + Cobros) − Gastos</div></div>
+      <div class="kpi green" style="grid-column: span 2;"><label>📊 VENTAS TOTALES</label><b>${money(r.totalVentas)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">Incluye Cuenta Corriente</div></div>
     </div>
 
     <div class="row no-print" style="justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap;">
@@ -1710,20 +1724,16 @@ function renderRangoFinanzas(desde, hasta) {
 }
 
 function financeAdmin() {
-  // Rango por defecto: este mes
   if (!window.__finRangoSel) window.__finRangoSel = finRango('mes');
   const sel = window.__finRangoSel;
 
-  // KPIs rápidos
   const hoy = calcGananciaRango(finRango('hoy').desde, finRango('hoy').hasta);
   const sem = calcGananciaRango(finRango('semana').desde, finRango('semana').hasta);
   const mes = calcGananciaRango(finRango('mes').desde, finRango('mes').hasta);
   const anio = calcGananciaRango(finRango('anio').desde, finRango('anio').hasta);
 
-  // Informe del rango seleccionado
   const informeHtml = renderRangoFinanzas(sel.desde, sel.hasta);
 
-  // Informes guardados (desde Firebase: se leen en data.enterpriseReports)
   const guardados = (data.enterpriseReports || []).slice().sort((a,b) => (b.creado||0) - (a.creado||0));
   const filasGuardados = guardados.length
     ? guardados.map(i => `
@@ -1733,22 +1743,23 @@ function financeAdmin() {
           <td style="color:var(--green)">${money(i.cobros||0)}</td>
           <td>${money(i.gastos)}</td>
           <td style="color:${(i.gananciaReal||i.gananciaNeta)>=0?'var(--green)':'var(--red)'};font-weight:900;">${money(i.gananciaReal || i.gananciaNeta)}</td>
+          <td style="color:${i.plataEnMano>=0?'var(--green)':'var(--red)'};font-weight:900;">${money(i.plataEnMano||0)}</td>
           <td>${i.bolsas||0}</td>
           <td class="no-print"><button class="btn xs danger" onclick="borrarInformeFinanzas('${i.id}')">🗑</button></td>
         </tr>`).join('')
-    : '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Sin informes guardados</td></tr>';
+    : '<tr><td colspan="8" style="text-align:center;color:var(--muted)">Sin informes guardados</td></tr>';
 
   const contenido = `
     <section class="grid">
-      <div class="kpi blue"><label>GANANCIA REAL HOY</label><b>${money(hoy.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(hoy.totalVentas)} · Cobros: ${money(hoy.totalCobros)} · Costo: ${money(hoy.costoMercaderia)} · Gastos: ${money(hoy.totalGastos)}</span></div>
-      <div class="kpi purple"><label>GANANCIA REAL SEMANA</label><b>${money(sem.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(sem.totalVentas)} · Cobros: ${money(sem.totalCobros)} · Costo: ${money(sem.costoMercaderia)} · Gastos: ${money(sem.totalGastos)}</span></div>
-      <div class="kpi green"><label>GANANCIA REAL MES</label><b>${money(mes.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(mes.totalVentas)} · Cobros: ${money(mes.totalCobros)} · Costo: ${money(mes.costoMercaderia)} · Gastos: ${money(mes.totalGastos)}</span></div>
-      <div class="kpi gold"><label>GANANCIA REAL AÑO</label><b>${money(anio.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(anio.totalVentas)} · Cobros: ${money(anio.totalCobros)} · Costo: ${money(anio.costoMercaderia)} · Gastos: ${money(anio.totalGastos)}</span></div>
+      <div class="kpi blue"><label>GANANCIA REAL HOY</label><b>${money(hoy.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas Totales: ${money(hoy.totalVentas)} · Costo: ${money(hoy.costoMercaderia)}</span></div>
+      <div class="kpi purple"><label>GANANCIA REAL SEMANA</label><b>${money(sem.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas Totales: ${money(sem.totalVentas)} · Costo: ${money(sem.costoMercaderia)}</span></div>
+      <div class="kpi green"><label>GANANCIA REAL MES</label><b>${money(mes.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas Totales: ${money(mes.totalVentas)} · Costo: ${money(mes.costoMercaderia)}</span></div>
+      <div class="kpi gold"><label>GANANCIA REAL AÑO</label><b>${money(anio.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas Totales: ${money(anio.totalVentas)} · Costo: ${money(anio.costoMercaderia)}</span></div>
     </section>
 
     <section class="panel no-print" style="border-left:4px solid var(--blue);">
       <h3 style="margin:0 0 12px;">📅 Elegir período</h3>
-      <p class="panel-sub">Elegí un rango y calculá la ganancia real (Ventas + Cobros − Costo − Gastos).</p>
+      <p class="panel-sub">Elegí un rango y calculá la ganancia real.</p>
       <div class="threecol">
         <div class="field"><label>Desde</label><input type="date" id="finDesde" value="${sel.desde}"></div>
         <div class="field"><label>Hasta</label><input type="date" id="finHasta" value="${sel.hasta}"></div>
@@ -1773,7 +1784,7 @@ function financeAdmin() {
       <p class="panel-sub">Guardá el resumen del período para consultarlo después.</p>
       <div class="scroll-x">
         <table class="table">
-          <thead><tr><th>Fecha</th><th>Ventas</th><th>Cobros</th><th>Gastos</th><th>Ganancia real</th><th>Bolsas</th><th class="no-print"></th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Ventas</th><th>Cobros</th><th>Gastos</th><th>Ganancia real</th><th>Plata en mano</th><th>Bolsas</th><th class="no-print"></th></tr></thead>
           <tbody>${filasGuardados}</tbody>
         </table>
       </div>
@@ -1793,7 +1804,6 @@ function financeAdmin() {
   return wrapSeccion('secFinanzas', '💼 Finanzas (Ganancia Real)', contenido);
 }
 
-// Handlers de rango
 function finRapido(tipo) {
   window.__finRangoSel = finRango(tipo);
   render();
@@ -1808,15 +1818,13 @@ function finCalcular() {
   render();
 }
 
-// Exponer funciones globalmente
 window.finRapido = finRapido;
 window.finCalcular = finCalcular;
 window.guardarInformeFinanzas = guardarInformeFinanzas;
 window.borrarInformeFinanzas = borrarInformeFinanzas;
 
-/* ============================================================
-   Resto de secciones (sin cambios)
-   ============================================================ */
+/* ============================================================ */
+
 function addExpense(){const n=$('exName').value.trim(),a=Number($('exAmount').value);if(!n||!a)return toast('Completá');const nuevo={id:uid(),name:n,amount:a,date:today()};data.expenses.unshift(nuevo);dbSetItem('expenses',nuevo);save();render();}
 function deleteExpense(id){if(!confirm('¿Eliminar?'))return;data.expenses=data.expenses.filter(x=>x.id!==id);dbSet('expenses/'+id,null);save();render();}
 function adminFacturar(){const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');const hs=today();const pd=hs.slice(0,7)+'-01';return `<section class="panel"><h3 style="margin:0 0 14px;">📄 Facturar por Cliente</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="facClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="facDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="facHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="generarFactura()">📄 Generar factura</button><div id="facturaContainer" style="margin-top:18px;"></div></section>`;}
