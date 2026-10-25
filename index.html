@@ -303,7 +303,7 @@ function attachListener(){
       }
     }
 
-    const coleccionesAdmin = ['orders','payments','visits','leads','expenses','clients'];
+    const coleccionesAdmin = ['orders','payments','visits','leads','expenses','clients','enterpriseReports'];
     for(const k of coleccionesAdmin){
       if(remoto[k] !== undefined) data[k] = mergeById(remoto[k], data[k] || []);
     }
@@ -311,7 +311,6 @@ function attachListener(){
     if(remoto.products !== undefined)     data.products     = Array.isArray(remoto.products) ? remoto.products : Object.values(remoto.products);
     if(remoto.settings !== undefined)     data.settings     = remoto.settings;
     if(remoto.paymentSheet !== undefined) data.paymentSheet = remoto.paymentSheet;
-    if(remoto.invoices !== undefined)     data.invoices     = remoto.invoices;
 
     if(window.__invalidateDebtCache) window.__invalidateDebtCache();
     save();
@@ -334,7 +333,7 @@ async function readRemoteOnce(){
         return [];
       };
       const out = {...v};
-      ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits'].forEach(k=>{
+      ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','pedidos','expenses','leads','visits','enterpriseReports'].forEach(k=>{
         if(v[k] !== undefined) out[k] = norm(v[k]);
       });
       resolve(out);
@@ -352,7 +351,7 @@ window.forzarSincronizacion = function() {
     } catch (e) { alert("Error al forzar: " + e.message); }
 };
 window.subirTodoANube = function() {
-    if(!confirm("⚠️ Esto va a subir TODOS los datos de esta PC a la nube. ¿Continuar?")) return;
+    if(!confirm("⚠️ Esto va a subir TODOS los datos de esta PC (deudas, clientes, ventas, jornadas) a la nube para arreglar los celulares. ¿Continuar?")) return;
     if(!fbRef) return alert("No hay conexión a Firebase.");
     try {
         toast('Subiendo todo a la nube... esperá');
@@ -452,11 +451,10 @@ const defaults={
     const p14=cp?cp[1]:6500;
     return {id:'c'+(i+1),code:String(1001+i),name:n,phone:'',addresses:[''],payment:'ctacte',creditLimit:0,notes:'',enabled:true,comodato:false,equipo:'',equipoCantidad:0,prices:{p17:BASE_PRICES.p17,p35:BASE_PRICES.p35,p14:p14,p20:BASE_PRICES.p20,p32:BASE_PRICES.p32},hideDebtFromDriver:false};
   }),
-  orders:[],driverSales:[],driverDays:[],driverGastos:[],driverStock:[],payments:[],expenses:[],visits:[],leads:[],pedidos:[],
+  orders:[],driverSales:[],driverDays:[],driverGastos:[],driverStock:[],payments:[],expenses:[],visits:[],leads:[],pedidos:[],enterpriseReports:[],
   initialDebts:DEUDAS_INICIALES.map(d=>({client:d[0],amount:d[1]})),
   cart:{},
-  paymentSheet:{prices:{p17:1500,p35:2500,p14:6500,p20:8000,p32:12000},rows:[]},
-  invoices:{}
+  paymentSheet:{prices:{p17:1500,p35:2500,p14:6500,p20:8000,p32:12000},rows:[]}
 };
 let data = JSON.parse(localStorage.getItem(KEY) || 'null') || structuredClone(defaults);function nextFreeClientCode(){const used=new Set((data.clients||[]).map(c=>String(c.code||'')));let n=1001;while(used.has(String(n))) n++;return String(n);}
 function getDrivers(){return (data.settings&&data.settings.drivers)||[];}
@@ -482,7 +480,7 @@ function loadInitialDebts(force){
 function migrateData(){
   if(!data||typeof data!=='object')data=structuredClone(defaults);
   if(!Array.isArray(data.products)||!data.products.length)data.products=structuredClone(defaults.products);
-  ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','expenses','visits','leads','pedidos'].forEach(k=>{if(!Array.isArray(data[k]))data[k]=[];});
+  ['clients','orders','payments','driverSales','driverDays','driverGastos','driverStock','expenses','visits','leads','pedidos','enterpriseReports'].forEach(k=>{if(!Array.isArray(data[k]))data[k]=[];});
   if(!data.cart||typeof data.cart!=='object')data.cart={};
   if(!data.settings||typeof data.settings!=='object')data.settings=structuredClone(defaults.settings);
   if(!data.settings.whatsapp)data.settings.whatsapp='5492612125599';
@@ -539,7 +537,6 @@ function migrateData(){
   let n=1001;const next=()=>{while(used.has(String(n)))n++;const c=String(n);used.add(c);n++;return c;};
   data.clients.forEach(c=>{if(!/^\d{4}$/.test(String(c.code||'')))c.code=next();});
   const seen=new Set();data.clients.forEach(c=>{if(seen.has(String(c.code)))c.code=next();seen.add(String(c.code));});
-  if(!data.invoices||typeof data.invoices!=='object')data.invoices={};
 }
 function toast(t){let e=document.querySelector('#toast');if(!e)return;e.textContent=t;e.classList.add('show');clearTimeout(e.x);e.x=setTimeout(()=>e.classList.remove('show'),2600);}
 function modal(html){document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="modal"><div class="dialog">${html}</div></div>`);}
@@ -675,8 +672,7 @@ function render(){
   else contenido=publicView();
   document.querySelector('#app').innerHTML=contenido;
   if(mode==='public'&&!visitLogged){visitLogged=true;setTimeout(()=>logVisit(),600);}
-}
-function publicView(){
+}function publicView(){
   const h=data.settings.hero||{};
   const products=(data.products||[]).filter(p=>p.active).map(p=>`<article class="card product"><span class="emoji">${p.emoji||'🧊'}</span><h3>${esc(p.name)}</h3><span class="muted" style="font-size:12.5px;">Entrega coordinada</span><div class="row space" style="margin-top:18px"><span class="price">${money(p.price)}</span><div class="qty"><button onclick="changeQ('${p.id}',-1)">−</button><b>${data.cart[p.id]||0}</b><button onclick="changeQ('${p.id}',1)">+</button></div></div></article>`).join('');
   return `<div class="wrap"><section class="hero"><div><div class="kicker">${esc(h.kicker||'Hielo · Eventos · Comercios')}</div><h1>${esc(h.title1||'Hielo listo.')}<br><span>${esc(h.title2||'Tu pedido, en marcha.')}</span></h1><p>${esc(h.subtitle||data.settings.shareText)}</p><div class="row" style="margin-top:22px;gap:10px;flex-wrap:wrap;"><button class="btn gold" style="padding:14px 26px;font-size:15px" onclick="openCart()">🛒 Hacer pedido</button><button class="btn wa" style="padding:14px 22px;font-size:15px" onclick="openContactForm()">💬 Consultanos</button></div></div><div class="hero-art">🧊</div></section><div class="section-title"><h2>Elegí tus productos</h2><span class="sub">Precios finales</span></div><section class="products">${products||'<p class="muted">No hay productos publicados.</p>'}</section></div><button class="float-cart" onclick="openCart()">🛒 Pedido · ${money(cartTotal())}</button><button class="float-wa" onclick="openContactForm()">💬 Consultanos</button>`;
@@ -1064,8 +1060,7 @@ function adminSections(t){
   if(t==='backup')return backupAdmin();
   if(t==='share')return shareAdmin();
   return settingsAdmin();
-}
-function renderDashboardSeedBanner(){
+}function renderDashboardSeedBanner(){
   if(!admin) return '';
   if(isBootstrapDone()) return '';
   if(data && data.clients && data.clients.length && data.settings && data.settings.drivers && data.settings.drivers.length){ return ''; }
@@ -1350,104 +1345,9 @@ function resetearTodo(){if(!confirm('⚠️ ¿Borrar TODO?'))return;if(!confirm(
 function backupAdmin(){return `<section class="panel"><h3>💾 Backup y recuperación</h3><div class="notice green">💡 Descargá backup antes de cambios grandes.</div><div class="twocol" style="margin-top:14px;"><div><h3 style="font-size:14px;">📥 Descargar backup</h3><button class="btn primary" onclick="exportarBackup()">💾 Descargar</button></div><div><h3 style="font-size:14px;">📤 Restaurar</h3><input type="file" id="backupFile" accept=".json" onchange="importarBackup(this)" style="display:none;"><button class="btn green" onclick="document.getElementById('backupFile').click()">📤 Restaurar</button></div></div><hr style="border:0;border-top:1px solid var(--line);margin:24px 0;"><button class="btn orange" onclick="recargarDeudasIniciales()">🔄 Recargar deudas iniciales</button><hr style="border:0;border-top:1px solid var(--line);margin:24px 0;"><h3 style="color:var(--red);">⚠️ Zona peligrosa</h3><button class="btn danger" onclick="resetearTodo()">🗑 Reiniciar todo a cero</button></section>`;}
 function adminCostos(){
   const prods=data.products||[];
-  
-  const btnRestaurar = `<div class="row space" style="margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-    <button class="btn primary" onclick="catalogForm()">➕ Nuevo Producto</button>
-    <button class="btn orange" onclick="restaurarProductosDefault()">🔄 Restaurar Productos Base</button>
-  </div>`;
-
-  const cards=prods.map(p=>{
-    const cost=Number(p.cost)||0;
-    const price=Number(p.price)||0;
-    const margin=price-cost;
-    const marginPct=price>0?Math.round((margin/price)*100):0;
-    
-    return `<div style="border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
-      <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,var(--gold),var(--cyan));"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="font-size:32px;background:linear-gradient(135deg,var(--ice),var(--ice2));border-radius:12px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">${p.emoji||'🧊'}</div>
-          <div><div style="font-weight:800;font-size:15px;">${esc(p.name)}</div></div>
-        </div>
-        <button class="btn xs danger" onclick="deleteProducto('${p.id}')">🗑</button>
-      </div>
-      
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line-2);">
-        <span style="font-size:12px;color:var(--muted);">💰 Costo</span>
-        <input type="number" class="no-print" value="${cost}" onchange="adminSaveCost('${p.id}',this.value,'cost')" style="width:130px;padding:9px 12px;text-align:right;border:1.5px solid var(--line);border-radius:10px;font-weight:800;font-size:16px;">
-      </div>
-      
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
-        <span style="font-size:12px;color:var(--muted);">💵 Precio</span>
-        <input type="number" class="no-print" value="${price}" onchange="adminSaveCost('${p.id}',this.value,'price')" style="width:130px;padding:9px 12px;text-align:right;border:1.5px solid var(--line);border-radius:10px;font-weight:800;font-size:16px;">
-      </div>
-      
-      <div style="background:linear-gradient(135deg,#f0fdf4,#fff);border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-top:14px;">
-        <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Margen</span><b style="color:var(--green)">${money(margin)}</b></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;"><span>%</span><b>${marginPct}%</b></div>
-      </div>
-    </div>`;
-  }).join('');
-  
-  return wrapSeccion('secCostos','💲 Costos y Precios',`${btnRestaurar}<section class="panel"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">${cards || '<p class="muted">No hay productos cargados. Tocá "Restaurar Productos Base".</p>'}</div></section>`);
+  const cards=prods.map(p=>{const cost=Number(p.cost)||0;const price=Number(p.price)||0;const margin=price-cost;const marginPct=price>0?Math.round((margin/price)*100):0;return `<div style="border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;"><div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,var(--gold),var(--cyan));"></div><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;"><div style="font-size:32px;background:linear-gradient(135deg,var(--ice),var(--ice2));border-radius:12px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">${p.emoji||'🧊'}</div><div><div style="font-weight:800;font-size:15px;">${esc(p.name)}</div></div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line-2);"><span style="font-size:12px;color:var(--muted);">💰 Costo</span><input type="number" class="no-print" value="${cost}" onchange="adminSaveCost('${p.id}',this.value,'cost')" style="width:130px;padding:9px 12px;text-align:right;border:1.5px solid var(--line);border-radius:10px;font-weight:800;font-size:16px;"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;"><span style="font-size:12px;color:var(--muted);">💵 Precio</span><input type="number" class="no-print" value="${price}" onchange="adminSaveCost('${p.id}',this.value,'price')" style="width:130px;padding:9px 12px;text-align:right;border:1.5px solid var(--line);border-radius:10px;font-weight:800;font-size:16px;"></div><div style="background:linear-gradient(135deg,#f0fdf4,#fff);border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-top:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>Margen</span><b style="color:var(--green)">${money(margin)}</b></div><div style="display:flex;justify-content:space-between;font-size:13px;"><span>%</span><b>${marginPct}%</b></div></div></div>`;}).join('');
+  return wrapSeccion('secCostos','💲 Costos y Precios',`<section class="panel"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">${cards}</div></section>`);
 }
-
-function restaurarProductosDefault() {
-  if(!confirm('¿Restaurar los 5 productos base? Esto agregará los que falten sin borrar los que ya tenés.')) return;
-  if(!data.products) data.products = [];
-  const base = [
-    {id:'p17',name:'Bolsa de hielo 1,7 kg',price:1500,cost:1000,emoji:'🧊',active:true},
-    {id:'p35',name:'Bolsa de hielo 3,5 kg',price:2500,cost:1500,emoji:'❄️',active:true},
-    {id:'p14',name:'Bolsa de hielo 14 kg',price:6500,cost:4000,emoji:'🧊',active:true},
-    {id:'p20',name:'Escama 20 kg',price:8000,cost:4500,emoji:'🌨️',active:true},
-    {id:'p32',name:'Escama 32 kg',price:12000,cost:6000,emoji:'🌨️',active:true}
-  ];
-  base.forEach(b => {
-    if(!data.products.find(p => p.id === b.id)) {
-      data.products.push(b);
-      dbSet('products/' + b.id, b);
-    }
-  });
-  save(); render(); toast('✅ Productos base restaurados');
-}
-
-function deleteProducto(id) {
-  if(!confirm('¿Eliminar este producto del catálogo?')) return;
-  data.products = (data.products || []).filter(p => p.id !== id);
-  dbSet('products/' + id, null);
-  save(); render(); toast('🗑 Producto eliminado');
-}
-
-function catalogForm() {
-  modal(`<h2>➕ Nuevo Producto</h2>
-  <div class="field"><label>Nombre del producto (ej: Bolsa 10 kg)</label><input id="npName"></div>
-  <div class="twocol">
-    <div class="field"><label>Precio de venta ($)</label><input type="number" id="npPrice" value="0" min="0"></div>
-    <div class="field"><label>Costo ($)</label><input type="number" id="npCost" value="0" min="0"></div>
-  </div>
-  <div class="field"><label>Emoji (ej: 🧊)</label><input id="npEmoji" value="🧊"></div>
-  <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;">
-    <button class="btn" onclick="closeModal()">Salir</button>
-    <button class="btn primary" onclick="saveNewProduct()">💾 Guardar Producto</button>
-  </div>`);
-}
-
-function saveNewProduct() {
-  const name = $('npName').value.trim();
-  const price = Number($('npPrice').value) || 0;
-  const cost = Number($('npCost').value) || 0;
-  const emoji = $('npEmoji').value.trim() || '🧊';
-  if(!name) return toast('Ingresá un nombre');
-  
-  const newId = 'p' + Date.now().toString(36);
-  const np = { id: newId, name, price, cost, emoji, active: true };
-  
-  if(!data.products) data.products = [];
-  data.products.push(np);
-  dbSet('products/' + newId, np);
-  save(); closeModal(); render(); toast('✅ Producto agregado');
-}
-
 function adminSaveCost(id,value,field){const p=findProduct(id); if(!p) return; p[field]=Math.max(0,Number(value)||0); dbSet('products/'+id, p); save(); toast('✅ Guardado'); render();}
 function adminStock(){const stocks=(data.driverStock||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));const contenido=!stocks.length?'<p class="muted">Sin movimientos.</p>':`<table class="table" style="margin-top:12px;"><thead><tr><th>Fecha</th><th>Chofer</th><th>Cargó</th><th>Devolvió</th><th>Estado</th><th class="no-print"></th></tr></thead><tbody>${stocks.slice(0,60).map(st=>{const dName=getDrivers().find(d=>d.pin===st.pin)?.name||st.pin;const c=PROD_KEYS.reduce((a,k)=>a+(Number(st.carga[k])||0),0);const v=PROD_KEYS.reduce((a,k)=>a+(Number(st.devuelta[k])||0),0);return `<tr><td>${st.date}</td><td><b>${esc(dName)}</b></td><td>${c} bolsas</td><td>${v} bolsas</td><td>${st.closed?'<span class="status delivered">cerrada</span>':'<span class="status">abierta</span>'}</td><td class="no-print"><button class="btn xs danger" onclick="deleteStock('${st.id}')">🗑 Borrar</button></td></tr>`;}).join('')}</tbody></table>`;return wrapSeccion('secStock','📦 Stock por Chofer',contenido);}
 function deleteStock(id){if(!confirm('¿Borrar este registro de stock?'))return;data.driverStock=data.driverStock.filter(s=>s.id!==id);dbSet('driverStock/'+id,null);save();render();}
@@ -1569,85 +1469,7 @@ function imprimirPlanillaDia(){
   setTimeout(()=>{try{w.print();}catch(e){}},500);
 }
 function copiarPlanillaDia(){const filt=window.driverDayFilter||{date:today(),pin:''};const sales=(data.driverSales||[]).filter(s=>s.date===filt.date&&(!filt.pin||String(s.pin)===String(filt.pin)));const gastos=(data.driverGastos||[]).filter(g=>g.date===filt.date&&(!filt.pin||String(g.pin)===String(filt.pin)));let ef=0,tf=0,cc=0,cbEf=0,cbTf=0;sales.forEach(s=>{if(s.payment==='efectivo')ef+=Number(s.total||0);if(s.payment==='transferencia')tf+=Number(s.total||0);if(s.payment==='ctacte')cc+=Number(s.total||0);if(s.payment==='cobrocc'){const m=s.collectionMethod||'efectivo';if(m==='transferencia')cbTf+=Number(s.collection||0);else cbEf+=Number(s.collection||0);}});const gastosTotal=gastos.reduce((a,g)=>a+Number(g.amount||0),0);let txt=`🧊 GLACIAR · Planilla ${fdate(filt.date)}\n\n💵 Efectivo: ${money(ef)}\n💳 Transf: ${money(tf)}\n📋 Cta Cte: ${money(cc)}\n🔄 Cobros Ef.: ${money(cbEf)}\n🔄 Cobros Transf.: ${money(cbTf)}\n💸 Gastos: ${money(gastosTotal)}\n💰 Neto efectivo: ${money(ef+cbEf-gastosTotal)}\n📊 Neto total: ${money(ef+tf+cbEf+cbTf-gastosTotal)}\n\nVENTAS:\n`;sales.forEach(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ')||'—';const pl=s.payment==='cobrocc'?('cobrocc '+(s.collectionMethod==='transferencia'?'transf':'ef')):s.payment;txt+=`• ${s.clientName} · ${items} · ${money(s.total||s.collection)} (${pl})\n`;});if(gastos.length){txt+='\nGASTOS:\n';gastos.forEach(g=>{txt+=`• ${g.category}${g.detail?' · '+g.detail:''} · ${money(g.amount)}\n`;});}navigator.clipboard.writeText(txt).then(()=>toast('📋 Copiado'));}
-function imprimirJornadaCerrada(id){
-  const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return toast('No encontrada');
-  const w=window.open('','_blank');if(!w){toast('Permití ventanas emergentes');return;}
-  const sales=d.sales||[];const gastos=d.gastosList||[];
-  
-  const salesRows=sales.map(s=>{
-    const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ')||'—';
-    const pl=s.payment==='efectivo'?'Efectivo':s.payment==='transferencia'?'Transf':s.payment==='ctacte'?'Cta Cte':s.payment==='cobrocc'?('Cobro '+(s.collectionMethod==='transferencia'?'Transf':'Ef')):'—';
-    return `<tr><td>${esc(s.clientName||'—')}</td><td>${items}</td><td>${pl}</td><td style="text-align:right;">${money(s.total||s.collection)}</td></tr>`;
-  }).join('');
-  
-  const gastosRows=gastos.map(g=>`<tr><td>${esc(g.category)}</td><td>${esc(g.detail||'—')}</td><td style="text-align:right;">${money(g.amount)}</td></tr>`).join('');
-  
-  const totalVentas = sales.reduce((acc, s)=>acc+Number(s.total||s.collection||0), 0);
-  const bolsasTotales = sales.reduce((acc, s)=>acc+Object.values(s.qty||{}).reduce((a,b)=>a+Number(b||0),0), 0);
-
-  const html = `
-  <!doctype html><html><head><meta charset="utf-8"><title>Jornada ${d.date}</title>
-  <style>
-    body{font-family:'Inter',system-ui,sans-serif;padding:30px;color:#1e293b;background:#fff;}
-    h1{font-family:'Fraunces',Georgia,serif;font-size:24px;color:#0f2352;margin:0 0 5px;}
-    .sub{font-size:13px;color:#64748b;margin-bottom:20px;}
-    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-    .kpi{border:1px solid #e2e8f0;border-radius:10px;padding:12px;background:#f8fafc;}
-    .kpi span{display:block;font-size:10px;text-transform:uppercase;color:#64748b;font-weight:bold;margin-bottom:4px;}
-    .kpi b{font-size:20px;font-family:Georgia,serif;}
-    .neto-box{border:2px solid #10b981;background:#ecfdf5;border-radius:10px;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-    .neto-box span{font-size:14px;font-weight:bold;color:#047857;text-transform:uppercase;}
-    .neto-box b{font-size:26px;font-family:Georgia,serif;color:#047857;}
-    .neto-box.blue{border-color:#3b82f6;background:#eff6ff;color:#1d4ed8;}
-    .neto-box.blue span, .neto-box.blue b{color:#1d4ed8;}
-    h2{font-size:15px;color:#0f2352;border-bottom:2px solid #0f2352;padding-bottom:6px;margin:24px 0 12px;}
-    table{width:100%;border-collapse:collapse;font-size:13px;}
-    th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left;}
-    th{background:#f1f5f9;color:#0f2352;font-size:11px;text-transform:uppercase;}
-    .footer{margin-top:30px;text-align:center;font-size:11px;color:#94a3b8;}
-    @media print{body{padding:10px;}}
-  </style></head><body>
-    <h1>🧊 GLACIAR · M&C Hielo</h1>
-    <div class="sub"><b>Jornada cerrada:</b> ${fdate(d.date)} · <b>Chofer:</b> ${d.driverName}</div>
-    
-    <div class="kpi-grid">
-      <div class="kpi"><span>💵 Efectivo</span><b>${money(d.efectivo)}</b></div>
-      <div class="kpi"><span>💳 Transferencia</span><b>${money(d.transferencia)}</b></div>
-      <div class="kpi"><span>📋 Cta Cte</span><b>${money(d.ctacte)}</b></div>
-      <div class="kpi"><span>🔄 Cobros Ef.</span><b>${money(d.cobrosEfectivo!==undefined?d.cobrosEfectivo:d.cobros)}</b></div>
-      <div class="kpi"><span>🔄 Cobros Transf.</span><b>${money(d.cobrosTransferencia||0)}</b></div>
-      <div class="kpi"><span>💸 Gastos</span><b>${money(d.gastos)}</b></div>
-      <div class="kpi"><span>🧊 Bolsas</span><b>${bolsasTotales}</b></div>
-      <div class="kpi"><span>Ventas</span><b>${sales.length}</b></div>
-    </div>
-
-    <div class="neto-box">
-      <span>💰 NETO EN EFECTIVO A ENTREGAR</span>
-      <b>${money(d.netoEntregar)}</b>
-    </div>
-    
-    <div class="neto-box blue">
-      <span>📊 NETO TOTAL (incluye transferencias)</span>
-      <b>${money(d.neto)}</b>
-    </div>
-
-    <h2>Ventas de la jornada (${sales.length})</h2>
-    <table>
-      <thead><tr><th>Cliente</th><th>Productos</th><th>Pago</th><th style="text-align:right">Monto</th></tr></thead>
-      <tbody>${salesRows||'<tr><td colspan="4" style="text-align:center">Sin ventas</td></tr>'}</tbody>
-    </table>
-
-    <h2>Gastos de la jornada (${gastos.length})</h2>
-    <table>
-      <thead><tr><th>Categoría</th><th>Detalle</th><th style="text-align:right">Monto</th></tr></thead>
-      <tbody>${gastosRows||'<tr><td colspan="3" style="text-align:center">Sin gastos</td></tr>'}</tbody>
-    </table>
-
-    <div class="footer">* No es fiscal · Generado el ${new Date().toLocaleString('es-AR')}</div>
-  </body></html>`;
-  
-  w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},500);
-}
+function imprimirJornadaCerrada(id){const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return toast('No encontrada');const w=window.open('','_blank');if(!w){toast('Permití ventanas emergentes');return;}const sales=d.sales||[];const gastos=d.gastosList||[];const salesRows=sales.map(s=>{const items=Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ')||'—';const pl=s.payment==='efectivo'?'Efectivo':s.payment==='transferencia'?'Transf':s.payment==='ctacte'?'Cta Cte':s.payment==='cobrocc'?('Cobro '+(s.collectionMethod==='transferencia'?'Transf':'Ef')):'—';return `<tr><td>${esc(s.clientName||'—')}</td><td>${items}</td><td>${pl}</td><td style="text-align:right;">${money(s.total||s.collection)}</td></tr>`;}).join('');const gastosRows=gastos.map(g=>`<tr><td>${esc(g.category)}</td><td>${esc(g.detail||'—')}</td><td style="text-align:right;">${money(g.amount)}</td></tr>`).join('');w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Jornada '+d.date+'</title><style>body{font-family:Inter,sans-serif;padding:24px}h1{font-family:Georgia,serif}h2{font-size:15px;color:#0f2352;border-bottom:2px solid #0f2352;padding-bottom:6px;margin:22px 0 10px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ddd;padding:7px 9px}th{background:#eef5ff}</style></head><body><h1>🧊 Jornada '+fdate(d.date)+' · '+d.driverName+'</h1><p>Efectivo: '+money(d.efectivo)+' · Transf: '+money(d.transferencia)+' · Gastos: '+money(d.gastos)+' · Neto: '+money(d.neto)+'</p><h2>Ventas ('+sales.length+')</h2><table><thead><tr><th>Cliente</th><th>Bolsas</th><th>Pago</th><th style="text-align:right">Monto</th></tr></thead><tbody>'+salesRows+'</tbody></table><h2>Gastos ('+gastos.length+')</h2><table><thead><tr><th>Categoría</th><th>Detalle</th><th style="text-align:right">Monto</th></tr></thead><tbody>'+(gastosRows||'<tr><td colspan="3">Sin gastos</td></tr>')+'</tbody></table></body></html>');w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},500);}
 function copiarJornadaCerrada(id){const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return toast('No encontrada');let txt=`🧊 JORNADA ${d.date} · ${d.driverName}\n💵 ${money(d.efectivo)}\n💳 ${money(d.transferencia)}\n💸 ${money(d.gastos)}\n💰 NETO: ${money(d.neto)}`;navigator.clipboard.writeText(txt).then(()=>toast('📋 Copiado'));}
 function enviarJornadaWhatsApp(id){const d=(data.driverDays||[]).find(x=>x.id===id);if(!d)return toast('No encontrada');let txt=`🧊 *JORNADA ${d.date}*\n🚚 ${d.driverName}\n\n💵 ${money(d.efectivo)}\n💳 ${money(d.transferencia)}\n💸 ${money(d.gastos)}\n\n💰 *NETO: ${money(d.neto)}*`;const wa=data.settings.whatsapp||'5492612125599';window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(txt),'_blank');}
 function psCalcTotals(){const ps=data.paymentSheet||{prices:{},rows:[]};const pr=ps.prices||{};const calcRow=r=>(Number(r.qty?.['1,7'])||0)*(Number(pr.p17)||0)+(Number(r.qty?.['3,5'])||0)*(Number(pr.p35)||0)+(Number(r.qty?.['14'])||0)*(Number(pr.p14)||0)+(Number(r.qty?.['20'])||0)*(Number(pr.p20)||0)+(Number(r.qty?.['32'])||0)*(Number(pr.p32)||0);const totals={p17:0,p35:0,p14:0,p20:0,p32:0};let gt=0;(ps.rows||[]).forEach(r=>{PROD_KEYS.forEach(k=>{totals[k]+=Number(r.qty?.[QTY_KEYS[k]])||0;});gt+=calcRow(r);});return {totals,granTotal:gt,rows:ps.rows||[],prices:pr,calcRow};}
@@ -1719,336 +1541,291 @@ function deletePayment(id){
   if(window.__invalidateDebtCache) window.__invalidateDebtCache();
   save();
   render();
-}
-function financeAdmin(){
-  const todayStr = today();
-  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7); const weekStr = weekStart.toISOString().slice(0,10);
-  const monthStart = todayStr.slice(0,7) + '-01';
+}/* ============================================================
+   FINANZAS — Estilo Ganancias/Informes (página privada)
+   ============================================================ */
 
-  const calc = (from) => {
-    let ventasEf = 0, ventasTf = 0, ventasCc = 0;
-    let cobrosEf = 0, cobrosTf = 0;
-    let costoMercaderia = 0;
-    let gastosCamion = 0;
-    let gastosAdmin = 0;
+// Calcula todo un rango de fechas con ganancia real
+function calcGananciaRango(desde, hasta) {
+  const dias = [];
+  const start = new Date(desde + 'T12:00:00');
+  const end = new Date(hasta + 'T12:00:00');
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dias.push(d.toISOString().slice(0,10));
+  }
 
-    (data.driverSales||[]).forEach(s => {
-      if(s.date < from) return;
-      
-      if(s.payment === 'efectivo') ventasEf += Number(s.total||0);
-      if(s.payment === 'transferencia') ventasTf += Number(s.total||0);
-      if(s.payment === 'ctacte') ventasCc += Number(s.total||0);
-      
-      if(s.payment === 'cobrocc') {
+  let ventasEf = 0, ventasTf = 0, ventasCc = 0;
+  let cobrosEf = 0, cobrosTf = 0;
+  let costoMercaderia = 0;
+  let gastosCamion = 0;
+  let gastosAdmin = 0;
+  let ventasCount = 0, cobrosCount = 0, bolsas = 0;
+
+  dias.forEach(f => {
+    (data.driverSales || []).forEach(s => {
+      if (s.date !== f) return;
+      if (s.payment === 'efectivo') { ventasEf += Number(s.total||0); ventasCount++; }
+      if (s.payment === 'transferencia') { ventasTf += Number(s.total||0); ventasCount++; }
+      if (s.payment === 'ctacte') { ventasCc += Number(s.total||0); ventasCount++; }
+      if (s.payment === 'cobrocc') {
         const m = s.collectionMethod || 'efectivo';
-        if(m === 'transferencia') cobrosTf += Number(s.collection||0); else cobrosEf += Number(s.collection||0);
+        if (m === 'transferencia') cobrosTf += Number(s.collection||0);
+        else cobrosEf += Number(s.collection||0);
+        cobrosCount++;
       }
-      
-      let costoEstaVenta = 0;
-      Object.entries(s.qty || {}).forEach(([k, q]) => {
-        if(q > 0) {
-          const pId = Object.keys(QTY_KEYS).find(key => QTY_KEYS[key] === k); 
-          const pFinal = data.products.find(p=>p.id === pId) || data.products.find(p=>p.name.includes(k));
-          const costoUnitario = pFinal ? Number(pFinal.cost) : 0;
-          costoEstaVenta += (Number(q) * costoUnitario);
-        }
-      });
-      costoMercaderia += costoEstaVenta;
+      costoMercaderia += Number(s.cost||0);
+      Object.values(s.qty||{}).forEach(q => bolsas += Number(q||0));
     });
+    (data.driverGastos || []).forEach(g => { if (g.date === f) gastosCamion += Number(g.amount||0); });
+    (data.expenses || []).forEach(g => { if (g.date === f) gastosAdmin += Number(g.amount||0); });
+  });
 
-    (data.driverGastos||[]).forEach(g => { if(g.date >= from) gastosCamion += Number(g.amount||0); });
-    (data.expenses||[]).forEach(g => { if(g.date >= from) gastosAdmin += Number(g.amount||0); });
+  const totalVentas = ventasEf + ventasTf + ventasCc;
+  const totalCobros = cobrosEf + cobrosTf;
+  const totalGastos = gastosCamion + gastosAdmin;
+  const gananciaBruta = ventasEf + ventasTf + totalCobros - costoMercaderia;
+  const gananciaReal = gananciaBruta - totalGastos;
 
-    const totalVentas = ventasEf + ventasTf + ventasCc;
-    const totalCobros = cobrosEf + cobrosTf;
-    const totalGastos = gastosCamion + gastosAdmin;
+  return {
+    desde, hasta, dias: dias.length,
+    ventasEf, ventasTf, ventasCc,
+    cobrosEf, cobrosTf,
+    totalVentas, totalCobros, costoMercaderia,
+    gastosCamion, gastosAdmin, totalGastos,
+    gananciaBruta, gananciaReal,
+    ventasCount, cobrosCount, bolsas
+  };
+}
 
-    const gananciaReal = ventasEf + ventasTf + totalCobros - costoMercaderia - totalGastos;
+// Rango rápido
+function finRango(tipo) {
+  const h = today();
+  if (tipo === 'hoy') return { desde: h, hasta: h };
+  if (tipo === 'semana') {
+    const d = new Date();
+    const dow = d.getDay() || 7;
+    const lunes = new Date(d);
+    lunes.setDate(d.getDate() - (dow - 1));
+    return { desde: lunes.toISOString().slice(0,10), hasta: h };
+  }
+  if (tipo === 'mes') return { desde: h.slice(0,7) + '-01', hasta: h };
+  if (tipo === 'mesAnt') {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    const desde = d.toISOString().slice(0,7) + '-01';
+    const ultimo = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    return { desde, hasta: ultimo.toISOString().slice(0,10) };
+  }
+  if (tipo === 'anio') return { desde: h.slice(0,4) + '-01-01', hasta: h };
+  return { desde: h, hasta: h };
+}
 
-    return { ventasEf, ventasTf, ventasCc, cobrosEf, cobrosTf, costoMercaderia, gastosCamion, gastosAdmin, totalVentas, totalCobros, totalGastos, gananciaReal };
+// Guardar informe en Firebase (nodo enterpriseReports de glaciar_v4)
+function guardarInformeFinanzas() {
+  const r = window.__finRangoActual;
+  if (!r) return toast('Calculá primero un rango');
+  if (!fbRef) return toast('Sin conexión a Firebase');
+
+  const etiqueta = fdate(r.desde) + ' al ' + fdate(r.hasta);
+  const key = 'rep_fin_' + r.desde + '_' + r.hasta;
+
+  const informe = {
+    id: key,
+    fecha: r.desde,
+    hasta: r.hasta,
+    etiqueta,
+    ventas: r.totalVentas,
+    cobros: r.totalCobros,
+    costo: r.costoMercaderia,
+    gastos: r.totalGastos,
+    gastosCamion: r.gastosCamion,
+    gastosAdmin: r.gastosAdmin,
+    bolsas: r.bolsas,
+    gananciaBruta: r.gananciaBruta,
+    gananciaReal: r.gananciaReal,
+    gananciaNeta: r.gananciaReal,
+    creado: Date.now()
   };
 
-  const hoy = calc(todayStr);
-  const semana = calc(weekStr);
-  const mes = calc(monthStart);
+  fbRef.child('enterpriseReports/' + key).set(sanitizeForFirebase(informe))
+    .then(() => toast('✅ Informe guardado'))
+    .catch(e => { console.error(e); toast('❌ Error al guardar'); });
+}
+
+// Borrar informe guardado
+function borrarInformeFinanzas(id) {
+  if (!confirm('¿Borrar este informe?')) return;
+  if (!fbRef) return;
+  fbRef.child('enterpriseReports/' + id).remove()
+    .then(() => { toast('Informe borrado'); render(); })
+    .catch(e => console.warn(e));
+}
+
+// Render del informe de rango
+function renderRangoFinanzas(desde, hasta) {
+  const r = calcGananciaRango(desde, hasta);
+  window.__finRangoActual = r;
+
+  return `
+    <div class="notice info" style="margin-top:16px;">
+      📆 Período: <b>${fdate(desde)}</b> al <b>${fdate(hasta)}</b> (${r.dias} días)
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="kpi blue"><label>💰 Ventas</label><b>${money(r.totalVentas)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">${r.ventasCount} ventas</div></div>
+      <div class="kpi cyan"><label>💵 Cobros</label><b>${money(r.totalCobros)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">${r.cobrosCount} cobros</div></div>
+      <div class="kpi red"><label>💸 Gastos totales</label><b>${money(r.totalGastos)}</b></div>
+      <div class="kpi gold"><label>📦 Costo mercadería</label><b>${money(r.costoMercaderia)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">${r.bolsas} bolsas</div></div>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="kpi purple"><label>📈 Ganancia bruta</label><b>${money(r.gananciaBruta)}</b><div style="font-size:11px;color:var(--muted);margin-top:4px;">Ventas + Cobros − Costo</div></div>
+      <div class="kpi ${r.gananciaReal >= 0 ? 'green' : 'red'}" style="grid-column: span 3;">
+        <label>💎 GANANCIA REAL</label>
+        <b style="font-size:38px;">${money(r.gananciaReal)}</b>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">(Ventas + Cobros) − Costo − Gastos</div>
+      </div>
+    </div>
+
+    <div class="row no-print" style="justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap;">
+      <button class="btn green" onclick="guardarInformeFinanzas()">💾 Guardar este informe</button>
+      <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+
+    <div class="panel" style="margin-top:18px;">
+      <h3>📊 Desglose del período</h3>
+      <div class="gasto-cat-row" style="color:var(--green);font-weight:700;"><span>+ Ventas Efectivo</span><b>${money(r.ventasEf)}</b></div>
+      <div class="gasto-cat-row" style="color:var(--green);font-weight:700;"><span>+ Ventas Transferencia</span><b>${money(r.ventasTf)}</b></div>
+      <div class="gasto-cat-row" style="color:var(--purple);font-weight:700;"><span>+ Cobros (Ef + Tr)</span><b>${money(r.totalCobros)}</b></div>
+      <div class="gasto-cat-row" style="color:var(--muted);"><span>Ventas a Cuenta Corriente (no ingresa plata aún)</span><b>${money(r.ventasCc)}</b></div>
+      <div class="gasto-cat-row" style="color:var(--red);"><span>− Costo de Mercadería Vendida</span><b>− ${money(r.costoMercaderia)}</b></div>
+      <div class="gasto-cat-row" style="color:var(--red);"><span>− Gastos Choferes (Nafta/Sueldos)</span><b>− ${money(r.gastosCamion)}</b></div>
+      <div class="gasto-cat-row" style="color:var(--red);"><span>− Gastos Admin (Manuales)</span><b>− ${money(r.gastosAdmin)}</b></div>
+      <div class="gasto-total-row" style="background:var(--ice);border-color:var(--blue);color:var(--blue-dark);">
+        <span>💰 GANANCIA REAL DEL PERÍODO</span><span style="font-size:24px;">${money(r.gananciaReal)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function financeAdmin() {
+  // Rango por defecto: este mes
+  if (!window.__finRangoSel) window.__finRangoSel = finRango('mes');
+  const sel = window.__finRangoSel;
+
+  // KPIs rápidos
+  const hoy = calcGananciaRango(finRango('hoy').desde, finRango('hoy').hasta);
+  const sem = calcGananciaRango(finRango('semana').desde, finRango('semana').hasta);
+  const mes = calcGananciaRango(finRango('mes').desde, finRango('mes').hasta);
+  const anio = calcGananciaRango(finRango('anio').desde, finRango('anio').hasta);
+
+  // Informe del rango seleccionado
+  const informeHtml = renderRangoFinanzas(sel.desde, sel.hasta);
+
+  // Informes guardados (desde Firebase: se leen en data.enterpriseReports)
+  const guardados = (data.enterpriseReports || []).slice().sort((a,b) => (b.creado||0) - (a.creado||0));
+  const filasGuardados = guardados.length
+    ? guardados.map(i => `
+        <tr>
+          <td><b>${fdate(i.fecha)}${i.hasta && i.hasta !== i.fecha ? ' al ' + fdate(i.hasta) : ''}</b></td>
+          <td>${money(i.ventas)}</td>
+          <td style="color:var(--green)">${money(i.cobros||0)}</td>
+          <td>${money(i.gastos)}</td>
+          <td style="color:${(i.gananciaReal||i.gananciaNeta)>=0?'var(--green)':'var(--red)'};font-weight:900;">${money(i.gananciaReal || i.gananciaNeta)}</td>
+          <td>${i.bolsas||0}</td>
+          <td class="no-print"><button class="btn xs danger" onclick="borrarInformeFinanzas('${i.id}')">🗑</button></td>
+        </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Sin informes guardados</td></tr>';
 
   const contenido = `
-  <section class="grid" style="grid-template-columns:repeat(3, 1fr);">
-    <div class="kpi blue">
-      <label>GANANCIA REAL HOY</label>
-      <b>${money(hoy.gananciaReal)}</b>
-      <span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(hoy.totalVentas)} | Cobros: ${money(hoy.totalCobros)} | Costo: ${money(hoy.costoMercaderia)} | Gastos: ${money(hoy.totalGastos)}</span>
-    </div>
-    <div class="kpi purple">
-      <label>GANANCIA REAL SEMANA</label>
-      <b>${money(semana.gananciaReal)}</b>
-      <span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(semana.totalVentas)} | Cobros: ${money(semana.totalCobros)} | Costo: ${money(semana.costoMercaderia)} | Gastos: ${money(semana.totalGastos)}</span>
-    </div>
-    <div class="kpi green">
-      <label>GANANCIA REAL MES</label>
-      <b>${money(mes.gananciaReal)}</b>
-      <span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(mes.totalVentas)} | Cobros: ${money(mes.totalCobros)} | Costo: ${money(mes.costoMercaderia)} | Gastos: ${money(mes.totalGastos)}</span>
-    </div>
-  </section>
+    <section class="grid">
+      <div class="kpi blue"><label>GANANCIA REAL HOY</label><b>${money(hoy.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(hoy.totalVentas)} · Cobros: ${money(hoy.totalCobros)} · Costo: ${money(hoy.costoMercaderia)} · Gastos: ${money(hoy.totalGastos)}</span></div>
+      <div class="kpi purple"><label>GANANCIA REAL SEMANA</label><b>${money(sem.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(sem.totalVentas)} · Cobros: ${money(sem.totalCobros)} · Costo: ${money(sem.costoMercaderia)} · Gastos: ${money(sem.totalGastos)}</span></div>
+      <div class="kpi green"><label>GANANCIA REAL MES</label><b>${money(mes.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(mes.totalVentas)} · Cobros: ${money(mes.totalCobros)} · Costo: ${money(mes.costoMercaderia)} · Gastos: ${money(mes.totalGastos)}</span></div>
+      <div class="kpi gold"><label>GANANCIA REAL AÑO</label><b>${money(anio.gananciaReal)}</b><span class="muted" style="font-size:11px;margin-top:8px;display:block;">Ventas: ${money(anio.totalVentas)} · Cobros: ${money(anio.totalCobros)} · Costo: ${money(anio.costoMercaderia)} · Gastos: ${money(anio.totalGastos)}</span></div>
+    </section>
 
-  <section class="panel">
-    <h3>📊 Desglose del Mes (Real)</h3>
-    <div class="gasto-cat-row" style="color:var(--green);font-weight:700;"><span>+ Ventas Efectivo</span><b>${money(mes.ventasEf)}</b></div>
-    <div class="gasto-cat-row" style="color:var(--green);font-weight:700;"><span>+ Ventas Transferencia</span><b>${money(mes.ventasTf)}</b></div>
-    <div class="gasto-cat-row" style="color:var(--purple);font-weight:700;"><span>+ Cobros Cta Cte (Ef + Tr)</span><b>${money(mes.totalCobros)}</b></div>
-    <div class="gasto-cat-row" style="color:var(--muted);"><span>Ventas a Cuenta Corriente (No entra plata aún)</span><b>${money(mes.ventasCc)}</b></div>
-    <div class="gasto-cat-row" style="color:var(--red);"><span>− Costo de Mercadería Vendida</span><b>- ${money(mes.costoMercaderia)}</b></div>
-    <div class="gasto-cat-row" style="color:var(--red);"><span>− Gastos Choferes (Nafta/Sueldos)</span><b>- ${money(mes.gastosCamion)}</b></div>
-    <div class="gasto-cat-row" style="color:var(--red);"><span>− Gastos Admin (Manuales)</span><b>- ${money(mes.gastosAdmin)}</b></div>
-    <div class="gasto-total-row" style="background:var(--ice);border-color:var(--blue);color:var(--blue-dark);">
-      <span>💰 GANANCIA REAL DEL MES</span><span style="font-size:24px;">${money(mes.gananciaReal)}</span>
-    </div>
-  </section>
+    <section class="panel no-print" style="border-left:4px solid var(--blue);">
+      <h3 style="margin:0 0 12px;">📅 Elegir período</h3>
+      <p class="panel-sub">Elegí un rango y calculá la ganancia real (Ventas + Cobros − Costo − Gastos).</p>
+      <div class="threecol">
+        <div class="field"><label>Desde</label><input type="date" id="finDesde" value="${sel.desde}"></div>
+        <div class="field"><label>Hasta</label><input type="date" id="finHasta" value="${sel.hasta}"></div>
+        <div class="field"><label>&nbsp;</label><button class="btn primary" onclick="finCalcular()" style="width:100%;">📊 Calcular</button></div>
+      </div>
+      <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn sm" onclick="finRapido('hoy')">Hoy</button>
+        <button class="btn sm" onclick="finRapido('semana')">Esta semana</button>
+        <button class="btn sm" onclick="finRapido('mes')">Este mes</button>
+        <button class="btn sm" onclick="finRapido('mesAnt')">Mes anterior</button>
+        <button class="btn sm" onclick="finRapido('anio')">Este año</button>
+      </div>
+    </section>
 
-  <section class="panel">
-    <h3>💼 Gastos admin (Manuales)</h3>
-    <div class="field no-print"><label>Concepto</label><input id="exName"></div>
-    <div class="field no-print"><label>Monto</label><input id="exAmount" type="number"></div>
-    <button class="btn primary no-print" onclick="addExpense()">+ Registrar</button>
-    <div style="margin-top:14px;">${(data.expenses||[]).slice(0,30).map(x=>`<div class="row space" style="padding:8px 0;border-bottom:1px solid var(--line-2);"><span>${esc(x.name)} <small class="muted">${x.date}</small></span><div><b>${money(x.amount)}</b> <button class="btn xs danger no-print" onclick="deleteExpense('${x.id}')">🗑</button></div></div>`).join('')||'<p class="muted">Sin gastos.</p>'}</div>
-  </section>`;
-  return wrapSeccion('secFinanzas','💼 Finanzas (Ganancia Real)',contenido);
+    <section class="panel" style="border-left:4px solid var(--green);">
+      <h3 style="margin:0 0 12px;">📄 Informe del período</h3>
+      ${informeHtml}
+    </section>
+
+    <section class="panel">
+      <h3>📂 Informes guardados</h3>
+      <p class="panel-sub">Guardá el resumen del período para consultarlo después.</p>
+      <div class="scroll-x">
+        <table class="table">
+          <thead><tr><th>Fecha</th><th>Ventas</th><th>Cobros</th><th>Gastos</th><th>Ganancia real</th><th>Bolsas</th><th class="no-print"></th></tr></thead>
+          <tbody>${filasGuardados}</tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>💼 Gastos admin (Manuales)</h3>
+      <div class="field no-print"><label>Concepto</label><input id="exName"></div>
+      <div class="field no-print"><label>Monto</label><input id="exAmount" type="number"></div>
+      <button class="btn primary no-print" onclick="addExpense()">+ Registrar</button>
+      <div style="margin-top:14px;">
+        ${(data.expenses||[]).slice(0,30).map(x=>`<div class="row space" style="padding:8px 0;border-bottom:1px solid var(--line-2);"><span>${esc(x.name)} <small class="muted">${x.date}</small></span><div><b>${money(x.amount)}</b> <button class="btn xs danger no-print" onclick="deleteExpense('${x.id}')">🗑</button></div></div>`).join('') || '<p class="muted">Sin gastos.</p>'}
+      </div>
+    </section>
+  `;
+
+  return wrapSeccion('secFinanzas', '💼 Finanzas (Ganancia Real)', contenido);
 }
+
+// Handlers de rango
+function finRapido(tipo) {
+  window.__finRangoSel = finRango(tipo);
+  render();
+}
+
+function finCalcular() {
+  const d = document.getElementById('finDesde').value;
+  const h = document.getElementById('finHasta').value;
+  if (!d || !h) return toast('Elegí las fechas');
+  if (d > h) return toast('"Desde" no puede ser mayor que "Hasta"');
+  window.__finRangoSel = { desde: d, hasta: h };
+  render();
+}
+
+// Exponer funciones globalmente
+window.finRapido = finRapido;
+window.finCalcular = finCalcular;
+window.guardarInformeFinanzas = guardarInformeFinanzas;
+window.borrarInformeFinanzas = borrarInformeFinanzas;
+
+/* ============================================================
+   Resto de secciones (sin cambios)
+   ============================================================ */
 function addExpense(){const n=$('exName').value.trim(),a=Number($('exAmount').value);if(!n||!a)return toast('Completá');const nuevo={id:uid(),name:n,amount:a,date:today()};data.expenses.unshift(nuevo);dbSetItem('expenses',nuevo);save();render();}
 function deleteExpense(id){if(!confirm('¿Eliminar?'))return;data.expenses=data.expenses.filter(x=>x.id!==id);dbSet('expenses/'+id,null);save();render();}
-function adminFacturar(){
-  const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');
-  const hs=today();const pd=hs.slice(0,7)+'-01';
-  return `<section class="panel"><h3 style="margin:0 0 14px;">📄 Facturar por Cliente</h3>
-  <div class="threecol no-print">
-    <div class="field"><label>👤 Cliente</label><select id="facClient"><option value="">— Elegí —</option>${co}</select></div>
-    <div class="field"><label>📅 Desde</label><input type="date" id="facDesde" value="${pd}"></div>
-    <div class="field"><label>📅 Hasta</label><input type="date" id="facHasta" value="${hs}"></div>
-  </div>
-  <button class="btn primary no-print" onclick="generarFactura()">📄 Generar factura</button>
-  <div id="facturaContainer" style="margin-top:18px;"></div></section>`;
-}
+function adminFacturar(){const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');const hs=today();const pd=hs.slice(0,7)+'-01';return `<section class="panel"><h3 style="margin:0 0 14px;">📄 Facturar por Cliente</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="facClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="facDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="facHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="generarFactura()">📄 Generar factura</button><div id="facturaContainer" style="margin-top:18px;"></div></section>`;}
 let facturaActual=null;
-function calcularFactura(cid,desde,hasta){
-  const items=[];
-  (data.driverSales||[]).forEach(s=>{
-    if(String(s.clientId)!==String(cid))return;
-    if(s.date<desde||s.date>hasta)return;
-    
-    if(s.payment==='ctacte'){
-      const detalle = Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ') || 'Venta';
-      items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:detalle,source:'chofer'});
-    }
-    if(s.payment==='cobrocc'){
-      items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});
-    }
-  });
-  (data.orders||[]).forEach(o=>{
-    if(String(o.clientId)!==String(cid))return;
-    if(o.date<desde||o.date>hasta)return;
-    if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado'){
-      const det = o.items && o.items.length ? o.items.map(i=>`${i.q}x ${i.name}`).join(' · ') : (o.note||'Deuda');
-      items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:det,source:'manual'});
-    }
-  });
-  (data.payments||[]).forEach(p=>{
-    if(String(p.clientId)!==String(cid))return;
-    if(p.date<desde||p.date>hasta)return;
-    items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});
-  });
-  items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);
-  const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);
-  return {items,totalDeudas:tD,totalPagos:tP,saldoPeriodo:tD-tP,saldoTotal:clientDebt(cid)};
-}
-function generarFactura(){
-  const cid=$('facClient').value;const d=$('facDesde').value;const h=$('facHasta').value;
-  if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');if(d>h)return toast('Fechas mal');
-  const c=findClient(cid);if(!c)return;
-  const r=calcularFactura(cid,d,h);
-  facturaActual={client:c,desde:d,hasta:h,...r};
-  
-  const numFactura = Math.floor(Math.random() * 9000) + 1000;
-
-  const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td>${i.source}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';
-  
-  $('facturaContainer').innerHTML=`
-  <div class="factura-box" id="facturaBox">
-    <div class="factura-head">
-      <div class="factura-emp">🧊 GLACIAR · M&C Hielo</div>
-      <div class="factura-num">Factura N° ${numFactura}</div>
-    </div>
-    <div>
-      <b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br>
-      <span class="muted">Período: ${fdate(d)} al ${fdate(h)}</span>
-    </div>
-    <div class="factura-resumen">
-      <span>📊 Total: <b>${money(r.totalDeudas)}</b></span>
-      <span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span>
-      <span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span>
-      <span>💰 Total: <b style="color:var(--red)">${money(r.saldoTotal)}</b></span>
-    </div>
-    <table class="table">
-      <thead><tr><th>Fecha</th><th>Detalle</th><th>Origen</th><th style="text-align:right;">Monto</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="factura-total">
-      <span>💰 Total a pagar: </span><span class="monto">${money(r.saldoTotal)}</span>
-    </div>
-    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--muted);">* No es fiscal · Generado el ${new Date().toLocaleDateString('es-AR')}</div>
-  </div>`;
-  toast('✅ Factura generada');
-}
-function adminModifFactura(){
-  const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');
-  const hs=today();const pd=hs.slice(0,7)+'-01';
-  return `<section class="panel"><h3 style="margin:0 0 14px;">✏️ Modificación de Factura</h3>
-  <div class="threecol no-print">
-    <div class="field"><label>👤 Cliente</label><select id="modClient"><option value="">— Elegí —</option>${co}</select></div>
-    <div class="field"><label>📅 Desde</label><input type="date" id="modDesde" value="${pd}"></div>
-    <div class="field"><label>📅 Hasta</label><input type="date" id="modHasta" value="${hs}"></div>
-  </div>
-  <button class="btn primary no-print" onclick="cargarModificacion()">📥 Cargar movimientos</button>
-  <div id="modifContainer" style="margin-top:18px;"></div></section>`;
-}
+function calcularFactura(cid,desde,hasta){const items=[];(data.driverSales||[]).forEach(s=>{if(String(s.clientId)!==String(cid))return;if(s.date<desde||s.date>hasta)return;if(s.payment==='ctacte')items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:'Venta',source:'chofer'});if(s.payment==='cobrocc')items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});});(data.orders||[]).forEach(o=>{if(String(o.clientId)!==String(cid))return;if(o.date<desde||o.date>hasta)return;if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado')items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:o.note||'Deuda',source:'manual'});});(data.payments||[]).forEach(p=>{if(String(p.clientId)!==String(cid))return;if(p.date<desde||p.date>hasta)return;items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});});items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);return {items,totalDeudas:tD,totalPagos:tP,saldoPeriodo:tD-tP,saldoTotal:clientDebt(cid)};}
+function generarFactura(){const cid=$('facClient').value;const d=$('facDesde').value;const h=$('facHasta').value;if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');if(d>h)return toast('Fechas mal');const c=findClient(cid);if(!c)return;const r=calcularFactura(cid,d,h);facturaActual={client:c,desde:d,hasta:h,...r};const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';$('facturaContainer').innerHTML=`<div class="factura-box" id="facturaBox"><div class="factura-head"><div class="factura-emp">🧊 GLACIAR · M&C Hielo</div></div><div><b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br><span class="muted">Período: ${fdate(d)} al ${fdate(h)}</span></div><div class="factura-resumen"><span>📊 Total: <b>${money(r.totalDeudas)}</b></span><span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span><span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span></div><table class="table"><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${rows}</tbody></table><div class="factura-total"><span>💰 Total: </span><span class="monto">${money(r.saldoTotal)}</span></div></div>`;toast('✅ Factura generada');}
+function adminModifFactura(){const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');const hs=today();const pd=hs.slice(0,7)+'-01';return `<section class="panel"><h3 style="margin:0 0 14px;">✏️ Modificación de Factura</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="modClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="modDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="modHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="cargarModificacion()">📥 Cargar movimientos</button><div id="modifContainer" style="margin-top:18px;"></div></section>`;}
 let modifItems=[];
-function cargarModificacion(){
-  const cid=$('modClient').value;const d=$('modDesde').value;const h=$('modHasta').value;
-  if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');
-  const c=findClient(cid);
-  const r=calcularFactura(cid,d,h);
-  
-  const saved = data.invoices[cid] || null;
-  if(saved && saved.desde === d && saved.hasta === h){
-    modifItems = JSON.parse(JSON.stringify(saved.items));
-  } else {
-    modifItems = r.items.map((i,idx)=>({...i, _id: 'm'+idx, _hidden: false}));
-  }
-
-  $('modifContainer').innerHTML=`
-    <div class="factura-resumen">
-      <span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span>
-      <span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span>
-      <span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span>
-    </div>
-    <div class="notice info no-print" style="margin-bottom:14px;">👁️ Tocá el ojo para ocultar/mostrar en la factura final. Podés editar el monto y la fecha. Los cambios no afectan la caja real.</div>
-    <table class="table">
-      <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Monto</th><th class="no-print">Acción</th></tr></thead>
-      <tbody>${modifItems.map((i, idx)=>{
-        const isHid = i._hidden ? 'fila-eliminada' : '';
-        return `<tr class="${isHid}">
-          <td><input type="date" value="${i.date}" onchange="modifItems[${idx}].date=this.value"></td>
-          <td>${i.type==='deuda'?'Deuda':'Pago'}</td>
-          <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail=this.value"></td>
-          <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount=Number(this.value)"></td>
-          <td class="no-print"><button class="btn sm ${i._hidden?'orange':'ghost'}" onclick="toggleModifItem(${idx})">${i._hidden?'👁️ Mostrar':'👁️ Ocultar'}</button></td>
-        </tr>`;
-      }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
-    </table>
-    <div class="row" style="justify-content:space-between; margin-top:14px;" class="no-print">
-      <button class="btn green" onclick="guardarFacturaVisual('${cid}','${d}','${h}')">💾 Guardar Cambios Visuales</button>
-      <button class="btn primary" onclick="imprimirFacturaModificada('${cid}')">🖨️ Imprimir / PDF</button>
-    </div>`;
-  toast(`✅ ${modifItems.length} movimientos cargados`);
-}
-function toggleModifItem(idx){
-  if(modifItems[idx]) {
-    modifItems[idx]._hidden = !modifItems[idx]._hidden;
-    const tr = document.querySelectorAll('#modifContainer tbody tr')[idx];
-    if(tr) {
-      if(modifItems[idx]._hidden) tr.classList.add('fila-eliminada');
-      else tr.classList.remove('fila-eliminada');
-      const btn = tr.querySelector('button');
-      if(btn) {
-        btn.className = modifItems[idx]._hidden ? 'btn sm orange' : 'btn sm ghost';
-        btn.innerHTML = modifItems[idx]._hidden ? '👁️ Mostrar' : '👁️ Ocultar';
-      }
-    }
-  }
-}
-function guardarFacturaVisual(cid, desde, hasta){
-  if(!data.invoices) data.invoices = {};
-  data.invoices[cid] = { desde, hasta, items: modifItems, savedAt: Date.now() };
-  dbSet('invoices', data.invoices);
-  save();
-  toast('✅ Modificaciones guardadas (solo visual)');
-}
-function imprimirFacturaModificada(cid){
-  const c = findClient(cid);
-  if(!c) return;
-  
-  const itemsFiltrados = modifItems.filter(i => !i._hidden);
-  const tD = itemsFiltrados.filter(i => i.type === 'deuda').reduce((s,i)=>s+i.amount,0);
-  const tP = itemsFiltrados.filter(i => i.type === 'pago').reduce((s,i)=>s+i.amount,0);
-  const saldoPeriodo = tD - tP;
-  
-  const numFactura = Math.floor(Math.random() * 9000) + 1000;
-
-  const rows = itemsFiltrados.map(i => `
-    <tr>
-      <td>${fdate(i.date)}</td>
-      <td>${esc(i.detail)}</td>
-      <td>${i.type==='deuda'?'Deuda':'Pago'}</td>
-      <td style="text-align:right;color:${i.type==='deuda'?'#dc2626':'#10b981'};">
-        ${i.type==='deuda'?'':'-'}${money(i.amount)}
-      </td>
-    </tr>
-  `).join('');
-
-  const w = window.open('','_blank');
-  if(!w){toast('Permití ventanas emergentes');return;}
-  
-  w.document.write(`
-    <!doctype html><html><head><meta charset="utf-8"><title>Factura Visual</title>
-    <style>
-      body{font-family:'Inter',system-ui,sans-serif;padding:30px;color:#1e293b;background:#fff;}
-      .factura-box{border:2px solid #0f2352;border-radius:12px;padding:30px;max-width:800px;margin:auto;}
-      h1{font-family:Georgia,serif;font-size:24px;color:#0f2352;margin:0;}
-      .num{font-size:14px;color:#64748b;}
-      .head{display:flex;justify-content:space-between;border-bottom:2px solid #0f2352;padding-bottom:15px;margin-bottom:20px;}
-      .resumen{background:#f1f5f9;padding:15px;border-radius:10px;display:flex;justify-content:space-between;margin-bottom:20px;font-size:13px;}
-      table{width:100%;border-collapse:collapse;font-size:13px;}
-      th,td{border:1px solid #e2e8f0;padding:10px;text-align:left;}
-      th{background:#f8fafc;color:#0f2352;font-size:11px;text-transform:uppercase;}
-      .total{text-align:right;margin-top:20px;font-size:24px;font-weight:bold;font-family:Georgia,serif;color:#dc2626;}
-      .footer{text-align:center;margin-top:30px;font-size:11px;color:#94a3b8;}
-    </style></head><body>
-      <div class="factura-box">
-        <div class="head">
-          <div>
-            <h1>🧊 GLACIAR · M&C Hielo</h1>
-            <div style="font-size:12px;color:#64748b;margin-top:5px;">Comprobante No Fiscal</div>
-          </div>
-          <div class="num" style="text-align:right;">
-            <b>Factura N° ${numFactura}</b><br>
-            ${new Date().toLocaleDateString('es-AR')}
-          </div>
-        </div>
-        
-        <div style="margin-bottom:20px;">
-          <b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br>
-          <span style="color:#64748b;font-size:12px;">Período: ${fdate($('modDesde').value)} al ${fdate($('modHasta').value)}</span>
-        </div>
-
-        <div class="resumen">
-          <span>📊 Total: <b>${money(tD)}</b></span>
-          <span>💸 Pagos: <b style="color:#10b981;">${money(tP)}</b></span>
-          <span>🔴 Período: <b style="color:#dc2626;">${money(saldoPeriodo)}</b></span>
-        </div>
-
-        <table>
-          <thead><tr><th>Fecha</th><th>Detalle</th><th>Tipo</th><th style="text-align:right;">Monto</th></tr></thead>
-          <tbody>${rows || '<tr><td colspan="4" style="text-align:center;">Sin movimientos</td></tr>'}</tbody>
-        </table>
-
-        <div class="total">Total a pagar: ${money(saldoPeriodo)}</div>
-        <div class="footer">* No es fiscal · Generado el ${new Date().toLocaleString('es-AR')}</div>
-      </div>
-    </body></html>
-  `);
-  w.document.close();
-  setTimeout(()=>{try{w.print();}catch(e){}},500);
-}
+function cargarModificacion(){const cid=$('modClient').value;const d=$('modDesde').value;const h=$('modHasta').value;if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');const r=calcularFactura(cid,d,h);modifItems=r.items.map((i,idx)=>({...i,_id:'m'+idx}));$('modifContainer').innerHTML=`<div class="factura-resumen"><span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span><span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span><span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span></div><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead><tbody>${modifItems.map(i=>`<tr><td>${fdate(i.date)}</td><td>${i.type}</td><td>${money(i.amount)}</td><td>${esc(i.detail||'')}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody></table>`;toast(`✅ ${modifItems.length} movimientos`);}
 function shareAdmin(){const link=location.href.split('?')[0];return `<section class="panel" style="background:linear-gradient(135deg,#0a1128,#0f2352);color:white;border:0;"><h2 style="font-family:'Fraunces',serif;color:white;">📤 Compartir catálogo</h2><div class="field"><label style="color:rgba(255,255,255,.75);">🔗 Link base</label><input value="${esc(link)}" readonly style="background:rgba(255,255,255,.95);"></div></section>`;}
 function catalogAdmin(){
   const prods = data.products || [];
@@ -2119,14 +1896,13 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
             cambios = true;
           }
         });
-        const coleccionesAdmin = ['clients','orders','payments','expenses','leads','visits'];
+        const coleccionesAdmin = ['clients','orders','payments','expenses','leads','visits','enterpriseReports'];
         coleccionesAdmin.forEach(k=>{
           if(remoto[k]){ data[k] = mergeById(remoto[k], data[k]); cambios = true; }
         });
         if(remoto.products) { data.products = remoto.products; cambios = true; }
         if(remoto.settings) { data.settings = remoto.settings; cambios = true; }
         if(remoto.paymentSheet) { data.paymentSheet = remoto.paymentSheet; cambios = true; }
-        if(remoto.invoices) { data.invoices = remoto.invoices; cambios = true; }
         if(cambios){ try{ localStorage.setItem(KEY,JSON.stringify(data)); }catch(e){} try{ migrateData(); }catch(e){} }
         attachListener();
       } else {
@@ -2135,6 +1911,7 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
     }
   }catch(e){ console.warn('boot:',e); }
   
+  // CHEQUEO DE SEGURIDAD: Si Firebase no cargó, avisar en pantalla
   setTimeout(()=>{
     if(typeof firebase === 'undefined'){
       document.body.insertAdjacentHTML('afterbegin', `<div style="background:#dc2626;color:white;padding:16px;text-align:center;font-weight:bold;font-size:16px;position:sticky;top:0;z-index:9999;">⚠️ ERROR: El navegador está bloqueando la conexión con Firebase. Desactivá el bloqueador de anuncios o el escudo de Brave/Edge y recargá la página.</div>`);
