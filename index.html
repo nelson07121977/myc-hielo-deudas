@@ -1734,14 +1734,26 @@ function financeAdmin(){
 
     (data.driverSales||[]).forEach(s => {
       if(s.date < from) return;
+      
       if(s.payment === 'efectivo') ventasEf += Number(s.total||0);
       if(s.payment === 'transferencia') ventasTf += Number(s.total||0);
       if(s.payment === 'ctacte') ventasCc += Number(s.total||0);
+      
       if(s.payment === 'cobrocc') {
         const m = s.collectionMethod || 'efectivo';
         if(m === 'transferencia') cobrosTf += Number(s.collection||0); else cobrosEf += Number(s.collection||0);
       }
-      costoMercaderia += Number(s.cost||0);
+      
+      let costoEstaVenta = 0;
+      Object.entries(s.qty || {}).forEach(([k, q]) => {
+        if(q > 0) {
+          const pId = Object.keys(QTY_KEYS).find(key => QTY_KEYS[key] === k); 
+          const pFinal = data.products.find(p=>p.id === pId) || data.products.find(p=>p.name.includes(k));
+          const costoUnitario = pFinal ? Number(pFinal.cost) : 0;
+          costoEstaVenta += (Number(q) * costoUnitario);
+        }
+      });
+      costoMercaderia += costoEstaVenta;
     });
 
     (data.driverGastos||[]).forEach(g => { if(g.date >= from) gastosCamion += Number(g.amount||0); });
@@ -1819,9 +1831,31 @@ function adminFacturar(){
 let facturaActual=null;
 function calcularFactura(cid,desde,hasta){
   const items=[];
-  (data.driverSales||[]).forEach(s=>{if(String(s.clientId)!==String(cid))return;if(s.date<desde||s.date>hasta)return;if(s.payment==='ctacte')items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:'Venta',source:'chofer'});if(s.payment==='cobrocc')items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});});
-  (data.orders||[]).forEach(o=>{if(String(o.clientId)!==String(cid))return;if(o.date<desde||o.date>hasta)return;if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado')items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:o.note||'Deuda',source:'manual'});});
-  (data.payments||[]).forEach(p=>{if(String(p.clientId)!==String(cid))return;if(p.date<desde||p.date>hasta)return;items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});});
+  (data.driverSales||[]).forEach(s=>{
+    if(String(s.clientId)!==String(cid))return;
+    if(s.date<desde||s.date>hasta)return;
+    
+    if(s.payment==='ctacte'){
+      const detalle = Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ') || 'Venta';
+      items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:detalle,source:'chofer'});
+    }
+    if(s.payment==='cobrocc'){
+      items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});
+    }
+  });
+  (data.orders||[]).forEach(o=>{
+    if(String(o.clientId)!==String(cid))return;
+    if(o.date<desde||o.date>hasta)return;
+    if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado'){
+      const det = o.items && o.items.length ? o.items.map(i=>`${i.q}x ${i.name}`).join(' · ') : (o.note||'Deuda');
+      items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:det,source:'manual'});
+    }
+  });
+  (data.payments||[]).forEach(p=>{
+    if(String(p.clientId)!==String(cid))return;
+    if(p.date<desde||p.date>hasta)return;
+    items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});
+  });
   items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);
   const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);
@@ -1834,10 +1868,9 @@ function generarFactura(){
   const r=calcularFactura(cid,d,h);
   facturaActual={client:c,desde:d,hasta:h,...r};
   
-  // Número de factura aleatorio
   const numFactura = Math.floor(Math.random() * 9000) + 1000;
 
-  const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td>${i.type==='deuda'?'Red':'Red'}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';
+  const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td>${i.source}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';
   
   $('facturaContainer').innerHTML=`
   <div class="factura-box" id="facturaBox">
@@ -1853,6 +1886,7 @@ function generarFactura(){
       <span>📊 Total: <b>${money(r.totalDeudas)}</b></span>
       <span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span>
       <span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span>
+      <span>💰 Total: <b style="color:var(--red)">${money(r.saldoTotal)}</b></span>
     </div>
     <table class="table">
       <thead><tr><th>Fecha</th><th>Detalle</th><th>Origen</th><th style="text-align:right;">Monto</th></tr></thead>
@@ -1884,7 +1918,6 @@ function cargarModificacion(){
   const c=findClient(cid);
   const r=calcularFactura(cid,d,h);
   
-  // Si ya existe una modificación guardada, la usamos. Sino, la creamos.
   const saved = data.invoices[cid] || null;
   if(saved && saved.desde === d && saved.hasta === h){
     modifItems = JSON.parse(JSON.stringify(saved.items));
@@ -1921,7 +1954,6 @@ function cargarModificacion(){
 function toggleModifItem(idx){
   if(modifItems[idx]) {
     modifItems[idx]._hidden = !modifItems[idx]._hidden;
-    // Re-renderizar solo la tabla visualmente para no perder los inputs
     const tr = document.querySelectorAll('#modifContainer tbody tr')[idx];
     if(tr) {
       if(modifItems[idx]._hidden) tr.classList.add('fila-eliminada');
