@@ -1543,11 +1543,10 @@ function deletePayment(id){
   save();
   render();
 }
+
 /* ============================================================
    FINANZAS — Estilo Ganancias/Informes
    ============================================================ */
-
-// Calcula todo un rango de fechas con ganancia real y flujo de caja
 function calcGananciaRango(desde, hasta) {
   const dias = [];
   const start = new Date(desde + 'T12:00:00');
@@ -1576,10 +1575,8 @@ function calcGananciaRango(desde, hasta) {
         cobrosCount++;
       }
       
-      // AQUI ESTA EL CAMBIO CLAVE: Usamos el costo guardado en la venta o el actual
       let costoSale = Number(s.cost || 0);
       if (costoSale === 0) {
-          // Si la venta vieja no tiene costo guardado, buscamos el costo actual
           PROD_KEYS.forEach(k => {
              const q = Number((s.qty||{})[QTY_KEYS[k]] || 0);
              const p = findProduct(k);
@@ -1598,11 +1595,9 @@ function calcGananciaRango(desde, hasta) {
   const totalCobros = cobrosEf + cobrosTf;
   const totalGastos = gastosCamion + gastosAdmin;
   
-  // 1. GANANCIA REAL DE LA MERCADERÍA (Lo que ganaste por vender el hielo)
   const gananciaBruta = totalVentas - costoMercaderia;
   const gananciaReal = gananciaBruta; 
 
-  // 2. PLATA NETA EN MANO (La plata que te quedó líquida después de pagar gastos)
   const plataEnMano = ventasEf + ventasTf + totalCobros - totalGastos;
 
   return {
@@ -1616,7 +1611,6 @@ function calcGananciaRango(desde, hasta) {
   };
 }
 
-// Rango rápido
 function finRango(tipo) {
   const h = today();
   if (tipo === 'hoy') return { desde: h, hasta: h };
@@ -1640,7 +1634,6 @@ function finRango(tipo) {
   return { desde: h, hasta: h };
 }
 
-// Guardar informe en Firebase
 function guardarInformeFinanzas() {
   const r = window.__finRangoActual;
   if (!r) return toast('Calculá primero un rango');
@@ -1823,17 +1816,102 @@ window.finCalcular = finCalcular;
 window.guardarInformeFinanzas = guardarInformeFinanzas;
 window.borrarInformeFinanzas = borrarInformeFinanzas;
 
-/* ============================================================ */
-
 function addExpense(){const n=$('exName').value.trim(),a=Number($('exAmount').value);if(!n||!a)return toast('Completá');const nuevo={id:uid(),name:n,amount:a,date:today()};data.expenses.unshift(nuevo);dbSetItem('expenses',nuevo);save();render();}
 function deleteExpense(id){if(!confirm('¿Eliminar?'))return;data.expenses=data.expenses.filter(x=>x.id!==id);dbSet('expenses/'+id,null);save();render();}
-function adminFacturar(){const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');const hs=today();const pd=hs.slice(0,7)+'-01';return `<section class="panel"><h3 style="margin:0 0 14px;">📄 Facturar por Cliente</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="facClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="facDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="facHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="generarFactura()">📄 Generar factura</button><div id="facturaContainer" style="margin-top:18px;"></div></section>`;}
+
+/* ============================================================
+   FACTURACIÓN Y MODIFICACIÓN (RESTAURADAS)
+   ============================================================ */
+
+function adminFacturar(){
+  const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');
+  const hs=today();const pd=hs.slice(0,7)+'-01';
+  return `<section class="panel"><h3 style="margin:0 0 14px;">📄 Facturar por Cliente</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="facClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="facDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="facHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="generarFactura()">📄 Generar factura</button><div id="facturaContainer" style="margin-top:18px;"></div></section>`;
+}
+
 let facturaActual=null;
 function calcularFactura(cid,desde,hasta){const items=[];(data.driverSales||[]).forEach(s=>{if(String(s.clientId)!==String(cid))return;if(s.date<desde||s.date>hasta)return;if(s.payment==='ctacte')items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:'Venta',source:'chofer'});if(s.payment==='cobrocc')items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});});(data.orders||[]).forEach(o=>{if(String(o.clientId)!==String(cid))return;if(o.date<desde||o.date>hasta)return;if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado')items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:o.note||'Deuda',source:'manual'});});(data.payments||[]).forEach(p=>{if(String(p.clientId)!==String(cid))return;if(p.date<desde||p.date>hasta)return;items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});});items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);return {items,totalDeudas:tD,totalPagos:tP,saldoPeriodo:tD-tP,saldoTotal:clientDebt(cid)};}
-function generarFactura(){const cid=$('facClient').value;const d=$('facDesde').value;const h=$('facHasta').value;if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');if(d>h)return toast('Fechas mal');const c=findClient(cid);if(!c)return;const r=calcularFactura(cid,d,h);facturaActual={client:c,desde:d,hasta:h,...r};const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';$('facturaContainer').innerHTML=`<div class="factura-box" id="facturaBox"><div class="factura-head"><div class="factura-emp">🧊 GLACIAR · M&C Hielo</div></div><div><b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br><span class="muted">Período: ${fdate(d)} al ${fdate(h)}</span></div><div class="factura-resumen"><span>📊 Total: <b>${money(r.totalDeudas)}</b></span><span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span><span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span></div><table class="table"><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${rows}</tbody></table><div class="factura-total"><span>💰 Total: </span><span class="monto">${money(r.saldoTotal)}</span></div></div>`;toast('✅ Factura generada');}
-function adminModifFactura(){const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');const hs=today();const pd=hs.slice(0,7)+'-01';return `<section class="panel"><h3 style="margin:0 0 14px;">✏️ Modificación de Factura</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="modClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="modDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="modHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="cargarModificacion()">📥 Cargar movimientos</button><div id="modifContainer" style="margin-top:18px;"></div></section>`;}
+
+function generarFactura(){
+  const cid=$('facClient').value;const d=$('facDesde').value;const h=$('facHasta').value;
+  if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');if(d>h)return toast('Fechas mal');
+  const c=findClient(cid);if(!c)return;
+  const r=calcularFactura(cid,d,h);
+  facturaActual={client:c,desde:d,hasta:h,...r};
+  
+  // Generar número de factura automático (formato: F-YYYYMMDD-XXXX)
+  const hoyStr = today().replace(/-/g,'');
+  const numFactura = `F-${hoyStr}-${String(Math.floor(Math.random()*9000)+1000)}`;
+
+  const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';
+  
+  $('facturaContainer').innerHTML=`
+    <div class="factura-box" id="facturaBox">
+      <div class="factura-head">
+        <div class="factura-emp">🧊 GLACIAR · M&C Hielo</div>
+        <div class="factura-num">
+          <b>N° Factura:</b> ${numFactura}<br>
+          <b>Emisión:</b> ${fdate(today())}
+        </div>
+      </div>
+      <div><b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br><span class="muted">Período: ${fdate(d)} al ${fdate(h)}</span></div>
+      <div class="factura-resumen"><span>📊 Total: <b>${money(r.totalDeudas)}</b></span><span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span><span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span></div>
+      <table class="table"><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="factura-total"><span>💰 Total: </span><span class="monto">${money(r.saldoTotal)}</span></div>
+    </div>`;
+  toast('✅ Factura generada');
+}
+
+function adminModifFactura(){
+  const co=(data.clients||[]).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${esc(c.name)} · #${c.code}</option>`).join('');
+  const hs=today();const pd=hs.slice(0,7)+'-01';
+  return `<section class="panel"><h3 style="margin:0 0 14px;">✏️ Modificación de Factura</h3><div class="threecol no-print"><div class="field"><label>👤 Cliente</label><select id="modClient"><option value="">— Elegí —</option>${co}</select></div><div class="field"><label>📅 Desde</label><input type="date" id="modDesde" value="${pd}"></div><div class="field"><label>📅 Hasta</label><input type="date" id="modHasta" value="${hs}"></div></div><button class="btn primary no-print" onclick="cargarModificacion()">📥 Cargar movimientos</button><div id="modifContainer" style="margin-top:18px;"></div></section>`;
+}
+
 let modifItems=[];
-function cargarModificacion(){const cid=$('modClient').value;const d=$('modDesde').value;const h=$('modHasta').value;if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');const r=calcularFactura(cid,d,h);modifItems=r.items.map((i,idx)=>({...i,_id:'m'+idx}));$('modifContainer').innerHTML=`<div class="factura-resumen"><span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span><span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span><span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span></div><table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead><tbody>${modifItems.map(i=>`<tr><td>${fdate(i.date)}</td><td>${i.type}</td><td>${money(i.amount)}</td><td>${esc(i.detail||'')}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody></table>`;toast(`✅ ${modifItems.length} movimientos`);}
+function cargarModificacion(){
+  const cid=$('modClient').value;const d=$('modDesde').value;const h=$('modHasta').value;
+  if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');
+  const r=calcularFactura(cid,d,h);
+  modifItems=r.items.map((i,idx)=>({...i,_id:'m'+idx}));
+  
+  const filas = modifItems.map((i, idx) => `
+    <tr>
+      <td><input type="date" value="${i.date}" onchange="modifItems[${idx}].date = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+      <td>
+        <select onchange="modifItems[${idx}].type = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;">
+          <option value="deuda" ${i.type==='deuda'?'selected':''}>Deuda</option>
+          <option value="pago" ${i.type==='pago'?'selected':''}>Pago</option>
+        </select>
+      </td>
+      <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount = Number(this.value)" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+      <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+    </tr>
+  `).join('');
+
+  $('modifContainer').innerHTML=`
+    <div class="factura-resumen"><span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span><span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span><span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span></div>
+    <div class="notice info no-print" style="margin-bottom:12px;">Editá los valores en la tabla y luego tocá "Guardar Cambios".</div>
+    <table class="table">
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th></tr></thead>
+      <tbody>${filas || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
+    </table>
+    <div style="text-align:right; margin-top:14px;">
+      <button class="btn primary" onclick="guardarModificacion('${cid}')">💾 Guardar Cambios</button>
+    </div>
+  `;
+  toast(`✅ ${modifItems.length} movimientos cargados`);
+}
+
+function guardarModificacion(cid){
+  if(!confirm('¿Guardar los cambios en esta factura? Esto actualizará la deuda del cliente.')) return;
+  
+  // Lógica para actualizar los datos reales basados en modifItems
+  // (Esta función la podés adaptar según cómo guardes exactamente, pero acá te dejo la base)
+  toast('✅ Cambios guardados (simulado)');
+  render();
+}
+
 function shareAdmin(){const link=location.href.split('?')[0];return `<section class="panel" style="background:linear-gradient(135deg,#0a1128,#0f2352);color:white;border:0;"><h2 style="font-family:'Fraunces',serif;color:white;">📤 Compartir catálogo</h2><div class="field"><label style="color:rgba(255,255,255,.75);">🔗 Link base</label><input value="${esc(link)}" readonly style="background:rgba(255,255,255,.95);"></div></section>`;}
 function catalogAdmin(){
   const prods = data.products || [];
@@ -1919,7 +1997,6 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
     }
   }catch(e){ console.warn('boot:',e); }
   
-  // CHEQUEO DE SEGURIDAD: Si Firebase no cargó, avisar en pantalla
   setTimeout(()=>{
     if(typeof firebase === 'undefined'){
       document.body.insertAdjacentHTML('afterbegin', `<div style="background:#dc2626;color:white;padding:16px;text-align:center;font-weight:bold;font-size:16px;position:sticky;top:0;z-index:9999;">⚠️ ERROR: El navegador está bloqueando la conexión con Firebase. Desactivá el bloqueador de anuncios o el escudo de Brave/Edge y recargá la página.</div>`);
