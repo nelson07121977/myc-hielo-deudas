@@ -1877,28 +1877,60 @@ function cargarModificacion(){
   const cid=$('modClient').value;const d=$('modDesde').value;const h=$('modHasta').value;
   if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');
   const r=calcularFactura(cid,d,h);
-  modifItems=r.items.map((i,idx)=>({...i,_id:'m'+idx}));
   
-  const filas = modifItems.map((i, idx) => `
-    <tr>
+  // Agregamos la propiedad 'oculto' por defecto en false
+  modifItems=r.items.map((i,idx)=>({...i,_id:'m'+idx, oculto: false}));
+  
+  dibujarTablaModif(cid);
+  toast(`✅ ${modifItems.length} movimientos cargados`);
+}
+
+// Nueva función para dibujar la tabla y recalcular totales en tiempo real
+function dibujarTablaModif(cid) {
+  let totalDeudas = 0, totalPagos = 0;
+  
+  const filas = modifItems.map((i, idx) => {
+    // Si no está oculto, lo sumamos a los totales
+    if (!i.oculto) {
+      if (i.type === 'deuda') totalDeudas += Number(i.amount);
+      else totalPagos += Number(i.amount);
+    }
+    
+    const clsFila = i.oculto ? 'style="opacity:0.4; background:#f1f5f9;"' : '';
+    const iconoOjo = i.oculto ? '👁️‍🗨️' : '👁️'; // Ojo tachado si está oculto
+    
+    return `
+    <tr ${clsFila}>
       <td><input type="date" value="${i.date}" onchange="modifItems[${idx}].date = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
       <td>
-        <select onchange="modifItems[${idx}].type = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;">
+        <select onchange="modifItems[${idx}].type = this.value; dibujarTablaModif('${cid}')" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;">
           <option value="deuda" ${i.type==='deuda'?'selected':''}>Deuda</option>
           <option value="pago" ${i.type==='pago'?'selected':''}>Pago</option>
         </select>
       </td>
-      <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount = Number(this.value)" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+      <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount = Number(this.value); dibujarTablaModif('${cid}')" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
       <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
-      <td class="no-print"><button class="btn xs danger" onclick="borrarModifItem(${idx})">🗑</button></td>
-    </tr>
-  `).join('');
+      <td class="no-print" style="white-space:nowrap;">
+        <button class="btn xs" onclick="modifItems[${idx}].oculto = !modifItems[${idx}].oculto; dibujarTablaModif('${cid}')" title="Ocultar/Mostrar">${iconoOjo}</button>
+        <button class="btn xs danger" onclick="borrarModifItem(${idx}, '${cid}')" title="Eliminar">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const saldo = totalDeudas - totalPagos;
 
   $('modifContainer').innerHTML=`
-    <div class="factura-resumen"><span><b>🔴 Deudas:</b> ${money(r.totalDeudas)}</span><span><b>🟢 Pagos:</b> ${money(r.totalPagos)}</span><span><b>📊 Saldo:</b> ${money(r.saldoPeriodo)}</span></div>
-    <div class="notice info no-print" style="margin-bottom:12px;">Editá los valores en la tabla y luego tocá "Generar Factura Modificada".</div>
+    <div class="row space no-print" style="margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+      <button class="btn sm green" onclick="agregarItemModif('${cid}')">➕ Agregar Artículo / Deuda</button>
+    </div>
+    <div class="factura-resumen">
+      <span><b>🔴 Deudas:</b> ${money(totalDeudas)}</span>
+      <span><b>🟢 Pagos:</b> ${money(totalPagos)}</span>
+      <span><b>📊 Saldo:</b> ${money(saldo)}</span>
+    </div>
+    <div class="notice info no-print" style="margin-bottom:12px;">Editá los valores, ocultá lo que no quieras que salga (👁️), o agregá un artículo nuevo. Luego tocá "Generar Factura Modificada".</div>
     <table class="table">
-      <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th><th class="no-print"></th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead>
       <tbody>${filas || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
     </table>
     <div style="text-align:right; margin-top:14px;">
@@ -1906,32 +1938,28 @@ function cargarModificacion(){
     </div>
     <div id="facturaModifContainer" style="margin-top:20px;"></div>
   `;
-  toast(`✅ ${modifItems.length} movimientos cargados`);
 }
 
-function borrarModifItem(idx) {
+// Función para borrar un ítem
+function borrarModifItem(idx, cid) {
   if(!confirm('¿Quitar este movimiento de la factura modificada?')) return;
   modifItems.splice(idx, 1);
-  // Volver a dibujar
-  const cid=$('modClient').value;
-  const d=$('modDesde').value;
-  const h=$('modHasta').value;
-  const r=calcularFactura(cid,d,h); // recalcular totales base
-  const filas = modifItems.map((i, idx) => `
-    <tr>
-      <td><input type="date" value="${i.date}" onchange="modifItems[${idx}].date = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
-      <td>
-        <select onchange="modifItems[${idx}].type = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;">
-          <option value="deuda" ${i.type==='deuda'?'selected':''}>Deuda</option>
-          <option value="pago" ${i.type==='pago'?'selected':''}>Pago</option>
-        </select>
-      </td>
-      <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount = Number(this.value)" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
-      <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
-      <td class="no-print"><button class="btn xs danger" onclick="borrarModifItem(${idx})">🗑</button></td>
-    </tr>
-  `).join('');
-  document.querySelector('#modifContainer table tbody').innerHTML = filas || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>';
+  dibujarTablaModif(cid);
+}
+
+// Función para agregar un ítem nuevo
+function agregarItemModif(cid) {
+  const hoy = today();
+  modifItems.push({
+    _id: 'nuevo_' + uid(),
+    date: hoy,
+    type: 'deuda',
+    amount: 0,
+    detail: 'Artículo / Deuda manual',
+    oculto: false
+  });
+  dibujarTablaModif(cid);
+  toast('➕ Artículo agregado. Completá el monto.');
 }
 
 function generarFacturaModificada(cid) {
@@ -1942,13 +1970,18 @@ function generarFacturaModificada(cid) {
   const numFactura = `F-MOD-${hoyStr}-${String(Math.floor(Math.random()*9000)+1000)}`;
   
   let totalDeudas = 0, totalPagos = 0;
-  modifItems.forEach(i => {
+  
+  // Solo procesamos los que NO están ocultos
+  const itemsVisibles = modifItems.filter(i => !i.oculto);
+  
+  itemsVisibles.forEach(i => {
     if (i.type === 'deuda') totalDeudas += Number(i.amount);
     else totalPagos += Number(i.amount);
   });
+  
   const saldo = totalDeudas - totalPagos;
 
-  const rows = modifItems.map(i => `<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join('');
+  const rows = itemsVisibles.map(i => `<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join('');
 
   $('facturaModifContainer').innerHTML = `
     <div class="factura-box" id="facturaModifBox">
