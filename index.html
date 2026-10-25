@@ -1820,7 +1820,7 @@ function addExpense(){const n=$('exName').value.trim(),a=Number($('exAmount').va
 function deleteExpense(id){if(!confirm('¿Eliminar?'))return;data.expenses=data.expenses.filter(x=>x.id!==id);dbSet('expenses/'+id,null);save();render();}
 
 /* ============================================================
-   FACTURACIÓN Y MODIFICACIÓN (RESTAURADAS)
+   FACTURACIÓN Y MODIFICACIÓN
    ============================================================ */
 
 function adminFacturar(){
@@ -1830,51 +1830,135 @@ function adminFacturar(){
 }
 
 let facturaActual=null;
+
+/* ── calcularFactura: devuelve items con rows[] (cant, nombre, precio, total) ── */
 function calcularFactura(cid,desde,hasta){
-  const items=[];
+  const items = [];
+
+  // ── Ventas de choferes ──
   (data.driverSales||[]).forEach(s=>{
-    if(String(s.clientId)!==String(cid))return;
-    if(s.date<desde||s.date>hasta)return;
-    
-    // ARMAMOS EL DETALLE DE BOLSAS
-    let detalle = Object.entries(s.qty||{}).filter(([,q])=>q>0).map(([k,q])=>`${q}× ${k}kg`).join(' + ');
-    if(s.payment==='ctacte') items.push({date:s.date,type:'deuda',amount:Number(s.total||0),detail:detalle||'Venta',source:'chofer'});
-    if(s.payment==='cobrocc') items.push({date:s.date,type:'pago',amount:Number(s.collection||0),detail:'Cobro',source:'chofer'});
-  });
-  
-  (data.orders||[]).forEach(o=>{
-    if(String(o.clientId)!==String(cid))return;
-    if(o.date<desde||o.date>hasta)return;
-    if(o.payment==='Cuenta corriente'&&o.status!=='Cancelado') {
-      const det = (o.items||[]).map(i=>`${i.q}x ${i.name}`).join(' + ');
-      items.push({date:o.date,type:'deuda',amount:Number(o.total||0),detail:det||o.note||'Deuda',source:'manual'});
+    if(String(s.clientId)!==String(cid)) return;
+    if(s.date<desde || s.date>hasta) return;
+
+    const rows = [];
+    const qty = s.qty || {};
+    const prices = s.prices || {};
+    PROD_KEYS.forEach(k=>{
+      const q = Number(qty[QTY_KEYS[k]]||0);
+      if(q <= 0) return;
+      const unitPrice = Number(prices[k]||0);
+      const prod = findProduct(k);
+      rows.push({
+        q: q,
+        name: prod ? prod.name : ('Hielo '+PROD_LABELS[k]),
+        price: unitPrice,
+        total: q * unitPrice
+      });
+    });
+
+    const detalleTxt = rows.map(r=>`${r.q}× ${r.name}`).join(' + ') || 'Venta';
+
+    if(s.payment==='ctacte'){
+      items.push({date:s.date, type:'deuda', amount:Number(s.total||0), detail:detalleTxt, rows, source:'chofer'});
+    }
+    if(s.payment==='cobrocc'){
+      items.push({date:s.date, type:'pago', amount:Number(s.collection||0), detail:'Cobro', rows:[], source:'chofer'});
     }
   });
 
-  (data.payments||[]).forEach(p=>{
-    if(String(p.clientId)!==String(cid))return;
-    if(p.date<desde||p.date>hasta)return;
-    items.push({date:p.date,type:'pago',amount:Number(p.amount||0),detail:p.note||'Pago',source:'manual'});
+  // ── Deudas manuales (orders) ──
+  (data.orders||[]).forEach(o=>{
+    if(String(o.clientId)!==String(cid)) return;
+    if(o.date<desde || o.date>hasta) return;
+    if(o.payment==='Cuenta corriente' && o.status!=='Cancelado'){
+      const rows = (o.items||[]).map(i=>({
+        q: Number(i.q||i.qty||1),
+        name: i.name || 'Deuda',
+        price: Number(i.price||0),
+        total: Number(i.price||0) * Number(i.q||i.qty||1)
+      }));
+      const det = rows.length
+        ? rows.map(r=>`${r.q}× ${r.name}`).join(' + ')
+        : (o.note || 'Deuda manual');
+      items.push({date:o.date, type:'deuda', amount:Number(o.total||0), detail:det, rows, source:'manual'});
+    }
   });
-  
+
+  // ── Pagos manuales ──
+  (data.payments||[]).forEach(p=>{
+    if(String(p.clientId)!==String(cid)) return;
+    if(p.date<desde || p.date>hasta) return;
+    items.push({date:p.date, type:'pago', amount:Number(p.amount||0), detail:p.note||'Pago', rows:[], source:'manual'});
+  });
+
   items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const tD=items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);
-  const tP=items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);
-  return {items,totalDeudas:tD,totalPagos:tP,saldoPeriodo:tD-tP,saldoTotal:clientDebt(cid)};
+
+  const tD = items.filter(i=>i.type==='deuda').reduce((s,i)=>s+i.amount,0);
+  const tP = items.filter(i=>i.type==='pago').reduce((s,i)=>s+i.amount,0);
+  return {items, totalDeudas:tD, totalPagos:tP, saldoPeriodo:tD-tP, saldoTotal:clientDebt(cid)};
 }
 
+/* ── generarFactura: tabla con CANT. | PRODUCTO/DETALLE | PRECIO UNIT. | TOTAL ── */
 function generarFactura(){
-  const cid=$('facClient').value;const d=$('facDesde').value;const h=$('facHasta').value;
-  if(!cid)return toast('Elegí cliente');if(!d||!h)return toast('Fechas');if(d>h)return toast('Fechas mal');
-  const c=findClient(cid);if(!c)return;
+  const cid=$('facClient').value;
+  const d=$('facDesde').value;
+  const h=$('facHasta').value;
+  if(!cid) return toast('Elegí cliente');
+  if(!d||!h) return toast('Fechas');
+  if(d>h) return toast('Fechas mal');
+  const c=findClient(cid); if(!c) return;
+
   const r=calcularFactura(cid,d,h);
   facturaActual={client:c,desde:d,hasta:h,...r};
-  
+
   const hoyStr = today().replace(/-/g,'');
   const numFactura = `F-${hoyStr}-${String(Math.floor(Math.random()*9000)+1000)}`;
 
-  const rows=r.items.length?r.items.map(i=>`<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';
-  
+  // Construir filas: una por producto, y una por pago
+  const filas = [];
+  r.items.forEach(i=>{
+    if(i.type==='deuda' && i.rows && i.rows.length){
+      i.rows.forEach(row=>{
+        filas.push({
+          cant: row.q,
+          producto: row.name,
+          precio: row.price,
+          total: row.total,
+          fecha: i.date,
+          tipo: 'deuda'
+        });
+      });
+    } else if(i.type==='deuda'){
+      filas.push({
+        cant: 1,
+        producto: i.detail || 'Deuda',
+        precio: i.amount,
+        total: i.amount,
+        fecha: i.date,
+        tipo: 'deuda'
+      });
+    } else {
+      filas.push({
+        cant: 1,
+        producto: i.detail || 'Pago',
+        precio: i.amount,
+        total: i.amount,
+        fecha: i.date,
+        tipo: 'pago'
+      });
+    }
+  });
+
+  const rowsHtml = filas.length ? filas.map(f=>`
+    <tr>
+      <td style="text-align:center;font-weight:700;">${f.cant}</td>
+      <td>${esc(f.producto)}</td>
+      <td style="text-align:right;">${f.tipo==='deuda'? money(f.precio) : '—'}</td>
+      <td style="text-align:right;font-weight:700;color:${f.tipo==='deuda'?'var(--ink)':'var(--green)'};">
+        ${f.tipo==='deuda' ? money(f.total) : '− '+money(f.total)}
+      </td>
+    </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted);">Sin movimientos</td></tr>';
+
   $('facturaContainer').innerHTML=`
     <div class="factura-box" id="facturaBox">
       <div class="factura-head">
@@ -1884,10 +1968,29 @@ function generarFactura(){
           <b>Emisión:</b> ${fdate(today())}
         </div>
       </div>
-      <div><b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br><span class="muted">Período: ${fdate(d)} al ${fdate(h)}</span></div>
-      <div class="factura-resumen"><span>📊 Total: <b>${money(r.totalDeudas)}</b></span><span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span><span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span></div>
-      <table class="table"><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="factura-total"><span>💰 Total: </span><span class="monto">${money(r.saldoTotal)}</span></div>
+      <div><b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}<br>
+        <span class="muted">Período: ${fdate(d)} al ${fdate(h)}</span>
+      </div>
+      <div class="factura-resumen">
+        <span>📊 Total deudas: <b>${money(r.totalDeudas)}</b></span>
+        <span>💸 Pagos: <b style="color:var(--green)">${money(r.totalPagos)}</b></span>
+        <span>🔴 Período: <b style="color:var(--red)">${money(r.saldoPeriodo)}</b></span>
+      </div>
+      <table class="table" style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th style="width:70px;text-align:center;">CANT.</th>
+            <th>PRODUCTO / DETALLE</th>
+            <th style="width:140px;text-align:right;">PRECIO UNIT.</th>
+            <th style="width:140px;text-align:right;">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <div class="factura-total">
+        <span>💰 TOTAL A PAGAR: </span>
+        <span class="monto">${money(r.saldoTotal)}</span>
+      </div>
     </div>
     <div class="row no-print" style="justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap;">
       <button class="btn sm" onclick="copiarFactura()">📋 Copiar</button>
@@ -1915,30 +2018,62 @@ function cargarModificacion(){
   toast(`✅ ${modifItems.length} movimientos cargados`);
 }
 
+/* ── dibujarTablaModif: 4 columnas + Fecha + Tipo + Acciones ── */
 function dibujarTablaModif(cid) {
   let totalDeudas = 0, totalPagos = 0;
-  
+
   const filas = modifItems.map((i, idx) => {
-    // AQUI EL CAMBIO: Sumamos siempre, esté oculto o no.
+    // Totales SIEMPRE con todos (ocultos o no)
     if (i.type === 'deuda') totalDeudas += Number(i.amount);
     else totalPagos += Number(i.amount);
-    
-    const clsFila = i.oculto ? 'style="opacity:0.4; background:#f1f5f9;"' : '';
+
+    const clsFila = i.oculto ? 'style="opacity:0.45;background:#f1f5f9;"' : '';
     const iconoOjo = i.oculto ? '👁️‍🗨️' : '👁️';
-    
+
+    const tieneRows = i.rows && i.rows.length > 0;
+    const first = tieneRows ? i.rows[0] : null;
+
+    const cant = tieneRows ? (first.q || 1) : 1;
+    const prodName = tieneRows ? (first.name || i.detail || '') : (i.detail || '');
+    const unitPrice = tieneRows ? (first.price || 0) : Number(i.amount || 0);
+    const rowTotal = tieneRows ? (first.total || (cant * unitPrice)) : Number(i.amount || 0);
+
     return `
     <tr ${clsFila}>
-      <td><input type="date" value="${i.date}" onchange="modifItems[${idx}].date = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
       <td>
-        <select onchange="modifItems[${idx}].type = this.value; dibujarTablaModif('${cid}')" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;">
+        <input type="date" value="${i.date}"
+          onchange="modifItems[${idx}].date = this.value"
+          style="padding:4px;border-radius:6px;border:1px solid #ccc;width:100%;">
+      </td>
+      <td>
+        <select onchange="modifItems[${idx}].type = this.value; dibujarTablaModif('${cid}')"
+          style="padding:4px;border-radius:6px;border:1px solid #ccc;width:100%;">
           <option value="deuda" ${i.type==='deuda'?'selected':''}>Deuda</option>
           <option value="pago" ${i.type==='pago'?'selected':''}>Pago</option>
         </select>
       </td>
-      <td><input type="number" value="${i.amount}" onchange="modifItems[${idx}].amount = Number(this.value); dibujarTablaModif('${cid}')" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
-      <td><input type="text" value="${esc(i.detail||'')}" onchange="modifItems[${idx}].detail = this.value" style="padding:4px; border-radius:6px; border:1px solid #ccc; width:100%;"></td>
+      <td>
+        <input type="number" min="1" value="${cant}"
+          onchange="modifSetCant(${idx}, this.value, '${cid}')"
+          style="padding:4px;border-radius:6px;border:1px solid #ccc;width:70px;text-align:center;">
+      </td>
+      <td>
+        <input type="text" value="${esc(prodName)}"
+          onchange="modifSetName(${idx}, this.value, '${cid}')"
+          style="padding:4px;border-radius:6px;border:1px solid #ccc;width:100%;">
+      </td>
+      <td>
+        <input type="number" min="0" value="${unitPrice}"
+          ${i.type==='pago'?'disabled title="Los pagos no tienen precio unitario"':''}
+          onchange="modifSetPrice(${idx}, this.value, '${cid}')"
+          style="padding:4px;border-radius:6px;border:1px solid #ccc;width:110px;text-align:right;${i.type==='pago'?'background:#f1f5f9;':''}">
+      </td>
+      <td style="text-align:right;font-weight:900;color:${i.type==='deuda'?'var(--ink)':'var(--green)'};">
+        ${i.type==='deuda' ? money(rowTotal) : '− '+money(rowTotal)}
+      </td>
       <td class="no-print" style="white-space:nowrap;">
-        <button class="btn xs" onclick="modifItems[${idx}].oculto = !modifItems[${idx}].oculto; dibujarTablaModif('${cid}')" title="Ocultar/Mostrar en la factura">${iconoOjo}</button>
+        <button class="btn xs" onclick="modifItems[${idx}].oculto = !modifItems[${idx}].oculto; dibujarTablaModif('${cid}')"
+          title="Ocultar/Mostrar en la factura">${iconoOjo}</button>
         <button class="btn xs danger" onclick="borrarModifItem(${idx}, '${cid}')" title="Eliminar">🗑</button>
       </td>
     </tr>`;
@@ -1946,8 +2081,8 @@ function dibujarTablaModif(cid) {
 
   const saldo = totalDeudas - totalPagos;
 
-  $('modifContainer').innerHTML=`
-    <div class="row space no-print" style="margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+  $('modifContainer').innerHTML = `
+    <div class="row space no-print" style="margin-bottom:14px;flex-wrap:wrap;gap:8px;">
       <button class="btn sm green" onclick="agregarItemModif('${cid}')">➕ Agregar Artículo / Deuda</button>
     </div>
     <div class="factura-resumen">
@@ -1955,16 +2090,69 @@ function dibujarTablaModif(cid) {
       <span><b>🟢 Pagos:</b> ${money(totalPagos)}</span>
       <span><b>📊 Saldo:</b> ${money(saldo)}</span>
     </div>
-    <div class="notice info no-print" style="margin-bottom:12px;">Editá los valores. Usá el 👁️ para ocultar una fila en la factura final (el total no cambia), o 🗑 para eliminarla definitivamente (el total sí cambia).</div>
+    <div class="notice info no-print" style="margin-bottom:12px;">
+      Editá los valores. Usá el 👁️ para ocultar una fila en la factura final (el total <b>no</b> cambia), o 🗑 para eliminarla definitivamente (el total <b>sí</b> cambia).
+    </div>
+    <div style="overflow-x:auto;">
     <table class="table">
-      <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Detalle</th><th class="no-print">Acciones</th></tr></thead>
-      <tbody>${filas || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
+      <thead>
+        <tr>
+          <th style="width:130px;">Fecha</th>
+          <th style="width:100px;">Tipo</th>
+          <th style="width:80px;text-align:center;">Cant.</th>
+          <th>Producto / Detalle</th>
+          <th style="width:120px;text-align:right;">Precio Unit.</th>
+          <th style="width:120px;text-align:right;">Total</th>
+          <th class="no-print">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>${filas || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Sin movimientos</td></tr>'}</tbody>
     </table>
-    <div style="text-align:right; margin-top:14px;">
+    </div>
+    <div style="text-align:right;margin-top:14px;">
       <button class="btn primary" onclick="generarFacturaModificada('${cid}')">📄 Generar Factura Modificada</button>
     </div>
     <div id="facturaModifContainer" style="margin-top:20px;"></div>
   `;
+}
+
+/* ── Helpers de edición de filas ── */
+function modifSetCant(idx, value, cid) {
+  const item = modifItems[idx]; if (!item) return;
+  const cant = Math.max(1, Number(value) || 1);
+  if (item.rows && item.rows.length) {
+    item.rows[0].q = cant;
+    item.rows[0].total = item.rows[0].price * cant;
+    item.amount = item.rows[0].total;
+  } else {
+    const unit = Number(item.amount) || 0;
+    item.amount = unit * cant;
+    item.rows = [{ q: cant, name: item.detail, price: unit, total: unit * cant }];
+  }
+  dibujarTablaModif(cid);
+}
+
+function modifSetName(idx, value, cid) {
+  const item = modifItems[idx]; if (!item) return;
+  item.detail = value;
+  if (item.rows && item.rows.length) item.rows[0].name = value;
+  else item.rows = [{ q: 1, name: value, price: Number(item.amount)||0, total: Number(item.amount)||0 }];
+  dibujarTablaModif(cid);
+}
+
+function modifSetPrice(idx, value, cid) {
+  const item = modifItems[idx]; if (!item) return;
+  const price = Math.max(0, Number(value) || 0);
+  if (item.rows && item.rows.length) {
+    const cant = item.rows[0].q || 1;
+    item.rows[0].price = price;
+    item.rows[0].total = price * cant;
+    item.amount = item.rows[0].total;
+  } else {
+    item.amount = price;
+    item.rows = [{ q: 1, name: item.detail, price: price, total: price }];
+  }
+  dibujarTablaModif(cid);
 }
 
 function borrarModifItem(idx, cid) {
@@ -1975,7 +2163,6 @@ function borrarModifItem(idx, cid) {
 
 function agregarItemModif(cid) {
   const hoy = today();
-  // Agregar un select de productos o cantidad
   const prodOpts = Object.entries(PROD_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   
   modal(`<h2>➕ Agregar Artículo / Deuda</h2>
@@ -2015,19 +2202,47 @@ function calcNewItemTotal() {
   }
 }
 
+/* ── saveNewItemModif: guarda rows[] con cantidad, nombre, precio ── */
 function saveNewItemModif(cid) {
   const tipo = $('newItemType').value;
-  const detail = $('newItemDetail').value.trim() || (tipo === 'deuda' ? 'Deuda manual' : 'Pago manual');
+  const detailInput = $('newItemDetail').value.trim();
   const amount = Number($('newItemAmount').value) || 0;
-  
-  if(amount <= 0) return toast('Ingresá un monto mayor a 0');
 
-  // Si eligió un producto, agregamos el detalle automático
-  let finalDetail = detail;
-  const prodKey = $('newItemProd').value;
-  if(prodKey && tipo === 'deuda') {
-    const qty = Number($('newItemQty').value) || 1;
-    finalDetail = `${qty}x ${PROD_LABELS[prodKey]} - ${detail}`;
+  if (amount <= 0) return toast('Ingresá un monto mayor a 0');
+
+  const prodKey = $('newItemProd') ? $('newItemProd').value : '';
+  const qty = Number($('newItemQty') ? $('newItemQty').value : 1) || 1;
+
+  let finalDetail = detailInput || (tipo === 'deuda' ? 'Deuda manual' : 'Pago manual');
+  let rows = [];
+
+  if (prodKey && tipo === 'deuda') {
+    const prod = findProduct(prodKey);
+    const unitPrice = prod ? Number(prod.price||0) : (amount / qty);
+    const prodName = prod ? prod.name : ('Hielo ' + (PROD_LABELS[prodKey]||prodKey));
+    const totalRow = unitPrice * qty;
+
+    rows.push({
+      q: qty,
+      name: prodName + (detailInput ? ' · ' + detailInput : ''),
+      price: unitPrice,
+      total: totalRow
+    });
+
+    // Si el usuario puso un monto distinto, respetamos el monto final
+    if (amount !== totalRow && qty > 0) {
+      rows[0].price = amount / qty;
+      rows[0].total = amount;
+    }
+
+    finalDetail = `${qty}× ${prodName}${detailInput ? ' · ' + detailInput : ''}`;
+  } else {
+    rows = [{
+      q: 1,
+      name: finalDetail,
+      price: amount,
+      total: amount
+    }];
   }
 
   modifItems.push({
@@ -2036,34 +2251,64 @@ function saveNewItemModif(cid) {
     type: tipo,
     amount: amount,
     detail: finalDetail,
+    rows: rows,
     oculto: false
   });
-  
+
   closeModal();
   dibujarTablaModif(cid);
   toast('➕ Artículo agregado');
 }
 
+/* ── generarFacturaModificada: misma tabla de 4 columnas, respeta ocultos ── */
 function generarFacturaModificada(cid) {
   const c = findClient(cid);
   if (!c) return toast('Cliente no encontrado');
-  
+
   const hoyStr = today().replace(/-/g,'');
   const numFactura = `F-${hoyStr}-${String(Math.floor(Math.random()*9000)+1000)}`;
-  
+
+  // Totales SIEMPRE con todos los items (ocultos o no)
   let totalDeudas = 0, totalPagos = 0;
-  
-  // 1. Calculamos el total usando TODOS los items (ocultos o no)
   modifItems.forEach(i => {
     if (i.type === 'deuda') totalDeudas += Number(i.amount);
     else totalPagos += Number(i.amount);
   });
-  
   const saldo = totalDeudas - totalPagos;
 
-  // 2. Filtramos solo los que se van a MOSTRAR en el PDF
-  const itemsVisibles = modifItems.filter(i => !i.oculto);
-  const rows = itemsVisibles.map(i => `<tr><td>${fdate(i.date)}</td><td>${esc(i.detail)}</td><td style="color:${i.type==='deuda'?'var(--red)':'var(--green)'};text-align:right;">${i.type==='deuda'?'':'-'}${money(i.amount)}</td></tr>`).join('');
+  // Filas visibles (respetan oculto)
+  const visibles = modifItems.filter(i => !i.oculto);
+  const filas = [];
+  visibles.forEach(i => {
+    const rowsArr = i.rows && i.rows.length ? i.rows : null;
+    if (i.type === 'deuda' && rowsArr) {
+      rowsArr.forEach(row => filas.push({
+        cant: row.q,
+        producto: row.name,
+        precio: row.price,
+        total: row.total,
+        tipo: 'deuda'
+      }));
+    } else {
+      filas.push({
+        cant: 1,
+        producto: i.detail || (i.type === 'deuda' ? 'Deuda' : 'Pago'),
+        precio: i.amount,
+        total: i.amount,
+        tipo: i.type
+      });
+    }
+  });
+
+  const rows = filas.length ? filas.map(f => `
+    <tr>
+      <td style="text-align:center;font-weight:700;">${f.cant}</td>
+      <td>${esc(f.producto)}</td>
+      <td style="text-align:right;">${f.tipo==='deuda' ? money(f.precio) : '—'}</td>
+      <td style="text-align:right;font-weight:700;color:${f.tipo==='deuda'?'var(--ink)':'var(--green)'};">
+        ${f.tipo==='deuda' ? money(f.total) : '− '+money(f.total)}
+      </td>
+    </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted);">Sin movimientos visibles</td></tr>';
 
   $('facturaModifContainer').innerHTML = `
     <div class="factura-box" id="facturaModifBox">
@@ -2075,9 +2320,26 @@ function generarFacturaModificada(cid) {
         </div>
       </div>
       <div><b>Cliente:</b> ${esc(c.name)} · #${esc(c.code)}</div>
-      <div class="factura-resumen"><span>📊 Total Deudas: <b>${money(totalDeudas)}</b></span><span>💸 Pagos: <b style="color:var(--green)">${money(totalPagos)}</b></span><span>🔴 Saldo: <b style="color:var(--red)">${money(saldo)}</b></span></div>
-      <table class="table"><thead><tr><th>Fecha</th><th>Detalle</th><th style="text-align:right;">Monto</th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="factura-total"><span>💰 Total: </span><span class="monto">${money(saldo)}</span></div>
+      <div class="factura-resumen">
+        <span>📊 Total deudas: <b>${money(totalDeudas)}</b></span>
+        <span>💸 Pagos: <b style="color:var(--green)">${money(totalPagos)}</b></span>
+        <span>🔴 Saldo: <b style="color:var(--red)">${money(saldo)}</b></span>
+      </div>
+      <table class="table" style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th style="width:70px;text-align:center;">CANT.</th>
+            <th>PRODUCTO / DETALLE</th>
+            <th style="width:140px;text-align:right;">PRECIO UNIT.</th>
+            <th style="width:140px;text-align:right;">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="factura-total">
+        <span>💰 TOTAL A PAGAR: </span>
+        <span class="monto">${money(saldo)}</span>
+      </div>
     </div>
     <div class="row no-print" style="justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap;">
       <button class="btn sm" onclick="copiarFacturaModif()">📋 Copiar</button>
@@ -2085,7 +2347,7 @@ function generarFacturaModificada(cid) {
       <button class="btn sm primary" onclick="imprimirFacturaModif()">🖨️ Imprimir / PDF</button>
     </div>
   `;
-  toast('✅ Factura generada');
+  toast('✅ Factura modificada generada');
 }
 
 function copiarFacturaModif() {
