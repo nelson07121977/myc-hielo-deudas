@@ -311,6 +311,7 @@ function attachListener(){
     if(remoto.products !== undefined)     data.products     = Array.isArray(remoto.products) ? remoto.products : Object.values(remoto.products);
     if(remoto.settings !== undefined)     data.settings     = remoto.settings;
     if(remoto.paymentSheet !== undefined) data.paymentSheet = remoto.paymentSheet;
+    if(remoto.invoices !== undefined)     data.invoices     = remoto.invoices;
 
     if(window.__invalidateDebtCache) window.__invalidateDebtCache();
     save();
@@ -1349,9 +1350,104 @@ function resetearTodo(){if(!confirm('⚠️ ¿Borrar TODO?'))return;if(!confirm(
 function backupAdmin(){return `<section class="panel"><h3>💾 Backup y recuperación</h3><div class="notice green">💡 Descargá backup antes de cambios grandes.</div><div class="twocol" style="margin-top:14px;"><div><h3 style="font-size:14px;">📥 Descargar backup</h3><button class="btn primary" onclick="exportarBackup()">💾 Descargar</button></div><div><h3 style="font-size:14px;">📤 Restaurar</h3><input type="file" id="backupFile" accept=".json" onchange="importarBackup(this)" style="display:none;"><button class="btn green" onclick="document.getElementById('backupFile').click()">📤 Restaurar</button></div></div><hr style="border:0;border-top:1px solid var(--line);margin:24px 0;"><button class="btn orange" onclick="recargarDeudasIniciales()">🔄 Recargar deudas iniciales</button><hr style="border:0;border-top:1px solid var(--line);margin:24px 0;"><h3 style="color:var(--red);">⚠️ Zona peligrosa</h3><button class="btn danger" onclick="resetearTodo()">🗑 Reiniciar todo a cero</button></section>`;}
 function adminCostos(){
   const prods=data.products||[];
-  const cards=prods.map(p=>{const cost=Number(p.cost)||0;const price=Number(p.price)||0;const margin=price-cost;const marginPct=price>0?Math.round((margin/price)*100):0;return `<div style="border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;"><div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,var(--gold),var(--cyan));"></div><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;"><div style="font-size:32px;background:linear-gradient(135deg,var(--ice),var(--ice2));border-radius:12px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">${p.emoji||'🧊'}</div><div><div style="font-weight:800;font-size:15px;">${esc(p.name)}</div></div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line-2);"><span style="font-size:12px;color:var(--muted);">💰 Costo</span><input type="number" class="no-print" value="${cost}" onchange="adminSaveCost('${p.id}',this.value,'cost')" style="width:130px;padding:9px 12px;text-align:right;border:1.5px solid var(--line);border-radius:10px;font-weight:800;font-size:16px;"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;"><span style="font-size:12px;color:var(--muted);">💵 Precio</span><input type="number" class="no-print" value="${price}" onchange="adminSaveCost('${p.id}',this.value,'price')" style="width:130px;padding:9px 12px;text-align:right;border:1.5px solid var(--line);border-radius:10px;font-weight:800;font-size:16px;"></div><div style="background:linear-gradient(135deg,#f0fdf4,#fff);border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-top:14px;"><div style="display:flex;justify-content:space-between;font-size:13px;"><span>Margen</span><b style="color:var(--green)">${money(margin)}</b></div><div style="display:flex;justify-content:space-between;font-size:13px;"><span>%</span><b>${marginPct}%</b></div></div></div>`;}).join('');
-  return wrapSeccion('secCostos','💲 Costos y Precios',`<section class="panel"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">${cards}</div></section>`);
+  
+  const btnRestaurar = `<div class="row space" style="margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+    <button class="btn primary" onclick="catalogForm()">➕ Nuevo Producto</button>
+    <button class="btn orange" onclick="restaurarProductosDefault()">🔄 Restaurar Productos Base</button>
+  </div>`;
+
+  const cards=prods.map(p=>{
+    const cost=Number(p.cost)||0;
+    const price=Number(p.price)||0;
+    const margin=price-cost;
+    const marginPct=price>0?Math.round((margin/price)*100):0;
+    
+    return `<div style="border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,var(--gold),var(--cyan));"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:32px;background:linear-gradient(135deg,var(--ice),var(--ice2));border-radius:12px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">${p.emoji||'🧊'}</div>
+          <div><div style="font-weight:800;font-size:15px;">${esc(p.name)}</div></div>
+        </div>
+        <button class="btn xs danger" onclick="deleteProducto('${p.id}')">🗑</button>
+      </div>
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line-2);">
+        <span style="font-size:12px;color:var(--muted);">💰 Costo</span>
+        <input type="number" class="no-print" value="${cost}" onchange="adminSaveCost('${p.id}',this.value,'cost')" style="width:130px;padding:9px 12px;text-align:right;border:1.5px solid var(--line);border-radius:10px;font-weight:800;font-size:16px;">
+      </div>
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+        <span style="font-size:12px;color:var(--muted);">💵 Precio</span>
+        <input type="number" class="no-print" value="${price}" onchange="adminSaveCost('${p.id}',this.value,'price')" style="width:130px;padding:9px 12px;text-align:right;border:1.5px solid var(--line);border-radius:10px;font-weight:800;font-size:16px;">
+      </div>
+      
+      <div style="background:linear-gradient(135deg,#f0fdf4,#fff);border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-top:14px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Margen</span><b style="color:var(--green)">${money(margin)}</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;"><span>%</span><b>${marginPct}%</b></div>
+      </div>
+    </div>`;
+  }).join('');
+  
+  return wrapSeccion('secCostos','💲 Costos y Precios',`${btnRestaurar}<section class="panel"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">${cards || '<p class="muted">No hay productos cargados. Tocá "Restaurar Productos Base".</p>'}</div></section>`);
 }
+
+function restaurarProductosDefault() {
+  if(!confirm('¿Restaurar los 5 productos base? Esto agregará los que falten sin borrar los que ya tenés.')) return;
+  if(!data.products) data.products = [];
+  const base = [
+    {id:'p17',name:'Bolsa de hielo 1,7 kg',price:1500,cost:1000,emoji:'🧊',active:true},
+    {id:'p35',name:'Bolsa de hielo 3,5 kg',price:2500,cost:1500,emoji:'❄️',active:true},
+    {id:'p14',name:'Bolsa de hielo 14 kg',price:6500,cost:4000,emoji:'🧊',active:true},
+    {id:'p20',name:'Escama 20 kg',price:8000,cost:4500,emoji:'🌨️',active:true},
+    {id:'p32',name:'Escama 32 kg',price:12000,cost:6000,emoji:'🌨️',active:true}
+  ];
+  base.forEach(b => {
+    if(!data.products.find(p => p.id === b.id)) {
+      data.products.push(b);
+      dbSet('products/' + b.id, b);
+    }
+  });
+  save(); render(); toast('✅ Productos base restaurados');
+}
+
+function deleteProducto(id) {
+  if(!confirm('¿Eliminar este producto del catálogo?')) return;
+  data.products = (data.products || []).filter(p => p.id !== id);
+  dbSet('products/' + id, null);
+  save(); render(); toast('🗑 Producto eliminado');
+}
+
+function catalogForm() {
+  modal(`<h2>➕ Nuevo Producto</h2>
+  <div class="field"><label>Nombre del producto (ej: Bolsa 10 kg)</label><input id="npName"></div>
+  <div class="twocol">
+    <div class="field"><label>Precio de venta ($)</label><input type="number" id="npPrice" value="0" min="0"></div>
+    <div class="field"><label>Costo ($)</label><input type="number" id="npCost" value="0" min="0"></div>
+  </div>
+  <div class="field"><label>Emoji (ej: 🧊)</label><input id="npEmoji" value="🧊"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;">
+    <button class="btn" onclick="closeModal()">Salir</button>
+    <button class="btn primary" onclick="saveNewProduct()">💾 Guardar Producto</button>
+  </div>`);
+}
+
+function saveNewProduct() {
+  const name = $('npName').value.trim();
+  const price = Number($('npPrice').value) || 0;
+  const cost = Number($('npCost').value) || 0;
+  const emoji = $('npEmoji').value.trim() || '🧊';
+  if(!name) return toast('Ingresá un nombre');
+  
+  const newId = 'p' + Date.now().toString(36);
+  const np = { id: newId, name, price, cost, emoji, active: true };
+  
+  if(!data.products) data.products = [];
+  data.products.push(np);
+  dbSet('products/' + newId, np);
+  save(); closeModal(); render(); toast('✅ Producto agregado');
+}
+
 function adminSaveCost(id,value,field){const p=findProduct(id); if(!p) return; p[field]=Math.max(0,Number(value)||0); dbSet('products/'+id, p); save(); toast('✅ Guardado'); render();}
 function adminStock(){const stocks=(data.driverStock||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));const contenido=!stocks.length?'<p class="muted">Sin movimientos.</p>':`<table class="table" style="margin-top:12px;"><thead><tr><th>Fecha</th><th>Chofer</th><th>Cargó</th><th>Devolvió</th><th>Estado</th><th class="no-print"></th></tr></thead><tbody>${stocks.slice(0,60).map(st=>{const dName=getDrivers().find(d=>d.pin===st.pin)?.name||st.pin;const c=PROD_KEYS.reduce((a,k)=>a+(Number(st.carga[k])||0),0);const v=PROD_KEYS.reduce((a,k)=>a+(Number(st.devuelta[k])||0),0);return `<tr><td>${st.date}</td><td><b>${esc(dName)}</b></td><td>${c} bolsas</td><td>${v} bolsas</td><td>${st.closed?'<span class="status delivered">cerrada</span>':'<span class="status">abierta</span>'}</td><td class="no-print"><button class="btn xs danger" onclick="deleteStock('${st.id}')">🗑 Borrar</button></td></tr>`;}).join('')}</tbody></table>`;return wrapSeccion('secStock','📦 Stock por Chofer',contenido);}
 function deleteStock(id){if(!confirm('¿Borrar este registro de stock?'))return;data.driverStock=data.driverStock.filter(s=>s.id!==id);dbSet('driverStock/'+id,null);save();render();}
