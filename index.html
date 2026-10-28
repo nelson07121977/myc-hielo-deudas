@@ -199,23 +199,6 @@ function sanitizeForFirebase(obj){
   return obj;
 }
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){} if(window.__invalidateDebtCache) window.__invalidateDebtCache(); }
-// [FIX ZOMBI] Helpers de borrado local de pedidos (para que un pedido borrado no "reviva" desde la nube)
-const DELETED_PEDIDOS_KEY = 'glaciar_deleted_pedidos';
-function getDeletedPedidoIds(){
-  try { return JSON.parse(localStorage.getItem(DELETED_PEDIDOS_KEY) || '[]'); } catch(e){ return []; }
-}
-function addDeletedPedidoId(id){
-  if(!id) return;
-  const arr = getDeletedPedidoIds();
-  if(!arr.includes(String(id))) arr.push(String(id));
-  try { localStorage.setItem(DELETED_PEDIDOS_KEY, JSON.stringify(arr)); } catch(e){}
-}
-function removeDeletedPedidoId(id){
-  const arr = getDeletedPedidoIds().filter(x => String(x) !== String(id));
-  try { localStorage.setItem(DELETED_PEDIDOS_KEY, JSON.stringify(arr)); } catch(e){}
-}
-function isPedidoLocallyDeleted(id){ return getDeletedPedidoIds().includes(String(id)); }
-// [/FIX ZOMBI]
 function dbSet(path, value){
   if(!fbRef) return Promise.resolve(false);
   return fbRef.child(path).set(sanitizeForFirebase(value))
@@ -314,12 +297,6 @@ function attachListener(){
             }
           });
           data[k] = merged;
-        } else if(k === 'pedidos'){
-          // [FIX ZOMBI] No revivir pedidos borrados localmente
-          const deleted = getDeletedPedidoIds();
-          data[k] = deleted.length
-            ? remArr.filter(p => p && p.id && !deleted.includes(String(p.id)))
-            : remArr;
         } else {
           data[k] = remArr;
         }
@@ -738,7 +715,7 @@ function getOpenStock(pin){return (data.driverStock||[]).find(s=>s.pin===pin&&!s
 function ensureOpenStock(pin){let st=getOpenStock(pin);if(!st){st={id:uid(),date:today(),pin,created:Date.now(),closed:false,carga:{p17:0,p35:0,p14:0,p20:0,p32:0},devuelta:{p17:0,p35:0,p14:0,p20:0,p32:0}};data.driverStock.push(st);dbSet('driverStock/'+st.id,st);}if(!st.carga)st.carga={p17:0,p35:0,p14:0,p20:0,p32:0};if(!st.devuelta)st.devuelta={p17:0,p35:0,p14:0,p20:0,p32:0};return st;}
 function calcSoldByProduct(pin){const sold={p17:0,p35:0,p14:0,p20:0,p32:0};(data.driverSales||[]).filter(s=>s.pin===pin&&!s.closed).forEach(s=>{PROD_KEYS.forEach(k=>{const q=Number((s.qty||{})[QTY_KEYS[k]]||0);sold[k]+=q;});});return sold;}
 function updateStockCarga(pin,prod,val){const st=ensureOpenStock(pin);st.carga[prod]=Math.max(0,Number(val)||0);dbSet('driverStock/'+st.id+'/carga/'+prod,st.carga[prod]);save();render();}
-function updateStockDevuelta(pin,prod,val){const st=ensureOpenStock(pin);st.devuelta[prod]=Math.max(0,Number(val)||0);dbSet('driverStock/'+st.id+'/devuelta/'+prod,st.devuelta[prod]);save();render();}
+function updateStockDevuelta(pin,prod,val){const st=ensureOpenStock(pin);st.st.devuelta[prod]=Math.max(0,Number(val)||0);dbSet('driverStock/'+st.id+'/devuelta/'+prod,st.devuelta[prod]);save();render();}
 function calcDriverTotals(sales,gastos){let ef=0,tf=0,cc=0,cbEf=0,cbTf=0,b=0;for(const x of sales){if(x.payment==='efectivo')ef+=Number(x.total||0);if(x.payment==='transferencia')tf+=Number(x.total||0);if(x.payment==='ctacte')cc+=Number(x.total||0);if(x.payment==='cobrocc'){const m=x.collectionMethod||'efectivo';if(m==='transferencia')cbTf+=Number(x.collection||0);else cbEf+=Number(x.collection||0);}Object.values(x.qty||{}).forEach(q=>b+=Number(q||0));}const g=gastos.reduce((a,x)=>a+Number(x.amount||0),0);return {efectivo:ef,transferencia:tf,ctacte:cc,cobros:cbEf+cbTf,cobrosEfectivo:cbEf,cobrosTransferencia:cbTf,bolsas:b,gastos:g};}
 
 function driverView(){
@@ -1363,24 +1340,7 @@ function pedidoEdit(id){
   <div class="row" style="justify-content:flex-end;margin-top:22px;gap:10px;"><button class="btn" onclick="closeModal()">Salir</button><button class="btn primary" onclick="savePedidoEdit('${id}')">💾 Guardar</button></div>`);
 }
 function savePedidoEdit(id){try{const p=(data.pedidos||[]).find(x=>x.id===id);if(!p)return;p.clientId=$('pedClient').value||p.clientId||null;p.clientName=$('pedName').value.trim();p.phone=$('pedPhone').value.trim();p.address=$('pedAddress').value.trim();p.date=$('pedDate').value||today();p.driver=String($('pedDriver').value||'');p.note=$('pedNote').value.trim();p.qty={'1,7':Number($('pedQ17').value)||0,'3,5':Number($('pedQ35').value)||0,'14':Number($('pedQ14').value)||0,'20':Number($('pedQ20').value)||0,'32':Number($('pedQ32').value)||0};dbSet('pedidos/'+p.id,p);save();closeModal();toast('✅ Pedido actualizado');render();}catch(err){console.error(err);toast('❌ Error: '+err.message);closeModal();}}
-// [FIX ZOMBI] deletePedido ahora purga y marca borrado local para que no reviva desde la nube
-function deletePedido(id){
-  if(!confirm('¿Eliminar este pedido?'))return;
-  purgarPedido(id);
-}
-function purgarPedido(id){
-  if(!id) return;
-  // 1) borrar local
-  data.pedidos = (data.pedidos||[]).filter(x => String(x.id) !== String(id));
-  // 2) marcar como borrado localmente (para que no vuelva desde la nube)
-  addDeletedPedidoId(id);
-  // 3) borrar en Firebase
-  dbSet('pedidos/' + id, null);
-  save();
-  toast('🗑 Pedido eliminado');
-  render();
-}
-// [/FIX ZOMBI]
+function deletePedido(id){if(!confirm('¿Eliminar este pedido?'))return;data.pedidos=(data.pedidos||[]).filter(x=>x.id!==id);dbSet('pedidos/'+id,null);save();render();}
 function exportarBackup(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;const fecha=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');a.download='glaciar-backup-'+fecha+'.json';a.click();URL.revokeObjectURL(url);toast('💾 Backup descargado');}
 function importarBackup(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const json=JSON.parse(e.target.result);if(!confirm('¿Restaurar?'))return;data=json;migrateData();localStorage.setItem(KEY,JSON.stringify(data));if(fbRef){['clients','orders','payments','driverSales','products','settings','pedidos','expenses','driverGastos','driverDays','driverStock'].forEach(k=>{fbRef.child(k).set(sanitizeForFirebase(data[k]||[]));});}toast('✅ Restaurado');render();}catch(err){toast('❌ Archivo inválido');}};reader.readAsText(file);input.value='';}
 function resetearTodo(){if(!confirm('⚠️ ¿Borrar TODO?'))return;if(!confirm('⚠️ ¿SEGURO?'))return;localStorage.removeItem(KEY);localStorage.removeItem('glaciar_deudas_v4_loaded');location.reload();}
@@ -1495,7 +1455,7 @@ function imprimirPlanillaDia(){
   const driverLabel=filt.pin?(getDrivers().find(d=>String(d.pin)===String(filt.pin))?.name||filt.pin):'Todos';
   const salesRows = sales.map(s=>{
     const detalleBolsas = Object.entries(s.qty||{}).filter(([,q])=>Number(q)>0).map(([k,q])=>`${q}× ${k}kg`).join(' · ') || '—';
-    const totalBolsasVenta = Object.values(s.qty||{}).reduce((a,b)=>a+Number(b||0),0);
+    const totalBolasVenta = Object.values(s.qty||{}).reduce((a,b)=>a+Number(b||0),0);
     const payLabel = s.payment==='efectivo'?'Efectivo':s.payment==='transferencia'?'Transferencia':s.payment==='ctacte'?'Cta Cte':s.payment==='cobrocc'?('Cobro '+(s.collectionMethod==='transferencia'?'Transf':'Efectivo')):'—';
     const monto = Number(s.total||s.collection||0);
     const nota = (s.note||'').trim();
@@ -1741,15 +1701,7 @@ function addDriver(){data.settings.drivers.push({pin:String(1000+data.settings.d
         coleccionesChofer.forEach(k=>{
           if(remoto[k]){
             const remArr = Object.values(remoto[k]||{});
-            let clean = cleanDriverCollection(remArr);
-            // [FIX ZOMBI] Para PEDIDOS: respetar los borrados locales para que no "revivan"
-            if(k === 'pedidos'){
-              const deleted = getDeletedPedidoIds();
-              if(deleted.length){
-                clean = clean.filter(p => p && p.id && !deleted.includes(String(p.id)));
-              }
-            }
-            data[k] = clean;
+            data[k] = cleanDriverCollection(remArr);
             cambios = true;
           }
         });
